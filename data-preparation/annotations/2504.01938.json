@@ -1,0 +1,222 @@
+{
+  "paper_id": "2504.01938",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2504.01938:I001",
+      "title": "Malformed state-dependent jump-measure representation",
+      "target_type": "algorithm",
+      "primary_affected_tag": "sec:disc_diffusion",
+      "failure_location": {
+        "tag": "sec:disc_diffusion",
+        "quote": "the random variable $N[\\lambda](\\omega, (s,t], A)$ is Poisson distributed with mean satisfying"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:discrete_diffusion_forward"
+        },
+        {
+          "quote": "\\E\\left[N[\\lambda](\\omega, (s,t], A)\\right] = \\int_s^t \\int_A \\lambda_\\tau(A, \\vx_{\\tau^-}(\\omega)) \\dif \\tau,"
+        }
+      ],
+      "failure_explanation": "The old executable stochastic-integral representation invokes a state-dependent measure as an ordinary Poisson random measure. Its claimed mean still depends on the random path through x_{tau-}(omega), even though the expectation on the left is deterministic, and jumps into one set can change the state and hence subsequent rates into other sets, defeating the asserted unconditional independence. The missing explicit spatial integral further leaves the displayed interface ambiguous. A state-dependent integer-valued measure with a predictable compensator, rather than an ordinary PRM with those unconditional properties, is required.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The rate-matrix description of the finite-state chain remains valid, but its advertised pointwise stochastic-integral construction and simulation interface are not valid as written.",
+      "least_adequate_overall_repair": "Rewrite the stochastic representation as x_t = x_0 + ∫_0^t∫_X (z−x_{s−}) M(ds,dz), where M is an integer-valued random measure with predictable compensator λ_s(z,x_{s−}) ds μ(dz). If an explicit noise construction is desired, define M by predictable thinning of a Poisson random measure with deterministic intensity on an augmented mark space. Remove the assertions that the state-dependent counts are unconditionally Poisson and independent.",
+      "classification": "minor_issue",
+      "why_classification": "The old text makes a genuine conceptual error about state-dependent jump measures, so this is not transcriptional. Nevertheless, predictable thinning or the equivalent compensator formulation is a standard, short, local construction already supported by the cited framework; it preserves the rate-matrix chain, its law, and its simulation capability without a new lemma or downstream change.",
+      "new_version_repair_locator": {
+        "tag": "sec:disc_diffusion",
+        "quote": "Then $N[\\lambda]$ has predictable compensator $\\lambda_s(x,x_{s^-}(\\omega))\\dif s\\mu(\\dif x)$."
+      }
+    },
+    {
+      "issue_id": "2504.01938:I002",
+      "title": "Generalized Doob density omits the arbitrary potential",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:doob",
+      "failure_location": {
+        "tag": "eq:doob"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:doob",
+          "quote": "\\gL^{h, \\lambda} f = h^{-1} \\gL(h f) - \\lambda f"
+        }
+      ],
+      "failure_explanation": "For h=1, the old density in eq:doob is identically one, while the stated transformed generator is L-lambda. Changing a nonzero lambda therefore changes the claimed generator without changing the path measure; moreover, (L-lambda)1=-lambda, so it is not a conservative Markov generator for arbitrary lambda. The old density formula corresponds to the later conservative specialization, not to the arbitrary-lambda statement.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The cited arbitrary-lambda form of the generalized transform is misstated, although the conservative specialization used to motivate the paper's change-of-measure construction can be retained.",
+      "least_adequate_overall_repair": "Replace the arbitrary-potential statement by the conservative specialization: require λ_t = h_t^{-1}L_t h_t, define L_t^h f = h_t^{-1}L_t(h_t f) − h_t^{-1}fL_t h_t, state L_t^h 1 = 0, and retain the endpoint-weighted density h_T(X_T)/h_0(X_0) times exp(−∫_0^T h_t^{-1}(∂_t+L_t)h_t(X_t)dt). This is the specialization used by the subsequent change-of-measure argument.",
+      "classification": "moderate_issue",
+      "why_classification": "No probability-preserving Markov transform with the displayed generator exists for arbitrary λ; the h = 1 case already proves this. Restricting to the conservative potential is local and preserves a recognizably comparable h-transform and all uses in the paper, but it genuinely removes the theorem's arbitrary-potential quantifier. That limited loss exceeds a minor same-guarantee repair while requiring no global reconstruction.",
+      "new_version_repair_locator": {
+        "tag": "eq:doob"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2504.01938:I003",
+      "title": "Unbound generator time in the score-matching corollary",
+      "target_type": "formal_result",
+      "primary_affected_tag": "cor:score_matching",
+      "failure_location": {
+        "tag": "eq:score_matching"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "cor:score_matching_app"
+        },
+        {
+          "tag": "alg:training"
+        }
+      ],
+      "failure_explanation": "In eq:score_matching, t is bound by the integral and x_t is sampled from p_{t|0}, whereas s is free. For a time-inhomogeneous generator, L_s is neither an innocuous renaming nor a specified operator at the sampled time, so the loss and the corollary's argmin assertion are not well-defined as written. The rigorous appendix corollary and alg:training consistently use the integration/sample time.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The main displayed score-matching objective and its time-reweighted restatement have an undefined time index; the underlying appendix derivation and executable training formula remain intact.",
+      "least_adequate_overall_repair": "Replace the free generator subscript s by the integration and sampling variable t in the main score-matching display and its time-reweighted restatement, leaving the argmin identity unchanged.",
+      "classification": "typo",
+      "why_classification": "The integral binds t, the sample is x_t, and both the appendix corollary and training algorithm use the generator at that same time. Thus L_t is the uniquely forced reading, and correcting the copied index requires no repair of the derivation or algorithm.",
+      "new_version_repair_locator": {
+        "tag": "eq:score_matching"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2504.01938:I004",
+      "title": "General Lévy characterization wrongly excludes degenerate diffusion components",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:general_levy",
+      "failure_location": {
+        "tag": "thm:general_levy",
+        "quote": "the diffusion coefficient which positive definite for any $\\vx \\in \\R^d$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "ex:alpha_stable",
+          "quote": "Consider the special case where the diffusion component vanishes, i.e., $\\mD_t(\\vx) \\equiv 0$"
+        }
+      ],
+      "failure_explanation": "A diffusion matrix represented as Sigma Sigma^T is generally only positive semidefinite. More decisively, the paper expressly presents pure-jump Lévy-type processes with D_t identically zero as instances of the claimed general framework. The zero matrix is not positive definite, so the old theorem cannot both be the general characterization and include its own pure-jump case. The rigorous Courrège statement repeats the same overrestriction.",
+      "dependent_affected_formal_result_tags": [
+        "thm:courrege_form"
+      ],
+      "overall_effect": "The literal characterization excludes pure-jump processes and all degenerate diffusions, contradicting the paper's stated model class and examples.",
+      "least_adequate_overall_repair": "Replace “positive definite” by “positive semidefinite” for the diffusion matrix in both thm:general_levy and thm:courrege_form.",
+      "classification": "typo",
+      "why_classification": "The factorization D = ΣΣᵀ, the cited Courrège form, and the explicit pure-jump case D ≡ 0 uniquely force positive semidefiniteness. No argument uses invertibility or strict ellipticity, so the repeated adjective is a transcriptional overrestriction rather than a mathematical reconstruction.",
+      "new_version_repair_locator": {
+        "tag": "thm:general_levy",
+        "quote": "the diffusion coefficient, which is positive semidefinite for any $\\vx \\in \\R^d$"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2504.01938:I005",
+      "title": "Impossible conservativity hypothesis vacates the Lévy characterization",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:general_levy",
+      "failure_location": {
+        "tag": "ass:smooth"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "def:semigroup"
+        },
+        {
+          "quote": "(Conservation) $U_{t,s} 1 = 1$"
+        }
+      ],
+      "failure_explanation": "The main characterization invokes ass:smooth, which defines conservativity by tilde T_t 1=0. At t=0 this contradicts the semigroup identity tilde T_0=id, and for positive times it also contradicts the stated Markov conservation law U_{t,s}1=1. Thus the theorem's advertised admissible regime is empty as written, and the rigorous Courrège theorem uses the same impossible input.",
+      "dependent_affected_formal_result_tags": [
+        "thm:courrege_form"
+      ],
+      "overall_effect": "Both the informal and rigorous general Lévy-generator characterizations become vacuous under the literal hypothesis, though the rest of the framework is not affected once the forced conservativity reading is restored.",
+      "least_adequate_overall_repair": "In ass:smooth, replace the semigroup condition T̃_t1 = 0 by the conservative condition T̃_t1 = 1. Retain the consequent generator identity L̃1 = 0 used in the Courrège proof.",
+      "classification": "typo",
+      "why_classification": "The semigroup identity at t = 0, the paper's own conservation definition, and the subsequent generator calculation all uniquely force T̃_t1 = 1. The proof already reasons with that meaning, so a single transcriptional correction restores both affected characterizations.",
+      "new_version_repair_locator": {
+        "tag": "ass:smooth"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2504.01938:I006",
+      "title": "Lévy-measure integrability is centered at the wrong point",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:general_levy",
+      "failure_location": {
+        "tag": "thm:general_levy",
+        "quote": "\\left(1 \\wedge |\\vy|^2\\right) \\lambda_t(\\dif \\vy, \\vx)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:generator_levy_type"
+        },
+        {
+          "tag": "eq:alpha_stable"
+        }
+      ],
+      "failure_explanation": "The theorem integrates over R^d without {x}, writes every jump increment as y-x, and later uses lambda_t(y,x) proportional to ||y-x||^{-d-alpha}. For nonzero x, the old factor 1 wedge |y|^2 is bounded away from zero near y=x, so the integral of that displayed singular kernel diverges there; in its intended alpha-stable range, the centered factor 1 wedge ||y-x||^2 supplies the required small-jump power. The old condition therefore neither expresses local jump-size integrability nor supports the stated generality.",
+      "dependent_affected_formal_result_tags": [
+        "thm:courrege_form"
+      ],
+      "overall_effect": "The advertised general Lévy-type characterization excludes the paper's own translated infinite-activity kernels at nonzero states and uses an incorrect admissibility condition; the rigorous appendix statement repeats the same root.",
+      "least_adequate_overall_repair": "In both thm:general_levy and thm:courrege_form, state the Lévy condition as ∫_{R^d minus {x}} (1 ∧ ||y−x||²) λ_t(dy,x) < ∞.",
+      "classification": "typo",
+      "why_classification": "Throughout the old source y is a destination and y−x is the jump increment; the alpha-stable kernel is likewise singular in ||y−x||. These conventions uniquely force centering at x, and replacing ||y|| by ||y−x|| requires no new estimate or proof step.",
+      "new_version_repair_locator": {
+        "tag": "thm:general_levy",
+        "quote": "\\left(1 \\wedge \\|\\vy-\\vx\\|^2\\right) \\lambda_t(\\dif \\vy, \\vx)"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2504.01938:I007",
+      "title": "Malformed pure-jump backward stochastic integral",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eq:jump_backward",
+      "failure_location": {
+        "tag": "eq:jump_backward"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:jump_score_matching"
+        }
+      ],
+      "failure_explanation": "The old instruction integrates N[backward lambda](dy,dx) and then multiplies by ds. That is not an integral against an integer-valued random measure on time and jump destination, leaves x without a corresponding integration role, and hard-codes R^2 despite the preceding d-dimensional construction. Consequently it does not execute the advertised backward jump process.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The backward simulation formula is not a well-defined stochastic jump integral, while the generator and score-matching objective remain separately specified.",
+      "least_adequate_overall_repair": "Write the backward process as y_t = y_0 + ∫_0^t∫_{R^d} (z−y_{s−}) N^{rev}(ds,dz), with predictable compensator λ^{rev}_s(z,y_{s−}) dz ds. Remove the external ds, the unused dx argument, and the hard-coded R² domain.",
+      "classification": "typo",
+      "why_classification": "The preceding d-dimensional generator and the standard jump-integral representation uniquely determine the time and destination variables and the state-dependent compensator. The old display is an ill-typed transcription; correcting its differentials and domain does not change the process, objective, or simulation method.",
+      "new_version_repair_locator": {
+        "tag": "eq:jump_backward"
+      }
+    },
+    {
+      "issue_id": "2504.01938:I008",
+      "title": "Pathwise Radon–Nikodym formula drops a random endpoint factor",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:change_of_measure_app",
+      "failure_location": {
+        "tag": "eq:radon_nikodym"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:dynkin"
+        }
+      ],
+      "failure_explanation": "The theorem claims that the pathwise density is a bare exponential of a time integral. The h-transform calculation instead has a random endpoint ratio multiplying that exponential. Dynkin's formula in thm:dynkin identifies the expectation of the endpoint difference with an expected generator integral; it cannot replace the endpoint difference pathwise. Thus the old argument establishes, after a local correction, an expected log-density identity rather than the displayed pathwise equality.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The pathwise density assertion in the change-of-measure theorem is false. Its expected-log and KL consequences can nevertheless be retained, because those consequences use only the weaker expectation identity obtained from the endpoint-factor density.",
+      "least_adequate_overall_repair": "For h_s = η_{T−s}, replace the bare exponential by the pathwise density dQ/dP|F_s^rev = [h_s(x_s^rev)/h_0(x_0^rev)] exp(−∫_0^s [h_r^{-1}∂_r h_r + h_r^{-1}L_r^rev h_r](x_r^rev)dr), and state the reciprocal density accordingly. In the proof, apply Dynkin's formula only after taking expectations, thereby recovering the expected log-density and KL identities.",
+      "classification": "minor_issue",
+      "why_classification": "The proof makes an invalid pathwise use of Dynkin's formula, so the defect is not a typo. The generalized Doob formula already supplies the missing endpoint factor, and a short local correction preserves an exact pathwise density, the transformed generator, and all expected-log and KL consequences without a new lemma or proof architecture.",
+      "new_version_repair_locator": {
+        "tag": "thm:change_of_measure_app"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    }
+  ]
+}

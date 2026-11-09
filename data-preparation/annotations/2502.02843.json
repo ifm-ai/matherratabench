@@ -1,0 +1,146 @@
+{
+  "paper_id": "2502.02843",
+  "version_pair": "v1-v3",
+  "issues": [
+    {
+      "issue_id": "2502.02843:I001",
+      "title": "Finite-set and uniform trimming guarantees omit the set-size contribution to the trimming count",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:jl_trimming",
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "failure_location": {
+        "tag": "lem:jl_trimming",
+        "quote": "Further, for any finite set $\\{\\tX_1, \\ldots, \\tX_p\\} = \\mathcal{S} \\subseteq \\R^{n \\times n \\times \\dots \\times n}$,  we consider their embedding with respect to the data-driven row trimming of $\\mat{A}^{\\vx_i}_k$ with $\\vx_i = \\algoname{Vec}(\\tX_i)$ and $k = \\ln(8/\\alpha)$,"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "lem:jl_trimming",
+          "quote": "The desired result follows by the union bound argument."
+        },
+        {
+          "tag": "thm: trim_sub-Gaussian",
+          "quote": "for any $\\alpha \\geq 4e^{-cp}$, for $k_1 = 0$ and $k_2 = \\ln(8/\\alpha)$"
+        },
+        {
+          "tag": "theorem:trim_trip",
+          "quote": "for a set $\\mathcal{S} \\subseteq \\R^{n \\times n \\times \\dots \\times n}$ of low-rank tensors of norm $1$, we consider their embedding with respect to the data-driven row trimming of $\\mat{A}^{\\vx}_k$ with $k = \\ln(8n^\\phi)$ with respect to $\\vx \\in \\R^{n^d}$. If"
+        },
+        {
+          "tag": "eq:m-bound",
+          "quote": "m \\ge C^d \\delta^{-2}\\ln(4|\\mathcal{N}|n^{\\phi})"
+        }
+      ],
+      "failure_explanation": "The scalar trimmed-mean estimate has failure probability alpha only for a trimming count depending on that probability. To obtain simultaneous control of p tensors with total failure probability alpha, the proof must apply it at alpha/p, giving k = ln(8p/alpha). The v1 proof inserts p in the sample-size logarithm but leaves k = ln(8/alpha), so its union-bound inference does not establish the stated probability. Applying the same argument to a covering net requires k = ln(8 n^phi) + ln|N|; Theorem 8 instead keeps only ln(8 n^phi). This uniform claim can actually fail, rather than merely lacking that proof: for d = 3 and tensor Rademacher rows, let q = ceil(ln(8n^2)) + 1 and form a normalised sum of q nearly orthogonal normalised rows. Its CP rank is at most q and each mode rank is at most q. Each of these q measurements has unnormalised squared magnitude of order n^3/q; trimming q-1 rows leaves at least one. At the advertised m of order n log^2 n for r = q, the remaining normalised squared norm diverges. This counterexample uses growing rank and makes no claim of failure for every fixed rank.",
+      "dependent_affected_formal_result_tags": [
+        "theorem:trim_trip",
+        "thm:main-informal"
+      ],
+      "overall_effect": "The finite-set lemma lacks its claimed simultaneous probability, and the uniform low-rank embedding theorem and its introductory restatement inherit the insufficient trimming count. The face-splitting discussion in rem:trimtiht-discussion consequently cannot justify uniform iterate distortion using only logarithmic-in-n trimming. The deterministic pathwise convergence argument does not depend on this probabilistic embedding claim and is not itself invalidated by this root.",
+      "least_adequate_overall_repair": "Use a per-vector failure probability alpha/p and k = ceil(ln(8p/alpha)) in the finite-set lemma. Enforce the scalar tail condition alpha/p >= 4 exp(-c m) through a sufficiently large sample-size constant, together with k < m. For uniform embedding, use the stated covering-number bounds at the chosen epsilon and add ln|N| to the trimming count; propagate the revised rank-, dimension-, and accuracy-dependent count and sufficient sample size to theorem:trim_trip, thm:main-informal, and the trimming discussion. This gives a comparable uniform embedding with substantially more trimming. The independently recorded signed net-extension defect must also be repaired for the full proof, but is a separate root.",
+      "classification": "moderate_issue",
+      "why_classification": "The repair preserves a recognisably comparable uniform embedding result and uses the existing scalar concentration and covering argument, so no global reconstruction is needed. It nevertheless replaces the advertised logarithmic-in-n trimming budget by one that also scales with covering entropy, a substantive change in the parameter regime and its downstream applicability. This exceeds a local no-loss repair.",
+      "new_version_repair_locator": {
+        "tag": "lem:jl_trimming",
+        "quote": "$k = k = \\ln(8\\rev{p}/\\alpha)$"
+      }
+    },
+    {
+      "issue_id": "2502.02843:I002",
+      "title": "Net extension applies order-statistic contraction to signed measurements sorted by magnitude",
+      "target_type": "formal_result",
+      "primary_affected_tag": "theorem:trim_trip",
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "failure_location": {
+        "tag": "theorem:trim_trip",
+        "quote": "\\|\\mat{A}^\\vx \\vx -\\mat{A}^{\\hat{\\vx}} \\hat\\vx\\|_2^2  \\leq m\\|\\mat{A} \\vx -\\mat{A}\\hat{\\vx}\\|_{\\infty}^2"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "theorem:trim_trip",
+          "quote": "\\|\\vu_{(k)} - \\vv_{(k)}\\| \\leq \\|\\vu-\\vv\\|_\\infty"
+        },
+        {
+          "tag": "theorem:trim_trip",
+          "quote": "|\\mat{a}^{\\vx}_1{\\vx}| \\leq |\\mat{a}^{\\vx}_2{\\vx}| \\le \\dots \\le |\\mat{a}^{\\vx}_{m-k}{\\vx}|"
+        }
+      ],
+      "failure_explanation": "The rows are separately sorted by absolute measurement size, but the vectors subtracted in the displayed inequality retain their signs. Signed entries arranged by magnitude are not the scalar order statistics to which the cited contraction applies. For example, u = (1, -1-h, 10) and v = (1+h, -1, 10), with 0 < h < 1, differ by h in infinity norm. After dropping the largest-magnitude coordinate and sorting the remaining entries by magnitude, they become (1, -1-h) and (-1, 1+h); their distance stays bounded away from zero as h tends to zero. Thus the printed inequality does not justify extending the finite-net estimate to every tensor.",
+      "dependent_affected_formal_result_tags": [
+        "thm:main-informal"
+      ],
+      "overall_effect": "Theorem 8 has a local gap in its net-to-set extension, also affecting the introductory uniform guarantee and the discussion that invokes it. This is independent of the missing covering-entropy term in the trimming count: correcting either root alone does not correct the other. The finite-set lemma does not use this extension and is not a dependent result.",
+      "least_adequate_overall_repair": "Let F(x) be sqrt(m/(m-k)) times the first m-k order statistics of the absolute entries of A x. Its Euclidean norm equals that of A^x x, and scalar order-statistic contraction gives ||F(x)-F(y)||_2^2 <= m ||A(x-y)||_infinity^2. Perform the norm comparison and net extension with F instead of the signed, independently permuted measurements. Retain the resulting sqrt(m) factor in the cross term; with the row-norm bound, the stated epsilon of order delta n^(-d/2) still suffices after adjusting absolute constants. No new substantive hypothesis or guarantee is required.",
+      "classification": "minor_issue",
+      "why_classification": "Sorting absolute values supplies a short, complete local repair. The trimmed squared norms and the uniform embedding guarantee are unchanged; the signed-vector comparison itself needs an actual proof correction, so this is more than a typographical slip.",
+      "new_version_repair_locator": "not_repaired_in_v3: the proof of theorem:trim_trip still subtracts signed measurements after sorting by magnitude"
+    },
+    {
+      "issue_id": "2502.02843:I003",
+      "title": "Pathwise contraction statement raises the current one-step factor to an iteration power",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:main_path",
+      "failure_mechanism": "statement_support_mismatch",
+      "failure_location": {
+        "tag": "eqn:conv_path",
+        "quote": "\\|\\tR^{t+1}\\|_F \\leq \\left( 2\\sqrt{ 1 - (2 - \\mu_t\\rho_t )\\mu_t\\Delta_t}+\\sqrt{ 2\\xi_t + \\xi_t^2}\\left(1 + \\mu_t \\|\\mat{A}_t\\|_{2} \\sqrt{\\Delta_t}\\right) \\right)^{t+1} \\|\\tR^0\\|_F,"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:main_path",
+          "quote": "\\leq \\left( 2\\sqrt{ 1 - (2 - \\mu_t\\rho_t )\\mu_t\\Delta_t  }+\\sqrt{( 2\\xi_t + \\xi_t^2)}\\left(1 + \\mu_t \\|\\mat{A}_t\\|_{2} \\sqrt{\\Delta_t}\\right) \\right) \\|\\tR^t\\|_F,"
+        },
+        {
+          "tag": "eqn:conv_path_err",
+          "quote": "\\le \\left(2\\sqrt{ 1 - 2\\mu_t\\Delta_t + \\mu_t^2\\rho_t \\Delta_t  }+|1 - \\mu_t\\Delta_t|\\right)\\|\\tR^t\\|_F =: \\alpha_t\\|\\tR^t\\|_F ."
+        }
+      ],
+      "failure_explanation": "Writing c_t for the parenthesised, iteration-dependent factor, the theorem displays ||R^(t+1)|| <= c_t^(t+1) ||R^0||. The proof ends with the one-step bound ||R^(t+1)|| <= c_t ||R^t||, and the subsequent simplified recurrence uses that same one-step form. Products of varying factors cannot be replaced by a power of the current factor. The proof and discussion therefore uniquely identify the intended local correction to the displayed theorem statement.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The displayed estimate in thm:main_path is misstated. The proof and subsequent one-step discussion do not use the erroneous power, and no separate downstream formal conclusion has been identified that depends on that power.",
+      "least_adequate_overall_repair": "Replace c_t^(t+1) ||R^0|| by c_t ||R^t|| in eqn:conv_path, as already established at the end of the proof and used in eqn:conv_path_err. If a cumulative estimate is desired, separately iterate the one-step bounds to obtain the product of the applicable factors.",
+      "classification": "typo",
+      "why_classification": "The old proof and adjacent simplified recurrence already display the intended one-step statement. Correcting the theorem display requires no new mathematical argument and changes no inference that relies on the erroneous power. The typo remains part of the gold catalogue.",
+      "new_version_repair_locator": "partially_repaired_in_v3: eqn:conv_path replaces R^0 by R^t but still retains the erroneous exponent t+1 on the one-step factor"
+    },
+    {
+      "issue_id": "2502.02843:I004",
+      "title": "TrimTIHT retains m_trim rows while the analysed update retains m minus m_trim",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:trimtiht",
+      "failure_location": {
+        "tag": "alg:trimtiht",
+        "quote": "$\\Theta_k = \\left[i_1, i_{2}, \\dots, i_{m_{\\text{trim}}} \\right]$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:trimtiht",
+          "quote": "$\\algoname{Vec}(\\tY^{k+1}) \\gets \\algoname{Vec}(\\tX^{k}) + \\mu_k\\frac{m}{|\\Theta_k|} \\sum\\limits_{ j \\in \\Theta_k}  (b_j-\\va_{j}^\\intercal \\algoname{Vec}(\\tX^k)) \\va_j$\\;"
+        },
+        {
+          "tag": "def:truncated-A",
+          "quote": "= \\sqrt{\\frac{m}{m-m_{\\text{trim}}}} \\mat{A}[\\Theta_k,:]"
+        },
+        {
+          "tag": "alg:trimtiht",
+          "quote": "Then, Step 5 of \\cref{alg:trimtiht} can be expressed as"
+        },
+        {
+          "tag": "thm:main_path",
+          "quote": "\\algoname{Vec}(\\tY^t - \\tX^\\ast) =  (\\mat{I} - \\mu_t \\mat{A}_t^T\\mat{A}_t) \\vr^t"
+        }
+      ],
+      "failure_explanation": "The pseudocode sorts residual magnitudes in ascending order and retains the first m_trim rows. Its gradient is scaled by m/|Theta_k|. In contrast, def:truncated-A scales the retained matrix by sqrt(m/(m-m_trim)), so the claimed equivalent matrix update has coefficient m/(m-m_trim). These are different updates unless m_trim = m/2. The stated meaning of m_trim as the number removed also requires retaining m-m_trim rows. The discrepancy defeats applicability of thm:main_path to the literal pseudocode: take a unit rank-one tensor E, target E, initial iterate zero, four identical rows E^T/2, m_trim = 1, step size 3, and exact rank thresholding. The printed update gives 3E and residual norm 2; the declared matrix has Delta_t = rho_t = 1/3 and xi_t = 0, making the claimed contraction factor zero. This counterexample persists after correcting the separate exponent typo.",
+      "dependent_affected_formal_result_tags": [
+        "thm:main_path"
+      ],
+      "overall_effect": "The printed procedure and the matrix update analysed in Theorem 10 disagree, so the theorem does not guarantee the literal algorithm as written. The dependent tag records that applicability failure, not a new defect in the estimate for the intended update. The abstract supporting matrix lemmas are not invalidated. The surrounding trimming and convergence discussion inherits this mismatch.",
+      "least_adequate_overall_repair": "Set Theta_k to the first m-m_trim indices in the ascending residual ordering. Then |Theta_k| = m-m_trim, the pseudocode gradient equals the declared A_k^T(b_k-A_k x^k) update, and the algorithm, trimming definition, and pathwise proof agree. Preserve the existing m/|Theta_k| scaling.",
+      "classification": "minor_issue",
+      "why_classification": "A short local change in the retained index range restores the intended procedure and its analysed guarantee without changing the method or requiring a new proof. The printed executable update and its guarantee are genuinely different before this change, so it is classified as a minor algorithmic defect rather than a harmless typo.",
+      "new_version_repair_locator": {
+        "tag": "alg:trimtiht",
+        "quote": "$\\Theta_k = \\left[i_1, i_{2}, \\dots, i_{\\rev{m - }m_{\\text{trim}}} \\right]$"
+      }
+    }
+  ]
+}

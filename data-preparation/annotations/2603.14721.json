@@ -1,0 +1,226 @@
+{
+  "paper_id": "2603.14721",
+  "version_pair": "v1-v3",
+  "issues": [
+    {
+      "issue_id": "2603.14721:I001",
+      "title": "Backward pseudocode reads forward states before constructing them",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:dynamic-batching-final",
+      "failure_location": {
+        "tag": "alg:dynamic-batching-final",
+        "quote": "\\For{$i=N-1,\\dots,0$}{"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "SDE-M"
+        }
+      ],
+      "failure_explanation": "Although SDE-M defines the mathematical forward recursion in increasing time, the advertised pseudocode neither accepts precomputed paths nor executes that recursion before entering its decreasing-time loop. At its first iteration i=N-1, X_{N-1}^{π,m} is therefore unavailable, so the displayed update and all subsequent labels are not executable as written.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The old pseudocode is not a self-contained executable implementation, although the separately defined mathematical scheme remains meaningful.",
+      "least_adequate_overall_repair": "Add an increasing-time preprocessing pass that simulates and stores every base path X_i^{π,m} for i=0,...,N before the decreasing-time training loop, or explicitly make those precomputed paths inputs to the algorithm. The backward loop can then generate its inner one-step branches from the stored states.",
+      "classification": "minor_issue",
+      "why_classification": "The pseudocode is genuinely non-executable as written, so this is not a transcriptional typo. Nevertheless, the missing forward pass is a short, routine, source-supported construction that leaves the mathematical scheme, training targets, outputs, and guarantees unchanged.",
+      "new_version_repair_locator": {
+        "tag": "Alg-DBR",
+        "quote": "\\textbf{Forward simulation of base paths:}"
+      }
+    },
+    {
+      "issue_id": "2603.14721:I002",
+      "title": "Finite-K target variance is dropped in the main error proof",
+      "target_type": "formal_result",
+      "primary_affected_tag": "ae-DMCE",
+      "failure_location": {
+        "tag": "Deep-NN-E-10"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "Deep-NN-E-9-3-1"
+        },
+        {
+          "tag": "NS-MC-3"
+        }
+      ],
+      "failure_explanation": "The old Step 2 bounds the sample-target/conditional-target difference by C(1+h) plus residual terms. Substitution into Deep-NN-E-9 therefore cannot yield Deep-NN-E-10, whose right side contains only residuals. The missing quantity is not zero for finite K; exploiting conditional independence of the K samples yields variance of order 1/K for the Y target and 1/(Kh) for the Z target.",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "ae-DMCE-R"
+      ],
+      "overall_effect": "The stated main error recursion, the GroupSort convergence theorem that invokes it, and the reflected theorem's reuse of Step 2 are not established until finite-sample target variance is retained.",
+      "least_adequate_overall_repair": "In Step 2, condition on the information at t_i, center the K_i-sample labels, and use conditional independence to retain variance terms of order 1/K_i for the Y target and 1/(K_i h) for the Z target. Carry the resulting terms, equivalently a contribution of the form sum_i N/K_i after the stability factors, through ae-DMCE and its reflected analogue. Choosing K_i of order N^3 preserves the stated O(h) GroupSort convergence rate.",
+      "classification": "minor_issue",
+      "why_classification": "The omitted finite-sample variance is a mathematical defect, but its correction is a standard conditional-variance calculation followed by routine bookkeeping through the affected chain. It requires no new proof architecture and causes no meaningful loss of the stated rate or sampling order.",
+      "new_version_repair_locator": {
+        "tag": "Deep-NN-E--YZK--h1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.14721:I003",
+      "title": "Training-target error is equated with an incompatible residual",
+      "target_type": "formal_result",
+      "primary_affected_tag": "ae-DMCE",
+      "failure_location": {
+        "tag": "Deep-NN-E-9-1"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "NS-MC-3"
+        },
+        {
+          "tag": "NS-MC-2-1"
+        }
+      ],
+      "failure_explanation": "NS-DMC makes the left side of Deep-NN-E-9-1 the trained network's distance from S_y. Under NS-MC-3, S_y uses the next trained network and current trained arguments. By contrast, the old definition of R_{i,2}^y uses Y_{i+1}^{π,m,k}, Y_i^{π,m}, and Z_i^{π,m}. Equality would already require the network quantities to equal the true discrete quantities, which is precisely what the theorem seeks to estimate.",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "ae-DMCE-R"
+      ],
+      "overall_effect": "The proof does not connect the actual regression loss to the residuals appearing in ae-DMCE, so that theorem and the formal results reusing it are unsupported.",
+      "least_adequate_overall_repair": "Replace Deep-NN-E-9-1 by an analysis of the labels actually used in NS-MC-3. Introduce target-consistent fitting residuals based on S_y and S_z at the trained networks, and prove a local stability or coercivity estimate, using the Lipschitz property of f and loss optimality, that controls those residuals by the relevant network approximation errors. Use the same residuals and estimate in ae-DMCE, the GroupSort argument, and the reflected counterpart instead of identifying them with residuals formed from the unknown true discrete variables.",
+      "classification": "moderate_issue",
+      "why_classification": "Correcting the mismatch requires more than renaming a quantity: the proof needs a contained but nontrivial replacement of its regression-loss bridge and consistent propagation through the dependent results. That work does not require global reconstruction, and comparable error and convergence statements can survive without mathematical loss.",
+      "new_version_repair_locator": {
+        "tag": "NS-MC-3--Y7"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.14721:I004",
+      "title": "Empirical-SGD convergence theorem lacks a population-risk bridge",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:added-1",
+      "failure_location": {
+        "tag": "thm:added-1"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "NS-MC-3"
+        },
+        {
+          "tag": "Deep-NN-E-r-5"
+        }
+      ],
+      "failure_explanation": "The old theorem claims an expected O(h) error bound for the DBR approximations inherited from the empirical losses at NS-MC-3 and their SGD minimizers. Its proof establishes only existence of networks with small population L2 approximation error. With finite M and no generalization or optimization hypothesis, empirical optimality does not imply that population bound. Thus the proof supports an exact population-oracle result, not the stated data-dependent training result.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Even apart from the other independent proof defects, the old half-order theorem does not establish convergence of the implemented finite-sample SGD scheme.",
+      "least_adequate_overall_repair": "The least burdensome established resolution is to redefine the theorem's trained parameters as exact minimizers of the population Y and Z risks, state the convergence theorem only for that oracle scheme, and remove the claim that it proves convergence of finite-M SGD training. A theorem for the implemented scheme would instead have to add and prove quantitative generalization and optimization bounds, with corresponding sample-size and iteration requirements.",
+      "classification": "serious_issue",
+      "why_classification": "The population-oracle route withdraws the central guarantee for the implemented data-dependent SGD algorithm and therefore entails major algorithmic loss. Preserving the original finite-sample claim would require an essentially new statistical-learning and nonconvex-optimization analysis; no local source-supported bridge is available.",
+      "new_version_repair_locator": {
+        "tag": "POP-LOSS-Y"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2603.14721:I005",
+      "title": "Incorrect moment-tail exponent and δ-independent GroupSort complexity",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:added-1",
+      "failure_location": {
+        "tag": "Deep-NN-E-r-7"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "$2q = 2+\\delta$"
+        },
+        {
+          "tag": "dmce-cr-1"
+        }
+      ],
+      "failure_explanation": "The theorem permits every fixed δ>0 and assumes only a 2+δ moment. Raising the Markov bound R^{-2q} to the Hölder exponent (q-1)/q yields R^{-2(q-1)}=R^{-δ}. The old proof instead uses R^{-2}; for δ<2 this is a stronger decay than the assumptions provide, so R=O(N^{3/2}) and grouping size O(N^3) do not establish the claimed O(h) rate.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "For low additional moments, the stated O(h) convergence is not justified with the advertised N^3 GroupSort complexity; the required network size depends materially on δ.",
+      "least_adequate_overall_repair": "Replace the tail estimate by the correct R^{-δ} bound and reoptimize the truncation and approximation parameters. For example, retaining all δ>0 and the O(h) error rate requires R of order N^{3/δ} and GroupSort approximation parameter of order N^{-3/2-3/δ}, giving grouping size of order N^{3/2+3/δ} and the corresponding δ-dependent width, while the inner Monte Carlo size remains of order N^3.",
+      "classification": "moderate_issue",
+      "why_classification": "The repair requires a genuine reoptimization and materially weakens the advertised δ-independent network complexity, so it is neither a typo nor minor. It remains contained and preserves the theorem's model class and O(h) convergence rate with a recognizably comparable, albeit δ-dependent, complexity guarantee.",
+      "new_version_repair_locator": {
+        "tag": "Deep-NN-E-r-7"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.14721:I006",
+      "title": "Vector-valued obstacle problem has no defined order or reflection structure",
+      "target_type": "other",
+      "primary_affected_tag": "eq:VI",
+      "failure_location": {
+        "tag": "eq:VI"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "PDE"
+        },
+        {
+          "tag": "dFBSDE"
+        }
+      ],
+      "failure_explanation": "Under the inherited arbitrary-n typing, both arguments of the min in eq:VI are vector-valued. The associated RBSDE likewise uses Y≥g, a single non-decreasing K, and a scalar-looking Skorokhod product without defining any vector order, projection, or reflection convention. Thus the model is not defined for n>1 as printed.",
+      "dependent_affected_formal_result_tags": [
+        "ae-DMCE-R"
+      ],
+      "overall_effect": "The vector-valued variational inequality, its RDBR construction, and the reflected convergence theorem are meaningful only after supplying a multidimensional reflection framework or restricting to the scalar case.",
+      "least_adequate_overall_repair": "Explicitly restrict the entire variational-inequality and RDBR section, including ae-DMCE-R, to n=1. Type u, Y, the obstacle, terminal value, and reflecting process as real-valued, interpret min, max, and the order in the usual scalar sense, and retain a scalar nondecreasing reflecting process with the scalar Skorokhod condition.",
+      "classification": "moderate_issue",
+      "why_classification": "The scalar restriction supplies a coherent reflected model without rebuilding multidimensional reflection theory, and the scalar RDBR construction and theorem remain recognizably comparable. However, it excludes the natural n>1 model class promised by the inherited typing, so the repair is a substantive scope weakening rather than a typo or minor technical qualification.",
+      "new_version_repair_locator": {
+        "quote": "we restrict this section to the scalar case \\(n=1\\)."
+      }
+    },
+    {
+      "issue_id": "2603.14721:I007",
+      "title": "Reflected recursion propagates the pre-projection continuation value",
+      "target_type": "algorithm",
+      "primary_affected_tag": "NS-DMC-R",
+      "failure_location": {
+        "tag": "Deep-NN-E-R",
+        "quote": "\\widehat{\\mathcal{NN}}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i+1}^m ,\\theta^{*}_{y,i+1})"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "NS-M-R"
+        },
+        {
+          "tag": "NS-DMC-R"
+        }
+      ],
+      "failure_explanation": "For each step before maturity, the reflected discrete recursion uses Y_{i+1}^{π,m}=max{overline Y_{i+1}^{π,m},g(X_{i+1}^{π,m})}. The old RDBR loss interface and Deep-NN-E-R instead insert only the raw network at i+1. Whenever the obstacle is active, those values differ, so the executable regression target approximates a different backward recursion and the later non-expansiveness comparison does not apply to matched objects.",
+      "dependent_affected_formal_result_tags": [
+        "ae-DMCE-R"
+      ],
+      "overall_effect": "The old RDBR construction can learn the wrong continuation target, and its reflected convergence theorem does not analyze the algorithm that the discrete reflected scheme requires.",
+      "least_adequate_overall_repair": "For every preterminal step, define the next-step training value as the post-projection quantity max{widehat NN_{y,i+1}(p_{i+1}),g(X_{i+1})}, using the terminal payoff at i=N-1. Use this same projected value in both reflected Y and Z losses, the auxiliary conditional expectations, residuals, and the convergence comparison.",
+      "classification": "minor_issue",
+      "why_classification": "The discrete reflected recursion in the old source uniquely identifies the required next-step value. Substituting that value throughout is a short, routine correction that restores matched objects and preserves the algorithm, theorem, and rate; it is not a typo because the old executable target and proof actually used the wrong quantity.",
+      "new_version_repair_locator": {
+        "tag": "RDBR-next-projected-value-MC"
+      }
+    },
+    {
+      "issue_id": "2603.14721:I008",
+      "title": "Reflected combined rate omits the Z discretization order",
+      "target_type": "formal_result",
+      "primary_affected_tag": "ae-DMCE-R",
+      "failure_location": {
+        "tag": "ae-DMCE-R"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "RFBSDE-err-Y-5"
+        }
+      ],
+      "failure_explanation": "Under Assumption 2 the old source supports an O(h) Y-discretization error but displays an O(h^{1/2}) integrated Z-discretization error at RFBSDE-err-Y-5. Since the theorem's left side contains both components and its constant is independent of h, the Z term cannot be absorbed into O(h) as h tends to zero. The supplied argument supports only a combined O(h^{1/2}) contribution.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The reflected theorem overstates the combined Assumption-2 time-discretization rate, although its separate Y rate remains O(h).",
+      "least_adequate_overall_repair": "Separate the reflected time-discretization errors into ε_Y(h) and ε_Z(h). Under Assumption 2, retain ε_Y(h)=O(h) for the Y component but use ε_Z(h)=O(h^{1/2}); consequently state the combined Y-and-Z estimate with an O(h^{1/2}) time-discretization contribution unless an additional sharper Z estimate is proved.",
+      "classification": "moderate_issue",
+      "why_classification": "The correction is local, but it withdraws the coherent substantive promise of an O(h) combined rate and replaces it by the supported half-order rate. The resulting theorem is still recognizably the same reflected convergence result, so the limited rate weakening is moderate rather than serious.",
+      "new_version_repair_locator": {
+        "tag": "ae-DMCE-R"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    }
+  ]
+}

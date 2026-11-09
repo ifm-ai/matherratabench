@@ -1,0 +1,110 @@
+{
+  "paper_id": "2301.09241",
+  "version_pair": "v1-v6",
+  "issues": [
+    {
+      "issue_id": "2301.09241:I001",
+      "title": "Modified-IQAE estimator uses the interval half-width instead of its midpoint",
+      "target_type": "formal_result",
+      "primary_affected_tag": "prop: m-IQAE",
+      "failure_location": {
+        "tag": "prop: m-IQAE",
+        "quote": "In particular, the estimator $\\widehat{a} := \\frac{a_u-a_l}{2}$ of $a$ satisfies"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "prop: m-IQAE",
+          "quote": "where $0\\leq a_u-a_l < 2\\eps$."
+        },
+        {
+          "tag": "prop: m-IQAE",
+          "quote": "$a \\in [0,1]$"
+        }
+      ],
+      "failure_explanation": "The proposition claims that (a_u-a_l)/2 estimates the location of a. What it actually establishes is that a lies in [a_l,a_u] with high probability and that this interval has width below 2 epsilon. Those facts support the midpoint (a_u+a_l)/2, whose distance from any point in the interval is below epsilon, but they do not support the half-width. Indeed, the old estimator is always below epsilon, so it fails for any allowed amplitude substantially separated from zero.",
+      "dependent_affected_formal_result_tags": [
+        "main theorem"
+      ],
+      "overall_effect": "Item 1 of the Modified-IQAE proposition is false as written, Algorithm 1 uses the same faulty estimator, and the main theorem's proof cannot obtain the amplitude-error premise needed for its option-price guarantee.",
+      "least_adequate_overall_repair": "Replace the estimator definition (a_u-a_l)/2 by the interval midpoint (a_u+a_l)/2 in both Proposition prop: m-IQAE and Algorithm 1. On the event a in [a_l,a_u], its error is at most (a_u-a_l)/2<epsilon. Use this corrected estimator in the main-theorem proof; the success probability, accuracy, and complexity bounds remain unchanged.",
+      "classification": "minor_issue",
+      "why_classification": "The half-width is an executable output of Algorithm 1, and the main-theorem proof applies an amplitude-error bound that does not follow for that output, so this is a genuine inference and construction defect rather than a harmless typographical occurrence. Nevertheless, the midpoint repair is short, routine, and uniquely dictated by the old source's confidence-interval guarantee, and it restores the entire affected chain without any mathematical loss or new argument.",
+      "new_version_repair_locator": {
+        "tag": "prop: m-IQAE",
+        "quote": "In particular, the estimator $\\widehat{a} := \\frac{a_u+a_l}{2}$ of $a$ satisfies"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2301.09241:I002",
+      "title": "Multiplication corollary proof uses the wrong workspace-register widths",
+      "target_type": "formal_result",
+      "primary_affected_tag": "corollary: mult circuit",
+      "failure_location": {
+        "tag": "eqn: cor mult eqn 1",
+        "quote": "\\ket{a}_{n_1+m_1}\\ket{b}_{n_2+m_2}\\ket{0}_{n+2m+3}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eqn: cor mult"
+        },
+        {
+          "tag": "lemma: quantum mult1"
+        }
+      ],
+      "failure_explanation": "Write A=n_1+m_1 and B=n_2+m_2, so n+m=A+B. The corollary and lemma: quantum mult1 require 2A+3B+3 qubits. The old permutation equation instead uses 2(A+B)+m+3 qubits and supplies a trailing m-qubit zero register where the invoked multiplication circuit requires B qubits. The difference is m-B=m_1-n_2, which is nonzero for admissible parameters. Hence the multiplication circuit cannot generally be applied to the state prepared in the old proof.",
+      "dependent_affected_formal_result_tags": [
+        "lemma: quantum affine sum",
+        "prop: CPWA component circuit",
+        "prop: loading payoff circuit",
+        "main theorem"
+      ],
+      "overall_effect": "The proof does not construct the asserted multiplication circuit on its claimed Hilbert space for general allowed widths. Consequently, the affine-sum and payoff-loading circuit constructions, and hence the main theorem's circuit and complexity claims, are not established until the register bookkeeping is corrected.",
+      "least_adequate_overall_repair": "Let A=n_1+m_1 and B=n_2+m_2, so n+m=A+B. Replace the faulty permutation step by |a>_A|b>_B|0>_{A+B}|0>_{B+3} mapping to |0>|0>_{A+B}|a>_A|b>_B|0>_B|0>_2. The multiplication lemma then applies on exactly 2A+3B+3 qubits. Retain the final output permutation and the existing gate bound; the affine-sum, payoff-loading, and main-theorem constructions then use the same multiplication circuit and guarantees as originally claimed.",
+      "classification": "minor_issue",
+      "why_classification": "The old proof prepares a state of the wrong dimension and therefore invalidly invokes the multiplication circuit, so repairing the circuit construction requires genuine register-bookkeeping rather than merely correcting cosmetic notation. The required widths are, however, forced by the corollary statement and the cited multiplication lemma, and the repair is local and routine, needs no new circuit or lemma, and preserves all dependent circuit and complexity guarantees.",
+      "new_version_repair_locator": {
+        "tag": "eqn: cor mult eqn 1",
+        "quote": "\\ket{a}_{n_1+m_1}\\ket{b}_{n_2+m_2}\\ket{0}_{n+m}\\ket{0}_{n_2+m_2+3}"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2301.09241:I003",
+      "title": "Comparator lemma applies decoders to wrong-width bit strings",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma: quantum comp",
+      "failure_location": {
+        "tag": "lemma: quantum comp",
+        "quote": "\\mathrm{D}_{n,0}(a)>\\mathrm{D}_{n,0}(b)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "def: encoder-decoder"
+        },
+        {
+          "tag": "lemma: quantum comp",
+          "quote": "for any $a \\in \\mathbb{F}_{n_1,0}, b \\in \\mathbb{F}_{n_2,0}$"
+        }
+      ],
+      "failure_explanation": "The lemma quantifies a in F_{n_1,0} and b in F_{n_2,0}, while def: encoder-decoder declares D_{p,q} only on F_{p,q}. Since n=n_1+n_2, neither D_{n,0}(a) nor D_{n,0}(b) is defined. The fractional successor repeats the same type error with D_{n,m}. The well-typed comparisons are D_{n_1,0}(a) versus D_{n_2,0}(b), and analogously D_{n_1,m_1}(a) versus D_{n_2,m_2}(b).",
+      "dependent_affected_formal_result_tags": [
+        "corollary: comp circuit",
+        "lemma: circuit maximum 2",
+        "lemma: quantum maximum",
+        "prop: CPWA component circuit",
+        "prop: loading payoff circuit",
+        "main theorem"
+      ],
+      "overall_effect": "The integer and fractional comparison guarantees are not well-formed as written, so the maximum circuits and the payoff-loading construction that consume their comparison bits are not established literally; this propagates to the main theorem's circuit construction.",
+      "least_adequate_overall_repair": "In the integer comparator's three case predicates, replace D_{n,0}(a) and D_{n,0}(b) by D_{n_1,0}(a) and D_{n_2,0}(b), respectively. In the fractional comparator's case predicates, use D_{n_1,m_1}(a) and D_{n_2,m_2}(b). Downstream maximum and payoff circuits may then invoke these well-typed comparison predicates without changing their construction or guarantees.",
+      "classification": "typo",
+      "why_classification": "The decoder definition in the old source assigns each decoder the domain F_{p,q}, while the comparator explicitly declares the separate widths of a and b. Those domains uniquely force the corrected subscripts, and the calls with the combined width are not a coherent alternative claim. This is therefore a pure index/type transcription error; correcting it changes no comparison semantics, proof architecture, rate, or complexity guarantee.",
+      "new_version_repair_locator": {
+        "tag": "lemma: quantum comp",
+        "quote": "\\mathrm{D}_{n_1,0}(a)>\\mathrm{D}_{n_2,0}(b)"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

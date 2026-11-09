@@ -1,0 +1,132 @@
+{
+  "paper_id": "2509.17531",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2509.17531:I001",
+      "title": "MS-GFEM convergence falsely permits nonzero-trace initial guesses",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:msgfem:iteration",
+      "failure_location": {
+        "tag": "th:msgfem:iteration",
+        "quote": "converges for any initial guess $\\fwp^{(0)} \\in \\Hone$ strictly monotonically:"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\fwpTestSpace := \\{ \\fwpTest \\in \\Hone \\; | \\; \\fwpTest = 0 \\text{ on } \\bdryD \\}$"
+        },
+        {
+          "tag": "eq:weakFormGlobal"
+        },
+        {
+          "tag": "eq:weakFormGFEM"
+        },
+        {
+          "tag": "eq:msgfem:iteration"
+        }
+      ],
+      "failure_explanation": "The exact solution belongs to V=H_D^1(Ω), while the local and coarse components of G have ranges assembled inside V. Consequently, starting from u^(0) outside V preserves its nonzero Dirichlet trace at every iteration. For a concrete admissible example, take Ω=(0,1)^2, Γ_D=∂Ω, A=I, b=0, zero right-hand side, u^e=0, and u^(0)=x_1. Every iterate retains trace x_1 and therefore has energy bounded away from zero, contradicting contraction by any fixed θ<1. Equivalently, the global approximation estimate cannot be invoked with an H^1 input outside the exact-solution space required by eq:weakFormGlobal.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The convergence theorem is false for the stated class of initial guesses. Its continuous convergence guarantee is valid only for initial errors satisfying the homogeneous Dirichlet condition; the discrete preconditioner applied in the test-space system is not otherwise changed.",
+      "least_adequate_overall_repair": "Restrict the iteration and its contraction statement to the weak-solution space V=H_D^1(Ω): require u^(0)−u^e∈V, equivalently u^(0)∈V in the homogenized formulation, and retain the same update and contraction factor θ.",
+      "classification": "moderate_issue",
+      "why_classification": "The H^1(Ω) claim is not a transcription error: the old iteration is defined there, but its V-valued corrections cannot alter a nonzero Dirichlet trace. The repair is local and preserves the natural discrete method and convergence rate, but it withdraws the explicit guarantee for the substantial, coherent class H^1(Ω)\\V. This is a limited weakening of an otherwise comparable theorem, so it is moderate rather than minor or serious.",
+      "new_version_repair_locator": {
+        "tag": "th:msgfem:iteration",
+        "quote": "converges for any initial guess $\\fwp^{(0)} \\in \\fwpTestSpace$ strictly monotonically:"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2509.17531:I002",
+      "title": "Fixed-solution estimate promoted to an unsupported uniform contraction",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:msgfem:iteration",
+      "failure_location": {
+        "tag": "th:msgfem:iteration",
+        "quote": "\\norm{(I - \\msgfemOperator)\\fwpTest}_{a,\\osdomain_\\ddindex} \\leq \\vartheta \\norm{\\fwpTest}_{a,\\osdomain_\\ddindex} \\quad \\text{for all $\\fwpTest \\in \\Hone$,}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:msgfem:iteration:1"
+        },
+        {
+          "tag": "cor:added-1"
+        },
+        {
+          "tag": "th:msgfem:evaldecay"
+        }
+      ],
+      "failure_explanation": "Under the divergence-free assumption, the old corollary and eigenvalue decay support equation eq:msgfem:iteration:1 for the fixed exact solution. The proof then treats that one-vector estimate as a bound for I-G on every H^1 function and changes the global Ω-norm to an oversampling-domain norm. A solution-specific inequality supplies neither conclusion. For an arbitrary v in the admissible test space, one must instead define F_v=B(v,·), observe that v is the exact weak solution and Gv its MS-GFEM approximation, and reapply the global corollary on Ω.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The fixed MS-GFEM approximation estimate remains supported, but the contraction recurrence and hence the convergence conclusion of the theorem are not established by the old proof.",
+      "least_adequate_overall_repair": "For arbitrary v∈V, define F_v(w)=B(v,w), observe that v is the exact weak solution for this right-hand side and that Gv is its MS-GFEM approximation, and apply the existing coercive global estimate on Ω. Since its constants and eigenvalue threshold are independent of the right-hand side, choose the local dimensions uniformly to obtain ‖(I−G)v‖_{a,Ω}≤θ‖v‖_{a,Ω}, then use the stated error recurrence.",
+      "classification": "minor_issue",
+      "why_classification": "The old proof makes a genuine invalid inference from one solution to an operator bound, so this is not a typo. Nevertheless, the uniform estimate follows by a short, routine reapplication of an existing source-supported corollary; it needs no new lemma, construction, or proof architecture and preserves the theorem and contraction rate without weakening.",
+      "new_version_repair_locator": {
+        "tag": "th:msgfem:iteration",
+        "quote": "$\\msgfemOperator\\fwpTest$ is the MS-GFEM approximation of the weak form \\cref{eq:weakFormGlobal} with right-hand side $\\rhsF := \\bilWF{\\fwpTest}{\\cdot}{}$, which has the exact solution $\\fwpTest$"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2509.17531:I003",
+      "title": "Unspecified partition of unity in the numerical procedure",
+      "target_type": "algorithm",
+      "primary_affected_tag": "sec:experiments",
+      "failure_location": {
+        "tag": "sec:experiments",
+        "quote": "If not stated otherwise, we use $\\nOvs = 2$ oversampling layers."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:pu"
+        },
+        {
+          "tag": "eq:gevp"
+        },
+        {
+          "tag": "eq:discrete:RAS1"
+        }
+      ],
+      "failure_explanation": "Equation eq:pu defines a non-singleton class of admissible partitions rather than an experimental choice. The functions χ_j enter the generalized eigenproblem through eq:gevp and enter the discrete fine-level correction through the matrix representing multiplication by χ_j in eq:discrete:RAS1. Thus different admissible choices generally produce different eigenvectors, coarse spaces, and preconditioned operators. Without a selected partition, the old experimental construction and its reported outputs are not uniquely specified.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The theoretical parameterized method remains defined, but the concrete coarse spaces and preconditioners used for the numerical tables and figures cannot be reconstructed uniquely from the old experimental description.",
+      "least_adequate_overall_repair": "State that every reported simulation used the distance-based partition of unity cited from Toselli–Widlund, and identify this same discretized family χ_j as the one used in both the generalized eigenproblems and the RAS multiplication matrices underlying the reported tables and figures.",
+      "classification": "minor_issue",
+      "why_classification": "No unique partition is forced by the old source, so the omission is not a typo. Disclosing the concrete partition actually used is a short, local completion of the experimental algorithm that makes the coarse spaces and operators determinate without changing the theoretical method, numerical claims, rates, or guarantees.",
+      "new_version_repair_locator": {
+        "tag": "sec:experiments",
+        "quote": "For all simulations, we choose a distance-based partition of unity as defined in \\cite[p.\\ 84]{ToselliWidlund2005}."
+      }
+    },
+    {
+      "issue_id": "2509.17531:I004",
+      "title": "Incomplete input contract for the 3D simulation",
+      "target_type": "algorithm",
+      "primary_affected_tag": "sec:3d",
+      "failure_location": {
+        "tag": "sec:3d",
+        "quote": "We construct an artificial velocity field that rotates around the four pipes (see \\Cref{fig:3d}c) and use homogeneous Dirichlet boundary conditions everywhere on the boundary."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:pde"
+        },
+        {
+          "tag": "tab:3d_comparison"
+        }
+      ],
+      "failure_explanation": "Equation eq:pde requires a source f. The old 3D setup specifies the geometry, mesh, diffusion, velocity field, and homogeneous Dirichlet boundary conditions, but not f. Both f=0 and f=1 satisfy the active general assumptions and produce different right-hand sides, so the old description does not determine the linear system whose residual history and iteration count are reported. The new version selects f≡1.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The coefficient matrix and preconditioner construction may be determined without f, but the right-hand vector, solution, GMRES residual sequence, iteration count, and associated total run are not uniquely reproducible from the old source.",
+      "least_adequate_overall_repair": "Add f≡1 to the 3D problem specification and state that this is the source used to assemble the right-hand sides for all runs reported in Table tab:3d_comparison.",
+      "classification": "minor_issue",
+      "why_classification": "The source cannot be inferred uniquely from the old setup, making the simulation genuinely under-specified rather than typographically malformed. A single local input declaration determines the right-hand side and associated residual histories while leaving the geometry, operator, preconditioner, and reported type of comparison unchanged; no new mathematical argument is required.",
+      "new_version_repair_locator": {
+        "tag": "sec:3d",
+        "quote": "choose $\\rhssource \\equiv 1$"
+      }
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "paper_id": "2507.02215",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2507.02215:I001",
+      "title": "Incomplete cost accounting for the reweighted allocation",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "The computational cost of Algorithm \\ref{alg:1} consists of two parts. For sampling, one needs to first draw $m$ points $\\XX$ from the induced measure $\\nu$, based on which an additional number of $L=\\gamma m$ samples are collected for function evaluation. For estimation, one needs to solve a least-squares problem of size $m\\times n$, which has complexity $\\mathcal O(mn^2)=\\mathcal O(n^3\\log^2 n)$ based on the error/sample complexity estimate in Theorem \\ref{thm:main}."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:1",
+          "quote": "(Reweighted least-squares) Compute $\\bm p_n$ as an optimal solution $\\bm q^{*}_n$ to \\eqref{H-conv+}."
+        },
+        {
+          "quote": "The average time for HLS-2, which requires an additional step of convex optimization to find the near-optimal allocation vector $\\bm q_n^*$ using \\eqref{H-conv+} compared to the explicit solution \\eqref{neyman} for HLS-1, takes around 30 seconds."
+        }
+      ],
+      "failure_explanation": "The prose presents sample collection and the final m-by-n least-squares solve, costed at O(mn^2), as the computational-cost account for Algorithm alg:1. The old algorithm itself, however, requires its reweighted branch to find q_n^* by solving the constrained optimization problem H-conv+, and the numerical discussion calls this an additional convex-optimization step. Thus O(mn^2) describes only the final solve, not the total computational work of HLS-2.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The stated total-cost and efficiency comparison is incomplete for the reweighted HLS-2 branch. The algorithm, its non-reweighted branch, and the error theorems remain unaffected.",
+      "least_adequate_overall_repair": "Rewrite the cost account to include allocation as a separate computational stage. For HLS-2, specify that evaluating the objective and gradient costs O(m n^2) and that K dense SLSQP iterations cost O(K(m n^2+m^3)); then add the O(m n^2) final least-squares solve. Compare this full cost with O(L n^2), making any overall HLS-2 efficiency claim conditional on the optimization term being smaller, and align the summary wording with that qualification.",
+      "classification": "moderate_issue",
+      "why_classification": "The omitted constrained optimization can dominate the final solve, so the asserted total O(m n^2) account and unconditional efficiency comparison for HLS-2 cannot survive unchanged. A contained operation-count analysis yields a comparable but weakened cost statement without altering the algorithm or error results. This is more than a no-loss local correction but requires neither global reconstruction nor major mathematical loss.",
+      "new_version_repair_locator": {
+        "quote": "For function evaluation, in addition to collecting $L = \\gamma m$ samples, one must also determine the allocation weights. For reweighted least squares, this requires solving a constrained optimization problem of dimension $m$. The gradient of the objective function can be explicitly computed in $\\mathcal{O}(mn^2)$ operations. By using a quasi-Newton method, such as Sequential Least Squares Quadratic Programming (SLSQP), the total cost per iteration is $\\mathcal{O}(mn^2 + m^3)$."
+      }
+    },
+    {
+      "issue_id": "2507.02215:I002",
+      "title": "Uncontrolled first term in the sample-complexity comparison",
+      "target_type": "prose_claim",
+      "primary_affected_tag": "rem:compare",
+      "failure_location": {
+        "tag": "rem:compare",
+        "quote": "Thus, \\eqref{newb} improves the bound in Theorem \\ref{thm:cm17} in terms of sample complexity."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "tired"
+        },
+        {
+          "tag": "oracle-l2"
+        },
+        {
+          "quote": "At this stage, we place no particular restrictions on $\\sigma$, and allow $\\sigma(x)/|f(x)| \\gg 1$."
+        }
+      ],
+      "failure_explanation": "The prose claims that the hybrid noise factor A_m is comparable to its Jensen-controlled second summand and therefore improves on B=||σ||²_{L²_ν}. What v1 actually establishes is A_m=m^{-1}||σ||²_{L²_μ}+(1-m^{-1})C² with only C²≤B. There is no old assumption controlling ||σ||²_{L²_μ}/B. For example, on a two-point space with uniform μ and n=1, choose a normalized basis with Φ_1(a)=ε and Φ_1(b)=2-ε, and let σ(a)=M, σ(b)=1. As M tends to infinity, ||σ||²_{L²_μ}/B tends to 1/ε and C²/B tends to 1/2, so A_m/B tends to 1/(mε)+(1-1/m)/2, which is arbitrarily large as ε decreases. Thus the formal bound supports neither the displayed uniform comparability nor unconditional improvement.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The exact bound in thm:main and the derived expression newb remain valid, but the remark and corresponding summary claims of unconditional sample-complexity superiority are unsupported. No later formal result depends on this comparison.",
+      "least_adequate_overall_repair": "Replace the asserted uniform comparability by the exact ratio A_m/B, where A_m=m^{-1}||σ||²_{L²(μ)}+(1-m^{-1})||σ sqrt(Φ_n/n)||²_{L¹(μ)} and B=||σ||²_{L²(ν)}. State that Jensen controls only the second ratio, and claim asymptotic noninferiority only when ||σ||²_{L²(μ)}/(mB) tends to zero; strict improvement additionally requires a strict gap in the Jensen ratio. Otherwise retain the valid bound newb without a superiority assertion, and qualify corresponding summary claims identically.",
+      "classification": "moderate_issue",
+      "why_classification": "The unrestricted setup allows A_m/B to be arbitrarily large, so the advertised unconditional sample-complexity superiority must be substantively weakened. The exact formal error and sample-complexity bounds remain valid, and a short local ratio analysis supplies a recognizable conditional or asymptotic comparison. The repair therefore has limited loss and contained burden, making the issue moderate rather than minor or serious.",
+      "new_version_repair_locator": {
+        "tag": "jgutis"
+      }
+    },
+    {
+      "issue_id": "2507.02215:I003",
+      "title": "Reversed event in the matrix Chernoff step",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:984",
+      "failure_location": {
+        "tag": "yonghuo2"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "hgf2"
+        },
+        {
+          "quote": "Combining \\eqref{yonghuo} and \\eqref{yonghuo2} yields that, with probability at least $0.4$, $\\lambda_{\\min}(\\bm L^\\top\\bm L)\\geq s/2$."
+        }
+      ],
+      "failure_explanation": "Let G be the event that the truncated Gram matrix has minimum eigenvalue at least s/2. The old display states P(G)≤0.5. To intersect G with the truncation-equality event of probability at least 0.9 and obtain probability at least 0.4, the proof needs P(G)≥0.5, equivalently P(G^c)≤0.5. Therefore the printed inequality cannot support the next inference. Bounding the event with minimum eigenvalue below s/2 corrects the logic.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "As printed, the proof of thm:984 does not establish the positive-probability lower bound on the Gram matrix needed to control the constructed coefficients. The theorem's statement and later proof steps require no change once the event is corrected.",
+      "least_adequate_overall_repair": "Replace yonghuo2 by the lower-tail bound P(λ_min(Σ_i ζ̃_i ζ̃_i^T)<s/2)≤r(0.9)^{s/(2rT²)}≤0.5, equivalently stating that the good event has probability at least 0.5. The existing intersection with the truncation-equality event of probability at least 0.9 then gives the stated probability of at least 0.4.",
+      "classification": "typo",
+      "why_classification": "The stated goal of obtaining a lower eigenvalue bound, the standard lower-tail form of matrix Chernoff, and the immediately following 0.4 intersection calculation uniquely force the complementary event. All estimates and subsequent reasoning already use that intended reading, so only the printed event is reversed; no assumption, argument, theorem statement, or dependent result requires reconstruction.",
+      "new_version_repair_locator": {
+        "tag": "yonghuo2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    }
+  ]
+}

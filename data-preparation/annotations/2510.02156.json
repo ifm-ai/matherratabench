@@ -1,0 +1,121 @@
+{
+  "paper_id": "2510.02156",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2510.02156:I001",
+      "title": "Reversed sign in the single-row Kaczmarz update",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eq:update_rule_kaczmarz",
+      "failure_location": {
+        "tag": "eq:update_rule_kaczmarz",
+        "quote": "x_{k+1} &= x_{k} - \\frac{b_{i_k} - \\langle A_{(i_k)}, x_{k} \\rangle}{\\|A_{(i_k)}\\|_2^2} A_{(i_k)}"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "This results in an orthogonal projection onto the space defined by the constraint \\( \\{ x : \\langle A_{(i_k)}, x \\rangle = b_{i_k} \\} \\)."
+        }
+      ],
+      "failure_explanation": "The old executable update is x_{k+1}=x_k-(b_i-a^T x_k)a/||a||^2. Taking its inner product with a yields 2a^T x_k-b_i, so it generally moves away from, rather than onto, the selected row hyperplane. The claimed projection requires the additive correction used in the new version.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The recalled classical Kaczmarz update and its adjacent projection description are wrong. The proposed ROR-BK algorithm and its analyzed updates already use the correctly oriented residual, so no listed formal result depends on this display.",
+      "least_adequate_overall_repair": "Replace the subtraction by the additive residual correction, so the update is x_{k+1}=x_k+(b_{i_k}-<A_{(i_k)},x_k>)A_{(i_k)}/||A_{(i_k)}||_2^2. This restores the stated hyperplane projection; no later algorithm or formal result requires alteration.",
+      "classification": "typo",
+      "why_classification": "The old source identifies the formula as the classical Kaczmarz update and immediately says it is an orthogonal projection. Those statements uniquely force the corrected sign, which can also be checked by taking the selected row's inner product. The error is an isolated transcriptional sign reversal, and the paper's proposed updates already use the correct orientation.",
+      "new_version_repair_locator": {
+        "tag": "eq:update_rule_kaczmarz",
+        "quote": "x_{k+1} &= x_{k} + \\frac{b_{i_k} - \\langle A_{(i_k)}, x_{k} \\rangle}{\\|A_{(i_k)}\\|_2^2} A_{(i_k)}"
+      }
+    },
+    {
+      "issue_id": "2510.02156:I002",
+      "title": "Reversed residual in the block-Kaczmarz update",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eq:update_rule_block_kaczmarz",
+      "failure_location": {
+        "tag": "eq:update_rule_block_kaczmarz",
+        "quote": "x_{k+1} & = x_{k} + B^\\dagger (B x_{k} - b_{B})"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "This method results in an orthogonal projection onto the space defined by the constraints \\( \\{ x : B x = b_{B} \\} \\), which corresponds to the intersection of multiple constraint hyperplanes (see \\cref{fig:graph_block_kaczmarz})."
+        }
+      ],
+      "failure_explanation": "When B has full row rank, BB^\\dagger=I. Consequently the old update gives Bx_{k+1}=Bx_k+BB^\\dagger(Bx_k-b_B)=2Bx_k-b_B, which generally violates the required block equations. Using B^\\dagger(b_B-Bx_k) instead makes Bx_{k+1}=b_B.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The displayed unregularized block-Kaczmarz procedure and its projection interpretation are wrong. The later ROR-BK pseudocode and proofs independently use the correct b-Ax orientation, so no listed formal result depends on the faulty display.",
+      "least_adequate_overall_repair": "Reverse the residual in the displayed block update, giving x_{k+1}=x_k+B^dagger(b_B-Bx_k), equivalently changing the outer plus to a minus while retaining Bx_k-b_B. This restores the stated projection interpretation without changing later results.",
+      "classification": "typo",
+      "why_classification": "The old source's description of an orthogonal projection onto Bx=b_B uniquely determines the residual orientation, and the correction is immediately verified by applying B to the update. No proof or proposed ROR-BK step relies on the erroneous display, so this is an isolated transcriptional reversal rather than a substantive algorithmic reconstruction.",
+      "new_version_repair_locator": {
+        "tag": "eq:update_rule_block_kaczmarz",
+        "quote": "x_{k+1} & = x_{k} + B^\\dagger (b_{B}-B x_{k})"
+      }
+    },
+    {
+      "issue_id": "2510.02156:I003",
+      "title": "Experimental block count and block size are conflated",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "We use the number of rows in a block $k=100$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "algo:roar-bk",
+          "quote": "$k$, $\\tilde{\\lambda}$ refer to \\# of blocks and regularization parameter."
+        },
+        {
+          "tag": "step:roar-bk",
+          "quote": "top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$"
+        }
+      ],
+      "failure_explanation": "The prose claims that k=100 is the number of rows in a block. The old algorithm instead establishes that k is its number-of-blocks input and that the dynamic block contains floor(m/k) rows. These quantities differ for the reported varying values of m, leaving it unclear whether the implementation passes 100 blocks or derives a block count from a fixed 100-row size; that difference affects block construction, dynamic-subset size, and block-size-dependent regularization.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The ROR-BK procedure remains executable once a block count is supplied, but the old experimental setup is not specified unambiguously enough for reproduction or for interpreting its block-size-dependent scaling. No formal theorem depends on the experimental choice of 100.",
+      "least_adequate_overall_repair": "Check and state the run configuration using distinct symbols for block count and block size. Under the convention identified in the revised source, set K=100 blocks and s=floor(m/K) rows for the dynamic block and the baseline contiguous-block size; use K as the algorithm input and s or the actual block row count in dimensions and regularization scaling. Confirm that the reported experiments use this convention.",
+      "classification": "minor_issue",
+      "why_classification": "The old source uses k in two incompatible roles, so the correction is not uniquely recoverable as a typo. Nevertheless, resolving it only requires a routine check of the experimental configuration and local, consistent parameter reporting. It does not require redesigning ROR-BK, proving a new result, or weakening any theorem or convergence guarantee.",
+      "new_version_repair_locator": {
+        "tag": "sec:results_randomized_solvers",
+        "quote": "we fixed the number of blocks in the linear systems as 100 giving the number of rows in a block $k=\\lfloor \\frac{m}{100}\\rfloor$"
+      }
+    },
+    {
+      "issue_id": "2510.02156:I004",
+      "title": "CPU speed-up summary disagrees with the old tables",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "Our experiments demonstrate that with respect to time, ROR-BK is between \\textbf{1.44} and \\textbf{4.53} times faster than SOBK, and \\textbf{1.42} to \\textbf{59.38} times faster than the TA-ReBlocK-U method, highlighting the gains of the proposed method across a wide range of problems."
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "We use speed-up of ROR-BK over a given method and given tolerance as $\\frac{\\text{time (or iterations) of method}}{\\text{time (or iterations) of ROR-BK}}$"
+        },
+        {
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab1"
+        },
+        {
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab2"
+        },
+        {
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab3"
+        },
+        {
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab4"
+        }
+      ],
+      "failure_explanation": "The prose claims that the reported examples give CPU speed-up ranges of 1.44–4.53 over SOBK and 1.42–59.38 over TA-ReBlocK-U. The old tables actually establish extrema of 1.48–4.72 and 1.20–58.78, respectively. Thus all four stated endpoints misreport the displayed experimental results, although every displayed ratio remains greater than one.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The quantitative extrema supporting the performance comparison are inaccurate. Correcting them does not alter any table entry or formal result, and the qualitative conclusion that ROR-BK was faster in all displayed examples remains supported.",
+      "least_adequate_overall_repair": "Recompute the extrema from the four old tables and replace the summary ranges by 1.48–4.72 for speed-up over SOBK and 1.20–58.78 for speed-up over TA-ReBlocK-U. No table entry or formal result needs to change.",
+      "classification": "minor_issue",
+      "why_classification": "The prose contains a genuine erroneous aggregation of several numerical entries rather than a uniquely apparent single-symbol transcription. Correcting the four endpoints requires only routine comparison of the displayed speed-up values. Every displayed ratio remains above one, so the qualitative performance conclusion and all formal results survive without meaningful loss.",
+      "new_version_repair_locator": {
+        "tag": "sec:results_randomized_solvers",
+        "quote": "Our experiments demonstrate that with respect to time, ROR-BK is \\textbf{1.23} to \\textbf{5.17} times faster than SOBK and \\textbf{1.83} to \\textbf{49.08} times faster than the TA-ReBlocK-U method in these example systems, highlighting the gains of the proposed method across a wide range of problems."
+      }
+    }
+  ]
+}

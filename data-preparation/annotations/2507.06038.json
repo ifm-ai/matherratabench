@@ -1,0 +1,225 @@
+{
+  "paper_id": "2507.06038",
+  "version_pair": "v1-v4",
+  "issues": [
+    {
+      "issue_id": "2507.06038:I001",
+      "title": "Poisson potential theorem lacks boundary regularity",
+      "target_type": "formal_result",
+      "primary_affected_tag": "BIM",
+      "failure_location": {
+        "tag": "BIM",
+        "quote": "where $\\Phi(x,y)$ is the fundamental solution of the Laplace equation, $n_y$ is the outward pointing normal vector to $y$"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "with $x \\in \\mathbb{R}^d$ and $\\Omega \\subset \\mathbb{R}^d$ a compact domain"
+        }
+      ],
+      "failure_explanation": "BIM is stated under the standing assumption that Ω is only a compact domain and quantifies the representation and trace over its boundary. An admissible nonsmooth boundary need not have a pointwise outward normal at every boundary point, so the normal derivative and the asserted pointwise one-half jump/BIE contract are not available as stated. The new C2 condition supplies a setting in which those boundary objects are well-defined.",
+      "dependent_affected_formal_result_tags": [
+        "prop-poisson",
+        "semi-linear-pot",
+        "error-bounds-thrm",
+        "lem:added-1"
+      ],
+      "overall_effect": "The potential representation and all PFNN results that invoke its pointwise boundary trace are unsupported for the full arbitrary-compact-geometry scope claimed in the old version.",
+      "least_adequate_overall_repair": "Adopt a common hypothesis that Ω is a bounded domain with C² boundary in BIM and every listed dependent result, and limit the arbitrary-geometry prose to that class. Under this hypothesis the pointwise normal derivative and one-half interior jump can be used, while the existing representations, method, and error rates remain unchanged.",
+      "classification": "moderate_issue",
+      "why_classification": "This is a contained hypothesis repair rather than new proof architecture, and the full chain survives for a broad smooth-domain class. It exceeds minor severity because the old source expressly allowed arbitrary compact geometries, while C² regularity excludes natural and widely used nonsmooth domains such as polygons. The surviving smooth-domain results are nevertheless recognizably comparable, so the loss is limited rather than major.",
+      "new_version_repair_locator": {
+        "tag": "BIM",
+        "quote": "with the smooth boundary $\\partial \\Omega$ is $C^2$"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2507.06038:I002",
+      "title": "FNN weights omit the Krasnoselskii–Mann relaxation factor",
+      "target_type": "algorithm",
+      "primary_affected_tag": "inner-weight",
+      "failure_location": {
+        "tag": "inner-weight",
+        "quote": "{K}\\left(z_1, z_2\\right)\\Delta z"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "OPERATOR"
+        },
+        {
+          "quote": "since in the Fredholm NN we consider constant values for the parameter in the Krasnoselskii-Mann iteration, $\\kappa_{\\nu} = \\kappa$"
+        }
+      ],
+      "failure_explanation": "At a grid node the old matrix implements (1−κ)f_i+Σ_j K_ij f_jΔz+κg_i. The relaxed fixed-point step for the stated operator is (1−κ)f_i+κΣ_j K_ij f_jΔz+κg_i. Unless κ=1, the old network therefore has a different update and generally a different fixed point from the integral equation it claims to approximate.",
+      "dependent_affected_formal_result_tags": [
+        "prop-poisson",
+        "semi-linear-pot",
+        "prop:added-1",
+        "error-bounds-thrm",
+        "lem:added-1"
+      ],
+      "overall_effect": "The constructed FNN, and hence each PFNN that uses it to obtain the boundary density, does not implement the advertised KM iteration for general κ; its convergence and error claims are consequently unsupported for the printed matrices.",
+      "least_adequate_overall_repair": "Multiply every quadrature-kernel coefficient in the hidden and final FNN matrices by κ, including setting K_D(z)=κK(z,z)Δz+(1−κ). Verify nodewise that each corrected layer performs (1−κ)f+κ(g+K_Nf), and invoke the listed PFNN convergence and error results only for these corrected matrices.",
+      "classification": "minor_issue",
+      "why_classification": "The printed matrices define a coherent but incorrect iteration, so this is not merely a transcriptional typo. Nevertheless, the KM formula uniquely supplies a short, routine, local correction; no new lemma or architecture is needed, and the intended fixed point, convergence guarantee, and affected chain are preserved without loss.",
+      "new_version_repair_locator": {
+        "tag": "DNN_construction",
+        "quote": "K_D\\left(y\\right) := {K}\\left(y, y\\right)\\kappa \\Delta y + (1-\\kappa)"
+      }
+    },
+    {
+      "issue_id": "2507.06038:I003",
+      "title": "Poisson PFNN uses a unit-disk construction under general geometry",
+      "target_type": "formal_result",
+      "primary_affected_tag": "prop-poisson",
+      "failure_location": {
+        "tag": "prop-poisson",
+        "quote": "where $x^*:= (1, \\phi) \\in \\partial \\Omega$ is the unique point on the boundary corresponding to $x:= (r, \\phi) \\in \\Omega$."
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "We note that the approaches developed are applicable to any type of geometry for the domain and corresponding boundary."
+        },
+        {
+          "quote": "However, for the examples presented, we will be considering a 2D disc domain, with unit radius and the corresponding unit circle boundary."
+        },
+        {
+          "quote": "\\frac{1 - \\cos(\\theta_1 - \\theta_2)}{2 \\pi (2 - 2\\cos(\\theta_1 - \\theta_2))} = \\frac{1}{4 \\pi}"
+        }
+      ],
+      "failure_explanation": "The proposition is presented under the paper's general-domain setup, but its proof only supports the unit disk: x*=(1,φ) need not lie on the boundary of another domain, and the value ∂Φ(x*,y)/∂n_y=1/(4π) was obtained from the unit-circle calculation. Thus the argument establishes a disk-specific construction rather than the advertised general-geometry result.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The old Poisson PFNN formula is not executable as stated on a general geometry and its constant-kernel simplification gives the wrong final-layer data away from the unit circle.",
+      "least_adequate_overall_repair": "For a general regular domain, retain the unspecialized potential identity already displayed before the unit-circle simplification. Specify a deterministic boundary selection p(x), using the nearest boundary point wherever it is unique and a stated tie-breaking selection otherwise, set x*=p(x), and use the actual kernel ∂Φ(x*,y)/∂n_y in the weights and bias. State that x*=(1,φ) and ∂Φ(x*,y)/∂n_y=1/(4π) apply only to the unit disk.",
+      "classification": "minor_issue",
+      "why_classification": "The general identity needed for this repair is already present in the old proof, so no new potential-theory argument or restriction to the disk is necessary. Correcting the boundary-point definition and confining the constant-kernel specialization are short and local while preserving the proposition's general-domain mathematical content. It is substantive rather than a typo because an executable geometric selection and scope correction are required.",
+      "new_version_repair_locator": {
+        "tag": "prop-poisson"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2507.06038:I004",
+      "title": "Helmholtz fundamental solution uses λ instead of √λ",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "Theorem \\ref{BIM} holds for the PDE (\\ref{helmholtz-pde}), however the fundamental solution changes, and we have $\\Phi(x,y) = -\\frac{1}{2 \\pi} K_0(\\lambda | x-y|),$ where $K_0$ is the modified Bessel function of the second kind (with index 0, in 2D space)."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "semi-linear-pot",
+          "quote": "and is given by $\\Phi(x,y) = -\\frac{1}{2\\pi} K_0\\left( \\sqrt{\\lambda} |x - y| \\right)$, where $K_0$ is the modified Bessel function of the second kind."
+        }
+      ],
+      "failure_explanation": "The prose claims that the fundamental solution for Δ−λ has Bessel argument λ|x−y|. The old paper's own proposition proof instead states and uses √λ|x−y| while asserting that this kernel satisfies LΦ=δ. These are different kernels for general λ, so the prose formula misstates the kernel actually established and used by the paper.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "A reader following the introductory formula would construct the wrong Helmholtz kernel for general λ, although the subsequent formal proof and numerical section already use the corrected scaling.",
+      "least_adequate_overall_repair": "Replace K_0(λ|x−y|) in the introductory Helmholtz sentence by K_0(√λ|x−y|), leaving the surrounding claim unchanged.",
+      "classification": "typo",
+      "why_classification": "The PDE Δ−λ, the proposition's proof, and the numerical section all independently and uniquely force the √λ scaling. The erroneous scaling occurs only in the prose formula, and correcting it requires no repair to any inference, construction, or guarantee.",
+      "new_version_repair_locator": {
+        "tag": "helm-fund"
+      }
+    },
+    {
+      "issue_id": "2507.06038:I005",
+      "title": "Helmholtz punctured-domain divergence calculation is invalid",
+      "target_type": "formal_result",
+      "primary_affected_tag": "semi-linear-pot",
+      "failure_location": {
+        "tag": "semi-linear-pot",
+        "quote": "0 = \\int_{\\partial \\Omega} \\mathcal{L}\\Phi(x,y) d\\sigma_y = \\int_{\\Omega - B(x,\\epsilon)} \\Delta_y \\Phi(x, y) dy - \\lambda \\int_{\\partial B(x,\\epsilon)} \\frac{\\partial \\Phi(x,y)}{\\partial n_y} d\\sigma_y."
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "the fundamental solution of the linear operator $\\mathcal{L} := \\Delta - \\lambda$ satisfies:"
+        },
+        {
+          "quote": "\\mathcal{L} \\Phi(x,y) = \\delta(x - y)."
+        },
+        {
+          "tag": "potential-limit-expression"
+        }
+      ],
+      "failure_explanation": "Away from the singular point, LΦ=0 must be integrated over Ω minus the puncturing ball. The −λ part is −λ times a volume integral of Φ; only the Laplacian term becomes boundary normal derivatives under the divergence theorem. Moreover, an inner semicircle contribution tending to −1/2 gives an outer-boundary contribution of +1/2 plus the volume term, not −1/2. The old displayed identities therefore do not establish the proposition's final potential representation.",
+      "dependent_affected_formal_result_tags": [
+        "error-bounds-thrm",
+        "lem:added-1"
+      ],
+      "overall_effect": "The Helmholtz final-layer representation lacks a valid derivation, so the PFNN error theorem and recurrent bound that use that representation are not established by the old proof.",
+      "least_adequate_overall_repair": "Replace the punctured-domain calculation by integrating (Δ_y−λ)Φ=0 over Ω minus the puncturing ball. After the divergence theorem, retain −λ times the volume integral of Φ and use inner-boundary flux limits −1 for an interior puncture and −1/2 for a boundary half-puncture. This gives the outer-boundary identities 1+λ∫_ΩΦ(x,y)dy and 1/2+λ∫_ΩΦ(x*,y)dy, respectively, and hence the stated coefficient 1/2+λ∫_ΩδΦ(x,y)dy. The listed error and recurrent bounds should invoke this corrected representation.",
+      "classification": "minor_issue",
+      "why_classification": "The old displayed calculation contains genuine invalid inferences and therefore is not a typo. However, the source already supplies all required ingredients—the equation away from the pole, the divergence theorem, and the local Bessel asymptotic—so the correction is a short, standard punctured-domain argument. It preserves the representation and every downstream guarantee without a new lemma or substantive weakening.",
+      "new_version_repair_locator": {
+        "tag": "semi-linear-pot"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2507.06038:I006",
+      "title": "Helmholtz output bias uses ΔΦ instead of δΦ",
+      "target_type": "formal_result",
+      "primary_affected_tag": "semi-linear-pot",
+      "failure_location": {
+        "tag": "semi-linear-pot",
+        "quote": "b_O= \\Big(\\frac{1}{2} + \\int_{\\Omega} \\lambda \\Delta \\Phi(x, y) dy \\Big) \\beta({x}^{\\star})"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "semi-linear-pot",
+          "quote": "where we define $\\delta\\Phi(x,y) := \\Phi(x,y) - \\Phi(x^*,y)$."
+        },
+        {
+          "tag": "potential-limit-expression"
+        }
+      ],
+      "failure_explanation": "The formal construction states a bias involving the Laplacian ΔΦ, while immediately defining δΦ as the potential difference and proving a representation whose bias involves λδΦ. Thus the proof supports a different network weight from the proposition's printed statement; implementing ΔΦ literally changes the network output.",
+      "dependent_affected_formal_result_tags": [
+        "error-bounds-thrm",
+        "lem:added-1"
+      ],
+      "overall_effect": "The printed Helmholtz PFNN construction does not match the potential representation analyzed by the later error theorem, so a literal implementation has the wrong output bias.",
+      "least_adequate_overall_repair": "Replace ΔΦ by δΦ in the Helmholtz output-bias formula and in any copied occurrence of that bias in the dependent error calculation, using the already stated definition δΦ(x,y)=Φ(x,y)−Φ(x*,y).",
+      "classification": "typo",
+      "why_classification": "The immediately following definition, the final potential representation, and the error-bound quantities uniquely force δΦ. The uppercase Δ is a transcriptional substitution for the already defined lowercase δ; no proof step or mathematical guarantee needs to change.",
+      "new_version_repair_locator": {
+        "tag": "semi-linear-pot",
+        "quote": "b_O(x)= \\Big(\\frac{1}{2} + \\int_{\\Omega} \\lambda \\delta \\Phi(x, y) dy \\Big) \\beta({x}^{\\star})"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2507.06038:I007",
+      "title": "FNN error estimate includes the undefined q=1 endpoint",
+      "target_type": "formal_result",
+      "primary_affected_tag": "prop:added-1",
+      "failure_location": {
+        "tag": "fnn-error",
+        "quote": "\\frac{\\mathrm{e}^{1-q}}{1-q}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "prop:added-1",
+          "quote": "is non-expansive and $\\mathcal{A}:=[a,b]$."
+        },
+        {
+          "quote": "for some $q \\leq 1$"
+        }
+      ],
+      "failure_explanation": "The old hypothesis says that the operator is non-expansive, with the paper's preceding convention allowing q≤1. Its conclusion contains e^(1-q)/(1-q), which is undefined at the admissible value q=1. Thus the printed estimate supports only the stricter q<1 regime, not every operator admitted by the statement.",
+      "dependent_affected_formal_result_tags": [
+        "error-bounds-thrm"
+      ],
+      "overall_effect": "The claimed explicit layer-dependent FNN estimate, and the downstream reference to that estimate in the PFNN error theorem, do not cover general non-expansive BIE operators at q=1.",
+      "least_adequate_overall_repair": "Replace the blanket estimate by a two-case statement. Retain the displayed exponential estimate only for q<1. For q=1, state an explicit error-bound or metric-subregularity hypothesis for the affine fixed-point map and prove the corresponding KM estimate, for example a factor ρ^M with ρ=√(1−κ(1−κ)/μ²)<1 in the appropriate discretized Hilbert norm, including norm-conversion and quadrature terms. Amend the PFNN error theorem to invoke the applicable case and to carry the endpoint hypothesis; make no unqualified q=1 rate claim.",
+      "classification": "moderate_issue",
+      "why_classification": "The singularity at q=1 is not removable: general non-expansive KM iterations need not possess the asserted uniform distance rate, and q=1 is a natural regime rather than an exceptional degeneracy. Thus a one-symbol restriction would surrender a substantive operator class. A contained split-case argument with an explicit endpoint regularity condition yields a recognizably comparable FNN and PFNN error chain without global reconstruction, making the issue moderate rather than serious.",
+      "new_version_repair_locator": {
+        "tag": "error-proposition",
+        "quote": "if $\\mathcal{T}$ is a contractive operator"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    }
+  ]
+}

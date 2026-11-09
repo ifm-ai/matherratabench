@@ -1,0 +1,110 @@
+{
+  "paper_id": "2305.14703",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2305.14703:I001",
+      "title": "Exact Dirac learning in a density-likelihood interface",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "Therefore, our probabilistic model $q_{\\theta}(u|a)$ learns a class of \nDirac distributions $\\delta_u(\\cdot|a)$;"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eqn:likelihood"
+        },
+        {
+          "tag": "eqn:cov"
+        }
+      ],
+      "failure_explanation": "The prose claims that the old probabilistic model exactly learns conditional Dirac distributions for noise-free outputs. The old paper actually supplies a pointwise density likelihood and a Gaussian reverse-process construction, whose noise-free final transition is degenerate; it supplies no well-defined density or log likelihood for the resulting Dirac endpoint. Since a Lebesgue density supported on a singleton integrates to zero rather than one, these ingredients support only a measure-valued or limiting approximation, not exact learning through the stated density interface.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The exact noise-free density-likelihood interpretation and the associated exact-Dirac learning assertion are unsupported. This does not defeat the nonsingular noisy-data regime or numerical approximation of deterministic solutions.",
+      "least_adequate_overall_repair": "Restrict the density-likelihood formulation to conditional laws having Lebesgue densities. For noise-free data, state that the target is a Dirac measure but that the density-based PDNO is trained on a positive-variance or positive-time smoothing and therefore only approximates the deterministic target, without assigning it an exact endpoint density or log likelihood.",
+      "classification": "moderate_issue",
+      "why_classification": "Exact learning in the natural, advertised noise-free regime is a coherent substantive promise, so replacing it with a smoothed approximation is a limited weakening rather than a typo or routine qualification. The comparable noise-free approximation claim and all nonsingular noisy-data claims survive through a contained reformulation, so neither global reconstruction nor major mathematical loss is required.",
+      "new_version_repair_locator": {
+        "tag": "remark:noise-free-OL",
+        "quote": "Therefore, in practice, we can run DDPM only on the interval $[t_{\\text{start}}, T]$ and learn a generative model for sampling $U(t_{\\text{start}}; a)$ instead."
+      }
+    },
+    {
+      "issue_id": "2305.14703:I002",
+      "title": "Conditional VLB mixes pointwise and population likelihoods",
+      "target_type": "other",
+      "primary_affected_tag": "eqn:split-VLB",
+      "failure_location": {
+        "quote": "\\log q_{\\theta}(u_0 | a) &= \\mathbb{E}_{p(u_0|a)}[\\log q_{\\theta}(u_0 | a)]"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$"
+        }
+      ],
+      "failure_explanation": "The old derivation equates $\\log q_\\theta(u_0\\mid a)$, a function of the sampled u_0, with its scalar expectation under $p(u_0\\mid a)$. In the allowed nondegenerate Gaussian-noise regime this equality requires the log density to be almost surely constant, which is not assumed. Jensen therefore yields a bound on the expected negative log likelihood, not the asserted pointwise quantity, and $L_0$ must be averaged over the joint law $p(u_0,u_1\\mid a)$ rather than only $p(u_1\\mid a)$.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The conditional variational-bound derivation and its L_0 decomposition are invalid as written for noisy data. The final sample-averaged denoising loss can be retained after carrying the missing data-law expectation consistently.",
+      "least_adequate_overall_repair": "State the VLB for the population quantity E_{p(u0|a)}[-log qθ(u0|a)], define L0 using the joint law p(u0,u1|a), and carry that data-law expectation consistently through the decomposition and the final averaging over a. The resulting sample-averaged denoising objective may remain unchanged.",
+      "classification": "minor_issue",
+      "why_classification": "The pointwise-to-population equality is a genuine false inference and therefore not a typo. Correcting and propagating the missing expectation is nevertheless short, routine, and source-supported; it requires no new lemma and preserves the noisy-data model, the population VLB, and the final training loss without meaningful loss.",
+      "new_version_repair_locator": {
+        "tag": "app:NVLB"
+      }
+    },
+    {
+      "issue_id": "2305.14703:I003",
+      "title": "Reverse covariance prescribed beyond the unit-Gaussian regime",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eqn:cov",
+      "failure_location": {
+        "tag": "eqn:cov",
+        "quote": "\\beta_t \\mathbf{I} & \\mbox{Observations with additive Gaussian noise.}"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "obtained from corrupting the output $u$ by an additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$, i.e., $u_{\\eta} = u + \\eta$."
+        },
+        {
+          "tag": "prop:added-2"
+        }
+      ],
+      "failure_explanation": "For each fixed input a, the old covariance prescription claims beta_t I for observations with additive Gaussian noise even though the admitted noise law is N(0,Sigma(a)). Taking Sigma(a)=cI with c not equal to 1 and one forward step gives $\\operatorname{Var}(U_0\\mid U_1)=c\\beta/((1-\\beta)c+\\beta)\\,\\mathbf I$, not $\\beta\\mathbf I$. The old identity-covariance proposition therefore supports only the unit-covariance case, not the displayed general Gaussian branch.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The claimed exact or optimal reverse covariance is unjustified for nonunit, anisotropic, or input-dependent Gaussian noise. The remaining DDPM construction is not thereby disproved, but this covariance branch needs restriction or a covariance depending on the actual data law.",
+      "least_adequate_overall_repair": "Restrict every exact, optimal, or full-path-likelihood claim for the β_t I reverse-covariance branch to the case U0|a distributed as N(m(a),I). For general nonunit Gaussian covariance, retain β_t I only as an explicitly approximate fixed reverse variance and state that no exact covariance guarantee is being made, while leaving the general noisy-data sampler otherwise available.",
+      "classification": "moderate_issue",
+      "why_classification": "Nonunit, anisotropic, and input-dependent Gaussian noise forms a natural and explicitly admitted regime, so withdrawing the exact or optimal covariance guarantee there is substantive and exceeds a minor technical-premise correction. The loss is limited, however: the executable general sampler and the exact unit-Gaussian subcase remain through a contained qualification, with no need for global proof reconstruction.",
+      "new_version_repair_locator": {
+        "tag": "eqn:cov"
+      }
+    },
+    {
+      "issue_id": "2305.14703:I004",
+      "title": "Dirac-entropy proposition includes an undefined t=1 endpoint",
+      "target_type": "formal_result",
+      "primary_affected_tag": "prop:added-1",
+      "failure_location": {
+        "tag": "prop:added-1"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "We denote $H_p(X)=-\\int_\\mathcal{X} p_X(x)\\log p_X(x)\\,dx$ the entropy of $X\\sim p_X(x)$."
+        },
+        {
+          "quote": "where $p_{(X, Y)}$ is the joint density of $(X, Y)$ and $p_{Y|X=x}$ is the density of $Y$ conditioned on $X = x$."
+        }
+      ],
+      "failure_explanation": "Under the old density-based definition, the terms $H_p(u_0\\mid u_1)$ and $H_p(u_0\\mid u_0)$ occurring when t=1 are undefined because their conditional laws are Dirac. Thus the proposition's stated range t=1 through T invokes entropy outside the definition available in the paper.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The proposition is not meaningful at its first time step under the old definitions. Its nonsingular t at least 2 content is unaffected, and the endpoint can be repaired locally.",
+      "least_adequate_overall_repair": "Under the existing density-based entropy definition, change the proposition’s range to t=2 through T and identify t=1 as a singular endpoint outside that definition. The nonsingular statement and proof require no other change.",
+      "classification": "minor_issue",
+      "why_classification": "The defect is confined to one exceptional degenerate endpoint, has no listed downstream propagation, and is removed by a short routine domain correction that preserves all nonsingular content. It is not a typo because the old definitions do not uniquely force this repair rather than an added singular-entropy convention, and the proof presently invokes undefined quantities.",
+      "new_version_repair_locator": {
+        "quote": "By convention, we define the entropy of a Dirac distribution to be $-\\infty$."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

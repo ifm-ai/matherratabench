@@ -1,0 +1,206 @@
+{
+  "paper_id": "2504.10118",
+  "version_pair": "v1-v7",
+  "issues": [
+    {
+      "issue_id": "2504.10118:I001",
+      "title": "Ill-defined zero-frequency revised-exit-wave construction",
+      "target_type": "algorithm",
+      "primary_affected_tag": "def:REW",
+      "failure_location": {
+        "tag": "def:REW",
+        "quote": "Since $\\theta(0)$ is undefined, we set $\\mathcal{R}_k(\\bm{z}_k)_r = \\mathcal{F}^{-1}\\left(\\sqrt{\\bm{d}_k}\\right)_r$ when $\\mathcal{F}(\\bm{Q}\\odot \\bm{z}_k)_r = 0$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "def:REW"
+        },
+        {
+          "tag": "app:computation_misfit_derivative"
+        }
+      ],
+      "failure_explanation": "The inverse Fourier transform in the definition requires every entry of the Fourier-phase vector. When the r-th Fourier coefficient is zero, the old footnote leaves its phase undefined and instead assigns the r-th spatial component of the output. Because the inverse transform couples all Fourier entries to all spatial entries, this assignment neither defines the transform nor guarantees the prescribed Fourier magnitudes.",
+      "dependent_affected_formal_result_tags": [
+        "prop:convergence_iterative_surrogate",
+        "prop:mm_cond",
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "overall_effect": "The revised-exit-wave operator, and hence surrogate and gradient constructions using it, are not defined on admissible iterates having zero Fourier coefficients.",
+      "least_adequate_overall_repair": "Replace the spatial-component fallback with a Fourier-domain phase convention. For y = F(Q⊙z_k), set the phase factor to y_r/|y_r| when y_r is nonzero and to 1 when y_r is zero, form the complete vector sqrt(d_k)⊙phase, and only then apply F^{-1}. Use a consistently specified selector in all surrogate occurrences; classical-gradient claims may carry the standard qualification excluding positive-data zero coefficients at the relevant iterates.",
+      "classification": "minor_issue",
+      "why_classification": "Choosing and propagating the missing Fourier phase is genuine mathematical work, so this is not a typo. It is nevertheless a standard exceptional-zero repair, local to the phase selector, that preserves the prescribed magnitudes, objective, surrogate method, conclusions, and rate in the intended regular regime without a new lemma or proof architecture.",
+      "new_version_repair_locator": {
+        "tag": "def:REW"
+      }
+    },
+    {
+      "issue_id": "2504.10118:I002",
+      "title": "PIE update lacks a positive-curvature precondition",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eqn:rpie_formulation",
+      "failure_location": {
+        "tag": "eqn:rPIE_update"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eqn:rPIE-surrogate"
+        },
+        {
+          "tag": "eqn:rpie_formulation"
+        },
+        {
+          "tag": "eqn:rPIE_update"
+        }
+      ],
+      "failure_explanation": "The old source permits an arbitrary real vector u. At any coordinate with u=-|Q|^2, the quadratic coefficient vanishes and the displayed update divides by zero. For example, in the scalar case Q=1, d=1, current iterate 2, and u=-1, the surrogate is affine and unbounded, so the advertised argmin does not exist. Strict entrywise positivity of u+|Q|^2 gives positive curvature and a defined quotient.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The advertised generic PIE minimization and explicit update do not define an output for part of their stated input domain.",
+      "least_adequate_overall_repair": "Add the entrywise hypothesis u_r+|Q_r|^2>0 to the generic PIE formulation and update. Under this condition the quadratic has positive curvature in every coordinate, its minimizer exists uniquely, and the displayed Hadamard quotient is defined; the practical rPIE choice remains covered for a nonzero probe.",
+      "classification": "minor_issue",
+      "why_classification": "This is a missing standard curvature precondition rather than a transcription error. The one-line local qualification excludes only invalid regularization choices and leaves the update, method, input regime of practical interest, and all advertised guarantees unchanged.",
+      "new_version_repair_locator": {
+        "tag": "eqn:rpie_formulation"
+      }
+    },
+    {
+      "issue_id": "2504.10118:I003",
+      "title": "Undefined MG/OPT return value",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:mgopt",
+      "failure_location": {
+        "tag": "alg:mgopt",
+        "quote": "\\RETURN $\\bm{z}^{\\texttt{recon}}$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:mgopt"
+        }
+      ],
+      "failure_explanation": "The procedure initializes and updates fine-grid variables such as z_h^(j) and z_h^(j+1), but never defines z^recon. Consequently, the printed return statement cannot supply the algorithm's output from its stated variables.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The reviewed MG/OPT procedure has a broken explicit output interface, although its internal iteration remains identifiable.",
+      "least_adequate_overall_repair": "Replace the undefined return value z^recon by the last computed fine-grid iterate z_h^(j+1), with the index taken from the final completed iteration.",
+      "classification": "typo",
+      "why_classification": "The input, initialization, and loop uniquely identify the final fine-grid iterate as the output. Correcting the return variable requires no mathematical inference, construction, or change to the internal iteration.",
+      "new_version_repair_locator": {
+        "tag": "alg:mgopt"
+      }
+    },
+    {
+      "issue_id": "2504.10118:I004",
+      "title": "Invalid iterative zero-frequency phase fallback",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eqn:specification",
+      "failure_location": {
+        "tag": "eqn:specification",
+        "quote": "If $\\theta(\\mathcal{F}\\left(\\bm{Q}P_k\\bm{z}^{(j)}\\right)_r)=0$, the original definition is ill-defined"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "def:REW"
+        },
+        {
+          "tag": "app:proof_convergence_iterative_surrogate"
+        }
+      ],
+      "failure_explanation": "A nonzero positive-real Fourier coefficient has principal phase zero, so the old trigger can activate even though the original definition is well-defined. Conversely, at an actual zero coefficient the tested phase is itself undefined. The old cases then overwrite a spatial component of the revised exit wave, which neither supplies the missing Fourier phase nor guarantees the phase-recycling identity used in the surrogate analysis.",
+      "dependent_affected_formal_result_tags": [
+        "prop:convergence_iterative_surrogate",
+        "prop:mm_cond",
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "overall_effect": "The iterative surrogate can use an unnecessarily altered or undefined revised exit wave, and the phase-equality step supporting the stated surrogate guarantees is unavailable.",
+      "least_adequate_overall_repair": "Test whether the Fourier coefficient itself is zero, not whether its phase equals zero. Define its Fourier phase recursively: use the ordinary phase for a nonzero coefficient, use phase 0 for a zero coefficient at j=0, and reuse the previously selected Fourier phase for a zero coefficient at j≥1; then construct the complete revised exit wave with a single inverse Fourier transform.",
+      "classification": "minor_issue",
+      "why_classification": "The trigger and fallback operate in the wrong mathematical domains, so more than transcription is involved. The old source already identifies the intended phase-recycling behavior, however, and the corrected local case definition restores the phase identity and all listed surrogate guarantees without weakening them or introducing new proof architecture.",
+      "new_version_repair_locator": {
+        "tag": "eqn:specification"
+      }
+    },
+    {
+      "issue_id": "2504.10118:I005",
+      "title": "False converse in the stationarity claim",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:convergence_iterative_surrogate",
+      "failure_location": {
+        "tag": "thm:convergence_iterative_surrogate",
+        "quote": "\\Phi\\left(\\bm{z}^{(j+1)}\\right)=\\Phi\\left(\\bm{z}^{(j)}\\right)\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "app:proof_convergence_iterative_surrogate"
+        }
+      ],
+      "failure_explanation": "The old theorem claims both directions, while its proof derives only equality of the two objective values implying stationarity. With one scalar scan, Q=1, d=1, and z^(j)=2, the surrogate is minimized at z^(j+1)=1. The new point has zero objective gradient, but the objective decreases from 1/2 to 0, disproving stationarity implying equality.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Only the reverse implication is false; monotone descent and the implication from equality to stationarity remain valid, and the convergence-rate result does not use the converse.",
+      "least_adequate_overall_repair": "Replace the equivalence by the supported one-way implication Φ(z^(j+1))=Φ(z^(j)) ⇒ ∇Φ(z^(j+1))=0, and remove any prose asserting the converse. Retain the monotone-descent statement and the convergence-rate result unchanged.",
+      "classification": "moderate_issue",
+      "why_classification": "The repair is contained and leaves every downstream convergence guarantee intact, so neither global reconstruction nor major loss is required. It nevertheless withdraws a coherent half of the stated equivalence, which is a genuine but limited weakening and therefore exceeds a same-guarantee minor repair.",
+      "new_version_repair_locator": {
+        "tag": "thm:convergence_iterative_surrogate"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2504.10118:I006",
+      "title": "Dimensionally invalid proof of the restriction-product identity",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:commutative",
+      "failure_location": {
+        "tag": "lem:commutative",
+        "quote": "\\texttt{LHS}_i = \\bm{A}_i(\\bm{I}_h^H\\bm{B})_i"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "lem:commutative"
+        }
+      ],
+      "failure_explanation": "The statement takes A on the fine grid and B on the coarse grid. The old proof nevertheless writes I_h^H B and I_H^h A, although those products have incompatible dimensions, and its displayed LHS is not the lemma's LHS. The corrected calculation uses B_i(I_h^H A)_i and I_h^H((I_H^h B)⊙A).",
+      "dependent_affected_formal_result_tags": [
+        "prop:weights_property",
+        "prop:consistency",
+        "thm:coarse_grid_update",
+        "prop:automatic_regularization_selection",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "overall_effect": "The stated identity lacks a valid proof in v1, leaving each later proof that invokes this restriction-product identity unsupported at that step.",
+      "least_adequate_overall_repair": "Keep the lemma statement and interchange A and B consistently throughout its componentwise proof, beginning with LHS_i=B_i(I_h^H A)_i and computing RHS_i from I_h^H((I_H^h B)⊙A). The existing delta calculation then proves the stated identity, so dependent proofs need no alteration.",
+      "classification": "typo",
+      "why_classification": "The declared dimensions and the lemma statement uniquely force a systematic transposition of the two variable names. After that transcriptional correction, the printed algebra is valid without changing any inference, result, or downstream guarantee.",
+      "new_version_repair_locator": {
+        "tag": "lem:commutative"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2504.10118:I007",
+      "title": "Equality does not imply a zero fine-grid gradient",
+      "target_type": "formal_result",
+      "primary_affected_tag": "prop:multigrid_convergence",
+      "failure_location": {
+        "tag": "prop:multigrid_convergence",
+        "quote": "Additionally, equality implies $\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)=0$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "prop:multigrid_convergence"
+        }
+      ],
+      "failure_explanation": "For positive A, the proof gives minus four times (I_h^H g)^*diag(A)(I_h^H g), so equality implies I_h^H g=0. The restriction has a nontrivial kernel. For example, with one 2-by-2 bin, Q equal to the all-ones vector, zero data, and g=(1,-1,0,0), the surrogate gradient is nonzero while its restriction is zero; the direction and inner product are therefore zero.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The descent inequality remains valid, but its equality case certifies only restricted stationarity rather than full fine-grid stationarity. The later coarse-grid descent theorem uses only the inequality.",
+      "least_adequate_overall_repair": "Retain the descent inequality but replace the full-stationarity conclusion by restricted stationarity: for entrywise positive A, equality implies, and in fact is equivalent to, I_h^H∇_{z_k}Φ̃_k(z_k';z_k^(j))=0. Do not infer that the fine-grid gradient itself vanishes.",
+      "classification": "moderate_issue",
+      "why_classification": "The existing quadratic-form calculation supplies a short, contained repair, and the downstream coarse-grid descent result uses only the unaffected inequality. Because restriction has a nontrivial kernel, however, replacing full fine-grid stationarity by restricted stationarity is a meaningful limited weakening rather than a no-loss minor correction.",
+      "new_version_repair_locator": {
+        "tag": "prop:multigrid_convergence"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    }
+  ]
+}

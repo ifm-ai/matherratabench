@@ -1,0 +1,173 @@
+{
+  "paper_id": "2505.07765",
+  "version_pair": "v1-v3",
+  "issues": [
+    {
+      "issue_id": "2505.07765:I001",
+      "title": "Incorrect random-feature regularization scaling",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "Consequently, \\Cref{eq:empirical_l2_min} becomes\n\\[\n\\min_{\\{c_n \\}_{n=1}^N} \\hat{L}(u_{\\{ c_n, w_n\\}}) + \\frac{\\alpha}{N} \\sum_{n=1}^N |c_n|^2 . \n\\]"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:empirical_l2_min"
+        },
+        {
+          "quote": "u(x) = \\sum_{n=1}^N c_n \\varphi(x; \\omega_n) , \\quad  \\{ \\omega_n\\} \\sim \\rho."
+        }
+      ],
+      "failure_explanation": "The prose claims that the continuous objective in eq:empirical_l2_min becomes a finite objective with regularizer (α/N)Σ|c_n|². What the old equations actually imply is different: because the finite model is written as u=Σc_nφ while Monte Carlo gives u≈(1/N)Σc(ω_n)φ, one has c_n=c(ω_n)/N. Therefore (α/2)(1/N)Σ|c(ω_n)|²=(αN/2)Σ|c_n|². The old formula has the wrong N-dependence and factor for the coefficient convention it states.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The related-work comparison gives the wrong finite random-feature objective and hence misstates how Hilbert-space regularization scales with network width. It does not affect the paper's sparse-RKBS algorithm or formal results.",
+      "least_adequate_overall_repair": "Keep the stated convention u(x)=Σₙcₙφ(x;ωₙ), identify cₙ=c(ωₙ)/N in the Monte Carlo discretization, and replace the displayed penalty (α/N)Σₙ|cₙ|² by (αN/2)Σₙ|cₙ|². No change to the sparse-RKBS method or any formal result is needed.",
+      "classification": "minor_issue",
+      "why_classification": "The old coefficient is a coherent but mathematically incorrect normalization, so correcting it requires checking the Monte Carlo coefficient conversion rather than merely fixing malformed notation. The repair is nevertheless routine, local to one related-work comparison, and has no dependent formal chain or meaningful mathematical loss.",
+      "new_version_repair_locator": {
+        "quote": "Consequently, \\Cref{eq:empirical_l2_min} becomes\n\\[\n\\min_{\\{c_n \\}_{n=1}^N} \\hat{L}_{K_1, K_2}(u_{\\{ c_n, w_n\\}}) + \\frac{\\alpha N}{2} \\sum_{n=1}^N |c_n|^2 . \n\\]"
+      }
+    },
+    {
+      "issue_id": "2505.07765:I002",
+      "title": "Empirical minimizer theorem omits nonnegative weights",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:existence",
+      "failure_location": {
+        "tag": "thm:existence",
+        "quote": "\\eqref{eq:empirical_sparse_min} admits at least one global minimizer."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:loss_discrete"
+        }
+      ],
+      "failure_explanation": "Take one interior collocation point with weight w<0, let E[v]=v and B[v]=0, and choose a feature with φ(x_1;ω)≠0. Along μ=tδ_ω, the empirical objective contains (w/2)t²φ(x_1;ω)²+α|t|, which tends to minus infinity. Thus the claimed empirical minimizer need not exist under the theorem's stated assumptions. Nonnegative weights make the empirical loss nonnegative and restore the coercivity argument.",
+      "dependent_affected_formal_result_tags": [
+        "thm:representer"
+      ],
+      "overall_effect": "Without a sign condition, the empirical optimization problem may have no solution, and the representer theorem's unconditional finite-solution conclusion consequently fails.",
+      "least_adequate_overall_repair": "State at the definition of the empirical loss, or explicitly in thm:existence, that w_{1,k} and w_{2,k} are nonnegative; strict positivity is also sufficient. Invoke the resulting nonnegativity of the empirical loss in the direct-method proof. The empirical existence conclusion and thm:representer then hold unchanged.",
+      "classification": "minor_issue",
+      "why_classification": "A missing premise makes the empirical existence argument genuinely invalid, so this is not a typo. Nonnegative quadrature weights are a standard, source-supported technical condition for the intended squared-loss regime, and adding that one local condition restores coercivity and the entire affected chain without changing the method, conclusion, rate, or intended applications.",
+      "new_version_repair_locator": {
+        "tag": "eq:loss_discrete",
+        "quote": "are the associated (positive) weights"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2505.07765:I003",
+      "title": "Setwise quadrature assumption excludes nonatomic targets",
+      "target_type": "other",
+      "primary_affected_tag": "assu:measureconvergence",
+      "failure_location": {
+        "tag": "assu:measureconvergence",
+        "quote": "We assume that the discrete measures $\\nu_D^{K_1}$ and $\\nu_{\\partial D}^{K_2}$ converge setwise to $\\nu_{D}$ and  $\\nu_{\\partial D} $, respectively."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:loss_discrete"
+        },
+        {
+          "quote": "For example, quasi-uniform grid-based rules such as composite midpoint or trapezoidal quadrature tend to perform well for regular functions, while poorly distributed or random sampling without variance control may lead to larger gaps in the coverage of the domain, slower convergence and larger constants."
+        }
+      ],
+      "failure_explanation": "Let S be the countable union of all collocation nodes. If ν_D is atomless and ν_D(D)>0, then ν_D(S)=0. Every finite empirical measure is supported on S, so ν_D^{K_1}(S)=ν_D^{K_1}(D). Setwise convergence on D would force this quantity to converge to ν_D(D)>0, while setwise convergence on S would force it to converge to zero. Thus the old condition cannot cover finite-node quadrature of the standard nonatomic domain measures contemplated by the paper's grid-rule discussion.",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence",
+        "lem:added-1",
+        "thm:error_bound"
+      ],
+      "overall_effect": "The conditional results are not thereby logically false, but their assumptions exclude the standard finite-grid approximation of nonatomic loss measures, so the advertised convergence and generalization chain does not apply to a central intended regime.",
+      "least_adequate_overall_repair": "Replace setwise convergence by weak-* convergence of the quadrature measures against continuous test functions and add or clarify the uniform Hölder regularity of the PDE coefficients and residual maps on bounded C² sets. Use boundedness of the minimizing measures and Arzelà–Ascoli to obtain uniform residual convergence, pass the moving quadrature integrals to their limits, and use compactness of bounded Hölder residual families for the uniform finite-K quadrature step. This restores the convergence and error chain for ordinary finite grids approximating nonatomic measures.",
+      "classification": "moderate_issue",
+      "why_classification": "Setwise convergence has a coherent standard meaning and excludes the natural nonatomic quadrature regime advertised by the paper, so this cannot be treated as a terminology typo or an immaterial technical restriction. Restoring that regime requires a contained but nontrivial compactness and uniform-convergence argument with corresponding proof updates across the listed chain. The repair does not require global reconstruction and preserves the central convergence and error guarantees, so it is moderate rather than serious.",
+      "new_version_repair_locator": {
+        "tag": "assu:measureconvergence",
+        "quote": "We assume that the discrete measures $\\nu_D^{K_1}$ and $\\nu_{\\partial D}^{K_2}$ converge (in the weak-\\(*\\) sense) to $\\nu_{D}$ and $\\nu_{\\partial D}$, respectively"
+      }
+    },
+    {
+      "issue_id": "2505.07765:I004",
+      "title": "Convergence stated on the parameter domain",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:convergence",
+      "failure_location": {
+        "tag": "thm:convergence",
+        "quote": "Moreover, the convergence $u_{K, \\alpha} \\to u_\\alpha$ (up to a subsequence) holds in $C^1(\\overline{\\Omega})$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:convergence",
+          "quote": "the Arzelà–Ascoli theorem tells us that $u_{K,\\alpha}$ converges to $u_{\\alpha}$ in $C^1(\\overline{D})$ as $K\\to\\infty$."
+        }
+      ],
+      "failure_explanation": "The statement places u_{K,α}→u_α in C^1 over the parameter space Ω, although these network outputs are spatial functions on D. The proof explicitly obtains convergence in C^1 over the closure of D, so it supports the same conclusion with D rather than Ω.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The final convergence-space clause is ill-typed as printed, although the intended spatial-domain conclusion is already established by the old proof.",
+      "least_adequate_overall_repair": "In the final clause of thm:convergence, replace convergence in C¹ on the closure of Ω by convergence in C¹ on the closure of D. No strengthening from C¹ to C² is needed for the least repair.",
+      "classification": "typo",
+      "why_classification": "The network outputs are spatial functions on D, not functions on the parameter domain Ω, and the old proof explicitly concludes C¹ convergence on the closure of D. The corrected domain is uniquely forced by the old source, and no inference or construction needs repair.",
+      "new_version_repair_locator": {
+        "tag": "thm:convergence",
+        "quote": "Moreover, the convergence $u_{K, \\alpha} \\to u_\\alpha$ (up to a subsequence) holds in $C^2(\\overline{D})$."
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2505.07765:I005",
+      "title": "False uniform multiplicative generalization lemma",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:added-1",
+      "failure_location": {
+        "tag": "lem:added-1"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:loss_discrete"
+        },
+        {
+          "tag": "eq:discrete_network"
+        }
+      ],
+      "failure_explanation": "For the admissible special case R[v]=v, the finite evaluation map on the infinite-dimensional RBF space has a nonzero kernel. One may take a full-support countably atomic target measure and its finite truncations, which satisfy the old setwise assumption. At every finite truncation, choose a nonzero v in the evaluation kernel and scale it into the prescribed V-ball. Then the empirical loss is zero, while continuity and full support give L(v)>0, contradicting L(v)≤2 hat L(v). Quadrature convergence can instead yield a uniform additive error.",
+      "dependent_affected_formal_result_tags": [
+        "thm:error_bound"
+      ],
+      "overall_effect": "The claimed relative generalization guarantee is false, and the old proof of the finite-collocation error theorem relies on it. The main error theorem can be recovered using an additive quadrature estimate and adjusted bookkeeping.",
+      "least_adequate_overall_repair": "Replace the multiplicative lemma by the uniform additive statement that, for every M>0 and ε>0, there is K(M,ε) such that sup_{‖v‖_V≤M}|hat L_K(v)−L(v)|≤ε. Prove this from the uniform Hölder bounds, compactness of the residual family, and quadrature convergence. In thm:error_bound choose K=K(δ,3‖u^δ‖_V) and α=δ/‖u^δ‖_V; minimization then gives ‖u_{K,α}‖_V≤3‖u^δ‖_V and L(u_{K,α})≤4δ, preserving both stated solution-error rates.",
+      "classification": "moderate_issue",
+      "why_classification": "The multiplicative assertion fails structurally because finite evaluation maps have nontrivial kernels, so no local correction can retain it as written. A uniform additive loss comparison is a recognizably comparable but limited weakening, and establishing it plus updating the error-theorem bookkeeping is contained, nontrivial work. The downstream error theorem and its rates survive without global proof reconstruction, making the issue moderate rather than serious.",
+      "new_version_repair_locator": {
+        "tag": "lem:generalization"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2505.07765:I006",
+      "title": "Unbound index in the homogeneous-boundary network",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eq:homogenizor",
+      "failure_location": {
+        "tag": "eq:homogenizor",
+        "quote": "\\sum_{i=1}^n c_n \\varphi(x; \\omega_n)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:discrete_network"
+        }
+      ],
+      "failure_explanation": "In the old construction, the dummy index is i while the coefficient and node carry n. Hence the summand is independent of i and the expression equals n copies of a single feature. It is not the N-feature network used throughout the method.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The displayed executable ansatz for imposing homogeneous Dirichlet conditions does not specify the intended multi-feature network, although the surrounding method and experiments make the intended construction clear.",
+      "least_adequate_overall_repair": "Replace γ(x)Σ_{i=1}^n c_nφ(x;ω_n) by γ(x)Σ_{n=1}^N c_nφ(x;ω_n).",
+      "classification": "typo",
+      "why_classification": "The network definition, surrounding discussion, and experiments uniquely force the standard N-feature sum. The mismatched dummy index and upper bound are transcriptional, and no argument or algorithmic construction relies on the literal single-feature repetition.",
+      "new_version_repair_locator": {
+        "tag": "eq:homogenizor",
+        "quote": "u(x) \\approx \\gamma(x) \\sum_{n=1}^N c_n \\varphi(x; \\omega_n)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "paper_id": "2502.10600",
+  "version_pair": "v1-v4",
+  "issues": [
+    {
+      "issue_id": "2502.10600:I001",
+      "title": "Lloyd objective is missing the one-half normalization",
+      "target_type": "other",
+      "primary_affected_tag": "eq:gradient_G_M_lloyd",
+      "failure_location": {
+        "tag": "eq:gradient_G_M_lloyd",
+        "quote": "\\nabla G_{M}(\\Y) = \\bm{D}(\\Y) (\\Y - \\bm{\\Psi}_{\\mathrm{Lloyd}}(\\Y))"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "G_{M}: \\Y \\mapsto \\min\\limits_{\\bm{w} \\in \\Delta_{M-1}} W_{2}^{2}\\Big(\\pi, \\sum\\limits_{i \\in [M]} \\wi \\delta_{\\yi} \\Big)."
+        }
+      ],
+      "failure_explanation": "The old source defines G_M as the minimum of the unhalved squared Wasserstein distance but states that its gradient is D(Y)(Y-Psi_Lloyd(Y)). For M=1 and pi=delta_0, the definition gives G_1(y)=||y||^2, whose gradient is 2y, whereas D=1 and Psi_Lloyd(y)=0 make the displayed right-hand side y. Thus the equation is off by a factor of two.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The cited Lloyd gradient and the ensuing preconditioned-gradient rewrite have the wrong normalization. The minimizers and fixed points are unaffected by this positive constant factor.",
+      "least_adequate_overall_repair": "Define G_M using one-half of the squared Wasserstein distance. The displayed gradient and the D(Y)^{-1}-preconditioned Lloyd update then remain unchanged; the preceding optimization may remain unhalved because the positive constant does not change its minimizers.",
+      "classification": "minor_issue",
+      "why_classification": "This is a local factor-of-two defect whose repair preserves the objective minimizers, critical points, Lloyd map, and fixed-point guarantee. It is not a typo because the old unhalved definition is mathematically coherent and could instead be retained by inserting a factor two in the gradient and adjusting the step or preconditioner, so the old source does not uniquely force a single transcriptional correction.",
+      "new_version_repair_locator": {
+        "quote": "G_{M}: \\Y \\mapsto \\min\\limits_{\\bm{w} \\in \\Delta_{M-1}} \\frac{1}{2}W_{2}^{2}\\Big(\\pi, \\sum\\limits_{i \\in [M]} \\wi \\delta_{\\yi} \\Big)."
+      }
+    },
+    {
+      "issue_id": "2502.10600:I002",
+      "title": "WFR particle ODE uses the wrong summand weight",
+      "target_type": "formal_result",
+      "primary_affected_tag": "prop:coupled_ode_WFR",
+      "failure_location": {
+        "tag": "eq:WFR_particle_equation",
+        "quote": "\\sum\\limits_{m = 1}^{M} \\wit \\nabla_2 \\kappa(\\yjt, \\yit)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:MMD_first_variation"
+        },
+        {
+          "quote": "\\mut = \\sum_{i = 1}^{M} \\wit \\delta_{\\yit}"
+        }
+      ],
+      "failure_explanation": "For mu_t=sum_m w_m^{(t)} delta_{y_m^{(t)}}, the first variation is sum_m w_m^{(t)} kappa(y_m^{(t)},y)-v_0(y). Both expanded sums in the old particle system instead use w_i^{(t)}, independent of the summation index m. With unequal weights, those expansions are not the abstract first-variation terms used by the proof, so the proof supports the correctly indexed system rather than the printed one.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The implementable position and weight ODEs printed in the proposition do not generally discretize the stated WFR flow, although the abstract ODE and weak-form proof are restored by correcting the indices.",
+      "least_adequate_overall_repair": "In both expanded sums over m in the particle system, replace the summand-independent weight w_i^(t) by w_m^(t), yielding sums of w_m^(t)∇₂κ(y_m^(t),y_i^(t)) and w_m^(t)κ(y_m^(t),y_i^(t)), respectively.",
+      "classification": "typo",
+      "why_classification": "The definition μ_t=Σ_m w_m^(t)δ_{y_m^(t)} and the stated first variation uniquely force the m-indexed weight. The abstract ODE and weak-form proof already use the correct first variation, so no inference, premise, or construction must be repaired; this is a copied index transcription.",
+      "new_version_repair_locator": {
+        "tag": "eq:WFR_particle_equation",
+        "quote": "\\Ffv[\\mut](y) = \\sum\\limits_{m = 1}^{M} \\wmst \\kappa(\\yjt, y) - v_{0}(y)"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2502.10600:I003",
+      "title": "Optimized-MMD gradient theorem lacks Gram-matrix invertibility",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:gradient_opt_mmd",
+      "failure_location": {
+        "tag": "proof:thm_gradient_opt_mmd",
+        "quote": "Since $\\what = \\Ky^{-1}\\vzerov(\\Y) $, we get"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "assumption:gradient_kappa"
+        },
+        {
+          "tag": "eq:optimal_w",
+          "quote": "\\hat{\\bm{w}}(\\Y) = \\bm{K}(\\Y)^{-1} \\vzerov(\\Y)"
+        }
+      ],
+      "failure_explanation": "The theorem assumes only the kernel-gradient condition, but its weights, W(Y), and proof all use K(Y)^{-1}. For example, the admissible kernel kappa identically zero with bar-kappa identically zero satisfies the stated assumption, yet K(Y)=0 for every distinct configuration. F_M is then defined, but the theorem's weights and inverse-differentiation calculation are undefined. The same missing domain condition propagates to the one-particle corollary as division by kappa(y,y).",
+      "dependent_affected_formal_result_tags": [
+        "cor:ms_as_MSIP"
+      ],
+      "overall_effect": "The gradient formula is not established on all of X_neq^M as announced, and the derived one-particle formula is likewise undefined at singular one-point Gram matrices. The result remains applicable on nonsingular Gram configurations.",
+      "least_adequate_overall_repair": "Restrict the theorem to configurations Y for which K(Y) is nonsingular, equivalently det K(Y)>0 for the positive-semidefinite Gram matrix, and evaluate the inverse-based weights and differentiation only there. In the dependent one-particle corollary, require κ(y,y)>0 before using the quotient, or treat the zero-diagonal case separately without division.",
+      "classification": "minor_issue",
+      "why_classification": "The inverse requires a genuine missing domain premise, so this is not a typo. Nevertheless, adding the standard Gram-matrix nondegeneracy qualification is short and routine, leaves the proof and gradient formula unchanged on the intended regular regime, and propagates to the corollary only as the corresponding nonzero-denominator condition. No new lemma, method, rate change, or meaningful regular-case loss is needed.",
+      "new_version_repair_locator": {
+        "tag": "thm:gradient_opt_mmd",
+        "quote": "Let $Y\\in\\X^M$ be such that $\\det\\Ky > 0$"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2502.10600:I004",
+      "title": "Gaussian gradient specialization drops the kernel scale",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:gradient_opt_mmd",
+      "failure_location": {
+        "tag": "eq:gradien_opt_mmd_gaussian_kernel",
+        "quote": "\\bm{W}(\\y) \\bm{K}(\\y) \\bm{W}(\\y) \\Big( \\y - \\bm{\\Psi}_{\\MMS}(\\y) \\Big)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:gradien_opt_mmd_under_assumption"
+        },
+        {
+          "quote": "When $\\kappa$ is the squared exponential kernel, there exists a scalar $\\lambda \\in \\mathbb{R}$ such that $\\bar{\\kappa} = \\lambda \\kappa$;"
+        }
+      ],
+      "failure_explanation": "The theorem's general identity has preconditioner W bar-K W. The old source separately states that for a squared-exponential kernel bar-kappa=lambda kappa, so bar-K=lambda K. Consequently the Gaussian specialization must contain lambda W K W. The printed specialization omits lambda without imposing unit bandwidth or lambda=1, and is false for a Gaussian kernel with any other bandwidth.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The specialized Gaussian gradient and its preconditioner are mis-scaled. For nonzero lambda the critical points and fixed-point map are unchanged, but the claimed gradient magnitude and unit-step preconditioned interpretation are incorrect.",
+      "least_adequate_overall_repair": "When barκ=λκ, replace the Gaussian specialization by ∇F_M(Y)=λW(Y)K(Y)W(Y)(Y−Ψ_MSIP(Y)). Retain the general preconditioner P(Y)=W(Y)barK(Y)W(Y).",
+      "classification": "typo",
+      "why_classification": "The general identity immediately above the specialization and the stated relation barK=λK uniquely force the missing factor λ. The proof and subsequent preconditioner use the correct general barK expression, so inserting the scale requires no new inference or assumption and leaves the fixed-point map unchanged.",
+      "new_version_repair_locator": {
+        "tag": "thm:gradient_opt_mmd",
+        "quote": "define $\\bm{P}(\\Y) :=\\bm{W}(\\y) \\bar{\\bm{K}}(\\y) \\bm{W}(\\y)$"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    }
+  ]
+}

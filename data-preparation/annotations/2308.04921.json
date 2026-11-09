@@ -1,0 +1,259 @@
+{
+  "paper_id": "2308.04921",
+  "version_pair": "v1-v3",
+  "issues": [
+    {
+      "issue_id": "2308.04921:I001",
+      "title": "Tanh regularizer is applied to the wrong variable",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:TrigonometricRegularizationIntroduction",
+      "failure_location": {
+        "tag": "thm:TrigonometricRegularizationIntroduction",
+        "quote": "\\min_{\\z \\in \\R^\\N, \\mathcal L(\\z) = 0} \\g_\\text{tanh} \\left( \\z \\right)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:implicit_regularizationIII"
+        }
+      ],
+      "failure_explanation": "The old right-hand side minimizes g_tanh(z)=<z,artanh(z)> over the parameter z in R^N subject to the reparametrized loss constraint. This expression is not real-valued for general parameters outside [-1,1] and differs from the detailed result, which regularizes the output tilde z=tanh(z). The left side is likewise an output quantity, so the statement and its supporting corollary concern different mathematical objects.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The showcase theorem's tanh optimization problem is ill-defined on its stated domain and does not state the output-space implicit bias proved later.",
+      "least_adequate_overall_repair": "In the tanh clause of Theorem thm:TrigonometricRegularizationIntroduction, replace g_tanh(z) by g_tanh(rho_rp(z)) in the parameter-space minimization. Equivalently, write the problem directly over output variables tilde z in [-1,1]^N with LossM(tilde z)=0.",
+      "classification": "typo",
+      "why_classification": "The output on the left, the parallel sinh clause, the definition involving artanh, and the detailed corollary uniquely force output-space regularization. This is a transcriptional variable omission; no inference or proof construction must change.",
+      "new_version_repair_locator": {
+        "tag": "thm:TrigonometricRegularizationIntroduction"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2308.04921:I002",
+      "title": "Degenerate flows can reach the reparametrized boundary",
+      "target_type": "formal_result",
+      "primary_affected_tag": "theorem:vector_IRERM",
+      "failure_location": {
+        "quote": "Since the right-hand side of \\eqref{eq:with_sigmaout_PreVersion} is a continuous function of $\\wprod$ on $\\R^\\N$ by Assumptions \\ref{as:A1}-\\ref{as:A3}, it is locally Lipschitz continuous at any point."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "as:A2"
+        }
+      ],
+      "failure_explanation": "Let rho_rp(w)=|w|^q with 1<q<2, restricted from [0,infinity) onto [0,infinity), and take the scalar squared loss with A=1, identity link, and y=-1. Starting at w0>0 gives w'=-q w^{q-1}(w^q+1) until w reaches zero. The hitting time is finite because the reciprocal vector field is integrable near zero; extending w constantly by zero gives a C1 gradient-flow solution. Its reparametrized trajectory reaches the boundary, contradicting claim (i). The transformed vector field is continuous but not locally Lipschitz at zero, exactly invalidating the old Picard–Lindelöf step.",
+      "dependent_affected_formal_result_tags": [
+        "cor:PolynomialRegularization",
+        "cor:PolynomialRegularizationConvergenceRate",
+        "cor:PolynomialRegularizationNonAsymptotic",
+        "lem:decay",
+        "thm:Convergence",
+        "thm:PolynomialRegularizationIntroduction"
+      ],
+      "overall_effect": "The theorem does not guarantee that every admissible trajectory remains in the interior. Results that use this guarantee to define the mirror dynamics or handle polynomial reparametrizations at critical points require additional hypotheses or a new piecewise argument.",
+      "least_adequate_overall_repair": "Replace the false interior-invariance claim with a framework that explicitly distinguishes nonunique boundary-hitting solutions. Define an admissible solution class such as regular trajectories, prove the mirror identity by integrating separately between critical times, and rederive the existence, extension, decay, convergence, and polynomial results under that solution contract. Sticky boundary solutions must be expressly excluded or analyzed separately, and the claim that every admissible trajectory remains interior must be withdrawn.",
+      "classification": "serious_issue",
+      "why_classification": "The counterexample occurs in the central polynomial regime p in (1,2), and a boundary hit can alter the mirror dynamics, convergence, and implicit bias throughout the listed chain. Imposing local-Lipschitz uniqueness would exclude that advertised regime, while retaining it requires reconstruction of the core ODE and mirror-flow arguments. Thus every established complete route entails either global proof reconstruction or major loss of scope and quantifier strength.",
+      "new_version_repair_locator": {
+        "tag": "theorem:vector_IRERM",
+        "quote": "assume that $\\w$ is regular."
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2308.04921:I003",
+      "title": "Polynomial regularization lacks a zero-loss limit hypothesis",
+      "target_type": "formal_result",
+      "primary_affected_tag": "cor:PolynomialRegularization",
+      "failure_location": {
+        "tag": "cor:PolynomialRegularization",
+        "quote": "and assume that $\\wprod_{\\infty,\\alpha} := \\lim_{\\t \\to \\infty} \\sigmainn(\\w(\\t))$ exists for any $\\alpha$ sufficiently small."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "theorem:vector_IRERM"
+        }
+      ],
+      "failure_explanation": "Existence of the reparametrized limit neither implies zero loss nor supplies the additional boundary condition needed by theorem:vector_IRERM. A direct counterexample is obtained with scalar A=1, identity link, y=1, and a continuously differentiable exact loss L(v,y)=ell(v-y), where ell has its unique zero at 0 but is a positive constant on an interval containing all alpha-1 for sufficiently small alpha. Every small polynomially reparametrized initialization is then stationary at positive loss, so its limit tends to zero as alpha tends to zero while the unique feasible output is 1; the asserted regularizer equality fails.",
+      "dependent_affected_formal_result_tags": [
+        "cor:PolynomialRegularizationNonAsymptotic"
+      ],
+      "overall_effect": "The old corollary does not characterize the implicit bias of arbitrary convergent polynomial flows; positive-loss stationary limits are included by its hypotheses.",
+      "least_adequate_overall_repair": "Amend cor:PolynomialRegularization and its non-asymptotic version to require, for every relevant initialization scale, that the asserted limit satisfies LossM(wprod_infinity,alpha)=0. Also impose the boundary admissibility required by theorem:vector_IRERM: for p at most 1 require the limit to lie in the positive interior, or add hypotheses that establish this; for p greater than 1 the finite boundary extensions suffice.",
+      "classification": "moderate_issue",
+      "why_classification": "These local hypotheses let the existing implicit-bias theorem prove a recognizably identical regularization conclusion without new architecture. They nevertheless remove all merely convergent positive-loss stationary flows—and, in part of the range, inadmissible boundary limits—from the old claim. That is a substantive but limited weakening, not a same-guarantee minor repair.",
+      "new_version_repair_locator": {
+        "tag": "cor:PolynomialRegularization",
+        "quote": "If $\\wprod_{T,\\alpha} := \\lim_{\\t \\to T} \\sigmainn(\\w(\\t))$ with $\\LossM(\\wprod_{T,\\alpha}) = 0$ exists and"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2308.04921:I004",
+      "title": "Polynomial exponential-rate constant is not data-uniform",
+      "target_type": "formal_result",
+      "primary_affected_tag": "cor:PolynomialRegularizationConvergenceRate",
+      "failure_location": {
+        "tag": "cor:PolynomialRegularizationConvergenceRate",
+        "quote": "there exists a constant $c > 0$ (only depending on $p$, $\\mu$, $\\widetilde\\w_0$, and $\\A$)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:Convergence"
+        }
+      ],
+      "failure_explanation": "Take p=1, A=1, rho_rp(w)=w^2 on the positive branch, L(v,y)=(v-y)^2/2, and fixed reparametrized initialization x0=1. For x=rho_rp(w), x'=-4x(x-y). Near its feasible limit y>0, the loss decays asymptotically at exponent 8y. The PL constant, p, A, and x0 remain fixed while y can tend to zero, so no positive exponent depending only on the quantities listed in the old statement exists. The proof therefore supports only a target-dependent constant.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Exponential convergence can still hold for each fixed feasible dataset, but the old statement's uniformity over y is false.",
+      "least_adequate_overall_repair": "Retain the instancewise exponential estimate but state c=2 mu sigma_min(A)^2 r, where r is a positive trajectory lower bound for the inverse mirror metric, and acknowledge that r and hence c may depend on y or on a chosen feasible comparator and its associated Bregman bound. Remove the assertion that c depends only on p, mu, the initialization, and A.",
+      "classification": "moderate_issue",
+      "why_classification": "Only the uniformity of the exponent must be weakened; the method and exponential rate for each fixed feasible instance survive. However, independence from y is an explicit, coherent rate guarantee and the scalar family shows that no such positive uniform exponent exists, so the correction is more than an immaterial constant edit.",
+      "new_version_repair_locator": {
+        "tag": "cor:PolynomialRegularizationConvergenceRate",
+        "quote": "with the rate described in Theorem \\ref{thm:Convergence} \\ref{thm:Convergence_i}."
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2308.04921:I005",
+      "title": "Trigonometric regularization lacks global-optimality hypotheses",
+      "target_type": "formal_result",
+      "primary_affected_tag": "cor:TrigonometricRegularization",
+      "failure_location": {
+        "tag": "cor:TrigonometricRegularization",
+        "quote": "If $\\wprodinfty := \\lim_{\\t \\to \\infty} \\sigmainn(\\w(\\t))$ exists, then"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "theorem:vector_IRERM"
+        }
+      ],
+      "failure_explanation": "The corollary claims regularizer optimality from mere convergence, whereas theorem:vector_IRERM requires convergence to zero loss and either an interior limit or finite boundary extensions of h and H. These facts do not follow from the old assumptions. Concretely, with rho_rp=sinh, scalar A=1, and an admissible nonconvex exact loss having a positive-loss stationary point at the zero initialization, the flow is constant and converges, but its output is not the unique feasible regularizer minimizer.",
+      "dependent_affected_formal_result_tags": [
+        "cor:TrigonometricRegularizationNonAsymptotic"
+      ],
+      "overall_effect": "For convergent positive-loss stationary trajectories—and, in the tanh case, potentially inadmissible boundary limits—the asserted sinh or tanh regularizer minimum is unsupported and can be false.",
+      "least_adequate_overall_repair": "In both clauses of cor:TrigonometricRegularization and its non-asymptotic version, require the asserted limit to have zero loss. For the tanh clause also require the output limit to lie in (-1,1)^N, or impose sufficient interior-feasibility and decay hypotheses that establish this, so that the parameter limit and the functions h and H used by theorem:vector_IRERM are admissible.",
+      "classification": "moderate_issue",
+      "why_classification": "The repair is contained and the same sinh/tanh regularizer conclusions then follow from the parent theorem. It nonetheless withdraws the old promise for arbitrary convergent positive-loss trajectories and for potentially saturating tanh boundary limits, both allowed by the stated model class. This is a limited but meaningful restriction rather than a minor technical edit.",
+      "new_version_repair_locator": {
+        "tag": "cor:TrigonometricRegularization",
+        "quote": "if $\\wprodT := \\lim_{\\t \\to T} \\sigmainn(\\w(\\t))$ with $\\LossM(\\wprodT) = 0$ exists, then"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2308.04921:I006",
+      "title": "Trigonometric feasible-set constraints omit '=0'",
+      "target_type": "formal_result",
+      "primary_affected_tag": "cor:TrigonometricRegularization",
+      "failure_location": {
+        "tag": "cor:TrigonometricRegularization",
+        "quote": "\\min_{\\widetilde\\z\\in\\R^\\N, \\LossM(\\widetilde\\z)} \\g_\\text{sinh} \\left( \\widetilde\\z \\right)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:implicit_regularizationIII"
+        }
+      ],
+      "failure_explanation": "A scalar expression LossM(tilde z) by itself is not a constraint defining a minimization domain. Both the implicit-bias theorem and the corollary's proof minimize over zero-loss outputs, so the only mathematically coherent reading is LossM(tilde z)=0.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "As printed, the two optimization domains in the trigonometric corollary are malformed, although the intended zero-loss domains are unambiguous from the proof.",
+      "least_adequate_overall_repair": "Insert '=0' after LossM(tilde z) in each of the two feasible-set conditions in cor:TrigonometricRegularization.",
+      "classification": "typo",
+      "why_classification": "A scalar loss expression alone cannot define the displayed constraint, while the proof, the parent theorem, and every surrounding optimization problem uniquely specify the zero-loss set. The correction is purely transcriptional and changes no reasoning.",
+      "new_version_repair_locator": {
+        "tag": "cor:TrigonometricRegularization",
+        "quote": "\\min_{\\widetilde\\z\\in\\R^\\N, \\LossM(\\widetilde\\z) =0 } \\g_\\text{sinh} \\left( \\widetilde\\z \\right)"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2308.04921:I007",
+      "title": "Tanh exponential-rate constant suppresses feasible-point dependence",
+      "target_type": "formal_result",
+      "primary_affected_tag": "cor:TrigonometricRegularizationConvergence",
+      "failure_location": {
+        "tag": "cor:TrigonometricRegularizationConvergence",
+        "quote": "there exists a constant $c > 0$ (only depending on $\\mu$, $\\widetilde\\w_0$, and $\\A$)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:Convergence"
+        }
+      ],
+      "failure_explanation": "With scalar A=1, L(v,y)=(v-y)^2/2, fixed initial output x0=1/2, and x=tanh(w), the output satisfies x'=-(1-x^2)^2(x-y). Its loss has asymptotic exponent 2(1-y^2)^2. The PL constant, A, and x0 are fixed, while this exponent tends to zero as the feasible y approaches 1. Hence the old proof cannot produce a positive c independent of the feasible target; the distance from the trajectory to the tanh boundary necessarily depends on feasible-point data.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The instancewise exponential rate remains valid, but the old data-uniform constant is false near the tanh boundary.",
+      "least_adequate_overall_repair": "Keep the instancewise exponential estimate but write c=2 mu sigma_min(A)^2 r with r=inf_{t,i}(1-wprod_i(t)^2)^2>0, and state that the bound on r may depend on feasible-point data, the relevant Bregman bound, or equivalently the trajectory's distance from the tanh boundary. Remove the claimed dependence only on mu, the initialization, and A.",
+      "classification": "moderate_issue",
+      "why_classification": "The exponential mode remains valid for each fixed instance, so no new proof architecture is needed. Nevertheless, the claimed data-uniform exponent is a substantive rate promise and fails as feasible targets approach the tanh boundary; allowing target dependence is therefore a limited weakening, not a minor constant correction.",
+      "new_version_repair_locator": {
+        "tag": "cor:TrigonometricRegularizationConvergence",
+        "quote": "only depends on $\\mu$, $\\widetilde\\z_0$, $D_F(\\widetilde\\z_0,\\wprod_0)$, and $\\sigma_{\\min}(\\A)$"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2308.04921:I008",
+      "title": "Decay and convergence use unassumed convexity",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:decay",
+      "failure_location": {
+        "tag": "lem:decay",
+        "quote": "where we used in the second line \\eqref{eq:without_sigmaout}, in the fourth line the convexity of $L$, and in the last line that $\\LossM(\\widetilde\\z_0) = 0$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "as:A3"
+        }
+      ],
+      "failure_explanation": "The lemma claims a convex supporting-hyperplane bound under assumptions requiring only continuous differentiability and an exact zero. For example, take scalar identity link and reparametrization, A=1, and L(v,y)=f(v-y) with f(x)=x^2((x-1)^2+epsilon) and 0<epsilon<1/8. This admissible loss has a nonzero stationary point with positive loss. Starting there makes the flow and the Bregman divergence stationary, contradicting the claimed strictly negative decay toward the zero-loss comparator. Thus the prose claim of using convexity identifies an assumption genuinely absent from the statement.",
+      "dependent_affected_formal_result_tags": [
+        "cor:PolynomialRegularization",
+        "cor:PolynomialRegularizationConvergenceRate",
+        "cor:PolynomialRegularizationNonAsymptotic",
+        "cor:TrigonometricRegularization",
+        "cor:TrigonometricRegularizationConvergence",
+        "cor:TrigonometricRegularizationNonAsymptotic",
+        "thm:Convergence",
+        "thm:PolynomialRegularizationIntroduction",
+        "thm:TrigonometricRegularizationIntroduction"
+      ],
+      "overall_effect": "The O(1/t) decay, zero-loss convergence, bounded-trajectory conclusions, and the downstream polynomial and trigonometric convergence guarantees are not established for the old nonconvex loss class; admissible positive-loss stationary trajectories directly contradict them.",
+      "least_adequate_overall_repair": "Add, wherever the decay lemma is invoked, the hypothesis that v maps to L(rho_link(v),y) is convex; in the old identity-link setting this is convexity of L(·,y). A minimally sufficient alternative is the corresponding supporting-hyperplane inequality between every trajectory point and the zero-loss comparator. Propagate that premise through thm:Convergence and all listed polynomial, trigonometric, and introductory consequences.",
+      "classification": "moderate_issue",
+      "why_classification": "This contained assumption repair validates the displayed decay calculation and preserves the same conclusions, rates, and proof mechanism. It is not minor because it excludes the broad and naturally allowed nonconvex loss class, for which positive-loss stationary trajectories directly contradict the chain. The convex-loss versions remain recognizably comparable, so global reconstruction or major removal is unnecessary.",
+      "new_version_repair_locator": {
+        "tag": "as:B1",
+        "quote": "The function $\\v \\mapsto L(\\sigmaout(\\v),\\y)$ is convex."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2308.04921:I009",
+      "title": "Decay lemma drops the comparator-loss term",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:decay",
+      "failure_location": {
+        "tag": "lem:decay",
+        "quote": "\\le - \\LossM(\\wprod(\\t))."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:decay"
+        }
+      ],
+      "failure_explanation": "Convexity gives dD_F(tilde z,w(t))/dt <= LossM(tilde z)-LossM(w(t)), not the stated bound without the first term. For a scalar identity reparametrization, squared loss with y=0, w(0)=1, and comparator tilde z=1, the Bregman divergence has derivative zero at t=0 while the old right-hand side is strictly negative. Thus the claim fails for an explicitly allowed comparator.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The lemma is false for arbitrary interior comparators. Its decay consequence remains valid when the comparator has zero loss, which is the comparator used in the convergence theorem.",
+      "least_adequate_overall_repair": "For an arbitrary interior comparator tilde z, replace the lemma's estimate by d D_F(tilde z,wprod(t))/dt <= LossM(tilde z)-LossM(wprod(t)). Equivalently, retain the old right-hand side only after restricting the comparator to LossM(tilde z)=0. Continue to use the zero-loss specialization in the convergence argument.",
+      "classification": "minor_issue",
+      "why_classification": "This is a genuine misuse of the convexity inequality rather than a transcriptional typo, but the correction is a short local calculation. The standard arbitrary-comparator estimate survives, and its zero-loss specialization—the only decay consequence needed downstream—has exactly the original strength, with no new lemma or meaningful guarantee loss.",
+      "new_version_repair_locator": {
+        "tag": "lem:decay",
+        "quote": "\\le \\LossM(\\widetilde\\z) - \\LossM(\\wprod(\\t))."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

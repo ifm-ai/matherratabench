@@ -1,0 +1,240 @@
+{
+  "paper_id": "2603.24819",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2603.24819:I001",
+      "title": "The convergence claim does not cover the stochastic control-volume sampler",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "We establish a rigorous convergence analysis linking the network's loss function to the $L^1$ error towards the entropy solution, providing the first explicit $L^1$ convergence rate for a mesh-free control-volume PINN formulation via the Bouchut-Perthame framework for scalar conservation laws."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "lem:added-1",
+          "quote": "For any partition $\\{D_i\\}_{i=1}^{N_D}$ of $\\Omega \\times (0,T)$, the continuous weak truncation error is bounded by the volume-weighted network losses:"
+        },
+        {
+          "tag": "sec:cv_formulation"
+        },
+        {
+          "tag": "alg:weak_entropy_pinn"
+        }
+      ],
+      "failure_explanation": "The prose claims a rigorous link between the network's loss function and the L1 error for the mesh-free control-volume method. What the old formal analysis actually assumes is a deterministic partition and uses the identity sum_i |D_i|=|Q|. The algorithm instead samples multiscale subdomains dynamically and supplies no requirement that they be disjoint, cover Q, or satisfy a concentration estimate. Thus the formal support concerns an ideal partition-based loss, not the practical stochastic loss advertised by the prose.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Even after repairing the partition-based residual estimates, the old analysis does not certify the implemented stochastic, potentially overlapping control-volume sampler.",
+      "least_adequate_overall_repair": "Modify the analyzed sampler so that every loss batch is a genuine, possibly randomized multiscale partition of the space–time domain: the cells must be disjoint, cover the domain, and the reported loss must be evaluated on that realized partition. Restrict the convergence wording to this partition-sampled variant and describe the original overlapping sampler as uncertified unless a separate coverage and concentration result is proved.",
+      "classification": "moderate_issue",
+      "why_classification": "Aligning the algorithm with the partition premise requires a substantive but contained change to the sampling construction and revalidation of the implementation claims. The same recognizable control-volume method and convergence commitment can survive without new global proof architecture, but the repair is not a routine prose edit because the original stochastic sampling contract is changed.",
+      "new_version_repair_locator": {
+        "tag": "rem:partition_vs_sampling"
+      }
+    },
+    {
+      "issue_id": "2603.24819:I002",
+      "title": "A soft TV penalty is claimed to guarantee a uniform bound",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "To guarantee this condition, we introduce a TVD regularization term:"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:total_loss"
+        },
+        {
+          "tag": "sec:tvd",
+          "quote": "In practice, at each training iteration, the supremum and the spatial integrals are evaluated by sampling a random cloud of points distributed across the space--time domain, allowing for efficient stochastic approximation of the total variation:"
+        }
+      ],
+      "failure_explanation": "The prose claims that introducing the TVD regularizer guarantees the variation condition required by the convergence analysis. The old construction actually adds the TV quantity with finite weight to the objective and approximates it from random point clouds; it supplies neither a hard constraint nor an argument yielding one constant M uniformly over the approximation sequence. The material difference is that the stability estimate needs such a uniform bound as a hypothesis, whereas the training term only encourages it empirically.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The practical WE-PINNs training procedure is not shown automatically to satisfy the total-variation hypothesis needed by the conditional convergence argument.",
+      "least_adequate_overall_repair": "Replace the assertion that the sampled finite-weight TVD penalty guarantees a uniform bound by the statement that it only promotes bounded variation. State sup_t TV(U_theta(·,t)) ≤ M, with M uniform over the approximation sequence, as an independent hypothesis in every convergence claim.",
+      "classification": "serious_issue",
+      "why_classification": "Serious: the recorded complete repair withdraws the claim that the practical training objective guarantees the uniform total-variation bound required by the convergence argument. It instead imposes that bound as an independent hypothesis. Retaining the conditional theorem and its rate does not preserve the advertised guarantee that this training procedure satisfies the theorem's essential stability condition. This is major loss of the algorithmic applicability claim, despite a local prose repair and an unchanged conditional proof. The classification does not assert that every trained network violates the bound or that a separate guarantee-restoring argument is impossible.",
+      "new_version_repair_locator": {
+        "tag": "rem:tvd_soft"
+      }
+    },
+    {
+      "issue_id": "2603.24819:I003",
+      "title": "The scalar loss lacks the Kruzhkov entropy parameter",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:added-1",
+      "failure_location": {
+        "tag": "lem:added-1",
+        "quote": "corresponding exactly to the local conservation residual $R_{\\mathrm{cons}}(D_i)$ and entropy residual $R_{\\mathrm{ent}}(D_i, k)$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:ent_loss"
+        },
+        {
+          "tag": "alg:weak_entropy_pinn"
+        },
+        {
+          "quote": "E_R(U_\\theta) = \\sup_{k \\in \\mathbb{R}, \\varphi \\in \\mathcal{A}} \\mathcal{R}_{k,\\varphi}(U_\\theta)"
+        }
+      ],
+      "failure_explanation": "The prose and algorithm define one residual E_theta(D_i) from a fixed pair (eta,q), whereas E_R is uniformly quantified over k in R. The lemma then invokes an undefined k-dependent cell residual R_ent(D_i,k) and substitutes the fixed-pair loss for the supremum over k. Vanishing of one fixed-pair loss supplies no such uniform control, so the lemma and its use in the convergence theorem are unsupported.",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "overall_effect": "The old scalar training objective does not control the entropy-defect quantity used by the convergence analysis, and the algorithm lacks the parameter needed to implement that theoretical family.",
+      "least_adequate_overall_repair": "For scalar laws, define the cell entropy residual using the full Kruzhkov family E_theta(D_i,k), define the theoretical entropy loss with a supremum over the relevant bounded range of k, and use that same quantified loss in the discrete-to-continuous lemma and convergence theorem. The algorithm must maximize over k or use a discretization or stochastic approximation accompanied by a uniform approximation guarantee.",
+      "classification": "moderate_issue",
+      "why_classification": "Adding the entropy parameter is a standard, contained redesign that can preserve the scalar convergence statement and its scope. It nevertheless changes the loss, its quantifiers, and the executable algorithm and requires nontrivial uniform control over k, so it is not a local routine repair.",
+      "new_version_repair_locator": {
+        "tag": "sec:ent_loss"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2603.24819:I004",
+      "title": "The weak entropy defect has the wrong sign",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:added-1",
+      "failure_location": {
+        "quote": "\\mathcal{R}_{k,\\varphi}(U_\\theta) = \\int_0^T \\int_\\Omega \\left( |U_\\theta - k|\\partial_t \\varphi + \\text{sgn}(U_\\theta - k)(F(U_\\theta) - F(k))\\cdot \\nabla_x \\varphi \\right) dx\\, dt."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:entropy_inequality"
+        },
+        {
+          "tag": "sec:ent_loss",
+          "quote": "For entropy solutions, the space--time formulation requires that $E_\\theta(D_k) \\leq 0$ for all admissible control volumes."
+        }
+      ],
+      "failure_explanation": "From partial_t eta+div q <= 0 and a nonnegative compactly supported test function, integration by parts gives -int(eta phi_t+q dot grad phi) <= 0. The old definition instead uses the positive integral. Thus an exact entropy shock with negative entropy production can have a positive old E_R even though every corresponding cell entropy production is nonpositive and the one-sided entropy loss vanishes. This directly contradicts the lemma's bound and also reverses the defect used by the later stability and convergence results.",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "thm:added-2"
+      ],
+      "overall_effect": "The old defect can penalize physically admissible entropy dissipation and fail to detect entropy violations with the intended orientation, invalidating the entropy-residual chain through the stability and convergence results.",
+      "least_adequate_overall_repair": "Insert the uniquely required leading minus sign in the weak entropy residual: R_{k,φ}(U_theta) = -∫(|U_theta-k| φ_t + sgn(U_theta-k)(F(U_theta)-F(k))·∇φ). Keep the cell entropy production nonpositive for entropy solutions and penalize only its positive part throughout the dependent chain.",
+      "classification": "typo",
+      "why_classification": "The old entropy inequality, the one-sided cell loss, and the intended interpretation of E_R uniquely force this sign. The surrounding argument already uses the positive-violation orientation, and correcting the transcription changes no hypothesis, construction, conclusion, or rate.",
+      "new_version_repair_locator": {
+        "tag": "eq:weak_ent_res"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.24819:I005",
+      "title": "The discrete-loss bound drops a factor sqrt(N_D)",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:added-1",
+      "failure_location": {
+        "tag": "lem:added-1",
+        "quote": "Recognizing that $\\sum |D_i| = |\\Omega \\times (0,T)|$ and substituting the definitions of $L_{\\mathrm{cons}}(\\theta)$ and $L_{\\mathrm{ent}}(\\theta)$ defined in Section 3, we obtain the upper bound for any $\\varphi \\in \\mathcal{A}$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:cons_loss"
+        },
+        {
+          "tag": "sec:ent_loss"
+        }
+      ],
+      "failure_explanation": "The old definition is L_cons=(1/N_D) sum_i |R_i|^2/|D_i|, and analogously for L_ent. Hence the first Cauchy-Schwarz factor in the proof is sqrt(N_D L_cons), not sqrt(L_cons); the same normalization error affects the entropy term. The lemma's stated right-hand side is therefore missing a common factor sqrt(N_D).",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "overall_effect": "The constants in the discrete-to-continuous lemma and the dependent convergence bound have the wrong dependence on the number of control volumes, although convergence for a fixed partition survives after correction.",
+      "least_adequate_overall_repair": "With the old averaged loss definitions, replace the lemma's right-hand side by sqrt(N_D |Q|)(sqrt(L_cons)+sqrt(L_ent)) and propagate the induced N_D dependence through the convergence constant. Equivalently, use the unnormalized losses N_D L_cons and N_D L_ent in the analytical statements.",
+      "classification": "minor_issue",
+      "why_classification": "This is a routine Cauchy–Schwarz normalization correction. It requires genuine mathematical checking and therefore is not merely a typo, but it changes neither the loss exponents nor fixed-partition convergence and needs no new lemma or proof architecture.",
+      "new_version_repair_locator": {
+        "tag": "sec:cv_discrete"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.24819:I006",
+      "title": "Sampled cell residuals do not by themselves control continuous weak residuals",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:added-1",
+      "failure_location": {
+        "tag": "lem:added-1",
+        "quote": "Applying the divergence theorem on each $D_i$, the continuous residual translates into boundary flux integrals, corresponding exactly to the local conservation residual $R_{\\mathrm{cons}}(D_i)$ and entropy residual $R_{\\mathrm{ent}}(D_i, k)$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:weak_conservation"
+        },
+        {
+          "quote": "\\|\\partial_t \\varphi\\|_{L^\\infty} + \\|\\nabla_x \\varphi\\|_{L^\\infty} \\le 1"
+        }
+      ],
+      "failure_explanation": "The lemma is quantified over any partition and all variable test functions in the class A. An unweighted cell residual contains only the net flux through the cell boundary. In contrast, the weak pairing contains the test-function weight: the product rule gives an expression involving weighted face fluxes and an interior distributional term. Consequently, unweighted net residuals can vanish by cancellation while the weak pairing is nonzero. The old proof's claimed exact correspondence therefore does not establish its loss-only bound.",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "overall_effect": "The discrete-to-continuous lemma is false as stated, so the main convergence theorem's loss-only control of the continuous entropy defect and L1 error is not established.",
+      "least_adequate_overall_repair": "Replace the asserted exact correspondence by explicit entropy and conservation consistency defects measuring the difference between each weighted weak pairing and its reconstruction from the unweighted cell fluxes. Include those defects in the lemma and main error estimate, make convergence conditional on their vanishing, and remove every claim that the sampled cell losses alone control the continuous weak residual or L1 error.",
+      "classification": "serious_issue",
+      "why_classification": "Unweighted net cell fluxes have a genuine cancellation nullspace, so they can vanish while variable-test-function residuals remain nonzero. The stated loss-only guarantee can be recovered only by introducing weighted test residuals or an essentially new consistency and sampling theory, which reconstructs the core proof mechanism. The contained alternative with independent consistency defects removes the central loss-only guarantee and therefore entails major mathematical loss.",
+      "new_version_repair_locator": {
+        "tag": "sec:cv_lemmas"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.24819:I007",
+      "title": "The convergence proof uses a different Bouchut-Perthame exponent than it states",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:added-2",
+      "failure_location": {
+        "tag": "thm:added-2",
+        "quote": "C \\sqrt{TV(u_0) M} \\cdot \\left[ |\\Omega \\times (0,T)|^{1/2} \\left( \\sqrt{L_{\\mathrm{cons}}(\\theta)} + \\sqrt{L_{\\mathrm{ent}}(\\theta)} \\right) \\right]^{1/2}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:added-1",
+          "quote": "C \\sqrt{TV(u_0) \\cdot \\sup_{t \\in [0,T]} TV(v(\\cdot, t)) \\cdot \\sqrt{E_R(v)}}"
+        }
+      ],
+      "failure_explanation": "The old supporting theorem gives a term sqrt(A sqrt(E_R))=sqrt(A) E_R^(1/4), where A is the product of the variation factors. Since the old lemma claims E_R is of order L^(1/2), that printed dependency yields a loss exponent 1/8. The convergence proof instead raises the lemma's bound to the power 1/2 and concludes a loss exponent 1/4. Thus the displayed old dependencies support only the weaker rate, regardless of which version of the cited external theorem is ultimately correct.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The claimed L_cons^(1/4)+L_ent^(1/4) convergence rate does not follow from the old theorem as printed; only a 1/8 loss exponent follows from that internal chain, apart from the other independent defects.",
+      "least_adequate_overall_repair": "Using the Bouchut–Perthame estimate as printed in the old source, replace the main rate by K(L_cons^(1/8)+L_ent^(1/8)) and remove the unsupported 1/4-rate and optimality claims. A 1/4 rate should be retained only after independently verifying that the cited estimate has E_R^(1/2), rather than E_R^(1/4), dependence and making every display consistent with that verified result.",
+      "classification": "moderate_issue",
+      "why_classification": "The internally supported repair is algebraically contained, but it substantively weakens an advertised convergence rate. A recognizable convergence theorem remains with the same model and hypotheses, so the loss is limited rather than major; the unresolved choice between correcting the cited theorem and weakening the rate prevents classification as a typo or same-guarantee minor repair.",
+      "new_version_repair_locator": {
+        "tag": "thm:BP"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2603.24819:I008",
+      "title": "The stated shallow-water entropy flux is incompatible with the physical flux",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "In all cases, the entropy functions are convex and the corresponding entropy fluxes satisfy the compatibility condition with the physical flux, ensuring consistency with the entropy inequality."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:entropy"
+        },
+        {
+          "quote": "q(U) = \\eta(U)\\,\\mathbf{u},"
+        },
+        {
+          "quote": "hu^2 + \\frac{1}{2} g h^2"
+        }
+      ],
+      "failure_explanation": "The prose claims that every listed entropy flux satisfies grad_U q=grad_U eta grad_U F. In one spatial dimension, writing m=hu gives eta=m^2/(2h)+gh^2/2 and the printed q=m eta/h=m^3/(2h^2)+(g/2)mh. Differentiating this q does not equal grad eta times the Jacobian of F=(m,m^2/h+gh^2/2). Compatibility instead gives q=m^3/(2h^2)+gmh=u(eta+gh^2/2). Thus the actual shallow-water formula does not support the asserted all-model compatibility.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The old shallow-water entropy loss is not the entropy inequality claimed by the paper, so its entropy-admissibility interpretation for the shallow-water experiments is unsupported, although the conservation residual is unaffected.",
+      "least_adequate_overall_repair": "Replace the shallow-water entropy flux by q(U) = u(eta(U)+g h^2/2), which in one dimension is m^3/(2h^2)+g m h for m=hu. Use this flux in the entropy residual and verify or recompute the shallow-water experiments before retaining their entropy-admissibility interpretation.",
+      "classification": "minor_issue",
+      "why_classification": "The compatible shallow-water energy flux follows by a short standard differentiation and can be substituted without changing the conservation residual, method architecture, model class, or theoretical rate. The printed formula is coherent enough that mathematical checking is required, so the defect is substantive but local and routine rather than a typo.",
+      "new_version_repair_locator": "removed_without_successor"
+    }
+  ]
+}

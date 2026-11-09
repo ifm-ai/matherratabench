@@ -1,0 +1,185 @@
+{
+  "paper_id": "2502.19542",
+  "version_pair": "v1-v4",
+  "issues": [
+    {
+      "issue_id": "2502.19542:I001",
+      "title": "Missing cross-level parent closure for L-chain refinement",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:exact-mesh",
+      "failure_location": {
+        "tag": "alg:exact-mesh",
+        "quote": "\\var{get\\_support(lchain)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "assum:refinement-domains"
+        },
+        {
+          "tag": "def:L-chain"
+        },
+        {
+          "quote": "\\domain_0\\supseteq \\domain_1 \\supseteq\\dots \\supseteq \\domain_{L}"
+        }
+      ],
+      "failure_explanation": "The hierarchy requires nested refinement domains, but after selecting an L-chain the old procedure adds its support to marked_els[ell] without checking containment in Omega_ell. A corner formed from the two coordinate directions of a problematic pair need not be supported inside Omega_ell, even though the pair's endpoint supports are. The subsequent space update can therefore violate nestedness and the refinement-domain framework needed for the exactness argument.",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1"
+      ],
+      "overall_effect": "The returned object need not be a valid nested hierarchical mesh, so the claim that the algorithm always produces an exact mesh is not established.",
+      "least_adequate_overall_repair": "Add a cross-level parent-closure stage for every newly inserted level-ℓ L-chain. If an added spline support is not contained in Ω_ℓ, mark supports of covering level-(ℓ−1) parent splines and recurse toward level 0. Process or revisit levels from finer to coarser so that induced parent refinements undergo the same problematic-pair checks, and prove by induction that the closure terminates, preserves nested support-union domains, and restores the final exactness guarantee.",
+      "classification": "moderate_issue",
+      "why_classification": "This is not a transcriptional or purely local edit: a corner can force refinement through several levels, and those lower-level additions must themselves be checked for new problematic pairs. The required closure construction and scheduling argument are nontrivial but contained, preserve the L-chain method and the full correctness lemma, and do not require global reconstruction or mathematical loss.",
+      "new_version_repair_locator": {
+        "tag": "alg:exact-mesh",
+        "quote": "\\State \\var{marked\\_els}\\([\\level-1] \\gets \\var{marked\\_els} [\\level-1] \\cup \\var{get\\_support(parent\\_func)}\\)"
+      }
+    },
+    {
+      "issue_id": "2502.19542:I002",
+      "title": "Undefined state for regenerating unchecked pairs",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:exact-mesh",
+      "failure_location": {
+        "tag": "alg:exact-mesh",
+        "quote": "\\var{unchecked\\_funcs} \\(\\gets\\) \\var{unchecked\\_funcs} \\(\\cup\\)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:initiate-unchecked",
+          "quote": "\\State \\Return \\var{unchecked\\_pairs}"
+        },
+        {
+          "tag": "lem:problematic-chain"
+        }
+      ],
+      "failure_explanation": "The printed main procedure has no initialization or input for unchecked_funcs, while the subroutine that creates a variable of that name returns only unchecked_pairs. Consequently the next candidate-pair set is undefined. Initializing it merely as the newly added corners would also omit pairs between a new corner and an existing unresolved function, so termination would not certify that all newly possible problematic pairs were examined.",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1"
+      ],
+      "overall_effect": "The algorithm is not executable as printed, and its while-loop termination does not establish an output without problematic pairs; the later correctness lemma consequently lacks support.",
+      "least_adequate_overall_repair": "Make the candidate-function state explicit by returning the initializer's complete set of unresolved functions together with its initial pairs. Maintain that set in the main procedure; whenever new corners are added, pair each new corner with every existing unresolved function and with the other new corners, remove already checked pairs, and repeat. The existing problematic-chain lemma supplies the justification for not separately adding every intermediate L-chain function.",
+      "classification": "minor_issue",
+      "why_classification": "The initializer already constructs the required unresolved-function set, and the paper already contains the lemma needed to justify the resulting pair coverage. Repairing the interface and persistent bookkeeping is short and local and preserves the algorithm and exactness lemma without new mathematical machinery, although the necessary completeness check makes it more than a typo.",
+      "new_version_repair_locator": {
+        "tag": "alg:exact-mesh",
+        "quote": "\\var{get\\_local\\_pairs}(\\(\\thbbasis^{\\boldvec{0}}_L, \\level,\\) \\var{current\\_corners})"
+      }
+    },
+    {
+      "issue_id": "2502.19542:I003",
+      "title": "Finest-level marks are not refined",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:exact-mesh",
+      "failure_location": {
+        "tag": "alg:exact-mesh",
+        "quote": "\\ForAll{\\(\\level \\var{ in } \\{0,\\dots,L-1\\}\\)}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "subsec:tensor-product-splines"
+        },
+        {
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "For an admissible input with a nonempty marked_els[L], no old loop iteration acts on those marks. The algorithm therefore cannot create the level-(L+1) refinement requested at the current finest level and returns the unchanged level-L hierarchy.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The procedure silently fails to perform a permitted finest-level refinement and cannot serve as a general adaptive refinement step that creates a new highest level.",
+      "least_adequate_overall_repair": "Run the refinement body for level ℓ=L as well as the lower levels, instantiate the required level-(L+1) tensor-product data, and allow the returned hierarchy to have highest level L+1 when marked_els[L] is nonempty. The same refinement and problematic-pair checks can then be applied at the former finest level.",
+      "classification": "minor_issue",
+      "why_classification": "This is a routine boundary-level extension of the existing construction and does not alter its method or guarantee. It is not merely a typographical loop-bound correction because the next tensor level and the output-level contract must also be supplied, but no nontrivial new argument is needed.",
+      "new_version_repair_locator": {
+        "tag": "alg:exact-mesh",
+        "quote": "\\ForAll{\\(\\level \\var{ in } \\{L,\\dots,0\\}\\)}"
+      }
+    },
+    {
+      "issue_id": "2502.19542:I004",
+      "title": "Localization filter can discard pre-existing problematic pairs",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:initiate-unchecked",
+      "failure_location": {
+        "tag": "alg:initiate-unchecked",
+        "quote": "\\supp(\\xbsp_{\\boldvec{i}})\\cap \\var{marked\\_els} == \\emptyset\\)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "that the pair is problematic if there is no shortest chain between them."
+        }
+      ],
+      "failure_explanation": "Choose an input basis containing a pre-existing unresolved problematic pair and marks disjoint from both supports. The old initializer forms the pair and then removes it because both supports miss marked_els. With no later refinement affecting that region, the pair remains in the output, contradicting the promised absence of problematic intersections. No old input qualification rules out this case.",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1"
+      ],
+      "overall_effect": "The main algorithm can return a hierarchy still containing a pre-existing problematic pair, so its output contract and the unconditional correctness lemma fail.",
+      "least_adequate_overall_repair": "Remove the initializer's deletion of pairs whose two supports miss the current marks. Initially check all unordered pairs of unresolved functions in B_{ℓ,ℓ+1} at each level, then retain the existing recursive L-chain repair. This preserves the unconditional input contract and ensures that pre-existing problematic pairs are repaired rather than silently ignored.",
+      "classification": "minor_issue",
+      "why_classification": "The initializer already forms the complete pair set before applying the invalid localization filter, so deleting that filter gives a short, source-supported, same-guarantee repair. It may perform extra checks, but no complexity bound is promised and no new lemma, construction, or result weakening is required.",
+      "new_version_repair_locator": {
+        "tag": "__STAGED_AUTOGEN_F71BADD1113739B7_FORMAL_000011__"
+      }
+    },
+    {
+      "issue_id": "2502.19542:I005",
+      "title": "Arbitrary element marks need not define admissible refinement domains",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:initiate-unchecked",
+      "failure_location": {
+        "tag": "alg:initiate-unchecked",
+        "quote": "\\State \\(\\domain_{\\level+1} \\gets \\domain_{\\level+1} \\cup \\var{marked\\_els}\\)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "assum:refinement-domains"
+        },
+        {
+          "tag": "subsec:hierarchical-splines"
+        }
+      ],
+      "failure_explanation": "For degree at least one, an isolated interior mesh element is generally strictly smaller than every zero-form B-spline support covering it. Taking that element as marked_els and directly forming Omega_{ell+1} union marked_els therefore need not produce a domain expressible as a union of closed level-ell zero-form supports. The algorithm can leave the class of hierarchical spaces on which its definitions and exactness framework operate.",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1"
+      ],
+      "overall_effect": "The updated object need not satisfy the paper's standing refinement-domain assumption, so it may not be a valid hierarchical basis for the asserted exactness result and the unconditional correctness lemma is not established.",
+      "least_adequate_overall_repair": "Before updating Ω_{ℓ+1}, replace each level-ℓ element-mark set by its zero-form support closure: take the union of closed supports of admissible level-ℓ zero-form B-splines whose supports intersect and cover the marked elements, and use that closed support union consistently for the domain update and pair localization. Thus every original mark is refined while Ω_{ℓ+1} remains a union of the supports required by the standing assumption.",
+      "classification": "minor_issue",
+      "why_classification": "The standing refinement-domain assumption directly supplies this standard local preprocessing step. Support-closing the marks may add a bounded refinement halo, but it preserves arbitrary marked-element inputs, the refinement method, and the exactness conclusion, with no new mathematical argument or substantive guarantee loss.",
+      "new_version_repair_locator": {
+        "quote": "After this marking, we choose as refinement domains the supports of all basis functions\nwhose supports intersect the Dörfler-marked elements, thus ensuring\n\\cref{assum:refinement-domains}."
+      }
+    },
+    {
+      "issue_id": "2502.19542:I006",
+      "title": "Natural-boundary vector-Laplace test uses the wrong discrete space",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "It is easy to see that \\(u \\subseteq\n\\thbspace^{1}_{L}\\), and therefore we should be able to compute the solution exactly, up to\nmachine precision, in the case of \\cref{fig:1-form-example-b}."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "subsec:univariate-splines"
+        },
+        {
+          "tag": "subsec:tensor-product-splines"
+        },
+        {
+          "tag": "eq:1-form-example-solution"
+        }
+      ],
+      "failure_explanation": "The prose claims that the field u=(x(1-x),0) belongs to the stated truncated hierarchical 1-form space and hence should be reproduced exactly on the exact mesh. The old paper actually defines zero-form univariate factors to vanish at endpoints; consequently the first component of its tensor-product 1-form space has zero tangential trace on y=0 and y=1. The chosen field equals x(1-x) there and is generally nonzero. Thus the stated space does not support the claimed membership or exact-reproduction conclusion.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The first vector-Laplace test's stated discretization and exact-reproduction rationale are invalid, so its error comparison cannot, as written, isolate problematic intersections from a boundary-space mismatch. The paper's abstract exactness theory is unaffected.",
+      "least_adequate_overall_repair": "Discretize the natural-boundary test with unconstrained open-knot hierarchical 0- and 1-form spaces, using p+1 endpoint-knot repetitions instead of the endpoint-vanishing spaces defined earlier, and state this distinction explicitly. Verify that u=(x(1−x),0) and the associated mixed scalar field are representable in those spaces, then recompute or confirm the reported errors and comparison on the two meshes.",
+      "classification": "minor_issue",
+      "why_classification": "The old weak formulation imposes no essential boundary condition, while the univariate definition explicitly enforces endpoint vanishing, so using the standard open-knot spaces is a short, routine boundary-space correction supported by the source. It preserves the manufactured solution and exact-reproduction comparison, requires no new theory, and leaves the paper's abstract exactness results unaffected.",
+      "new_version_repair_locator": {
+        "quote": "Since the mixed weak-formulation has no boundary conditions imposed, we will use the\nnotation \\(\\tilde{\\hbspace}^j_{\\level}\\) to denote the hierarchical space corresponding to\n\\(\\hbspace^j_{\\level}\\) constructed with open knot-vector univariate B-splines, that is,\nwith \\(p+1\\) repetitions of the first and last knots, instead of the conditions used in\n\\Cref{subsec:univariate-splines}."
+      }
+    }
+  ]
+}

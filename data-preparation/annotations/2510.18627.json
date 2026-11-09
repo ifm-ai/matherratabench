@@ -1,0 +1,136 @@
+{
+  "paper_id": "2510.18627",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2510.18627:I001",
+      "title": "Transpose errors make the recovery map dimensionally undefined",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:decomp and singular vector",
+      "failure_location": {
+        "tag": "thm:decomp and singular vector",
+        "quote": "\\mathbf{M}_\\mathscr{R}\\T \\mathbf{M} = \\mathbf{W}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:decomp and singular vector"
+        },
+        {
+          "quote": "\\mathbf{M}_\\mathscr{R} \\mathbf{M} = \\mathbf{W}"
+        }
+      ],
+      "failure_explanation": "The proof defines M_R by row-stacking the vectorizations of the r tensors, so M_R has size r×M; the slice flattening M has size M×m, while U and W have size r×m. Therefore M_R^T M attempts to multiply an M×r matrix by an M×m matrix. The claimed inverse of M_R^T M_R also has the wrong size for multiplication by W. The valid chain is W=M_R M, M=M_R^T ΛU, and hence W=M_R M_R^T ΛU.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "As written, the proof does not define the asserted linear transformation from the recovered w_i to the decomposition factors u_i, although the theorem's earlier pSVT correspondence is unaffected.",
+      "least_adequate_overall_repair": "Keep M = M_R^T ΛU, replace M_R^T M = W by M_R M = W, and consequently replace the Gram factor by M_R M_R^T, giving U = Λ^{-1}(M_R M_R^T)^{-1}W. The stated spanning condition makes this Gram matrix invertible.",
+      "classification": "typo",
+      "why_classification": "The declared row orientation and matrix dimensions uniquely force every corrected transpose. The existing substitution argument then works unchanged, with no new premise, inference, or loss of the theorem's recovery guarantee.",
+      "new_version_repair_locator": {
+        "tag": "thm:decomp and singular vector",
+        "quote": "\\mathbf{M}_\\sR \\mathbf{M} = \\mathbf{W}"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2510.18627:I002",
+      "title": "Efficient PMI drops the singleton update",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:pmi_eff",
+      "failure_location": {
+        "tag": "alg:pmi_eff",
+        "quote": "\\tilde{\\fv}^{(1)} \\gets"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:pmi_ineff",
+          "quote": "\\State $\\fv^{(i)} \\gets \\tilde{\\fv}^{(i)} / \\|\\tilde{\\fv}^{(i)}\\|$"
+        },
+        {
+          "tag": "alg:pmi_eff"
+        }
+      ],
+      "failure_explanation": "The old base case evaluates the ordinary PMI routine but assigns its returned updated vector to tilde-v^(1). The declared output and the variables returned through the recursive assignments are v^(1), so no updated value is propagated. Consequently the recursive efficient implementation can act as the identity even though PS-HOPM and its convergence arguments require normalized block updates.",
+      "dependent_affected_formal_result_tags": [
+        "thm:power_method_convergence",
+        "prop: shift for Ttilde A",
+        "prop:local linear"
+      ],
+      "overall_effect": "Selecting the advertised efficient implementation can leave every block unchanged, invalidating its claimed equivalence to PMI and the convergence conclusions for that implementation.",
+      "least_adequate_overall_repair": "In the singleton branch, assign the return value of ordinary PMI to v^(1), rather than to the unused temporary tilde-v^(1); equivalently, explicitly compute and normalize that one-block update before returning it. No convergence argument needs alteration.",
+      "classification": "typo",
+      "why_classification": "The declared output, recursive assignments, and ordinary PMI routine uniquely force the updated state variable. The required normalized operation is already present and only its destination identifier is mistranscribed, so the one-line correction restores exact equivalence, complexity, and all dependent convergence guarantees.",
+      "new_version_repair_locator": {
+        "tag": "alg:pmi_eff",
+        "quote": "\\State $\\fv^{(1)} \\gets \\tilde{\\fv}^{(1)} / \\|\\tilde{\\fv}^{(1)}\\|$"
+      }
+    },
+    {
+      "issue_id": "2510.18627:I003",
+      "title": "Auxiliary-flattening contract does not ensure usable overlap and progress",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg: recover complement",
+      "failure_location": {
+        "tag": "alg: recover complement",
+        "quote": "f \\neq d-f', \\qquad \\min(f,f')\\neq 0, \\qquad f \\ngtr f'."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:requirements on f1f2",
+          "quote": "where $\\min(f,f')\\neq 0$ means $\\nexists i$ such that $f_i = f'_i = 0$"
+        },
+        {
+          "quote": "Use the shared factors of $f$ and $f'$ to recover a rank-one tensor in \\(\\colspan(\\mathbf{T}^{(f')})\\)."
+        },
+        {
+          "tag": "fig:nonsymmetry"
+        }
+      ],
+      "failure_explanation": "The algorithm requires a factor shared by f and f' to identify the corresponding component in the second flattening, and it requires f' to introduce at least one factor not already supplied by f. The old explanation of min(f,f')≠0 instead requires that no coordinate vanish in both tuples. This permits tuples with disjoint positive supports when a missing block has degree greater than one, while excluding the paper's own intended example. Read with the intended overlap meaning, the separate condition f not greater than f' also fails to state the required progress condition. The revised clauses require an actually shared positive coordinate and a coordinate with f_i<f'_i.",
+      "dependent_affected_formal_result_tags": [
+        "cor: r_max with matching",
+        "cor:added-1"
+      ],
+      "overall_effect": "For allowed old inputs the completion routine may have no shared factor with which to match components, and the case-three maximal-rank guarantee and its downstream optimality calculation are not established.",
+      "least_adequate_overall_repair": "Replace the auxiliary-tuple contract by the equivalent exclusion f' ≠ d−f together with an actual overlap condition, namely some i with f_i>0 and f'_i>0, and a progress condition, namely some j with f_j<f'_j. Apply these conditions consistently in the algorithm and restate the case-three rank guarantee and downstream optimization over this corrected feasible set.",
+      "classification": "moderate_issue",
+      "why_classification": "This is not merely a notation edit: the old contract admits natural auxiliary pairs for which the matching operation cannot start and omits pairs used by the intended construction. Correcting it changes the substantive admissible-pair class and requires rechecking the affected rank and optimality claims. The repair is nevertheless contained support bookkeeping, and a recognizably identical completion method and rank-guarantee chain survive without global reconstruction or major loss.",
+      "new_version_repair_locator": {
+        "tag": "eq:requirements on f1f2"
+      }
+    },
+    {
+      "issue_id": "2510.18627:I004",
+      "title": "Completion rank corollary invokes a theorem on the wrong subspace",
+      "target_type": "formal_result",
+      "primary_affected_tag": "cor: r_max with matching",
+      "failure_location": {
+        "tag": "cor: r_max with matching",
+        "quote": "The formulae then follow directly from Theorem~\\ref{thm:rmax_formula} and Theorem~\\ref{thm: match up patterns}."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg: recover complement",
+          "quote": "Reconstruct the remaining factors using the row span of $\\mathbf{T}^{(f)}$ (see Figure~\\ref{fig:symmetrybreaking})."
+        },
+        {
+          "tag": "thm: match up patterns"
+        },
+        {
+          "tag": "def:flattening"
+        }
+      ],
+      "failure_explanation": "The corollary asserts maximal recovery ranks for completion using row spaces of auxiliary flattenings. In the old source, Algorithm alg: recover complement has access to the row space of T^(f), namely the span of the complementary factors, whereas thm: match up patterns forms an orthonormal stack of the span of the full degree-d tensors and contracts it with R_(f). That is not the object supplied by the algorithm. A mere renaming is insufficient in the supplied argument because the old uniqueness step invokes the rank condition associated with its differently parameterized space. Thus the cited theorem does not establish the row-space completion step from which the corollary's formulas are said to follow. The new proposition instead starts with the span of the degree-(d-f) factors and contracts a known overlap a.",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-1"
+      ],
+      "overall_effect": "The old proof does not establish the advertised completion rank bounds for symmetry-breaking and auxiliary-flattening cases, and consequently leaves the later optimal-flattening corollary unsupported where it relies on those bounds.",
+      "least_adequate_overall_repair": "Replace the cited matching result with a row-space matching lemma. Starting from A = span{R_(d−f)^(i)}, stack an orthonormal basis of A, contract it with the known shared factor R_a^(i), and prove through the projection characterization of singular value one and the rank-one uniqueness condition r ≤ r(d−f) that the remaining complementary factor is uniquely recovered. Then use this lemma to rederive the completion-rank formulas and the dependent optimal-flattening conclusion.",
+      "classification": "moderate_issue",
+      "why_classification": "The old theorem concerns a different ambient subspace, so neither renaming nor a citation change repairs the proof. A nontrivial replacement lemma with the correct rank condition and its propagation through the corollaries is required. That work is localized to the completion argument and preserves the advertised algorithm and rank bounds, so it exceeds a minor repair but does not require global proof reconstruction or major mathematical loss.",
+      "new_version_repair_locator": {
+        "tag": "thm: match up patterns"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

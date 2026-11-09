@@ -1,0 +1,189 @@
+{
+  "paper_id": "2411.06844",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2411.06844:I001",
+      "title": "Incorrect periodic closure of the spatial stencil matrices",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:stencilmatrices",
+      "failure_location": {
+        "tag": "lemma:stencilmatrices",
+        "quote": "\\sum_{i,j=1}^{N_x} y_j D_{ji}^x z_i = - \\sum_{i,j=1}^{N_x} z_j D_{ji}^{x} y_i"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "D_{j,j\\pm 1}^{x}= \\frac{\\pm 1}{2\\Delta x}\\;"
+        },
+        {
+          "quote": "D_{1,2}^{x}= D_{1,N_x}^{x} &= 0\\;,\\qquad D_{N_x,N_x-1}^{x} = D_{N_x,1}^{x} = 0\\;"
+        },
+        {
+          "quote": "D_{1,1}^{xx}= 0\\;,\\ D_{1,2}^{xx} &=0\\;"
+        }
+      ],
+      "failure_explanation": "The old source sets D^x_{1,2}=0 while the generic stencil gives D^x_{2,1}=-1/(2 Delta x). Thus, for y=e_1 and z=e_2, the two sides of the claimed skew-adjoint identity are 0 and 1/(2 Delta x), respectively. Likewise, D^{xx}_{1,2}=0 but D^{xx}_{2,1}=1/(Delta x)^2, so the claimed symmetry fails. The matrices are also non-circulant, invalidating the later Fourier diagonalization.",
+      "dependent_affected_formal_result_tags": [
+        "theorem:EH-Counterexample",
+        "lemma:fullydiscreteCFL",
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "overall_effect": "The summation-by-parts lemma is false for the printed matrices, and the subsequent von Neumann, CFL, full-order stability, and low-rank stability arguments lose their stated stencil identities.",
+      "least_adequate_overall_repair": "Delete the exceptional assignments that zero the first and last stencil rows, retain the generic centered entries there, and add the periodic wrap entries D^x_{1,N_x}=-1/(2Δx), D^x_{N_x,1}=1/(2Δx), and D^{xx}_{1,N_x}=D^{xx}_{N_x,1}=1/(Δx)^2, with periodic indexing also used for the forward difference. This supplies the skew-adjoint, symmetric, negative-square, and circulant identities used throughout the listed chain without changing any statement or guarantee.",
+      "classification": "typo",
+      "why_classification": "The old source explicitly specifies periodic central differencing, gives the generic centered stencil, and later uses the uniquely corresponding circulant Fourier symbols and adjoint identities. Those features force the standard periodic closure, so the contradictory zero-entry block is a transcriptional definition error whose correction requires no new mathematical argument.",
+      "new_version_repair_locator": {
+        "quote": "D_{1,N_x}^{x} &= \\frac{-1}{2\\Delta x}\n\\;,\\quad D_{N_x,1}^{x} = \\frac{1}{2\\Delta x}\\;,\\\\\nD_{1,N_x}^{xx} &= D_{N_x,1}^{xx} = \\frac{1}{\\left( \\Delta x \\right)^2}."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2411.06844:I002",
+      "title": "Missing positive-density hypothesis in the multiplicative stability chain",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:fullydiscrete-rho",
+      "failure_location": {
+        "tag": "lemma:fullydiscrete-rho",
+        "quote": "Cancelling with $\\left(1+ \\sigma \\Delta t\\right) \\rho_j^{n+1}$ gives the desired equality, and completes the proof."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:linearBGKf"
+        },
+        {
+          "tag": "eq:rho",
+          "quote": "\\rho(t,x) = \\int_\\mathbb{R} f(t,x,v) \\mathrm{d}v"
+        },
+        {
+          "tag": "eq:splittingMg"
+        },
+        {
+          "tag": "eqs:Mg-g",
+          "quote": "- \\frac{g(t,x,v)}{\\rho(t,x)} \\partial_t \\rho(t,x)"
+        }
+      ],
+      "failure_explanation": "The lemma assumes only the discrete normalization of g at the initial time. Its proof then cancels the factor (1+sigma Delta t)rho_j^{n+1}, although the old setup does not establish that rho_j^{n+1} is nonzero. More broadly, the multiplicative systems and their numerical updates contain divisions by rho. The original equations admit the vacuum state f=0, rho=0, so the old stated domain includes inputs on which the update and proof are undefined. The lemma and dependent stability results are therefore justified only after imposing a non-vacuum condition.",
+      "dependent_affected_formal_result_tags": [
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "overall_effect": "The discrete normalization proof and both full-order and low-rank stability guarantees lack a required domain hypothesis; vacuum states make the multiplicative formulas non-executable.",
+      "least_adequate_overall_repair": "Restrict the multiplicative formulation and its numerical contract to trajectories with strictly positive density at every spatial point and every time level used, including both ρ_j^n and ρ_j^{n+1}. Add this premise to the normalization lemma and both full-order and low-rank stability results; all cancellations and quotients are then defined, while the normalization identity, algorithm, CFL condition, and H-norm conclusions remain unchanged on that domain.",
+      "classification": "moderate_issue",
+      "why_classification": "The repair is local and needs no new proof architecture, but it excludes the genuine vacuum regime admitted by the original BGK model, and vacuum makes both the full-order and low-rank updates non-executable rather than affecting only an incidental cancellation. This is a meaningful but limited domain weakening under which the same stability chain survives, so it exceeds minor without constituting major loss.",
+      "new_version_repair_locator": {
+        "tag": "sec2:Background",
+        "quote": "with strictly positive density $\\rho(t,x) >0$."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2411.06844:I003",
+      "title": "Malformed contraction in the low-rank energy expansion",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:added-1",
+      "failure_location": {
+        "tag": "thm:added-1",
+        "quote": "\\sum_{j=1}^{N_x}\\sum_{k=1}^{N_v} \\frac{\\rho_j^n}{\\rho_j^{n+1}} g_{jk}^n \\sum_{\\alpha=1}^{N_x} P_{\\alpha j}^{X} g_{\\alpha \\beta}^{n+1} \\left(\\rho_\\alpha^{n+1}\\right)^2 \\sum_{\\beta=1}^{N_v} P_{k\\beta}^{V}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:Sstep"
+        },
+        {
+          "quote": "Multiplication with $\\frac{2}{\\sqrt{2\\pi}} \\left(\\rho_\\alpha^{n+1}\\right)^2 g_{\\alpha \\beta}^{n+1} \\omega_\\beta e^{v_\\beta^2/2} (1+\\sigma \\Delta t)$ and summation over $\\alpha$ and $\\beta$ leads to"
+        }
+      ],
+      "failure_explanation": "After multiplying the projected S-step and summing over alpha and beta, every occurrence of g_{alpha beta}^{n+1} must lie inside both corresponding contractions. In the old equality beta is free before the displayed beta-sum, while the diffusion line introduces a second sum over i,j,alpha despite those indices already being active; its Delta x/sqrt(2pi) coefficient is also malformed. Consequently the displayed equality does not follow from alg:Sstep and cannot support the subsequent unprojected energy identity.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The old proof does not establish the stated H-norm stability theorem because its central projected-energy equality is not a well-defined contraction.",
+      "least_adequate_overall_repair": "Re-expand the weighted sum of the projected S-step using distinct dummy indices: place g_{αβ}^{n+1} inside both the α- and β-contractions in every term, remove the duplicated i,j,α summation, and restore the diffusion prefactor ΔtΔx/√(2π). The existing basis-augmentation projector identities then yield the same unprojected energy equality and the remainder of the stability proof is unchanged.",
+      "classification": "minor_issue",
+      "why_classification": "The displayed equality requires genuine algebraic repair rather than a single immediately readable symbol substitution. Nevertheless, the corrected contraction is mechanically determined by alg:Sstep and requires only local finite-sum bookkeeping, with no new lemma, proof architecture, hypothesis, or weakening of the H-norm stability guarantee.",
+      "new_version_repair_locator": {
+        "tag": "__STAGED_AUTOGEN_AEF1D077C849EFAB_FORMAL_000006__",
+        "quote": "\\sum_{j,\\alpha=1}^{N_x} P_{\\alpha j}^{X} \\frac{\\rho_j^n}{\\rho_j^{n+1}} \\left(\\rho_\\alpha^{n+1}\\right)^2 \\sum_{k=1}^{N_v} g_{jk}^n \\sum_{\\beta=1}^{N_v} P_{k\\beta}^{V} g_{\\alpha \\beta}^{n+1}  \\omega_\\beta e^{v_\\beta^2/2}"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2411.06844:I004",
+      "title": "Undefined velocity-basis superscript in the low-rank stability proof",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:added-1",
+      "failure_location": {
+        "tag": "thm:added-1",
+        "quote": "P_{k\\beta}^{V} = \\sum_{p=1}^{4r} \\doublehat V_{kp}^{\\ast} \\doublehat V_{\\beta p}^{\\ast}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:LbasisAug"
+        },
+        {
+          "tag": "alg:Sstep"
+        }
+      ],
+      "failure_explanation": "The proof defines P^V from doublehat V^ast, but no such basis is introduced. The algorithm and the immediately preceding multiplication use doublehat V^{n+1}. Hence P^V is undefined and cannot act as the orthogonal projector required by the proof. Replacing the superscript by n+1 identifies the actual augmented velocity basis.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The projector used throughout the low-rank energy proof is undefined as printed, so the theorem's projection identities cannot be invoked.",
+      "least_adequate_overall_repair": "Replace the undefined superscript in the velocity projector by n+1, defining P^V_{kβ}=Σ_{p=1}^{4r} doublehat(V)_{kp}^{n+1} doublehat(V)_{βp}^{n+1}, and use that projector throughout the proof.",
+      "classification": "typo",
+      "why_classification": "The only augmented velocity basis introduced by the algorithm and used in the immediately preceding S-step is doublehat(V)^{n+1}; no basis doublehat(V)^* exists. The surrounding source therefore uniquely forces the superscript correction, after which the projector argument proceeds without any mathematical repair.",
+      "new_version_repair_locator": {
+        "tag": "__STAGED_AUTOGEN_AEF1D077C849EFAB_FORMAL_000006__",
+        "quote": "P_{k\\beta}^{V} = \\sum_{p=1}^{4r} \\doublehat V_{kp}^{n+1} \\doublehat V_{\\beta p}^{n+1}"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2411.06844:I005",
+      "title": "Incorrect reported endpoint for the 1D experiment",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "In Figure \\ref{fig:1DPlanesource-f}, we now compare the results for the full solution $f(t,x,v)$, computed with the full solver (Mg (reference)), the DLRA scheme with rank $2r$ (Mg DLRA) and the basis augmented DLRA scheme with rank $4r$ (Mg DLRA BasisAug) at different times up to $t_{\\text{End}}=8$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "fig:1DPlanesource-f",
+          "quote": "at time $t=0$ (first column), $t=2$ (second column), $t=4$ (third column), and $t=6$ (fourth column)"
+        }
+      ],
+      "failure_explanation": "The prose claims that the displayed comparison covers times up to t_End=8. The old figure caption actually lists only t=0,2,4,6, and the included result file likewise ends at 6. Thus the claimed experimental horizon exceeds the displayed evidence by two time units; the revision makes the prose agree with the experiment shown.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Only the reported scope of the displayed 1D numerical comparison is wrong; the underlying figure and mathematical results are unchanged.",
+      "least_adequate_overall_repair": "Change the reported endpoint in the prose from t_End=8 to t_End=6, leaving the displayed experiment and all mathematical results unchanged.",
+      "classification": "typo",
+      "why_classification": "The sentence expressly describes the cited figure, whose caption lists times 0, 2, 4, and 6 and whose result filename also ends at 6. The old source therefore uniquely identifies 8 as a transcribed numeral rather than a supported additional experiment.",
+      "new_version_repair_locator": {
+        "tag": "sec:1DPlanesource",
+        "quote": "at different times up to $t_{\\text{End}}=6$"
+      }
+    },
+    {
+      "issue_id": "2411.06844:I006",
+      "title": "Wrong second-velocity index in the 2D normalization diagnostic",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "$\\kappa^+ := \\max_j \\left(\\frac{1}{2\\pi} \\sum_{k=1}^{N_{v_1}} \\sum_{\\ell=1}^{N_{v_2}} g(t,\\mathbf{x}_j,v_k^1, v_\\ell^2) \\omega_k^1 \\omega_\\ell^2 e^{\\left(v_k^1 \\right)^2/2} e^{\\left(v_k^2 \\right)^2/2}\\right)$"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\kappa^+ := \\max_j \\left(\\frac{1}{2\\pi} \\sum_{k=1}^{N_{v_1}} \\sum_{\\ell=1}^{N_{v_2}} g(t,\\mathbf{x}_j,v_k^1, v_\\ell^2) \\omega_k^1 \\omega_\\ell^2 e^{\\left(v_k^1 \\right)^2/2} e^{\\left(v_k^2 \\right)^2/2}\\right)$"
+        }
+      ],
+      "failure_explanation": "The old prose defines kappa^+ and kappa^- with g evaluated at (v_k^1,v_ell^2) and with the second quadrature weight indexed by ell, but it multiplies by exp((v_k^2)^2/2). This defines a different, non-tensor-product diagnostic because the second Gaussian factor does not follow the second velocity node. The intended normalization diagnostic requires exp((v_ell^2)^2/2), as printed in the revision.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The printed 2D kappa diagnostics in both numerical examples use the wrong second-coordinate factor, so their stated normalization interpretation is not supported by the old formula.",
+      "least_adequate_overall_repair": "In each affected two-dimensional κ^± definition, replace the second Gaussian factor exp((v_k^2)^2/2) by exp((v_ℓ^2)^2/2), so that it follows the ℓ-indexed second velocity node and quadrature weight.",
+      "classification": "typo",
+      "why_classification": "The tensor-product summand consistently pairs k with the first velocity coordinate and ℓ with the second; only the second exponential repeats k. The normalization interpretation and surrounding indices uniquely force the ℓ correction, with no change to the diagnostic's intended meaning or any mathematical argument.",
+      "new_version_repair_locator": {
+        "tag": "sec6.2:2D Plane Source",
+        "quote": "$\\kappa^+ := \\max_j \\left(\\frac{1}{2\\pi} \\sum_{k=1}^{N_{v_1}} \\sum_{\\ell=1}^{N_{v_2}} g(t,\\mathbf{x}_j,v_k^1, v_\\ell^2) \\omega_k \\omega_\\ell e^{\\left(v_k^1 \\right)^2/2} e^{\\left(v_\\ell^2 \\right)^2/2}\\right)$"
+      }
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "paper_id": "2511.09872",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2511.09872:I001",
+      "title": "Block residual uses the full matrix instead of the sampled block",
+      "target_type": "algorithm",
+      "primary_affected_tag": "BRK-method",
+      "failure_location": {
+        "tag": "BRK-method",
+        "quote": "with $r_{\\tau^{(k)}}^{(k)}=b_{\\tau^{(k)}}-Ax^{(k)}$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "linear-system"
+        },
+        {
+          "tag": "convRBSK",
+          "quote": "r_{\\tau^{(k-1)}}^{(k)} = b_{\\tau^{(k-1)}}-A_{\\tau^{(k-1)}}x^{(k)}=0."
+        }
+      ],
+      "failure_explanation": "Here A is m-by-n, while b indexed by the sampled block has one entry per sampled row. For a proper block, Ax is an m-vector and cannot be subtracted from the block-sized vector b indexed by tau; the resulting vector also cannot be passed to the pseudoinverse of the sampled-row matrix. The executable residual must instead use the sampled matrix A indexed by tau.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The displayed block-update formula is not executable for a proper row block. The surrounding projection contract and the convergence proof already identify the intended block residual, so the rate arguments require no mathematical alteration once the formula is corrected.",
+      "least_adequate_overall_repair": "In the block-update formula, define the sampled residual as r_{tau^(k)}^(k) = b_{tau^(k)} - A_{tau^(k)}x^(k). No change to the algorithmic contract, proof, or convergence guarantees is needed.",
+      "classification": "typo",
+      "why_classification": "The old source uniquely forces the sampled matrix: the displayed subtraction is otherwise dimensionally ill-typed, the surrounding text defines projection onto the sampled subsystem, and the convergence proof already uses A_{tau^(k)}. The reasoning never depends on the literal full-matrix expression, so this is a transcriptional correction with no mathematical repair or loss.",
+      "new_version_repair_locator": {
+        "tag": "BRK-method",
+        "quote": "with $r_{\\tau^{(k)}}^{(k)}=b_{\\tau^{(k)}}-A_{\\tau^{(k)}}x^{(k)}$"
+      }
+    },
+    {
+      "issue_id": "2511.09872:I002",
+      "title": "Malformed diagonal does not normalize the rows",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "let $\\widehat{S}=\\diag(\\frac{1}{\\|A_1\\|_2},\\ldots,\\frac{1}{\\|A_1\\|_m})$, then\n  $\\widehat{S}A$ has normalized rows;"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "let $\\widehat{S}=\\diag(\\frac{1}{\\|A_1\\|_2},\\ldots,\\frac{1}{\\|A_1\\|_m})$, then\n  $\\widehat{S}A$ has normalized rows;"
+        }
+      ],
+      "failure_explanation": "The prose claims that the displayed diagonal makes every row of A have unit Euclidean norm. The displayed last entry instead uses the m-norm of A_1 rather than the 2-norm of A_m. For example, with m=2 and A=diag(1,2), the old displayed scaling is the identity, so the second row still has norm 2. Thus the formula does not support the claimed row normalization; rowwise reciprocal Euclidean norms do.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The suggested normalized-row choice of the auxiliary scaling matrix and its accompanying claim are wrong as written. The optimization formulas and convergence results, which permit arbitrary admissible diagonal S, do not depend on this illustrative choice.",
+      "least_adequate_overall_repair": "Replace the malformed diagonal by S-hat = diag(1/||A_1||_2, ..., 1/||A_m||_2), so that each row is scaled by the reciprocal of its Euclidean norm. No optimization formula or convergence result requires alteration.",
+      "classification": "typo",
+      "why_classification": "The accompanying assertion that S-hat A has normalized rows uniquely determines both the row index and the norm in every diagonal entry. The erroneous endpoint is a malformed transcription in an illustrative choice, and no proof or downstream result relies on its literal value.",
+      "new_version_repair_locator": {
+        "tag": "remark5.2",
+        "quote": "let $\\widehat{S}=\\diag\\{\\frac{1}{\\|A_1\\|_2},\\ldots,\\frac{1}{\\|A_m\\|_2}\\}$, then\n  $\\widehat{S}A$ has normalized rows;"
+      }
+    },
+    {
+      "issue_id": "2511.09872:I003",
+      "title": "Sharpened bound assumes covariance for the wrong error power",
+      "target_type": "formal_result",
+      "primary_affected_tag": "convRBSK_sharper",
+      "failure_location": {
+        "tag": "thm4Eq5"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "convRBSK_sharper",
+          "quote": "If the sample covariance satisfies $\\cov\\left(\\xi_{\\tau^{(k-1)}},\\|x^{(k)}-x_{\\star}\\|_2\\right)\\geq 0$"
+        },
+        {
+          "tag": "lem5"
+        }
+      ],
+      "failure_explanation": "The theorem assumes nonnegative sample covariance between xi and the error norm r, whereas Lemma lem5 yields thm4Eq5 only when applied to the sequences xi and r squared, which requires nonnegative covariance between xi and r squared. The old assumption does not imply this: for sample values xi=(1,8,3) and r=(0,1,3), the sample covariance of xi and r is 1/2, while that of xi and r squared is -5/2. Thus thm4Eq5 and the resulting sharper rate are not established under the stated hypothesis.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The high-probability sharper mean-squared-error bound is unsupported under the old unsquared covariance condition; subsequent experimental discussion invoking that bound lacks the stated formal guarantee.",
+      "least_adequate_overall_repair": "Replace the theorem's covariance premise by Cov(xi_{tau^(k-1)}, ||x^(k)-x_*||_2^2) >= 0 and use that squared-error condition wherever the sharper bound is invoked. Lemma lem5 then applies directly to xi and the squared errors, yielding the same high-probability mean-squared-error bound and rate.",
+      "classification": "minor_issue",
+      "why_classification": "This is substantive rather than a typo because the proof makes an invalid inference and the old unsquared covariance condition does not imply the condition needed for thm4Eq5. Nevertheless, the exact repair is a short, source-supported correction of a technical covariance premise; it requires no new lemma or proof architecture and preserves the algorithm, conclusion, rate, and intended sharper-bound guarantee.",
+      "new_version_repair_locator": {
+        "tag": "convRBSK_sharper",
+        "quote": "and the sample covariance satisfies $\\cov\\left(\\xi_{\\tau^{(k-1)}},\\|x^{(k)}-x_{\\star}\\|^2_2\\right)\\geq 0$"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

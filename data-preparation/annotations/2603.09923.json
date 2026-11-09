@@ -1,0 +1,219 @@
+{
+  "paper_id": "2603.09923",
+  "version_pair": "v1-v4",
+  "issues": [
+    {
+      "issue_id": "2603.09923:I001",
+      "title": "Non-predictable tracking recursion",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:bound:eee:1",
+      "failure_location": {
+        "tag": "eq:ss:bb"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:main-1"
+        },
+        {
+          "tag": "eq:bound:s"
+        }
+      ],
+      "failure_explanation": "Writing s_t=z_t+alpha_t(g_t-grad f(x_t)) produces the cross term 2<z_t,alpha_t(g_t-grad f(x_t))>. Since alpha_t=(1+sum_{i=1}^t||g_i||^2)^(-1/2) depends on g_t, this term need not have zero expectation. The stated lemma can actually fail: at t=1 in one dimension, take grad f(x_1)=h and let the unbiased stochastic gradient be 0 or 2h with equal probabilities. The claimed right-hand side falls below the left-hand side by h^2(1-3/sqrt(1+4h^2))/2 when h^2>2. This oracle has finite variance and can arise from an additive-noise smooth quadratic model.",
+      "dependent_affected_formal_result_tags": [
+        "lemma:sum:tail",
+        "lemma:G:bound",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "overall_effect": "The foundational OptEMA-M tracking recursion is false under the old assumptions, leaving every later tracking, objective-growth, energy, and convergence result that uses it unestablished.",
+      "least_adequate_overall_repair": "Replace the false tracking recursion by a conditional predictable-multiplier inequality. Introduce a predictable surrogate formed with the preceding coefficient, split the cross term into its conditionally mean-zero part and coefficient-variation parts, and control the latter by summable self-normalized noise terms. The resulting modified B_t must then be propagated through every listed tracking, objective, energy, and convergence result.",
+      "classification": "moderate_issue",
+      "why_classification": "The counterexample rules out a transcriptional or routine expectation edit. Repair requires a nontrivial cross-term decomposition and a new self-normalized tracking argument, but this work is confined to the tracking module and can support a recognizably comparable downstream chain with the same asymptotic convergence guarantee; it does not inherently require replacing the overall proof architecture.",
+      "new_version_repair_locator": {
+        "tag": "eq:cross:split:new"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.09923:I002",
+      "title": "Expected tracking recursion promoted to a pathwise bound",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:sum:tail",
+      "failure_location": {
+        "tag": "eq:sssBBB",
+        "quote": "the relation $\\|\\s_{t}\\|^2 \\leq \\|\\s_{t-1}\\|^2 + B_{t}$ implied by neglecting the non-positive term $-\\alpha_t\\|\\s_{t-1}\\|^2$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "lemma:bound:eee:1"
+        }
+      ],
+      "failure_explanation": "The premise available from lemma:bound:eee:1 has the form E[||s_t||^2] <= E[(1-alpha_t)||s_{t-1}||^2+B_t]. It does not imply ||s_t||^2 <= ||s_{t-1}||^2+B_t on each sample path. The old proof nevertheless uses exactly that pointwise assertion to replace a negatively weighted previous error, with weights depending on current gradients. Hence the claimed weighted tracking-error accumulation does not follow, independently of the separate non-predictable-cross-term defect in the preceding lemma.",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "overall_effect": "The old logarithmic weighted tracking-error bound is unsupported, and the objective-growth, energy, and OptEMA-M convergence results that consume it remain unestablished.",
+      "least_adequate_overall_repair": "Starting from a valid conditional tracking recursion, derive the weighted accumulation bound directly in expectation rather than asserting a samplewise recursion. Use predictable multipliers, a shifted coefficient such as alpha_{t+1}, and the coefficient-ratio and stepsize bounds to obtain a telescoping logarithmic estimate, then carry the corrected estimate through the listed dependent results.",
+      "classification": "moderate_issue",
+      "why_classification": "The invalid pathwise promotion cannot be repaired by merely moving an expectation sign. A look-ahead or predictable-multiplier argument is needed to handle the random weights, which is a contained but nontrivial replacement proof. Once established, a comparable logarithmic tracking bound and the downstream convergence-rate form can survive without major mathematical loss.",
+      "new_version_repair_locator": {
+        "tag": "lemma:sum:tail"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.09923:I003",
+      "title": "Expected gradient bounds used as pathwise bounded-gradient control",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:M:sum:s",
+      "failure_location": {
+        "tag": "eq:bound:sum:B",
+        "quote": "step \\step{8} uses $\\|\\g_t\\|^2\\leq C_f \\ln(e + T)$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "lemma:G:bound"
+        },
+        {
+          "tag": "ass:sigma"
+        }
+      ],
+      "failure_explanation": "The old paper establishes only an expectation bound of the form E[||g_t||^2] <= C_g log(e+t), but the proof of lemma:M:sum:s substitutes a samplewise bound on ||g_t|| and later bounds tau_T pathwise. Finite variance does not imply either assertion: for example, an unbiased additive-noise oracle with finite-variance but unbounded noise satisfies the old assumptions while its stochastic gradients have unbounded support. Thus the lemma uses a stronger premise than any old assumption or preceding result supplies.",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "overall_effect": "The OptEMA-M tracking-energy chain and its main theorem are not established under the advertised assumptions. The parallel OptEMA-V proof independently makes the same unavailable pathwise-gradient substitution, so the paper-wide bounded-gradient-free scope claim is also unsupported.",
+      "least_adequate_overall_repair": "The least concrete complete repair is to assume an almost-sure uniform bound on the stochastic gradients, use that bound for every samplewise occurrence of the current gradient and running maximum, and restate the OptEMA-M and parallel OptEMA-V guarantees and all scope claims under this stronger model. Retaining only finite variance would instead require a new joint-moment, truncation, or high-probability proof throughout the affected energy chains.",
+      "classification": "serious_issue",
+      "why_classification": "Adding bounded stochastic gradients excludes natural finite-variance oracles with unbounded support and withdraws the paper's repeatedly advertised bounded-gradient-free model class. That is major mathematical loss even though the formal assumption edit is short. The alternative of preserving the old model would require essentially new proof architecture, so no supported moderate repair avoids both gates.",
+      "new_version_repair_locator": {
+        "tag": "ass:BG"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2603.09923:I004",
+      "title": "Invalid random-weighted OptEMA-M bridge",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:M:sum:m",
+      "failure_location": {
+        "tag": "lemma:M:sum:m",
+        "quote": "Multiplying both sides of Inequality (\\ref{eq:OptEMA:M:suff:dec}) by $\\tfrac{1+\\tau_t}{\\gamma_t}$ yields:"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:OptEMA:M:suff:dec"
+        },
+        {
+          "tag": "lemma:G:bound"
+        }
+      ],
+      "failure_explanation": "An inequality E[X] <= E[Y] cannot in general be multiplied inside the expectations by W_t=(1+tau_t)/gamma_t, which is correlated with the same trajectory. The preceding descent calculation can supply a pathwise inequality after an explicit restatement, but that local repair is insufficient: the subsequent telescoping step treats the expectation bound on f(x_t)-f_* and the expected tracking-error bound as pathwise controls of W_t-weighted maxima and sums. No joint-moment or almost-sure bound supporting those substitutions is proved, so lemma:M:sum:m does not follow.",
+      "dependent_affected_formal_result_tags": [
+        "the:it:EMA:M"
+      ],
+      "overall_effect": "The old squared-gradient energy estimate is unsupported, and the main OptEMA-M theorem loses a necessary bridge between descent, momentum energy, and the true-gradient sum.",
+      "least_adequate_overall_repair": "State the underlying OptEMA-M descent inequality pathwise, as its smoothness derivation permits, but do not use expected objective or tracking bounds as pathwise controls. Prove a second-moment bound for the weighted tracking sum, use the pathwise descent inequality to obtain a weighted momentum-energy estimate without multiplying an expectation inequality by a random variable, and then close the true-gradient energy estimate and theorem.",
+      "classification": "moderate_issue",
+      "why_classification": "A valid repair needs a new joint-moment and weighted-energy bridge, not a local change of notation. The replacement is nevertheless confined to the descent-to-energy portion of the OptEMA-M chain and preserves a comparable energy statement and convergence rate, so it is a contained substantial argument rather than global reconstruction or major loss.",
+      "new_version_repair_locator": {
+        "tag": "lemma:M:weighted:m"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.09923:I005",
+      "title": "False reciprocal-square-root identity",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:OptEMA:V:suff:dec",
+      "failure_location": {
+        "tag": "eq:ema:2:Gamma:1"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tfrac{1}{\\a} - \\tfrac{1}{\\b} = \\tfrac{\\b\\odot \\b - \\a\\odot \\a}{\\a\\odot \\b \\odot (\\a+\\b)}"
+        }
+      ],
+      "failure_explanation": "For scalar a,b >= 0, the correct expression is (b-a)/[(epsilon+sqrt(a))(epsilon+sqrt(b))(sqrt(a)+sqrt(b))]. The old denominator instead contains 2epsilon+sqrt(a)+sqrt(b) while retaining numerator b-a. Equivalently, retaining that denominator would require the numerator (epsilon+sqrt(b))^2-(epsilon+sqrt(a))^2, including an omitted square-root term. Consequently the following epsilon^(-6) squared-increment estimate is also unsupported.",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "overall_effect": "The Gamma_1 estimate in the OptEMA-V one-step descent lemma fails, so the objective-growth lemma, true-gradient accumulation bound, and OptEMA-V theorem are not established by this proof.",
+      "least_adequate_overall_repair": "Use a reciprocal-square-root estimate that is actually valid and re-establish the Gamma_1 increment bound. One concrete limited repair is to use the componentwise stabilizer sqrt(epsilon^2+v_t), for which the exact difference identity has numerator v_{t-1}-v_t and a denominator bounded below by a constant times epsilon^3; the remaining descent and dependent estimates then require only constant adjustments. Alternatively, the original stabilizer requires reoptimizing the second-moment schedule for the correct linear-in-increment bound.",
+      "classification": "moderate_issue",
+      "why_classification": "This is not a typo because the old proof relies on the false identity to obtain a beta_t-squared, epsilon^{-6} estimate that the correct formula does not supply. A limited normalizer modification or coefficient reoptimization yields a recognizably comparable OptEMA-V method and preserves the rate, but it changes the construction and requires mathematical rechecking, placing it above minor and below serious.",
+      "new_version_repair_locator": {
+        "tag": "eq:ema:V:Gamma:1:varalpha"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.09923:I006",
+      "title": "Expectation recursion unrolled and weighted pathwise",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:OptEMA:V:suff:dec",
+      "failure_location": {
+        "tag": "eq:LemTheta_1"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:ema:2:Gamma:2"
+        },
+        {
+          "tag": "alg:main-1"
+        }
+      ],
+      "failure_explanation": "Theta_t is defined as a random trajectory quantity, whereas the Gamma_2 derivation introduces total expectations to use stochastic-gradient unbiasedness. That expected relation does not imply the displayed samplewise inequality for Theta_t. Even an unweighted expectation recursion would not justify multiplication by gamma_t, which depends on the current stochastic gradient and momentum. Thus the historical term in the old one-step descent lemma is unsupported.",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "overall_effect": "The nonlocal historical component of the OptEMA-V descent lemma is invalid, propagating to all later OptEMA-V objective and gradient-energy guarantees.",
+      "least_adequate_overall_repair": "Multiply the Theta recursion by a predictable weight such as gamma_{t-1} before applying conditional unbiasedness. Derive and unroll a recursion for the expected weighted quantity, explicitly account for shifts between successive gamma values by summable residual terms, and insert that valid weighted historical estimate into the one-step descent lemma and all listed downstream bounds.",
+      "classification": "moderate_issue",
+      "why_classification": "The expected recursion cannot justify the displayed random pathwise inequality, so a substantive weighted-recursion argument is necessary. The predictable weighting and residual telescoping provide a contained replacement for the historical component while leaving a comparable one-step lemma and convergence guarantee intact; this exceeds a minor repair but does not require a wholly new optimization framework.",
+      "new_version_repair_locator": {
+        "tag": "eq:LemTheta_weighted:varalpha"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2603.09923:I007",
+      "title": "Invalid random division in OptEMA-V",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lamma:bound:sum:nabla",
+      "failure_location": {
+        "tag": "lamma:bound:sum:nabla",
+        "quote": "Dividing both sides of Inequality (\\ref{eq:OptEMA:V:suff:dec}) by $\\gamma_t$, we have:"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:OptEMA:V:suff:dec"
+        },
+        {
+          "tag": "alg:main-1"
+        }
+      ],
+      "failure_explanation": "From E[X_t] <= E[gamma_t Y_t] one cannot infer E[X_t/gamma_t] <= E[Y_t] when gamma_t is random and correlated with X_t and Y_t. The old gamma_t depends on current momentum and the running gradient maximum. Therefore the displayed division and subsequent random weighted telescoping do not follow from lemma:OptEMA:V:suff:dec.",
+      "dependent_affected_formal_result_tags": [
+        "the:it:EMA:V"
+      ],
+      "overall_effect": "The old unweighted true-gradient sum bound is unsupported, removing the immediate premise of the OptEMA-V convergence theorem even apart from the independent defects in its one-step lemma.",
+      "least_adequate_overall_repair": "Keep the random stepsize inside the valid expectation and sum the weighted descent inequalities without division. First bound a weighted true-gradient energy such as H_T=sum_t gamma_{t-1}||grad f(x_t)||^2, then use the relation between gamma_T and cumulative momentum energy, together with Cauchy-Schwarz and the self-normalized noise decomposition, to recover the unweighted gradient bound and the main theorem.",
+      "classification": "moderate_issue",
+      "why_classification": "Random division cannot be repaired algebraically. Recovering the uniform gradient guarantee requires a new weighted-to-unweighted energy bridge and a self-consistency argument, but this work is localized to the final OptEMA-V accumulation step and preserves the theorem's substantive rate and scope. It is therefore a contained nontrivial repair rather than a serious reconstruction.",
+      "new_version_repair_locator": {
+        "tag": "lemma:bound:sum:nabla"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    }
+  ]
+}

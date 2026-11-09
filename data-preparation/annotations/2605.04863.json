@@ -1,0 +1,94 @@
+{
+  "paper_id": "2605.04863",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2605.04863:I001",
+      "title": "Normalized indicator does not shut off in general smooth regions",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "This\nparameter is a smooth function of a local indicator of the\nfinite-volume update magnitude, and it takes values near zero in smooth\nor near-steady regions, and values near one when small cells are active\nand SRD is needed to control stiffness."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "def:eta"
+        },
+        {
+          "tag": "sec:blending-design"
+        },
+        {
+          "tag": "fig:sj-time"
+        }
+      ],
+      "failure_explanation": "The prose claims that the blending parameter is near zero in smooth or near-steady regions. The old formula actually establishes exact shut-off only at zero update, and small s_j only when the update is sufficiently small relative to epsilon and tau. A smooth traveling profile can have Delta U_max much larger than epsilon, giving eta_j approximately one and s_j approximately 1/(1+tau^p), about 0.99 for the defaults. Thus generic smooth active regions receive essentially full SRD rather than the advertised shut-off.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Claims that the normalized implementation recovers the base method or avoids SRD dissipation throughout generic smooth regions are unsupported. Exact zero-update steady-state preservation remains valid.",
+      "least_adequate_overall_repair": "Replace the self-normalizing operational indicator by the fixed-scale or unnormalized indicator already analyzed in the old source, for example z_j = ΔU_max,j/U_ref with U_ref independent of the current update and s_j = z_j^p/(z_j^p+τ^p). Recalibrate the threshold and update the algorithm, parameter guidance, and activation-dependent experiments consistently. Smooth CFL-scaled updates then give s_j = O(h^p), while exact zero updates still give s_j=0; the conservation and TVD arguments requiring only 0≤s_j≤1 remain applicable.",
+      "classification": "moderate_issue",
+      "why_classification": "The displayed normalized formula makes the advertised generic smooth-region shut-off genuinely false, so this is neither transcriptional nor a no-loss prose correction. However, the old source already supplies the unnormalized construction and its O(h^p) scaling argument. Operationalizing that construction is a contained but nontrivial redesign and revalidation, not global proof reconstruction or major mathematical loss, so the issue is moderate.",
+      "new_version_repair_locator": {
+        "quote": "The \nshut-off mechanism is active when finite-volume updates vanish or nearly \nvanish; in fully active advection UM-SRD reduces to standard SRD by design."
+      }
+    },
+    {
+      "issue_id": "2605.04863:I002",
+      "title": "Arbitrarily-small-cell stability",
+      "target_type": "prose_claim",
+      "primary_affected_tag": "rem:stability-mechanism",
+      "failure_location": {
+        "tag": "rem:stability-mechanism",
+        "quote": "The instability never progresses\nbecause the large update that would cause it is precisely what triggers\nthe indicator to re-engage SRD."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "def:eta"
+        },
+        {
+          "quote": "$h(1) = \\frac{1}{1 + \\tau^p} \\to 1$ as $\\tau \\to 0$"
+        },
+        {
+          "tag": "rem:stability-mechanism",
+          "quote": "$|\\Delta U_j| = (\\nu/\\alpha)|U^n_j - U^n_{j-1}|$"
+        }
+      ],
+      "failure_explanation": "The remark claims that a large unstable update necessarily re-engages enough SRD to prevent the instability. For a neighboring-state difference d that is nonzero, the raw small-cell update contains -(nu/alpha)d. As alpha tends to zero, eta_j tends to one, but for fixed tau the unsmoothed weight tends to 1-s_j = tau^p/(1+tau^p) > 0. The SRD average remains bounded because the small-cell state is volume-weighted by O(alpha), while the identity contribution retains -(1-s_j)(nu/alpha)d. Thus near-full activation does not establish stability uniformly over arbitrarily small alpha.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The old categorical stability explanation and its arbitrary-small-cell consequence are unsupported. The alpha = 0.05 experiment remains numerical evidence for that specified case, not a uniform full-mesh-timestep guarantee.",
+      "least_adequate_overall_repair": "Introduce an exact stability-safety branch: retain s_j=0 when ΔU_max,j=0, but set s_j=1 whenever ΔU_max,j>0 and the neighborhood's raw local CFL exceeds one; retain the smooth blend only in locally CFL-stable neighborhoods. The dangerous branch is then exactly the weighted-SRD update whose stability is already established in its stated model class, while the zero-update branch makes no change. Add the contained switching/TVD argument and align the smoothness and implementation claims with this branch.",
+      "classification": "moderate_issue",
+      "why_classification": "For the old activation function, the positive limiting identity weight leaves an O(1/α) contribution, so the categorical stability explanation cannot be repaired by routine wording. Nevertheless, exact safety saturation is a concrete local construction that preserves arbitrary-small-cell stability in the established SRD setting and exact zero-update shut-off. It requires a new contained argument and gives up smooth partial activation only in the unstable-CFL branch, a limited rather than major loss; therefore the issue is moderate.",
+      "new_version_repair_locator": {
+        "quote": "Extending the TVD and convergence theory to multiple small \ncells, general merging patterns, and multidimensional neighborhood \ntopologies remains open, as does a rigorous stability proof for the \nfull-mesh timestep regime."
+      }
+    },
+    {
+      "issue_id": "2605.04863:I003",
+      "title": "Guard parameter incorrectly declared behaviorally irrelevant",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "This value has no effect on the shut-off\nbehavior and does not require tuning."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "def:eta",
+          "quote": "\\eta_j = \\frac{\\Delta U_{\\max,j}}{\\varepsilon + \\Delta U_{\\max,j}}"
+        },
+        {
+          "quote": "s_j = h(\\eta_j) = \\frac{\\eta_j^p}{\\eta_j^p + \\tau^p}"
+        }
+      ],
+      "failure_explanation": "The prose claims that epsilon has no effect on shut-off behavior and requires no tuning. But eta_j = Delta U_max/(epsilon+Delta U_max); for example, at Delta U_max = epsilon, eta_j = 1/2, and changing epsilon while holding the update fixed changes eta_j. Since s_j is strictly increasing in eta_j, its computed activation changes as well. Epsilon is negligible only when updates are much larger than it, not behaviorally irrelevant in general.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The algorithm remains well-defined, but the old parameter guidance incorrectly hides the role of epsilon in setting the near-zero activation scale.",
+      "least_adequate_overall_repair": "Replace the parameter guidance by stating that ε both prevents a zero denominator and sets the absolute near-zero activation scale: η_j=1/2 when ΔU_max,j=ε, and changing ε changes s_j whenever updates are comparable to ε. Specify that ε is negligible only when relevant nonzero updates are much larger than it and should be chosen relative to the numerical noise or update scale.",
+      "classification": "minor_issue",
+      "why_classification": "This is a genuine mathematical error in the parameter guidance, not a transcriptional typo, because the reader must check the dependence through both η_j and s_j. The correction is short, local, and routine and leaves the algorithm, proofs, rates, and substantive guarantees unchanged, so it is minor.",
+      "new_version_repair_locator": {
+        "tag": "eq:eta",
+        "quote": "where $\\varepsilon > 0$ (e.g.\\ $\\varepsilon = 10^{-14}$) prevents division \nby zero."
+      }
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "paper_id": "2502.15548",
+  "version_pair": "v1-v3",
+  "issues": [
+    {
+      "issue_id": "2502.15548:I001",
+      "title": "Advertised wavenumber robustness lacks old-version support",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "Furthermore, we demonstrate that the one-level Schwarz method can achieve robustness with respect to the wave number under specific domain decomposition parameters, offering new insights into its applicability for large-scale electromagnetic wave problems."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:spectre-limit"
+        },
+        {
+          "quote": "Now, for a fixed frequency $k=10$, $L= 1$ and overlap $\\delta = 0.1$"
+        }
+      ],
+      "failure_explanation": "The abstract claims that the paper demonstrates robustness with respect to the wave number under specific domain-decomposition parameters. What the old paper actually establishes is an \\(N\\to\\infty\\) limiting factor for fixed modal coefficients, while its numerical plots use \\(k=10\\) and then \\(k=10+\\imath\\) to illustrate the effect of damping. It provides neither a bound uniform in the wavenumber nor experiments varying the real wavenumber, so subdomain-count scalability and absorption effects do not support the advertised wavenumber robustness.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "No formal theorem is made false, but the abstract and contribution-level discussion materially overstate the parameter range validated by the old analysis and experiments.",
+      "least_adequate_overall_repair": "Add a systematic real-wavenumber sweep for the stated one-level method under clearly fixed or scaled domain-decomposition parameters, report convergence factors or iteration counts, and restate the claim as empirical robustness over the tested range.",
+      "classification": "moderate_issue",
+      "why_classification": "The old limiting theorem is for each fixed mode, all real-frequency plots use k=10, and changing only the imaginary part tests damping rather than real-wavenumber robustness. A comparable claim can survive through a contained parameter study and limited qualification, without reconstructing the theoretical architecture, but this is substantive new validation rather than a routine local edit.",
+      "new_version_repair_locator": {
+        "tag": "tab:weak-imp-o2"
+      }
+    },
+    {
+      "issue_id": "2502.15548:I002",
+      "title": "Claimed discretized scalability experiments are absent",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "Finally in \\Cref{sec:numeric} we present two types of numerical results: first, showing that the limiting spectrum is descriptive for the convergence of the algorithm even in the case of a moderate number of domains and then on the discretised problem using the edge element method."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:numeric",
+          "quote": "In order to illustrate the limiting spectrum property from \\Cref{thm:spectre-limit} we will evaluate the spectral radius of the iteration matrices $I^{\\rm{TE}}(r)$, $I^{\\rm{TEM}}(r)$ and $I^{\\rm{TM}}(r)$"
+        },
+        {
+          "quote": "For simplicity, we will replace the eigenvalues $\\lambda^\\mathcal{D}_i$ and $\\lambda^\\mathcal{N}_i$ by a continuous variable $r \\in \\mathbb{R}^+$."
+        }
+      ],
+      "failure_explanation": "The prose claims that the paper presents a second family of numerical results on the discretized Maxwell problem using edge elements. The old numerical section actually evaluates spectral radii of continuous per-mode iteration matrices after replacing transverse eigenvalues by a continuous variable; it contains no finite-element discretization, discrete solver, or discrete scalability data. The claimed numerical component is therefore absent.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The continuous modal analysis and its illustrations remain, but the paper lacks the advertised evidence that its scalability conclusions carry over to a discretized Maxwell solver.",
+      "least_adequate_overall_repair": "Add a documented edge-element discretization of the Maxwell problem and a representative scalability study of the same one-level method over increasing subdomain counts, including the mesh, solver, transmission conditions, tolerance, and iteration data; then align the roadmap claim with those results.",
+      "classification": "moderate_issue",
+      "why_classification": "The old numerical section contains only continuous per-mode matrices parameterized by r, so no textual correction can supply the advertised discrete validation. Producing an edge-element solver and scalability data is a substantial new numerical construction, but it is confined to the experimental component and preserves the advertised evidence without changing the formal theory, so a complete moderate repair exists.",
+      "new_version_repair_locator": {
+        "tag": "sec:numeric",
+        "quote": "We now consider fully discretized problems."
+      }
+    },
+    {
+      "issue_id": "2502.15548:I003",
+      "title": "Spurious conductivity coefficient in the modal reconstruction system",
+      "target_type": "other",
+      "primary_affected_tag": "eq:syst-recov",
+      "failure_location": {
+        "tag": "eq:syst-recov",
+        "quote": "\\partial_y \\widehat{H}_z - \\partial_z \\widehat{H}_y = -(\\imath \\omega \\varepsilon - \\sigma) \\widehat{E}_x"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "Maxwell-eq",
+          "quote": "\\nabla \\times \\bfH = -\\imath \\omega \\varepsilon \\bfE"
+        },
+        {
+          "quote": "where we denote by $k^2 = \\varepsilon \\mu \\omega^2$ the wavenumber"
+        }
+      ],
+      "failure_explanation": "The governing equation is \\(\\nabla\\times\\mathbf H=-\\imath\\omega\\varepsilon\\mathbf E\\), with \\(k^2=\\varepsilon\\mu\\omega^2\\). The old reconstruction instead uses \\(-(\\imath\\omega\\varepsilon-\\sigma)\\mathbf E\\), although \\(\\sigma\\) is not a conductivity parameter in that model. The extra term propagates into the reconstruction matrix and makes the proof's replacement by \\(k^2/\\beta_i^{\\rm TM}\\) invalid.",
+      "dependent_affected_formal_result_tags": [
+        "prop:non-depend-pm",
+        "prop:BC-TE-TM",
+        "prop:TM-ite",
+        "prop:R-ite",
+        "thm:spectre-limit",
+        "prop:added-1"
+      ],
+      "overall_effect": "The literal transverse-field reconstruction is not the component form of the stated Maxwell system, and the TM portions of the mode normalization, tangential-curl diagonalization, and subsequent iteration analysis are not established until the coefficient is corrected.",
+      "least_adequate_overall_repair": "Remove the spurious sigma term from the three curl-H component equations and the corresponding reconstruction matrix, replace the affected TM proof line by curl H = -i omega epsilon E, and redo the short algebra yielding the determinant and the k-squared-over-beta TM symbol before checking that symbol through the listed dependent recurrences and spectral results.",
+      "classification": "minor_issue",
+      "why_classification": "The governing Maxwell system uniquely fixes the coefficient, and the downstream TM formulas already have the form obtained after its correction. Nevertheless, the erroneous coefficient is carried into the reconstruction matrix and explicitly used in an invalid proof step, so this is not merely a transcription error that can be ignored. The required rederivation is short and routine and preserves every listed statement and guarantee.",
+      "new_version_repair_locator": {
+        "tag": "eq:syst-recov",
+        "quote": "\\partial_y \\widehat{H}_z - \\partial_z \\widehat{H}_y = -\\imath \\omega \\varepsilon \\widehat{E}_x"
+      }
+    },
+    {
+      "issue_id": "2502.15548:I004",
+      "title": "Zero Neumann eigenvalue described as positive",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "We remind that the eigenvalue problem \\eqref{eq:ev} has an infinite countable set of solutions with $(\\lambda^\\mathcal{N}_i)_{i \\in \\mathbb{N}}$ an increasing positive sequence that tends to $+\\infty$ and the set of eigenfunctions $(\\varphi^\\mathcal{N}_i)_{i \\in \\mathbb{N}}$ is an orthonormal basis of $L^2(S)$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:ev"
+        },
+        {
+          "quote": "for the first mode corresponding to $i=0$ and $\\varphi_0 = 1$"
+        }
+      ],
+      "failure_explanation": "The prose claims that every member of the Neumann sequence indexed by \\(\\mathbb N\\), including index zero, is positive. The displayed Neumann problem and the stated constant eigenfunction \\(\\varphi_0=1\\) instead give \\(-\\Delta 1=0=\\lambda_0 1\\), so \\(\\lambda_0=0\\). The sequence is nonnegative, not termwise strictly positive.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "This is a local misdescription of the Neumann spectrum. The later modal analysis already discards the constant TE mode because its amplitude is zero, so no formal result requires a positive zero eigenvalue.",
+      "least_adequate_overall_repair": "Replace the assertion that the Neumann eigenvalue sequence is positive by the statement that it is nonnegative, with the explicit value lambda-zero equal to zero for the constant eigenfunction.",
+      "classification": "typo",
+      "why_classification": "The displayed Neumann problem and the immediately stated constant eigenfunction uniquely force the zero eigenvalue. No inference or later result uses strict positivity at index zero, and the subsequent modal discussion already removes that mode through its zero amplitude, so a direct wording correction is sufficient.",
+      "new_version_repair_locator": {
+        "quote": "with $(\\lambda_i^{\\mathcal N})_{i\\in\\mathbb N}$ increasing to $+\\infty$"
+      }
+    },
+    {
+      "issue_id": "2502.15548:I005",
+      "title": "Undefined zero-index TM term in the modal expansion",
+      "target_type": "other",
+      "primary_affected_tag": "modal-dec",
+      "failure_location": {
+        "tag": "modal-dec",
+        "quote": "\\sum_{i \\geq 0} \\sum_{m \\in \\{-,+\\}}"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "with $(\\lambda^D_i)_{i \\in \\N^+}$ an increasing positive sequence that tends to $+\\infty$"
+        }
+      ],
+      "failure_explanation": "In modal-dec the common sum beginning at \\(i=0\\) contains both TE and TM summands. The preceding construction defines TM Dirichlet modes only for \\(i\\in\\mathbb N^+\\), so \\(A_0^{\\rm TM}\\), \\(\\beta_0^{\\rm TM}\\), and the corresponding TM profile have no definition. The zero Neumann mode does not justify this term because it belongs to the TE family and has zero amplitude.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The displayed full-field expansion has an undefined summand, although the subsequent mode-by-mode formal results already quantify TE and TM indices over positive integers.",
+      "least_adequate_overall_repair": "Change the lower limit of the common TE/TM modal sum from i greater than or equal to zero to i greater than or equal to one. The omitted TE zero mode already has zero amplitude, and no TM zero mode is then invoked.",
+      "classification": "typo",
+      "why_classification": "The old source defines TM modes only for positive indices and separately proves that the TE zero mode contributes nothing. These facts uniquely determine the intended lower limit, and all subsequent mode-by-mode results already use positive indices, so no mathematical argument or construction needs repair.",
+      "new_version_repair_locator": {
+        "tag": "modal-dec",
+        "quote": "\\sum_{i \\geq 1} \\sum_{m \\in \\{-,+\\}}"
+      }
+    },
+    {
+      "issue_id": "2502.15548:I006",
+      "title": "Unbound subdomain index in the Schwarz local problem",
+      "target_type": "algorithm",
+      "primary_affected_tag": "pb:Schwarz-ite",
+      "failure_location": {
+        "tag": "pb:Schwarz-ite",
+        "quote": "\\mathcal{L} (\\mathbf{E}^{n,l}) = \\mathbf{f}_l& \\text{in} & \\Omega_j"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "Starting from an initial guess, the classical Schwarz algorithm computes at iteration $n \\in \\N$ the solution in the subdomain $\\Omega_l$ as follows"
+        }
+      ],
+      "failure_explanation": "The algorithm is defined as computing \\(\\mathbf E^{n,l}\\) in subdomain \\(\\Omega_l\\), but its PDE line places that field in \\(\\Omega_j\\), where \\(j\\) is neither bound nor related to \\(l\\). Read literally, the local solve and its boundary/interface conditions are assigned to inconsistent domains.",
+      "dependent_affected_formal_result_tags": [
+        "prop:TE-ite",
+        "prop:TM-ite",
+        "prop:R-ite",
+        "thm:spectre-limit",
+        "prop:added-1"
+      ],
+      "overall_effect": "The displayed Schwarz procedure is not well-defined literally, and the subsequent modal recurrence and convergence results apply only to the consistently indexed intended algorithm.",
+      "least_adequate_overall_repair": "Replace Omega-j by Omega-l in the PDE line of the local Schwarz problem, leaving the field, forcing term, interfaces, and boundary conditions indexed by l.",
+      "classification": "typo",
+      "why_classification": "The surrounding definition says that E superscript n,l is computed in Omega-l, and every other line and all downstream recurrences consistently use l. Thus the old source uniquely forces a single index correction, after which the reader can continue without repairing any inference or algorithmic construction.",
+      "new_version_repair_locator": {
+        "tag": "pb:Schwarz-ite",
+        "quote": "\\mathcal L(\\mathbf E^{n,l})=\\mathbf f_l & \\text{in} & \\Omega_l"
+      }
+    },
+    {
+      "issue_id": "2502.15548:I007",
+      "title": "Conflicting PML stretch parameter for the right-hand experiment",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "For the same parameter, we have also represented the same quantity but using a PML transmission condition \\cref{def:op-PML} with $\\ell = 0.1$ and $\\sigma = 5$, and with $\\ell = 1$ and $\\sigma = 5$ in \\cref{fig4:convFactTE-TM-PML}."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "fig4:convFactTE-TM-PML",
+          "quote": "taking $\\ell= 1$ and $\\sigma = 10$ (on the right)"
+        }
+      ],
+      "failure_explanation": "The prose claims that the second PML experiment in Figure 4 uses \\((\\ell,\\sigma)=(1,5)\\), while the figure's own caption states \\((1,10)\\) for its right panel. Both statements purport to specify the same plotted experiment, so the old paper does not provide a consistent reproducible parameter value. The new prose and caption consistently report \\(\\sigma=10\\).",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The theoretical PML formulas are unaffected, but the parameter specification for one numerical illustration is internally inconsistent and therefore not reliably reproducible from the old text.",
+      "least_adequate_overall_repair": "Check the plotting script or source data to determine the stretch parameter used for the right panel and make the surrounding sentence and caption report that verified value; if its provenance cannot be verified, regenerate that one panel with a declared parameter and recheck the qualitative discussion.",
+      "classification": "minor_issue",
+      "why_classification": "Nothing in the old source uniquely determines whether sigma equals 5 or 10, so the conflict cannot be classified as a forced typographical correction. Resolving it requires a small numerical provenance check or one routine plot regeneration, but it does not affect the PML formulas, theoretical results, or substantive experimental conclusion.",
+      "new_version_repair_locator": {
+        "tag": "fig4:convFactTE-TM-PML",
+        "quote": "Right: \\(\\ell=1,\\ \\sigma=10\\)."
+      }
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+# Q1: substantive mathematical issue inventory
+
+## Task
+
+Read the whole LaTeX source of a mathematical paper, given at the end of this
+message. Report every independent substantive mathematical defect in it,
+following the rules below, and classify each one as `minor_issue`,
+`moderate_issue`, or `serious_issue`. Review the entire paper; do not stop
+after the first or most serious issue. If you find no qualifying issue, return
+an empty issue list.
+
+## Source and tags
+
+The source is the only evidence; do not rely on anything outside it. Every
+theorem-like block (theorem, lemma, proposition, corollary, claim, ...) and
+every identifiable algorithm block has a unique `\label{...}`; duplicated
+labels have been made unique with suffixes `-1`, `-2`, and so on. Whenever a
+field asks for a tag, copy the literal label from the source; never invent one.
+An equation has a tag only if it carries its own `\label{...}`; unlabelled
+displays have no tag. If the source is missing, truncated, or unreadable,
+return `status` `input_error`.
+
+## What counts as an issue
+
+One issue is one root mathematical defect together with everything that
+becomes unreliable because of it. If repairing the root would also fix a
+downstream claim, that claim is part of the same issue (list it under
+`dependent_affected_formal_result_tags`), not a new one; report a downstream
+claim separately only if it has its own defect that would survive repairing
+the root. Independent defects are separate issues even when they affect the
+same theorem, proof, definition, or algorithm.
+
+Report an issue only if all of the following hold:
+
+1. The defective claim, definition, construction, algorithmic step, or proof
+   step is in the source.
+2. The source gives a concrete mathematical reason that it is false,
+   ill-defined, incomplete, or unsupported as written: a counterexample, a
+   violated hypothesis, an invalid inference, a missing nontrivial argument,
+   an incompatible definition, or a similar specific failure. Suspicion, or a
+   wish for more exposition, is not enough.
+3. The problem is mathematical, not stylistic or pedagogical.
+4. Its effect is clear enough to establish a substantive defect. You do not
+   need to know how to repair it.
+
+Do not report routine omitted algebra or pure typos. A mistake is a pure typo
+only if a competent reader can see the single forced correction directly from
+the source and continue without repairing any inference, argument, or
+construction. It is a mathematical issue, not a typo, if the reasoning depends
+on the erroneous meaning, if a premise or inference has to be repaired, if
+there is a choice between mathematical repairs, or if the correction withdraws
+a substantive promise.
+
+## Coverage
+
+Check the main claims, every theorem-like result and its proof, definitions,
+displayed claims, algorithms, and statements of scope or guarantees. Look at
+hypotheses, quantifiers, parameter regimes, boundary and degenerate cases;
+whether invoked results are applied within their hypotheses; whether
+calculations, estimates, and case splits actually prove what is claimed;
+whether algorithms are well defined and deliver their stated guarantees; and
+whether the prose claims more than the formal content supports. Use the
+labelled blocks as a checklist. One target can have several independent
+defects.
+
+## Target type
+
+Assign exactly one `target_type`:
+
+- `formal_result`: a theorem, lemma, proposition, corollary, or explicit formal
+  claim whose statement or proof fails. A faulty equation or proof step inside
+  such a result is a `formal_result` issue.
+- `algorithm`: a procedure, pseudocode block, estimator, or executable
+  construction whose operation, invariant, input-output contract, or guarantee
+  fails.
+- `prose_claim`: an independently false, unsupported, or materially misleading
+  claim about what the paper establishes, achieves, computes, assumes, covers,
+  or implies. A prose restatement of a defective formal result or algorithm is
+  normally a consequence of the same root, not a second issue.
+- `other`: a labelled standalone mathematical assertion fitting none of the
+  above, such as a displayed equation that is itself the false claim rather
+  than a proof step. Use sparingly.
+
+The type belongs to the claim or procedure whose validity fails, not to the
+definition, equation, assumption, or invoked result that merely supplies the
+evidence. When one root defeats a labelled formal result, use `formal_result`.
+Do not report one root twice under different types.
+
+## Primary tag and dependent results
+
+`primary_affected_tag` is the label of the claim or procedure whose own
+validity fails, not of the evidence and not of a downstream consequence: a
+faulty proof step belongs to the result being proved; a result that misapplies
+another result owns the defect; a false supporting result owns the defect and
+its later uses are dependents; when an argument proves less than claimed, the
+stated result owns the defect.
+
+- `formal_result`: the result's own label, required. If the result has several
+  labels, use the first in source order.
+- `algorithm`: the label that most narrowly identifies the failing procedure
+  (an algorithm environment, or an equation or definition that is itself the
+  construction). Use `null` if there is no suitable label; then
+  `failure_location` must pin down the failing step.
+- `other`: the assertion's own label, required.
+- `prose_claim`: its own label if it has one, otherwise `null`.
+
+Never borrow a nearby label. `dependent_affected_formal_result_tags` lists,
+transitively, every labelled formal result invalidated by the same root, under
+the same tag rules. Exclude mere citations, results with an independent valid
+proof, and results that use only a part that remains established.
+
+## Failure mechanism
+
+For a `formal_result`, assign exactly one `failure_mechanism` describing the
+root failure (not its repair or its effects):
+
+- `statement_support_mismatch`: the argument is valid but establishes a
+  materially weaker or different conclusion than the statement.
+- `invalid_input_or_dependency`: the proof relies on an undefined object, a
+  false or unestablished premise, or a result used outside its hypotheses.
+  An omitted hypothesis that the proof assumes or needs without establishing
+  it falls here.
+- `invalid_or_incomplete_reasoning`: the inputs are legitimate but the proof's
+  own inference, calculation, limit, construction, invariant, or case split
+  fails, or a necessary nontrivial step is missing.
+- `other`: a formal failure fitting none of the above. Use only after ruling
+  the three out, and say why in `failure_explanation`; it is not a label for
+  uncertainty.
+
+For every other target type use `not_applicable`.
+
+## Severity
+
+Classify each issue by the least severe complete resolution the source
+supports, counting the repair burden and the mathematical loss for the issue
+and everything that depends on it.
+
+- `minor_issue`: a short, local, routine repair or bypass preserves every
+  substantive claim and guarantee, with no new nontrivial lemma, construction,
+  reoptimization, or replacement argument. Adding a standard local condition
+  or fixing a degenerate case can be minor when the method, conclusion, rate,
+  and advertised scope all survive.
+- `moderate_issue`: more than minor, but some supported resolution avoids new
+  global proof architecture and avoids major loss. It may need a contained
+  nontrivial argument, a new lemma or construction, a reoptimization, or a
+  limited weakening that leaves a recognizably comparable result.
+- `serious_issue`: every supported resolution needs essentially new proof
+  architecture or causes major loss: a substantive result is abandoned, an
+  advertised regime is excluded, a central quantifier or guarantee type
+  changes, or an important rate or complexity guarantee materially worsens.
+  An issue is serious even with no dependents if no comparable version of its
+  primary claim survives. If the source supports no complete resolution, the
+  issue is serious; a speculative repair does not lower severity.
+
+Do not infer severity from how prominent the statement is, how many results
+depend on it, or how long the edit is. A one-line correction is moderate or
+serious if it necessarily loses mathematical content.
+
+## Output
+
+Return exactly one JSON object and nothing else, with no code fences or
+commentary, in this form:
+
+{
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "question_id": "Q1",
+  "status": "ok" | "input_error",
+  "run_name": "{run_name}",
+  "paper_id": "{paper_id}",
+  "source_sha256": "{source_sha256}",
+  "issues_found": <number of entries in "issues">,
+  "issues": [
+    {
+      "issue_id": "ISSUE-001",
+      "title": "<short title>",
+      "target_type": "formal_result" | "algorithm" | "prose_claim" | "other",
+      "primary_affected_tag": "<label>" | null,
+      "failure_mechanism": "statement_support_mismatch" | "invalid_input_or_dependency" | "invalid_or_incomplete_reasoning" | "other" | "not_applicable",
+      "failure_location": {"tag": "<label>" | null, "quote": "<exact source quote>"},
+      "diagnostic_evidence": [{"tag": "<label>" | null, "quote": "<exact source quote>"}, ...],
+      "failure_explanation": "<text>",
+      "dependent_affected_formal_result_tags": ["<label>", ...],
+      "overall_effect": "<text>",
+      "least_adequate_overall_repair": "<text>",
+      "classification": "minor_issue" | "moderate_issue" | "serious_issue",
+      "why_classification": "<text>"
+    }
+  ],
+  "error": null | "<why the source could not be reviewed>"
+}
+
+- Use the `run_name`, `paper_id`, and `source_sha256` values shown above.
+- `status` is `ok` for any completed review, including one with no issues;
+  then `error` is `null`. Use `input_error` only when the source is missing,
+  truncated, or unreadable; then `issues` is empty and `error` says why.
+- Number issues `ISSUE-001`, `ISSUE-002`, ... in order of the primary
+  target's position in the source, after merging issues that share a root.
+- `failure_location`: a short exact contiguous quote from the source containing
+  the defective claim or step, with its tag when it has one.
+  `diagnostic_evidence`: further exact quotes showing why the defect is real;
+  may be empty except for `prose_claim`, where it is required. Quote the
+  source exactly; do not paraphrase.
+- `failure_explanation`: the exact mathematical failure. For a prose
+  overclaim: what the prose claims, what the paper establishes, and the
+  difference.
+- `overall_effect`: which claims, guarantees, regimes, or dependent results
+  become unreliable.
+- `least_adequate_overall_repair`: the least severe complete resolution the
+  source supports. If there is none, write "No complete source-supported
+  repair identified; at minimum, a repair must ..." and state the minimum
+  obligation; classify such an issue as `serious_issue`.
+- `why_classification`: only the severity rationale, tied to that repair and
+  effect. Keep all text fields concise and non-overlapping.
+
+Here is `source.tex`:
+
+{source}

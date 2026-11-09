@@ -1,0 +1,181 @@
+{
+  "paper_id": "2510.16154",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2510.16154:I001",
+      "title": "Missing state-to-cost interface between the pixel ODE and continuum objective",
+      "target_type": "other",
+      "primary_affected_tag": "eq:OCP",
+      "failure_location": {
+        "tag": "eq:OCP",
+        "quote": "J(c(\\,\\cdot\\, ,T; \\varepsilon)) \\quad \\text{subject to \\eqref{eq:MAsystem}-\\eqref{eq:ellipsoid}}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:MAsystem"
+        },
+        {
+          "tag": "def:cost_functional"
+        },
+        {
+          "tag": "sec:OCP",
+          "quote": "We adopt the notation $c(x,t)$ to refer to the continuous version of the colour field at point $x \\in \\Omega$ and time $t \\in [0,T]$."
+        },
+        {
+          "tag": "sec:numerics_dal",
+          "quote": "from this point onwards, we will write $F(c(x,t), \\varepsilon(t))$ to refer to the space-continuous version of the right-hand side of \\eqref{eq:MAsystem}."
+        }
+      ],
+      "failure_explanation": "For fixed N, T, E and every admissible control, eq:MAsystem determines c(t) in R^N. Definition def:cost_functional instead accepts an element of H^1(Ω), and the old source gives no reconstruction R:R^N→H^1(Ω), no induced continuum evolution, and no condition ensuring that c(·,T;ε) lies in H^1. Thus the displayed objective is not defined on the trajectories supplied by its own constraints. The latest source consistently uses a vector state and a discrete cost.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The old Mayer problem, its continuum adjoint construction, and the later continuum TV application lack a defined state-to-objective interface. The standalone existence theorem for J itself is not affected.",
+      "least_adequate_overall_repair": "Specify a concrete conforming reconstruction R_N from the pixel state in R^N to H^1(Ω), such as continuous piecewise bilinear interpolation with stated boundary conventions. Define the quadratic and TV objectives as pullbacks through R_N, and rederive the coefficient-space terminal adjoints and control gradients using the adjoint of R_N and weak pairings throughout DAL and ADMM.",
+      "classification": "moderate_issue",
+      "why_classification": "The phrase “continuous version” neither selects a reconstruction nor justifies treating coefficient variations as arbitrary H^1 variations. Choosing an interface and propagating its pullback through both adjoint constructions is a genuine, nontrivial construction, so the defect is not minor. It nevertheless preserves the finite-agent dynamics, objectives, and direct-adjoint architecture without major mathematical loss or essentially new proof architecture, making the issue moderate.",
+      "new_version_repair_locator": {
+        "tag": "eq:OCP",
+        "quote": "J(c(T; \\varepsilon)) \\quad \\text{subject to \\eqref{eq:MAsystem}-\\eqref{eq:ellipsoid}}"
+      }
+    },
+    {
+      "issue_id": "2510.16154:I002",
+      "title": "Reversed terminal sign in the adjoint system",
+      "target_type": "other",
+      "primary_affected_tag": "eq:opt_system-b",
+      "failure_location": {
+        "tag": "eq:opt_system-b",
+        "quote": "\\lambda(x,T) =  -\\Delta c(x,T) + \\alpha\\, (c(x,T) - I(x))"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:augmented_cost"
+        },
+        {
+          "tag": "app",
+          "quote": "\\int_\\Omega \\lambda(x,T)\\, v(x,T)\\ dx"
+        },
+        {
+          "tag": "app",
+          "quote": "[-\\Delta c(x,T) + \\alpha (c(x,T) - I) ]\\, v(x,T)"
+        }
+      ],
+      "failure_explanation": "The old convention is fixed by eq:augmented_cost: the constraint term is λ(c_t-F) and the terminal cost is added. Its state variation has terminal contribution [λ(T)+J′(c(T))]v(T), so arbitrary terminal variations force λ(T)=-J′(c(T)). The printed condition instead sets λ(T)=J′(c(T)).",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The old optimality system uses the opposite terminal adjoint, reversing the sensitivity propagated by the DAL calculation under the stated multiplier convention.",
+      "least_adequate_overall_repair": "Keep the stated multiplier convention λ(c_t−F), replace the terminal condition everywhere by λ(T)=−J′(c(T))=Δc(T)−α(c(T)−I), correct the corresponding inference in the appendix, and use that corrected adjoint in the DAL sensitivity calculation.",
+      "classification": "minor_issue",
+      "why_classification": "The terminal coefficient in the displayed first variation uniquely fixes the required sign, but the appendix makes an invalid inference and the algorithm consumes the resulting wrong terminal datum. It is therefore substantive rather than a transcription-only typo. The repair is a routine local sign correction with no new lemma, change of method, or loss of guarantee, so it is minor.",
+      "new_version_repair_locator": {
+        "quote": "\\lambda(T) = - \\nabla J(c(T))"
+      }
+    },
+    {
+      "issue_id": "2510.16154:I003",
+      "title": "One-sided DAL stationarity test",
+      "target_type": "prose_claim",
+      "primary_affected_tag": "rmk:convergence",
+      "failure_location": {
+        "tag": "rmk:convergence",
+        "quote": "When the control is unconstrained, the typical convergence criterion to verify is\n    $$\n    \\partial_\\varepsilon F(c^{(k)},\\varepsilon^{(k)}) \\cdot \\lambda^{(k)}  < \\eta\n    $$\n    for some fixed tolerance $0< \\eta <\\joinrel< 1$, since a necessary condition for optimality is that the quantity above equals zero \\cite{PBGM_1964}."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:variation_eps",
+          "quote": "\\int_\\Omega \\lambda(x,t) \\cdot \\partial_\\varepsilon F(c(x,t), \\varepsilon(t))\\ dx = 0 \\quad \\text{for a.e. } t \\in (0,T)."
+        }
+      ],
+      "failure_explanation": "The prose claims that checking the signed residual D<η verifies convergence for an unconstrained control. The old optimality calculation actually establishes D=0 as the necessary condition, so closeness must be measured by |D| or a norm. The material difference is that D=-M passes the printed test for every M>0 and fixed positive η, despite being arbitrarily far from stationarity; for constrained controls the appropriate replacement is a feasible-direction condition.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The stated stopping rule can terminate DAL at a strongly nonstationary iterate and is also ambiguous for the vector control gradient.",
+      "least_adequate_overall_repair": "For unconstrained controls, replace the signed test D^(k)<η by a specified absolute-value or norm test ||D^(k)||≤η, where D^(k) is the full control-gradient residual from the stationarity equation. For constrained controls, use the corresponding projected-gradient or feasible-direction variational-inequality residual.",
+      "classification": "minor_issue",
+      "why_classification": "An arbitrarily large negative residual satisfies the printed rule, and the vector-valued residual also requires a choice of norm, so this is not a uniquely forced typographical omission. Correcting the stopping test is nevertheless short, routine, and local, and it does not alter the optimization method, stationarity condition, or reported experiments that use the alternative cost-based test. The issue is minor.",
+      "new_version_repair_locator": {
+        "tag": "rmk:convergence",
+        "quote": "\\partial_\\varepsilon \\left[\\sum_{i=1}^N \\lambda_i^{(j)}\\, F_i \\left( c^{(j)},\\varepsilon^{(j)} \\right) \\right] \\cdot (\\epsilon - \\varepsilon^{(j)}) \\leq \\eta \\quad \\text{for a.e. } t \\in (0,T) \\text{ and all } \\epsilon \\in E"
+      }
+    },
+    {
+      "issue_id": "2510.16154:I004",
+      "title": "False coercivity step in the saddle-point theorem",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:saddle_point",
+      "failure_location": {
+        "tag": "thm:saddle_point",
+        "quote": "Finally, as in the proof of Theorem \\ref{thm:existence1}, it is immediate to show coercivity in the primal variables, ensuring that the minimum is attained in a weakly compact set."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:cost_tv_regular"
+        }
+      ],
+      "failure_explanation": "The proof claims coercivity in the H^1(Ω)×L^2(Ω;R^2) primal norm. Choose an interior point x0, a nonzero smooth compactly supported φ, u_n(x)=nφ(n(x-x0)), v_n=∇u_n, and μ=0. In two dimensions, ||u_n||_2 and ∫|v_n| remain bounded, v_n-∇u_n=0, and the fidelity term remains bounded, while ||∇u_n||_2 and ||v_n||_2 grow like n. Thus L(u_n,v_n,0) stays bounded while the declared primal norm diverges. The asserted coercivity and weak-compactness inference are therefore invalid, leaving saddle existence and strong duality unproved.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The theorem's existence and strong-duality conclusions, and the later appeal to absence of a duality gap, are not established by the supplied proof. This does not by itself disprove the numerical observations.",
+      "least_adequate_overall_repair": "Replace the unsupported continuum theorem by the corresponding theorem for the finite-pixel functional actually used numerically: take c in R^N, v and μ in R^{N×2}, and fix a discrete gradient G. The unrestricted multiplier enforces v=Gc, the positive fidelity term makes the constrained primal objective coercive and strictly convex, and finite-dimensional convex KKT or Fenchel duality supplies a multiplier, a saddle point, and strong duality. Restrict every later no-duality-gap invocation to this established discrete result.",
+      "classification": "serious_issue",
+      "why_classification": "Serious: the recorded complete repair replaces the claimed continuum saddle-existence and strong-duality theorem by a theorem for a finite-pixel model. This withdraws the original continuum guarantee, rather than merely repairing its coercivity argument or adjusting a quantitative parameter. Preserving the guarantee needed by the numerical application does not preserve a comparable version of the primary continuum result. The resulting loss of mathematical scope is major even though the finite-dimensional replacement has a contained proof. This classification concerns the loss under the recorded repair; it does not assert that continuum saddle existence or strong duality has been disproved, or that a future compatible repair is impossible.",
+      "new_version_repair_locator": "removed_without_successor",
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2510.16154:I005",
+      "title": "Adjoint terminal operators are undefined on the declared function spaces",
+      "target_type": "other",
+      "primary_affected_tag": "eq:new_adjoint",
+      "failure_location": {
+        "tag": "eq:new_adjoint",
+        "quote": "\\lambda(x,T) = - \\rho \\Delta u(x) + \\dive(\\mu(x) + \\rho\\, v(x) ) + \\alpha (u(x) - I(x)), \\quad x \\in \\Omega."
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $v \\in L^2(\\Omega;\\mathbb{R}^2)$ be an auxiliary vector field, $\\mu \\in L^2(\\Omega;\\mathbb{R}^2)$ the corresponding multiplier"
+        },
+        {
+          "tag": "eq:cost_tv_regular"
+        }
+      ],
+      "failure_explanation": "For μ,v in L^2(Ω;R^2), div(μ+ρv) is generally only an H^{-1} distribution, not an L^2 or pointwise quantity. Likewise, Δu need not be a function for u in H^1. Equation eq:new_adjoint nevertheless asserts a pointwise terminal value for λ and supplies no weak adjoint space in which the subsequent evolution and products are meaningful.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The terminal condition required by the TV-modified DAL step is not defined for all variables admitted by the regularized functional, so that part of the old numerical construction has no valid input-output contract.",
+      "least_adequate_overall_repair": "Formulate the TV-DAL terminal step explicitly on the pixel grid. Represent the terminal state in R^N and v,μ in R^{N×2}; define a discrete gradient G, its negative weighted adjoint as the discrete divergence, and the associated discrete Laplacian. Replace the pointwise continuum terminal equation by the resulting finite-dimensional gradient and use compatible Euclidean pairings in the backward adjoint and control update.",
+      "classification": "moderate_issue",
+      "why_classification": "For the declared continuum spaces the terminal derivative is generally only in H^{-1}, and merely calling the equation weak does not make the subsequent adjoint evolution and products meaningful. A compatible discrete operator construction preserves the intended finite-pixel algorithm and requires no new global method or major loss, but it is a genuine space-and-operator reformulation rather than a routine notation edit. The issue is therefore moderate.",
+      "new_version_repair_locator": {
+        "tag": "eq: admm_terminal",
+        "quote": "\\frac{\\partial \\tilde L}{\\partial c} = \\Delta x\\,\\Delta y \\left[ - \\rho\\, \\Delta^\\# c + \\dive^\\# (\\mu + \\rho\\, v) + \\alpha (c-c^0) \\right]"
+      }
+    },
+    {
+      "issue_id": "2510.16154:I006",
+      "title": "Uninitialized multiplier in the first ADMM dual update",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:admm",
+      "failure_location": {
+        "tag": "alg:admm",
+        "quote": "\\STATE $\\mu^{(j+1)} \\gets \\mu^{(j)} + \\gamma \\left(v^{(j)} - \\nabla c^{(j)}(\\,\\cdot\\,,T)\\right)$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:admm",
+          "quote": "\\REQUIRE Initial guesses for the control $\\varepsilon^{(0)}$ and the dual variable $\\mu^{(0)}$, $\\gamma > 0$"
+        },
+        {
+          "tag": "alg:admm",
+          "quote": "\\STATE $j \\gets 1$"
+        }
+      ],
+      "failure_explanation": "At the first pass j=1. The instruction μ^(j+1)←μ^(j)+γ(…) therefore attempts to compute μ^(2) from μ^(1), although the input contract supplies only μ^(0). Consequently the first dual update, and hence the subsequent multiplier sequence, is not executable as written.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Algorithm alg:admm fails on its first dual-ascent step and does not define the multiplier sequence used by later iterations.",
+      "least_adequate_overall_repair": "For the loop initialized with j=1, replace the dual update by μ^(j)←μ^(j−1)+γ(v^(j)−∇c^(j)(·,T)), so that μ^(0) supplies the first update and every later multiplier is initialized.",
+      "classification": "typo",
+      "why_classification": "The supplied μ^(0), the precomputed zeroth iterate, and the assignment j=1 uniquely force the one-step index shift. No mathematical inference, algorithmic operation, or guarantee changes; this is a transcriptional off-by-one error that an intended reader can correct directly, so it is a typo.",
+      "new_version_repair_locator": {
+        "tag": "eq: dual_ascent",
+        "quote": "\\mu^{(j)} \\gets \\mu^{(j-1)} + \\gamma \\left(v^{(j)} - \\nabla^\\# c^{(j)}\\right)."
+      }
+    }
+  ]
+}

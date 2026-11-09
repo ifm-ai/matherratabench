@@ -1,0 +1,179 @@
+{
+  "paper_id": "2507.23207",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2507.23207:I001",
+      "title": "Ill-typed residual substitution in the range-finder proof",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:rrf",
+      "failure_location": {
+        "tag": "thm:rrf",
+        "quote": "Use the result from \\cref{thm:tantheta} with $\\M{Z} =\\M\\Sigma_\\perp\\M{V}_\\perp\\t $  and $\\M{W} = \\M{V}_r$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:tantheta",
+          "quote": "Let $\\M{W} \\in \\R^{N \\times r}$ have orthonormal columns and $\\M{Z} \\in \\R^{N \\times (N - r)}$."
+        }
+      ],
+      "failure_explanation": "The desired product is A Omega with A=Sigma_perp V_perp^T. To use thm:tantheta, the proof needs an admissible matrix whose transpose acts like A, but it literally sets the lemma's Z equal to A. A generally has the wrong orientation and, for a rectangular input matrix, the wrong number of columns. No compact factorization or zero padding is supplied to meet the lemma's N by (N-r) hypothesis.",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2"
+      ],
+      "overall_effect": "The old range-finder residual estimate is not obtained for general rectangular matrices, so the single-pass and Tucker theorems that invoke thm:rrf inherit this gap. This dimensional root is independent of the invalid conditional-Chernoff proof inside thm:tantheta.",
+      "least_adequate_overall_repair": "In the proof of thm:rrf, set A=Σ_perp V_perp^T. For A≠0, take a compact SVD A=L S R^T of rank s≤N−r and apply thm:tantheta with W=V_r and Z̃=[R S,0] in R^{N×(N−r)}. Then ‖Z̃^TΩ‖₂=‖AΩ‖₂, while Z̃ and A have the same spectral norm, Frobenius norm, and stable rank; handle A=0 directly. The listed single-pass and Tucker results can then use the corrected range-finder theorem without changing their statements.",
+      "classification": "minor_issue",
+      "why_classification": "The literal substitution makes a genuine invalid inference for rectangular matrices, so it is not merely a typographical correction. Nevertheless, compact factorization and zero padding are routine local linear algebra, preserve every hypothesis and bound, and require only mechanical propagation to the dependent results.",
+      "new_version_repair_locator": {
+        "tag": "thm:rrf",
+        "quote": "By Theorem~\\ref{thm:zbound} with"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2507.23207:I002",
+      "title": "Zero-matrix case in the rank-one tail lemma",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:kronrank1",
+      "failure_location": {
+        "tag": "lem:kronrank1",
+        "quote": "let $\\M{V}\\in \\R^{N \\times k}$ be an arbitrary matrix with columns $\\V{v}_j$ for $1\\le j \\le k$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "lem:kronrank1",
+          "quote": "Without any loss of generality, assume that $\\M{V}$ is nonzero."
+        }
+      ],
+      "failure_explanation": "The proof supports the tail estimate only after normalizing a nonzero matrix, whereas the statement permits every matrix. At V=0 the displayed event has probability one for every t>0, contradicting the decaying right-hand side for sufficiently large t, and the proof's normalized random variable is undefined.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The lemma is false only on the degenerate zero input. Later uses can retain their conclusions by applying the lemma to nonzero matrices and treating the zero case directly.",
+      "least_adequate_overall_repair": "Add the hypothesis V≠0 to lem:kronrank1. In every derived use, split off V=0 and verify the resulting zero quantity directly instead of invoking the normalization; retain the displayed tail estimate unchanged for V≠0.",
+      "classification": "minor_issue",
+      "why_classification": "The theorem is false at zero and its proof divides by ‖V‖_F², so mathematical qualification is required. The excluded case is a single degenerate input with an immediate direct treatment, and the method, tail rate, and all regular-case guarantees remain unchanged.",
+      "new_version_repair_locator": {
+        "tag": "lem:kronrank1new",
+        "quote": "let $\\M{V}\\in \\R^{N \\times k}$ be an arbitrary {non-zero} matrix"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2507.23207:I003",
+      "title": "Conditional Matrix Chernoff uses unconditional means after truncation",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:tantheta",
+      "failure_location": {
+        "tag": "thm:tantheta",
+        "quote": "Apply matrix Chernoff inequality (\\cref{thm:chernoff}) conditionally, and then removing the conditioning, (as in Step 1 of the proof)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:chernoff"
+        },
+        {
+          "tag": "thm:tantheta",
+          "quote": "Therefore, $\\mu_{\\min} = \\ell$."
+        }
+      ],
+      "failure_explanation": "The prose claims that Matrix Chernoff can be applied conditionally with mu_min=ell and mu_max=ell||Z||_2^2. Those values were computed under the unconditional isotropic law. Conditioning each column on its projected norm being bounded preserves inter-column independence because the event factorizes, but it replaces each expectation by a truncated conditional expectation. The old source supplies no equality or lower/upper comparison that permits the unconditional means to be used in the stated conditional Chernoff bounds.",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2",
+        "thm:subspaceembed"
+      ],
+      "overall_effect": "The proof of thm:tantheta is not established. Consequently, the old range-finder guarantee, the single-pass theorem, both Tucker error theorems, and the subspace-embedding theorem lose their stated probabilistic support until the concentration argument is repaired.",
+      "least_adequate_overall_repair": "Replace the conditional Chernoff steps by per-column truncation. For each Gram summand S_k, define T_k=S_k 1_{E_k}, where E_k is its stated norm-bound event; the T_k remain independent and uniformly bounded. Isotropy and the existing L^p estimate imply that the discarded covariance has operator norm at most cδΔ/ℓ, giving E[T_k]≽(1−η)I for the W Gram matrix, while E[T_k]≼Z^T Z for the Z Gram matrix. Apply Matrix Chernoff to these truncated sums, add the existing bad-event probability where equality with the original upper-tail sum is needed, and choose matching lower and upper thresholds so that the thm:tantheta estimate survives with at most numerical-constant changes. Use the same truncation argument in thm:subspaceembed and propagate the corrected lemma through thm:rrf, the single-pass theorem, and both Tucker bounds.",
+      "classification": "moderate_issue",
+      "why_classification": "The old source's unconditional means cannot be inserted into a conditional Chernoff bound. Repair requires a new matrix-valued truncation-bias estimate and a nontrivial rederivation of both concentration tails, so it exceeds a minor local check. The moment bounds already proved in the source support this contained repair, which retains the model, probability mode, rates, and recognizable guarantees of the entire affected chain without global proof reconstruction or major loss.",
+      "new_version_repair_locator": {
+        "tag": "thm:rrf"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2507.23207:I004",
+      "title": "Dimensionally invalid residual invocation in the single-pass theorem",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:added-1",
+      "failure_location": {
+        "tag": "thm:added-1",
+        "quote": "the proof of \\cref{thm:tantheta} gives us"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:tantheta",
+          "quote": "Let $\\M{W} \\in \\R^{N \\times r}$ have orthonormal columns and $\\M{Z} \\in \\R^{N \\times (N - r)}$."
+        },
+        {
+          "tag": "thm:added-1",
+          "quote": "$\\M{Z} = \\M{Q}_\\perp\\M{Q}_\\perp\\t\\M{M} = \\M{M} - \\M{QQ}\\t\\M{M}$"
+        }
+      ],
+      "failure_explanation": "The proof defines Z=Q_perp Q_perp^T M, which is an m^d by n^d matrix, and then claims that the proof of thm:tantheta directly gives the displayed bound. Under W=Q, that lemma's stated interface instead requires an m^d by (m^d-ell_r) matrix. The needed reduction through a compact factor whose columns lie in range(Q)^perp, followed by zero padding, is absent.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The single-pass error estimate is not obtained from the cited lemma as written. This is a local shape defect independent of the separate conditional-Chernoff defect in that lemma.",
+      "least_adequate_overall_repair": "Let R=(I−QQ^T)M and take a compact SVD R=L S V_0^T of rank s≤m^d−ell_r. Apply thm:tantheta with W=Q and Z̃=[L S,0] in R^{m^d×(m^d−ell_r)}. Since R^TΨ=V_0 S L^TΨ and Z̃^TΨ=[S L^TΨ;0], the relevant spectral norms agree, and Z̃ has the same norms and stable rank as R; treat R=0 directly.",
+      "classification": "minor_issue",
+      "why_classification": "The cited lemma is genuinely invoked with an inadmissible matrix, but the residual's range already lies in range(Q) orthogonal complement. A compact SVD and zero padding therefore give a short, routine local repair that preserves the single-pass theorem's hypotheses, probability, and error bound.",
+      "new_version_repair_locator": {
+        "tag": "__STAGED_AUTOGEN_794114F8A9FCE116_FORMAL_000008__",
+        "quote": "Noting that $\\M\\Omega$ and $\\M\\Psi$ are independent, as in the proof of Theorem~\\ref{thm:rrf},"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2507.23207:I005",
+      "title": "Omitted rank-dependent logarithm in the subspace-rate summary",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "The number of samples in~\\cref{thm:subspaceembed} does not depend on $N$; however, to enable comparisons with existing literature, we use the bound in \\cref{cor:subspaceembed} which predicts the number of samples to be $\\mc{O}( r \\ln^d (N/\\delta))$, where we have suppressed dependence on $d$ and $K$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "cor:subspaceembed"
+        }
+      ],
+      "failure_explanation": "The prose claims that cor:subspaceembed predicts O(r ln^d(N/delta)) samples after suppressing only d and K. The displayed old condition actually has the factor ln(4r/delta) multiplying r+rC_{K,d}ln^d(8N/delta). Thus, when r or delta varies, the supported summary contains an additional unbounded logarithmic factor.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Only the advertised asymptotic comparison is understated; the displayed sample condition itself is unchanged.",
+      "least_adequate_overall_repair": "Replace the prose rate by O(r ln^d(N/δ) ln(r/δ)) when ε is fixed and dependence on d and K is suppressed, or retain the corresponding explicit factors ln^d(8N/δ) and ln(4r/δ) from cor:subspaceembed.",
+      "classification": "moderate_issue",
+      "why_classification": "The edit is local and leaves the formal corollary untouched, but it withdraws an advertised asymptotic sample bound by an additional unbounded rank- and failure-dependent logarithm. This is a limited weakening of a recognizably comparable rate, not a typo or a major loss.",
+      "new_version_repair_locator": {
+        "tag": "ssec:discussion",
+        "quote": "The number of samples in~\\cref{thm:subspaceembed} does not depend on $N$; however, to enable comparisons with existing literature, we use the bound in \\cref{cor:subspaceembed} which predicts the number of samples to be $\\mc{O}( r \\ln^d (N/\\delta) \\changes{\\ln(r/\\delta)})$, where we have suppressed dependence on $d$ and $K$."
+      }
+    },
+    {
+      "issue_id": "2507.23207:I006",
+      "title": "Undefined projection factors in the Hadamard-recompression core",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:randHadaTucker",
+      "failure_location": {
+        "tag": "line:hosvd:truncate",
+        "quote": "$\\T{H} = (\\T{F}\\kron\\T{G}) \\times_1 \\M{X}^{\\t}(\\M{A}\\krt \\M{U}) \\times_2 \\M{Y}^{\\t}(\\M{B}\\krt \\M{V}) \\times_3 \\M{Z}^{\\t}(\\M{C}\\krt \\M{W})$"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\M{U}_1 = \\text{orth}(\\M[\\hat]{X})$"
+        },
+        {
+          "quote": "$\\T{X}\\hada \\T{Y} \\approx \\T{Z}=\\T{H}\\times_1 \\M{U}_1 \\times_2 \\M{U}_2 \\times_3 \\M{U}_3$"
+        }
+      ],
+      "failure_explanation": "The executable core update multiplies by X^T, Y^T, and Z^T, although the procedure defines the relevant orthonormal factors as U_1, U_2, and U_3. The input symbols X and Y denote tensors, and no matrix Z with the required role is constructed. Consequently, the printed instruction cannot form the core compatible with the factors returned by the algorithm.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "As printed, the recompression algorithm cannot compute the advertised Tucker approximation's core. The sketch and orthogonalization steps remain usable after correcting the final projection factors.",
+      "least_adequate_overall_repair": "In the final core update, replace X^T, Y^T, and Z^T by U_1^T, U_2^T, and U_3^T, respectively, so that H=(F⊗G)×₁U_1^T(A krt U)×₂U_2^T(B krt V)×₃U_3^T(C krt W).",
+      "classification": "typo",
+      "why_classification": "The algorithm has just constructed U_1, U_2, and U_3 as the orthonormal output factors, and dimensional compatibility together with the displayed Tucker reconstruction uniquely forces their transposes in the core projection. No inference or new construction is needed beyond correcting the three copied symbols.",
+      "new_version_repair_locator": "removed_without_successor"
+    }
+  ]
+}

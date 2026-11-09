@@ -1,0 +1,161 @@
+{
+  "paper_id": "2604.16075",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2604.16075:I001",
+      "title": "Wrong sign when reconstructing the solution from the generalized eigenvector",
+      "target_type": "formal_result",
+      "primary_affected_tag": "l:quotient",
+      "failure_location": {
+        "tag": "l:quotient",
+        "quote": "    Let $(\\sigma_{\\min},\\v_{\\min})$ be the smallest singular value and the corresponding right singular vector of the $k\\times k$ matrix $\\tilde\\T_k$ obtained by removing the first row from $\\T_k$ in~\\eqref{eq:Lanczos}. Then,\n    the smallest eigenpair of the generalized eigenvalue problem~\\eqref{eq:MM} is given by $(\\sigma_{\\min}^2,\\frac1\\alpha\\v_{\\min})$, where $\\alpha =-\\frac{1}{\\|\\b\\|_2}\\left((\\T_k)_{1,1}(\\v_{\\min})_1 +(\\T_k)_{1,2}(\\v_{\\min})_2\\right)$. Consequently, the MINBERR solution $\\x_k$ after $k$ iterations satisfies:\n    \\begin{align*}\n        \\x_k = \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.\n    \\end{align*}\n    Moreover, for any $\\widehat\\v\\in\\mathbb{R}^{k}$, \n    defining \n    $\\widehat\\alpha=-\\frac{1}{\\|\\b\\|_2}\\left((\\T_k)_{1,1}(\\widehat\\v)_1 +(\\T_k)_{1,2}(\\widehat\\v)_2\\right)$ and \n    $\\widehat\\x = \\frac1\\alpha\\Q_k\\widehat\\v,$ \n    we have \n    $\n\\berr_{\\A,\\b}(\\widehat\\x) = \\|\\tilde \\T_k\\widehat\\v\\|_2/\\|\\widehat \\v\\|_2$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:MM"
+        },
+        {
+          "tag": "eq:pairs"
+        },
+        {
+          "tag": "alg:MINBERR"
+        },
+        {
+          "tag": "alg:MINBERRnonsym"
+        },
+        {
+          "tag": "prop:minberrNE"
+        }
+      ],
+      "failure_explanation": "The homogeneous eigenvector is (alpha,v), with alpha defined with a minus sign. The original generalized eigenproblem uses the coordinate convention (-1,y), so y must equal -v/alpha. The lemma, its proof, and both algorithms instead use v/alpha; the proof explicitly switches to (1,y) and later claims that division by alpha makes the first coordinate -1. This produces the negative of the intended solution and invalidates the asserted backward-error identities and approximate-output guarantees even for a normalized positive definite matrix. Concrete verification: Fully indexed k=2 witness: A=[[6,1,0],[1,5,1],[0,1,6]]/7, b=e1. The eigenvalues of A are 1,6/7,4/7. Lanczos gives Q_2=[e1,e2] and Ttilde=[[1,5],[0,1]]/7. Its smallest singular value is 0.02751177194. With v=(-0.9819563867,0.1891075212), the printed alpha is 0.8146615427 and x=(-1.2053550281,0.2321301685,0), with backward error 1.6295553426. Reversing x gives backward error 0.02751177194.",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE",
+        "thm:minberrcost",
+        "c:minberr"
+      ],
+      "overall_effect": "Both printed reconstruction procedures can return a vector with much larger backward error than the subspace optimum. The ideal Krylov convergence theorem is not refuted by this implementation error.",
+      "least_adequate_overall_repair": "Retain the printed negative alpha in the congruence calculation and reconstruct y=-v/alpha, x=-Q_k v/alpha; make the same correction for approximate vectors and in both algorithms and Proposition prop:minberrNE. Alternatively use a positive reconstruction denominator, consistently distinguishing it from the homogeneous eigenvector coordinate. Verification of the repair: The top row of [||b|| e1,T_k](-1,y) is -||b||+T_k[1,:]y. Setting y=-v/alpha, where alpha=-T_k[1,:]v/||b||, cancels that row. The remaining rows are -Ttilde v/alpha. This directly restores the residual/norm identity, under the intended unit spectral norm convention.",
+      "classification": "minor_issue",
+      "why_classification": "The wrong sign is used in the proof inference and executable output, so this exceeds a standalone typographical slip under the severity policy. Correcting the homogeneous normalization throughout is a short local algebraic repair; it preserves the method, rate, approximation factor and cost.",
+      "new_version_repair_locator": null,
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2604.16075:I003",
+      "title": "Printed dqds pseudocode can falsely stop at the first iteration",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:MINBERRnonsym",
+      "failure_location": {
+        "tag": "alg:MINBERRnonsym",
+        "quote": "\\State (One dqds step to test $\\epsilon$-convergence:) \nSet $d:=p_1-\\epsilon^2$ (only when $k=1$).\nLet $p_k=(\\B_k)^2_{k+1,k}, e_{k-1}=(\\B_k)^2_{k,k}$. \nSet \n$\\hat p_{k-1}=d+e_{k-1}$, \nand $d:=d\\cdot p_{k}/\\hat p_{k-1}-\\epsilon^2$. \n\\State If $d>0$, return to step 2. Else, $\\sigma_{\\min}(\\tilde \\B_k)=\\berr_{\\A,\\b}(\\x_k)<\\epsilon,$ so go to step 7. "
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:bidiag"
+        },
+        {
+          "tag": "prop:minberrNE"
+        }
+      ],
+      "failure_explanation": "At k=1 the shifted one-by-one factor has the single pivot d=p1-epsilon^2. The pseudocode first initializes that pivot, then also applies the recurrence for extending it to a subsequent column, using e0=(B1[1,1])^2. This can turn a positive correct pivot negative and falsely declare convergence. Defining p1 before its first use alone does not repair the extra update. This allegation concerns literal execution of the paper pseudocode. The current public minberrNE.m has an explicit if ii==1/else branch and does not execute this extra first-step update. No corresponding failure of the experimental implementation has been demonstrated. Concrete verification: A=[[1,0],[.5,1]]/c, c=(sqrt(17)+1)/4, b=e1, epsilon=.3. The matrix has norm 1. At k=1, alpha1=1/c and beta2=.5/c. The true optimal error is beta2=0.3903882032>.3. Correct d=beta2^2-.09=0.0624029492, but the printed second assignment produces -0.0758479393. Thus the sign test incorrectly stops.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "An implementation following the printed pseudocode literally can stop at k=1 despite the true optimum exceeding epsilon. This does not explain or refute the reported experiments: the current public code contains the missing branch, and calls requesting backward-error history bypass this dqds test.",
+      "least_adequate_overall_repair": "Define p_k before using it. At k=1 set d=p1-epsilon^2 and test it directly. Only for k>=2 form e_{k-1}, hat_p_{k-1}=d+e_{k-1}, and d=d p_k/hat_p_{k-1}-epsilon^2. Use the norm-scaled shift if the input is not normalized. Verification of the repair: For k=1, Btilde is the scalar beta2: positivity of Btilde^T Btilde-epsilon^2 I is exactly p1>epsilon^2. No e0 or extension recurrence belongs to this case. The witness remains after independently repairing the reconstruction sign and relative normalization.",
+      "classification": "minor_issue",
+      "why_classification": "The first iteration needs a routine base-case branch for an otherwise valid recurrence. This is a genuine false convergence test, not just a variable-order typo. The repair preserves the algorithm and all asymptotic guarantees.",
+      "new_version_repair_locator": null
+    },
+    {
+      "issue_id": "2604.16075:I006",
+      "title": "The inverse-iteration proof uses a false chi-square upper-tail bound",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma:invit",
+      "failure_location": {
+        "tag": "a:interse-iteration",
+        "quote": "Now, using properties of $\\chi^2$ distributions we observe the following:\n\\begin{enumerate}\n    \\item $\\sum c_j^2$ follows $\\chi^2_{|S_{\\mathrm{high}}|}$, so by~\\cite[Eqn.~(4.3)]{laurent2000adaptive} we see that with probability $1-\\delta/2$, we have $\\sum c_j^2 \\leq n \\ln(2/\\delta)$.\n    \\item $c_1^2$ follows $\\chi^2_1$, so since the pdf of a Gaussian random variable is bounded by $1/\\sqrt{2\\pi}$, we have $\\mathbb{P}(c_1^2 < \\eta) \\leq \\sqrt{2\\eta/\\pi}$. To ensure that $c_1^2 \\geq \\eta$ with probability $1-\\delta/2$, we need $\\eta \\leq \\frac{\\pi \\delta^2}{8}$; we thus set $\\eta=\\frac{\\pi \\delta^2}{8}$. "
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "a:interse-iteration"
+        },
+        {
+          "tag": "thm:minberrcost"
+        },
+        {
+          "tag": "alg:MINBERR"
+        },
+        {
+          "tag": "alg:MINBERRnonsym"
+        }
+      ],
+      "failure_explanation": "Appendix A claims that a chi-square variable with at most n-1 degrees of freedom is at most n log(2/delta) with probability at least 1-delta/2. This is false for allowed failure probabilities near one. The estimate is used in the proof of the inverse-iteration guarantee, so the written argument needs a genuine correction. A direct Gaussian small-ball argument establishes the required ratio bound without this false step. Concrete verification: Take n=100, M=diag(1,2,...,2), Delta=.5, delta=.99. Then m=99 and S is chi-square_99 with mean 99 and variance 198. The asserted threshold is t=100 log(2/.99)=70.3197516413. Cantelli gives P(S<=t)<=198/(198+(99-t)^2)=0.1940117688, strictly below the claimed 0.505.",
+      "dependent_affected_formal_result_tags": [
+        "thm:minberrcost",
+        "c:minberr"
+      ],
+      "overall_effect": "An explicit probabilistic inference is invalid. The displayed inverse-iteration lemma, its practical iteration prescription and the asymptotic algorithmic guarantees can all be preserved by short local estimates.",
+      "least_adequate_overall_repair": "Replace the false separate chi-square estimate with a direct bound on S/c1^2 using independence, the Gaussian density bound and Jensen: P(S/c1^2>R)<=sqrt(2m/(pi R)), m=|S_high|. This proves the ratio bound already used by the paper. Supply the direct Rayleigh-quotient estimate given here to justify the simplified 2.23 log(n/delta^2) prescription, rather than inferring it algebraically from the more conservative displayed lemma. Verification of the repair: Since c1 is independent of S, P(S/c1^2>R)<=sqrt(2/(pi R)) E sqrt(S)<=sqrt(2m/(pi R)). At R=16n log(2/delta)/(pi delta^2), this is delta sqrt(m/(8n log(2/delta)))<delta, restoring the ratio bound. For the simplified count, normalize eigenvalues r_i=lambda_i/lambda1. For integer ell>=1, R(v_ell)>1.5 lambda1 implies c1^2<sum_{i>=2} c_i^2 w_ell(r_i), where w_ell(r)=(r-1.5)_+/(.5 r^(2ell)) and max w_ell<=.75*1.5^(-2ell). Thus failure probability is at most sqrt(1.5(n-1)/pi)*1.5^(-ell), which is <=delta for ell>=2.23 log(n/delta^2). The n=1 case is exact. The weight bound can be obtained without optimisation: for r>=1.5, (r-1.5)/(.5*r^(2ell)) <= (1/3)*1.5^(-2(ell-1)) = .75*1.5^(-2ell), because 2(r-1.5)/r^2<=1/3 is equivalent to (r-3)^2>=0. Thus both the lemma and the shortened count have a complete elementary local repair.",
+      "classification": "minor_issue",
+      "why_classification": "Minor rather than moderate: a replacement argument is needed, but the complete repair is routine and local. Condition on the independent chi-square sum and apply the Gaussian small-ball inequality already used in the source, then Jensen. This preserves the printed ratio bound and general lemma. The simplified algorithmic cap follows from the same spectral expansion and the elementary inequality (r-3)^2>=0. No nontrivial new lemma, construction, substantive weakening, or downstream algorithm change is needed. A substantial replacement proof would warrant moderate, but the explicitly established lower-burden repair controls this classification.",
+      "new_version_repair_locator": null,
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2604.16075:I007",
+      "title": "Stopping at the exact subspace optimum does not certify the returned approximate vector",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:MINBERRnonsym",
+      "failure_location": {
+        "tag": "alg:MINBERRnonsym",
+        "quote": "\\State If $d>0$, return to step 2. Else, $\\sigma_{\\min}(\\tilde \\B_k)=\\berr_{\\A,\\b}(\\x_k)<\\epsilon,$ so go to step 7. \n \\EndFor    \n\n \\State Set $\\tilde\\B_k$ as the bottom $k\\times k$ submatrix of $\\B_k$. Let $\\v$ be Gaussian.\n \\While{ \n$\\ell<2.23 \\ln(k / \\delta^2)$}\n \\State Solve $\\tilde\\B_k^\\top\\z = \\v$ for $\\z $, and $\\tilde\\B_k \\v = \\z$ for $\\v$.\n \\State Set $\\v:=\\v/\\|\\v\\|_2$, \\quad \n $\\ell:=\\ell+1$.\n \\EndWhile\n\\State $\\x_k = \\frac{1}{\\alpha}\\Q \\v$ where \n$\\alpha = -\\frac{1}{\\|\\b\\|_2}(\\B_k)_{1,1}(\\v)_1.$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "prop:minberrNE"
+        },
+        {
+          "tag": "lemma:invit"
+        },
+        {
+          "tag": "alg:MINBERR"
+        }
+      ],
+      "failure_explanation": "The stopping test concerns the best possible vector in the current Krylov subspace, while the algorithm returns an approximate minimizer. For illustration, with target epsilon=.1, the best error could be .09 and the returned error .105: this is a good relative approximation to the optimum but misses the requested tolerance. The proved constant-factor guarantee does not bridge that gap. The following numerical witness establishes actual failure for the prescribed finite inverse-iteration count, not merely insufficiency of an upper bound. The issue survives correction of the independent sign and dqds initialization errors. It concerns the literal epsilon output contract; a constant-factor tolerance interpretation would remove this issue, and the asymptotic convergence rate and complexity do not change. Concrete verification: Let A=A0/c, A0=[[.01,0,0],[1,.1,0],[0,1,1]], c=||A0||=1.4177448616, b=e1, kmax=3, delta=.1. At k=2, Btilde=[[1,.1],[0,1]]/c with singular values s1=.6709593845, s2=.7414939374. Choose epsilon=1.000001*s1=.6709600555. Both printed and corrected dqds checks continue at k=1 and stop at k=2. After repairing the sign and setting ell=0, the prescribed inverse-iteration count is 12. The probability the returned vector meets epsilon is only .0210678288; failure is .9789321712.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The actual-output tolerance promised by MINBERR-NE is not ensured by its stopping test. Algorithm MINBERR has the same operational gap if its tolerance is intended to certify the returned approximate vector; its displayed output condition uses the ideal x_k, which makes MINBERR-NE the cleaner primary target.",
+      "least_adequate_overall_repair": "Use a safety margin in the exact-optimum test, for example sigma_min/||A||<epsilon/sqrt(1.5) with the established half-relative Rayleigh-quotient bound, and state the 1-delta success probability. A conservative epsilon/1.5 margin also works. Alternatively verify the actual returned backward error and continue as needed, with a corresponding cost analysis. Verification of the repair: In the right singular basis, initial coefficients g1,g2 are independent standard normals. After ell inverse iterations, success is equivalent to |g2/g1|<=sqrt((epsilon^2-s1^2)/(s2^2-epsilon^2))*(s2/s1)^(2ell)=.0331053542. Since g2/g1 is standard Cauchy, success probability is 2 atan(.0331053542)/pi. A half-relative bound on the Rayleigh quotient gives at most sqrt(1.5) relative error in the singular-value quotient, explaining the corrected threshold.",
+      "classification": "minor_issue",
+      "why_classification": "The failure can have probability about 0.979 even with requested delta=.1, so this is not a roundoff or equality-edge concern. A fixed constant margin restores the advertised tolerance with the existing inverse-iteration analysis and changes only constant factors in the iteration count and complexity.",
+      "new_version_repair_locator": null
+    },
+    {
+      "issue_id": "2604.16075:I008",
+      "title": "The introduction leaves the empirical status of the lower-bound evidence misleadingly ambiguous",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "tag": null,
+        "quote": "We investigate this further by developing a variant of MINBERR which minimizes backward error over the Krylov subspace defined by the normal equations (\\algne). Remarkably, this method empirically exhibits strong convergence and avoids the blow-up of Richardson. However, we are able to construct a family of hard problem instances for which the \\algne\\ backward error is at least $\\log(\\kappa(\\A))/k$ after $k$ iterations, suggesting that no deterministic Krylov method can attain truly universal convergence for general systems. We propose to address this  by introducing a random perturbation, replacing $\\A$ with $\\A+\\delta\\G$ for a carefully chosen $\\delta$ and a Gaussian matrix $\\G$, similarly to what is done in smoothed analysis \\cite{spielman2004smoothed}. This yields a condition number proportional to $n$ while minimally affecting backward error, thereby making \\algne\\ independent of condition number even on our hard problem instances. "
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "\\paragraph{Stagnation of \\algne}\nUnfortunately, it turns out that \\algne\\ does not always attain the universal $1/k$ rate. We show this empirically in Figure \\ref{fig:nonsym_hard} (top plots), again using the \\texttt{Small-Outlier} family of problems. Here, by adjusting the parameters we can force the backward error of \\algne\\ to stagnate close to 1 for an extended number of iterations. Specifically, our experiments suggest that for any sufficiently large $k$ and $\\kappa$, we can find a problem instance for which the backward error of \\algne\\ after $k$ iterations is at least $\\min\\{1, \\log_{10}(\\kappa)/k\\}$."
+        },
+        {
+          "tag": "fig:nonsym_hard"
+        }
+      ],
+      "failure_explanation": "The v1 introduction describes a constructed family with MINBERR-NE backward error at least log(kappa(A))/k without making the empirical status of that assertion explicit. A reader can reasonably take this as an established theoretical lower bound, although the preceding sentence discusses empirical performance and the supporting experimental section explicitly says experiments suggest a capped min{1,log10(kappa)/k} behaviour. Both readings must be retained. The proposed defect is materially confusing presentation of the evidence status; it is not a proved false lower bound, an invalid theorem, or an unambiguously withdrawn theoretical promise. The subsequent impossibility clause was already explicitly suggestive.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Readers may mistake an empirical observation and conjecture for a theoretical obstruction. Clarifying the evidence status preserves the experiments, the conjecture and all formal guarantees. No theorem is claimed invalid and no downstream mathematical dependence on a proved lower bound has been identified.",
+      "least_adequate_overall_repair": "Describe the hard-instance lower-bound behaviour as empirical evidence/conjecture, consistently in the introduction and discussion. For example: experiments on constructed hard instances suggest logarithmic condition-number dependence, motivating the conjecture that a universal rate may fail for methods restricted to this normal-equations Krylov space. Do not infer a lower bound or non-universality from the newly proved O(log(kappa)/k) upper bound.",
+      "classification": "minor_issue",
+      "why_classification": "The old source already explicitly presents the supporting evidence as experimental. A local empirical qualification in the introduction preserves that evidence, its conjectural interpretation and all formal guarantees; no new proof or weakened established result is required. This is a context-sensitive ambiguity issue, not a finding that a theoretical lower bound is false. Inclusion confidence and author intent are separate from the local repair burden that supports minor severity.",
+      "new_version_repair_locator": {
+        "tag": null,
+        "quote": "We investigate this further by developing a variant of MINBERR which minimizes backward error over the Krylov subspace defined by the normal equations (\\algne).\nWe show that, while this method still does not strictly speaking attain universal convergence, it gets tantalizingly close with an $O(\\log(\\kappa(\\A))/k)$ rate (Theorem \\ref{t:minberrne}). The logarithmic dependence on the condition number is indeed observed empirically on some hard instances (Figure \\ref{fig:nonsym_hard}), \nbut it can be entirely avoided by employing a random perturbation. We show that running \\algne\\ on $\\A+\\delta\\G$ for a carefully chosen $\\delta$ and a Gaussian matrix $\\G$ "
+      }
+    }
+  ]
+}

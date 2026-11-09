@@ -1,0 +1,198 @@
+{
+  "paper_id": "2601.10222",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2601.10222:I001",
+      "title": "Missing conditioning in the unbiased-estimator extension",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "Note, the discussed results remain valid if the stochastic gradient $\\nabla f_{i_k}$ is replaced by any unbiased gradient estimator $g_k$ satisfying $\\mathbb{E}[g_k]=\\nabla f(\\theta_k)$."
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}[\\nabla f_{i_k}(\\theta_k)| \\theta_k]"
+        },
+        {
+          "quote": "Taking the conditional expectation given $\\theta_k$ yields"
+        }
+      ],
+      "failure_explanation": "The prose claims that all discussed results extend to any g_k satisfying the printed unconditional equality E[g_k]=grad f(theta_k). The old proofs actually replace the random direction after conditioning on theta_k, which requires E[g_k | theta_k]=grad f(theta_k). An unconditional mean does not supply that identity when g_k is correlated with the iterate or its history, so the stated extension exceeds what the argument supports.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The original theorems for uniformly sampled component gradients remain unaffected, but the prose extension to arbitrary stochastic estimators is not justified as printed.",
+      "least_adequate_overall_repair": "Replace the extension's hypothesis by conditional unbiasedness, $\\mathbb{E}[g_k\\mid\\theta_k]=\\nabla f(\\theta_k)$, and invoke the existing conditional-expectation arguments under that condition. The original results for uniformly sampled component gradients require no change.",
+      "classification": "minor_issue",
+      "why_classification": "The unconditional condition is insufficient for the proof, so this is not purely transcriptional. Conditional unbiasedness is the standard, local stochastic-dependence qualification already exhibited by the source; adding it preserves the method, conclusions, rates, and intended estimator regime without affecting the original theorems.",
+      "new_version_repair_locator": {
+        "quote": "Note, the discussed results remain valid if the stochastic gradient $\\nabla f_{i_k}$ is replaced by any unbiased gradient estimator $g_k$ satisfying $\\mathbb{E}[g_k\\mid \\theta_k]=\\nabla f(\\theta_k)$."
+      }
+    },
+    {
+      "issue_id": "2601.10222:I002",
+      "title": "Missing modulus in the smoothness definition",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:added-1",
+      "failure_location": {
+        "quote": "\\|\\nabla f(\\theta_1)-\\nabla f(\\theta_2)\\|\\leq \\|\\theta_1-\\theta_2\\|."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "hp_smooth",
+          "quote": "Each function $f_i:\\mathbb{R}^n\\rightarrow \\mathbb{R}$ in problem \\eqref{eq:min_problem} is $L_i$-smooth."
+        },
+        {
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The primary theorem assumes hp_smooth and restricts its step size using L_max. Under the printed definition, L is unused, so only a unit-Lipschitz gradient is defined and the expression L_i-smooth has no parameterized meaning supplied by the paper. Thus L_max is not tied to the actual component smoothness needed by the theorem, and the same invalid interface affects the later SGD theorems.",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2",
+        "th:convex",
+        "th:nonconvex"
+      ],
+      "overall_effect": "All four SGD convergence results invoke smoothness constants whose intended mathematical meaning is not established by the printed definition.",
+      "least_adequate_overall_repair": "Define $L$-smoothness by $\\|\\nabla f(\\theta_1)-\\nabla f(\\theta_2)\\|\\leq L\\|\\theta_1-\\theta_2\\|$. Retain the $L_i$-smooth assumptions and all four $L_{\\max}$-based convergence results under this corrected definition.",
+      "classification": "typo",
+      "why_classification": "The old definition introduces $L>0$, immediately uses the parameterized phrase \"$L_i$-smooth,\" and bases every affected step-size restriction on those constants. These features uniquely force the missing factor $L$; inserting it repairs no inference and changes none of the affected guarantees.",
+      "new_version_repair_locator": {
+        "quote": "\\|\\nabla f(\\theta_1)-\\nabla f(\\theta_2)\\|\\leq L \\|\\theta_1-\\theta_2\\|."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2601.10222:I003",
+      "title": "Wrong component range in L_max",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:added-1",
+      "failure_location": {
+        "tag": "hp_smooth",
+        "quote": "Denote $L_{\\max}:=\\max_{i=1,\\dots,n} L_i$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:min_problem",
+          "quote": "\\min_{\\theta \\in \\R^n} f(\\theta) := \\frac{1}{m} \\sum_{i=1}^m f_i(\\theta),"
+        }
+      ],
+      "failure_explanation": "The primary theorem uses L_max to restrict the SGD step size, but hp_smooth defines it using the unrelated parameter dimension n. When n>m the maximum contains undefined constants; when n<m it does not control all sampled component gradients. Hence the theorem's step-size hypothesis is not uniformly meaningful for the finite-sum problem, and the same defect reaches every later theorem using L_max.",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2",
+        "th:convex",
+        "th:nonconvex"
+      ],
+      "overall_effect": "The step-size restrictions and constants in all four SGD convergence results may be undefined or fail to control every component function.",
+      "least_adequate_overall_repair": "Replace $L_{\\max}:=\\max_{i=1,\\ldots,n}L_i$ by $L_{\\max}:=\\max_{i=1,\\ldots,m}L_i$ in Assumption hp_smooth. The existing downstream step-size restrictions and constants can then remain unchanged.",
+      "classification": "typo",
+      "why_classification": "The old source defines exactly $m$ component functions and their constants, while $n$ is the unrelated parameter dimension. Thus the range $1,\\ldots,m$ is uniquely forced, and the proof reasoning already requires the maximum over all sampled components; this is an index transcription error despite its repeated downstream use.",
+      "new_version_repair_locator": {
+        "tag": "hp_smooth",
+        "quote": "We denote $L_{\\max}:=\\max_{i=1,\\dots,m} L_i$."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2601.10222:I004",
+      "title": "Categorical nonconvergence overclaim for constant-step SGD",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "This result tells us that SGD does not converge with a constant step size."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "If the variance of the gradient estimate was zero"
+        }
+      ],
+      "failure_explanation": "The prose claims that constant-step SGD does not converge. The preceding theorem actually establishes only an upper bound consisting of a decaying term plus a constant variance term; an upper bound that does not tend to zero is not a lower bound and cannot prove nonconvergence. Moreover, the old discussion explicitly says that the zero-variance admissible case converges. The supported conclusion is therefore only that this result does not guarantee convergence under a constant step size.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The prose materially overstates the behavioral consequence of the strongly convex convergence bound, while the formal theorem itself is not defeated by this root.",
+      "least_adequate_overall_repair": "Replace the categorical sentence by: “For $\\sigma^2>0$, this estimate does not guarantee convergence of constant-step SGD to the solution, because its upper bound contains a nonvanishing variance term.” Retain the subsequent observation that the zero-variance case has linear convergence.",
+      "classification": "moderate_issue",
+      "why_classification": "An upper bound with a nonzero limiting term cannot establish actual nonconvergence, and the source itself supplies a convergent admissible case. Repair therefore necessarily retracts the categorical behavioral claim. The weakening is mathematically meaningful but limited: a closely comparable interpretation of the same bound survives locally, and no formal theorem or proof architecture changes.",
+      "new_version_repair_locator": {
+        "quote": "This result tells us that SGD is not guaranteed to converge with a constant step size, since the upper bound on the error does not go to zero when $k$ increases."
+      }
+    },
+    {
+      "issue_id": "2601.10222:I005",
+      "title": "Malformed stationarity quantity in the nonconvex theorem",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:nonconvex",
+      "failure_location": {
+        "tag": "th:nonconvex",
+        "quote": "\\min_{k=0,\\dots,K-1}\\E{\\|\\nabla f(\\bar{\\theta}_K)}\\|^2"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:sgd"
+        }
+      ],
+      "failure_explanation": "The theorem assumes the SGD sequence theta_k but states a minimum of an expression involving only bar-theta_K, making the minimum algebraically vacuous. The earlier definitions of bar-theta_K occur inside convex theorems with different hypotheses and step-size rules, so they do not supply the missing nonconvex construction. The theorem consequently fails to state a well-defined iterate-wise stationarity guarantee.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Both the principal stationarity estimate and its epsilon-complexity consequence refer to the wrong or undefined iterate quantity.",
+      "least_adequate_overall_repair": "In both the principal stationarity estimate and its $\\epsilon$-complexity consequence, replace the quantity under the minimum by $\\mathbb{E}[\\|\\nabla f(\\theta_k)\\|^2]$, yielding $\\min_{k=0,\\ldots,K-1}\\mathbb{E}[\\|\\nabla f(\\theta_k)\\|^2]$. No averaged-iterate construction is needed.",
+      "classification": "typo",
+      "why_classification": "The explicit minimum over $k$ and the theorem's only applicable iterate sequence uniquely force evaluation at $\\theta_k$. The printed $\\bar\\theta_K$ is independent of $k$ and has no definition under the nonconvex hypotheses. Replacing this copied symbol restores the intended iterate-wise guarantee and its rate without repairing an inference or supplying a new argument.",
+      "new_version_repair_locator": {
+        "tag": "th:nonconvex"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2601.10222:I006",
+      "title": "Undefined L_f in the nonconvex theorem",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:nonconvex",
+      "failure_location": {
+        "tag": "th:nonconvex",
+        "quote": "\\sqrt{\\frac{2}{L_fL_{\\max}K}}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "hp_smooth"
+        }
+      ],
+      "failure_explanation": "Assumption hp_smooth introduces only the component constants L_i and L_max. The additional L_f in the theorem is never bound to a property of f, so the prescribed step size and right-hand-side constant cannot be instantiated from the stated hypotheses. Since the average objective has a Lipschitz gradient under hp_smooth, the missing binding can be supplied locally.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The nonconvex theorem's step size and numerical convergence constant are undefined as printed.",
+      "least_adequate_overall_repair": "Add that $L_f$ denotes a Lipschitz constant of $\\nabla f$. Assumption hp_smooth guarantees such a constant; for example, $L_f=(1/m)\\sum_{i=1}^m L_i$ is valid. Use this binding in the stated step size and convergence constant without otherwise changing the theorem or its complexity consequence.",
+      "classification": "minor_issue",
+      "why_classification": "The undefined parameter prevents the theorem from being instantiated, but its existence follows by a routine one-line smoothness calculation from the component assumptions. Supplying and checking that derived binding is genuine mathematical interface work rather than a uniquely forced transcription edit, yet it is entirely local and preserves the hypotheses, conclusion, rate, and complexity.",
+      "new_version_repair_locator": {
+        "tag": "th:nonconvex",
+        "quote": "where $L_f$ is the Lipschitz constant of the gradient of $f$."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2601.10222:I007",
+      "title": "Undefined starred heterogeneity term",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:nonconvex",
+      "failure_location": {
+        "tag": "th:nonconvex",
+        "quote": "\\left(2(f(\\theta_0)-\\inf f)+\\Delta_f^{\\star}\\right)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "th:nonconvex",
+          "quote": "with $\\Delta_f:=\\inf f-\\frac{1}{m}\\sum_{i=1}^{m}\\inf f_i$."
+        }
+      ],
+      "failure_explanation": "The convergence bound contains Delta_f^star, but the theorem supplies a definition only for Delta_f. Consequently the constant in the bound is undefined. The adjacent definition uniquely identifies the intended heterogeneity quantity, so the mismatch is independently checkable without reconstructing an external theorem.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The numerical constant in the nonconvex stationarity bound, and hence the stated bound itself, cannot be evaluated as printed.",
+      "least_adequate_overall_repair": "Replace $\\Delta_f^{\\star}$ in the stationarity bound by the adjacent defined quantity $\\Delta_f:=\\inf f-(1/m)\\sum_{i=1}^m\\inf f_i$, making the notation consistent throughout the theorem.",
+      "classification": "typo",
+      "why_classification": "The adjacent definition uniquely fixes the heterogeneity quantity used by the bound, and no distinct starred quantity is introduced or needed. Making the two labels agree is a purely transcriptional correction that changes neither the numerical constant nor any mathematical reasoning.",
+      "new_version_repair_locator": {
+        "tag": "th:nonconvex"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

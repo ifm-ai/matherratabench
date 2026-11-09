@@ -1,0 +1,246 @@
+{
+  "paper_id": "2504.19308",
+  "version_pair": "v1-v4",
+  "issues": [
+    {
+      "issue_id": "2504.19308:I001",
+      "title": "FFT extraction uses a cycle column instead of a Fourier-mode row",
+      "target_type": "algorithm",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "failure_location": {
+        "tag": "algo:circulant_decomposition_fft",
+        "quote": "\\( R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)} \\)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "appendix:example_finding_cycles"
+        },
+        {
+          "tag": "th:circulant_decomposition"
+        }
+      ],
+      "failure_explanation": "The columns of the old \\tilde A contain the cycle data Λ_j, so after the columnwise FFT, U(k,j) has Fourier index k and cycle index j. The first column of R_k must contain the coefficients indexed by j at fixed k. The old instruction U^{(j)} instead fixes the cycle and mixes all Fourier modes, and its diagonal phase cannot transpose those roles. It also lacks the unitary-FFT normalization. For A=I_2 and the paper's unitary W, the old rule gives the first column of R_0 as (√2,0), reconstructing √2I_2 rather than I_2.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The algorithm does not return the circulant components promised by its output contract. Consequently, component magnitudes, selected indices, and the downstream circulant multiplication are wrong unless extraction is repaired, although the decomposition theorem itself is unaffected.",
+      "least_adequate_overall_repair": "Retain the cycle-column construction and unitary columnwise FFT, but replace the extraction prose and loop by setting the first column of component R_k to n^{-1/2} times the transpose of Fourier row U(k,:). Remove the phase multiplication of column U^(k), and compute component norms and selected indices from these corrected columns.",
+      "classification": "minor_issue",
+      "why_classification": "This is not a typo because the old prose and algorithm make a genuine incorrect inference about the two indices. Nevertheless, tracking U(k,j) as Fourier mode k and cycle j gives the corrected extraction through a short, routine index-and-normalization check; no new decomposition, proof architecture, complexity change, or loss of the output contract is required.",
+      "new_version_repair_locator": {
+        "tag": "algo:circulant_decomposition_fft",
+        "quote": "$R(k) =\\frac{1}{\\sqrt{n}}transpose(\\underline{B}(k,:))$"
+      }
+    },
+    {
+      "issue_id": "2504.19308:I002",
+      "title": "Circulant multiplication uses cycle data as component eigenvalues",
+      "target_type": "algorithm",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "failure_location": {
+        "tag": "algo:cd_matrix_multiplication",
+        "quote": "\\( {\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right)) \\)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "algo:circulant_decomposition_fft",
+          "quote": "\\( L[j] \\gets \\Lambda_j\\)"
+        },
+        {
+          "tag": "eq:first_order_expansion"
+        },
+        {
+          "tag": "th:circulant_decomposition"
+        }
+      ],
+      "failure_explanation": "The called decomposition algorithm defines L_A[t]=Λ_t, a diagonal containing entries from cycle t of A. To multiply R_kD^kB in the Fourier domain, however, the diagonal multiplier must be formed from the circulant eigenvalues √n W r_k, where r_k is the first column of R_k. Cycle index t and circulant-component index k are different Fourier-dual roles, so substituting Λ_t does not compute the selected component product. Likewise, FFT(ΔA)L_B[t]C^t is not ΔA R_tD^t; right multiplication requires applying the corresponding formula to B_t*ΔA* and taking a conjugate transpose. These failures remain even if the separate extraction defect is repaired.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The algorithm does not compute either of the two sums in the advertised first-order circulant approximation, invalidating its executable output and associated implementation claims.",
+      "least_adequate_overall_repair": "Given correctly extracted first columns r_k, form each selected circulant eigenvalue vector as lambda_k=sqrt(n) W r_k rather than using the cycle diagonal Lambda_k. Compute the left selected sum with W* applied to the sum of diag(lambda_k) C^k W B. Compute the right selected sum by applying the same component routine to B_k* DeltaA* with conjugated eigenvalues and inverse shifts, and then taking the conjugate transpose. Keep the selection, residual, and one-transform summation architecture unchanged.",
+      "classification": "moderate_issue",
+      "why_classification": "Both multiplication branches use mathematically different data from what circulant diagonalization requires, and the right branch also has the wrong multiplication order, so this is not a notation-level correction. Restoring the output requires a contained but nontrivial reconstruction of the core Fourier multiplication step. The same decomposition, selected-component guarantee, and asymptotic implementation architecture survive, so global reconstruction or major mathematical loss is unnecessary.",
+      "new_version_repair_locator": {
+        "tag": "algo:cd_matrix_multiplication",
+        "quote": "\\( L_A[i]=\\sqrt{n}WR_A[In_{A}[i]]  \\quad \\text{for } \\quad i=0,1,\\cdots,k-1 \\)"
+      }
+    },
+    {
+      "issue_id": "2504.19308:I003",
+      "title": "Rectangular multiplication calls a square-only top-k routine",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:mul_topk",
+      "failure_location": {
+        "tag": "alg:mul_topk",
+        "quote": "$\\tilde{A}_{\\text{approx}} \\gets \\text{Algorithm} \\ref{alg:topk}(\\tilde{A},k,n)$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:topk",
+          "quote": "\\Require $\\mathbf{A} \\in \\mathbb{C}^{n \\times n}$ (input matrix), $k$ (sparsity parameter), $n$ (matrix dimension)"
+        },
+        {
+          "tag": "alg:mul_topk",
+          "quote": "$\\mathbf{A} \\in \\mathbb{C}^{m \\times n}$, $\\mathbf{B} \\in \\mathbb{C}^{n \\times p}$"
+        }
+      ],
+      "failure_explanation": "The caller forms \\tilde A of size m×n and \\tilde B of size n×p. The old top-k routine accepts only an n×n matrix, allocates n×n output, and loops over n rows. Thus the first call fails when m≠n, while the second call, made with p as its dimension argument, fails or processes the wrong number of rows when n≠p. The top-k routine is valid on its stated square domain; the defect is the rectangular caller's out-of-contract invocation.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The advertised rectangular input-output contract of the Fourier-sparsified multiplication is not executable in general. Its square-matrix specialization remains dimensionally valid.",
+      "least_adequate_overall_repair": "Generalize the top-k helper to an arbitrary q-by-r input: allocate a q-by-r output, loop over all q rows, and retain the largest min(k,r) entries among the r columns of each row. Have both calls infer these dimensions from the m-by-n and n-by-p transformed inputs rather than passing a square matrix dimension.",
+      "classification": "minor_issue",
+      "why_classification": "The square helper and rectangular caller have genuinely incompatible contracts, so this is not a uniquely forced transcriptional edit. The repair is nevertheless a routine local change to allocation, loop bounds, and dimension handling that preserves the top-k operation, the full rectangular input-output contract, and the intended complexity.",
+      "new_version_repair_locator": {
+        "tag": "alg:topk",
+        "quote": "\\Require $A \\in \\mathbb{C}^{m \\times n}$ (input matrix), $k$ (sparsity parameter), $n$ (number of columns)"
+      }
+    },
+    {
+      "issue_id": "2504.19308:I004",
+      "title": "Spurious 1/n in Fourier-sparsification output",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:mul_topk",
+      "failure_location": {
+        "tag": "alg:mul_topk",
+        "quote": "$M \\gets \\frac{1}{n}(\\tilde{A}_{approx}\\tilde{B}+\\Delta A\\tilde{B}_{\\text{approx}})$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:sparse_multiply"
+        },
+        {
+          "quote": "We can rewrite the product \\( AB \\) as \\( A W^* W B \\)."
+        }
+      ],
+      "failure_explanation": "The governing identity is AB=AW*WB. Therefore \\tilde A_approx\\tilde B+(\\tilde A-\\tilde A_approx)\\tilde B_approx already has the scale of AB. In the admissible square case with k=n, the sparse approximations are exact and the old algorithm returns AB/n instead of AB, directly contradicting its output contract for every n>1 and nonzero AB.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "Every nonzero approximation is uniformly attenuated by 1/n; even the full, untruncated case fails to return the exact product.",
+      "least_adequate_overall_repair": "Delete the prefactor 1/n and return M=tildeA_approx tildeB+(tildeA-tildeA_approx) tildeB_approx under the paper's unitary Fourier convention.",
+      "classification": "typo",
+      "why_classification": "The old source explicitly states AB=AW*WB with unitary W, and the full-retention case uniquely forces the unscaled product. No proof step or algorithmic choice depends on the extra factor; it is a transcriptional normalization error with one uniquely determined correction.",
+      "new_version_repair_locator": {
+        "tag": "alg:mul_topk",
+        "quote": "$M \\gets \\tilde{A}_{approx}\\tilde{B}$"
+      }
+    },
+    {
+      "issue_id": "2504.19308:I005",
+      "title": "Concentration corollary has denominator 48 instead of 96",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:concentrationprob",
+      "failure_location": {
+        "tag": "th:concentrationprob",
+        "quote": "\\exp\\left( -\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "elizabeths",
+          "quote": "\\exp\\left( -\\frac{(n - 2)t^2}{24L^2} \\right)"
+        },
+        {
+          "tag": "concentration"
+        }
+      ],
+      "failure_explanation": "Squaring the stated Lipschitz constant gives L²=4||D_1||_F⁴||D_2||_2⁴. Hence 24L²=96||D_1||_F⁴||D_2||_2⁴. A denominator of 48 would assert a strictly stronger exponential tail and does not follow from the invoked theorem. The final displayed line of the old proof already contains the supported denominator 96.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The numerical constant in the stated tail bound is too strong by a factor of two. The qualitative concentration regime and any use requiring only the corrected asymptotic decay are unchanged.",
+      "least_adequate_overall_repair": "Replace 48 by 96 in the denominator of the exponential bound in the corollary statement, leaving the proof and qualitative concentration claim unchanged.",
+      "classification": "typo",
+      "why_classification": "The stated Lipschitz constant gives 24L^2=96 times the displayed norm product, and the old proof's final line already contains 96. Thus the statement has a uniquely identifiable transcription mismatch; no inference or supporting argument needs repair.",
+      "new_version_repair_locator": {
+        "tag": "th:concentrationprob",
+        "quote": "\\exp\\left( -\\frac{(n - 2)t^2}{96 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2504.19308:I006",
+      "title": "Concentration theorem invoked outside its stated group domain",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:concentrationprob",
+      "failure_location": {
+        "tag": "th:concentrationprob",
+        "quote": "Let us apply the Theorem \\ref{elizabeths}, with $X = \\mathbf{O}(n)$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "elizabeths",
+          "quote": "$\\mathbb{G}_{n_i}$ is one of $\\mathbb{SO}(n_i)$, $\\mathbb{SO}^{-}(n_i)$, $\\mathbb{SU}(n_i)$, $\\mathbb{U}(n_i)$, or $\\mathbb{Sp}(2n_i)$."
+        }
+      ],
+      "failure_explanation": "The theorem reproduced as elizabeths permits SO(n), SO^-(n), SU(n), U(n), or Sp(2n), but not their disconnected union O(n). The old proof therefore invokes that theorem outside the hypotheses stated in this paper. For the particular function the desired extension is available, but it requires decomposing O(n) into SO(n) and SO(n)J, proving the function and its expectation agree on paired points, and averaging the two component measures; none of that appears in the old proof.",
+      "dependent_affected_formal_result_tags": [
+        "th:estimated_relative_error"
+      ],
+      "overall_effect": "The lower-tail corollary is not established for the intended real Haar-orthogonal input, and its later use as concentration support for the relative-error proposition consequently has a gap. This is independent of the statement's numerical-constant typo.",
+      "least_adequate_overall_repair": "Let J=diag(-1,1,...,1), decompose O(n) as the disjoint union SO(n) and SO(n)J, and apply the quoted concentration theorem on each component. Show that f(QJ)=f(Q) because J commutes with diagonal D_2 and right multiplication by J preserves the Frobenius norm, so the component expectations and tail events agree; averaging the two component Haar measures then gives the same bound on O(n). Use this extended Haar-orthogonal bound in the downstream citation.",
+      "classification": "minor_issue",
+      "why_classification": "The old invocation violates the reproduced theorem's domain and therefore is not a typo. However, the two-coset decomposition and invariance check form a short, standard local argument that preserves the same real Haar model, tail rate, and downstream concentration support without a new proof architecture or substantive restriction.",
+      "new_version_repair_locator": {
+        "quote": "Let $J = \\text{diag}(-1,1,\\cdots ,1)$. Then we decompose the space of orthogonal matrices as $\\mathbb{O}(n) = \\mathbb{SO}(n) \\bigsqcup (\\mathbb{SO}(n)J)$."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2504.19308:I007",
+      "title": "Uniform-entry theorem confuses first and second moments",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "failure_location": {
+        "tag": "th:uniform_distribution_norms",
+        "quote": "$\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:uniform_distribution_norms2"
+        },
+        {
+          "tag": "eq:uniform_distributions_norms5"
+        }
+      ],
+      "failure_explanation": "Even granting the independence assumptions used in the proof, the displayed calculations give E||AB||_F² and the exact ratio (9n+7)/(16n) between E||AB||_F² and E||A||_F²E||B||_F², which tends to 9/16 only as n grows. They do not imply E||AB||_F = (3/4)||A||_F||B||_F: expectation does not commute with the square root, and the right side is itself random. For m=n=p=1, E|AB|=a²/4, whereas even averaging the stated right side gives 3a²/16.",
+      "dependent_affected_formal_result_tags": [
+        "th:estimated_relative_error"
+      ],
+      "overall_effect": "The advertised first-moment estimate is unproved, and the unsigned-entry case of the later relative-error proposition cannot use it as its denominator estimate without an additional concentration argument.",
+      "least_adequate_overall_repair": "Replace the finite-n first-moment equality by the exact second-moment identity E||AB||_F^2=mp a^4[n/9+n(n-1)/16], equivalently giving the ratio (9n+7)/(16n) against E||A||_F^2 E||B||_F^2. Add a bounded-entry variance or concentration argument showing that the relevant norms concentrate, so the corresponding large-n first-moment or normalized-norm relation has the same 3/4 scale. Amend the unsigned branch of the relative-error argument to use this proved asymptotic denominator estimate rather than commuting expectation with a square root.",
+      "classification": "moderate_issue",
+      "why_classification": "The old equality is a coherent but false first-moment claim, so changing an exponent is not a typo, and merely restating the second moment would leave its recorded downstream use unsupported. A variance/concentration lemma is nontrivial mathematical work, but it is contained within the uniform-entry analysis and recovers a recognizably comparable large-n 3/4 norm estimate with no change of the random-entry model or global proof architecture.",
+      "new_version_repair_locator": {
+        "tag": "th:uniform_distribution_norms",
+        "quote": "$\\mathbb{E}[\\norm{AB}_F^2] \\approx \\frac{9}{16}\\norm{A}_F^2 \\norm{B}_F^2$ for $n \\gg 1$"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2504.19308:I008",
+      "title": "Expected relative-error proposition lacks hypotheses and ratio control",
+      "target_type": "formal_result",
+      "primary_affected_tag": "th:estimated_relative_error",
+      "failure_location": {
+        "tag": "th:estimated_relative_error",
+        "quote": "We know that $Var[\\norm{AB}_F]$ and $Var[\\norm{\\Delta A.\\Delta B}_F]$ $\\to 0$ for large $n$ and a random distribution of the entries (as in \\cref{th:concentrationprob}, for example)."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "th:expected_norm_square",
+          "quote": "Let $A = Q_1 D_1 Q_2$ and $B = Q_3 D_2 Q_4$ be singular value decompositions of $A$ and $B$, and $Q_1,Q_2,Q_3,Q_4$ be Haar distributed unitary matrices."
+        },
+        {
+          "tag": "th:uniform_distribution_norms"
+        },
+        {
+          "tag": "th:concentrationprob"
+        }
+      ],
+      "failure_explanation": "The proposition's stated cases impose only mean-zero or unsigned entries and refer generically to large n. The cited norm identity requires Haar-distributed singular vectors, while the unsigned calculation is specific to positive uniform entries. The concentration corollary also has a group-valued Haar input and a quantitative Lipschitz regime. None follows from the proposition's case labels. Moreover, concentration of the two norms, even if established, does not alone control the reciprocal of ||AB||_F or justify E[X/Y]≈E[X]/E[Y]; a lower-tail or inverse-moment bound is required. Mean-zero matrices with AB=0 almost surely are admissible under the literal case label, making the displayed relative error undefined.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The two advertised a priori expected-relative-error formulas are not guarantees for the broad classes stated, so later prose and numerical interpretations that treat them as generally available estimates lack formal support.",
+      "least_adequate_overall_repair": "The least burdensome complete route is to replace the proposition by a quantitatively restricted theorem: specify the Haar or isotropic relative-singular-vector assumptions needed for the signed case and an explicit iid positive-entry model with controlled residual orientations for the unsigned case; require AB to be nonzero almost surely and impose or establish a uniform lower-tail or inverse-moment condition for ||AB||_F. State the resulting expected-ratio bound with its tail remainder, and restrict all later a priori-estimation claims to those models rather than to arbitrary mean-zero or unsigned matrices.",
+      "classification": "serious_issue",
+      "why_classification": "Mean-zero and unsigned entries alone admit natural correlated and degenerate examples for which the claimed scaling is false or the ratio is undefined. A nonzero-denominator qualification alone does not supply the missing model assumptions or inverse-moment control. The contained repair route therefore withdraws the broad advertised model classes, which is major mathematical loss; retaining those classes would require essentially new uniform concentration and anti-concentration theory and cannot follow from the existing proof architecture. Hence no established complete route avoids both global reconstruction and major loss.",
+      "new_version_repair_locator": {
+        "tag": "__STAGED_AUTOGEN_B4E62DB2EC3C5A37_FORMAL_000009__",
+        "quote": "The singular vectors of $A, B, \\Delta A, \\Delta B$ are from the Haar measure."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

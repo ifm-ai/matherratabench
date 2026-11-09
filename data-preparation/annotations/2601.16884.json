@@ -1,0 +1,190 @@
+{
+  "paper_id": "2601.16884",
+  "version_pair": "v1-v3",
+  "issues": [
+    {
+      "issue_id": "2601.16884:I001",
+      "title": "Training wording obscures the scope of the constructive approximation result",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "To the best of our knowledge, this work provides the first rigorous theoretical guarantee that grade-wise training yields provable vanishing approximation error in deep networks."
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "We develop an operator-theoretic foundation for MGDL and prove that, for any continuous target function, there exists a fixed-width multigrade \\ReLU{} scheme whose residuals decrease strictly across grades and converge uniformly to zero."
+        },
+        {
+          "tag": "thm:main:mgdl"
+        },
+        {
+          "quote": "Concretely, at grade \\(m\\) we \\emph{freeze} the previously learned blocks \\(T_1,\\dots,T_{m-1}\\) and optimize only the new pair \\((T_m, g_m)\\). The objective is to train the composition"
+        },
+        {
+          "tag": "sec:conclusion",
+          "quote": "Another open problem concerns the optimization landscape of practical MGDL implementations, in which network parameters are learned from data rather than constructed analytically, and how such training dynamics affect stability and generalization."
+        }
+      ],
+      "failure_explanation": "The immediately preceding abstract sentence explicitly describes existence of a fixed-width residual construction, and the conclusion identifies practical training dynamics as an open problem. Those passages support an approximation-theoretic reading. Nevertheless, the abstract frames the problem in terms of nonconvex training and then announces that grade-wise training is guaranteed to yield vanishing error; the introduction also describes optimising each new block. The wording does not consistently distinguish an explicit construction of suitable parameters from a guarantee that numerical training learns them. The retained defect is that meaningful ambiguity, not an established failure of a promised optimiser-convergence theorem.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "A reader can overestimate what the stated approximation result says about practical training. Clarifying the distinction preserves the intended constructive claim. Separate defects in its construction or proof are outside this prose issue.",
+      "least_adequate_overall_repair": "Describe the advertised result as a constructive approximation guarantee for grade-wise residual refinement. Where the abstract, introduction and conclusion connect it to training, explicitly distinguish constructed parameters from parameters learned by a numerical optimiser, whose convergence is not established by this approximation result. Use the existing existence statement and the already stated open problem to make this scope consistent; no new training-convergence proof is needed to repair the prose.",
+      "classification": "minor_issue",
+      "why_classification": "Minor: the constructive interpretation and the limitation on practical training are already explicit in the source. A short, consistent clarification preserves the intended approximation claim and resolves the ambiguity without new mathematics. It is not a typo because the conflicting uses of training can plausibly mislead. Treating the broadest possible reading as an unequivocal central optimisation theorem and charging the cost of proving it would overstate the established defect.",
+      "new_version_repair_locator": {
+        "quote": "To the best of our knowledge, this work provides the first rigorous constructive approximation guarantee showing that a grade-wise residual refinement scheme can achieve vanishing error in a fixed-width multigrade \\ReLU\\ architecture."
+      }
+    },
+    {
+      "issue_id": "2601.16884:I002",
+      "title": "Ordered-composition convention reverses the layer order",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:main:mgdl",
+      "failure_location": {
+        "quote": "\\ocomp_{i=1}^n f_i\n\\;\\coloneqq\\;\nf_1 \\circ f_2 \\circ \\cdots \\circ f_n."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:mgdl-algorithm"
+        },
+        {
+          "tag": "fig:h:k"
+        }
+      ],
+      "failure_explanation": "With the old convention, the term for two layers is evaluated as (ReLU∘A1)∘(ReLU∘A2), so A2 acts on the original d-dimensional input before A1. In the constructed architecture A1 is the input map and later maps act on hidden vectors, making the theorem's displayed compositions reversed and generally dimensionally undefined. The explicit chains elsewhere require Aℓ∘⋯∘A1 instead.",
+      "dependent_affected_formal_result_tags": [
+        "thm:main:mgdl:one:op",
+        "coro:mgdl:residual"
+      ],
+      "overall_effect": "The compact formulas in both formal theorems fail to denote the feed-forward networks proved and described by the paper, and the corollary inherits the malformed main-theorem residuals.",
+      "least_adequate_overall_repair": "Redefine ordered composition by setting the composition from indices n through m equal to f_m composed with f_{m-1} through f_n, and use that convention consistently in the one-step theorem, main theorem, and corollary.",
+      "classification": "typo",
+      "why_classification": "The explicit grade-wise chains, the statement that the first map acts on the original input, and the dimensions of the affine maps uniquely force this order. Correcting the single convention makes every compact formula denote the already-described feed-forward network and requires no repair of an inference or guarantee.",
+      "new_version_repair_locator": {
+        "quote": "\\ocomp_{i=n}^m f_i\n\\;\\coloneqq\\;\nf_m  \\circ \\cdots \\circ f_{n+1} \\circ f_n."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2601.16884:I003",
+      "title": "Missing interface between iterated one-step contraction blocks",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:main:mgdl",
+      "failure_location": {
+        "tag": "sec:detailed:proof:thm:main:mgdl",
+        "quote": "Next, apply Theorem~\\ref{thm:main:mgdl:one:op} again to $f_{n_1+1}\\in C([0,1]^d)$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thm:main:mgdl:one:op"
+        },
+        {
+          "tag": "sec:mgdl-algorithm"
+        }
+      ],
+      "failure_explanation": "The fresh first affine map supplied by the second one-step application is evaluated on an element of the original input space, whereas the globally indexed map at grade n1+1 is fed the preceding block's hidden representation. Merely renaming the fresh maps does not establish that these two inputs agree or are dimensionally compatible. Thus the asserted full-prefix recurrence does not follow without an input-preservation invariant and a bridge map.",
+      "dependent_affected_formal_result_tags": [
+        "coro:mgdl:residual"
+      ],
+      "overall_effect": "The old proof constructs separate finite contraction networks but does not establish that all rounds form the single frozen-prefix multigrade chain required by the main theorem; the residual corollary consequently lacks that constructed chain as well.",
+      "least_adequate_overall_repair": "Choose the affine realization of every one-step block so that its hidden state carries the original input in its first d coordinates, and record the invariant that projection onto those coordinates equals the identity on [0,1]^d. At each block boundary, compose the fresh block's first affine map with that projection, padding within the stated width if necessary, and then continue with the fresh block's remaining maps. Induction then yields the required full-prefix residual chain and the corollary.",
+      "classification": "minor_issue",
+      "why_classification": "The old network diagram already supplies d identity channels, and nonnegative inputs pass unchanged through ReLU. Consequently the missing invariant and bridge are routine affine bookkeeping: a coordinate projection makes the fresh block act on the original input while preserving the same width, residuals, contraction rate, and affected conclusions. The proof is incomplete as written, so this is not a typo, but no nontrivial new approximation argument is needed.",
+      "new_version_repair_locator": {
+        "tag": "eq:n1:id:x"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2601.16884:I004",
+      "title": "Strict Lp decay proof omits a positive-measure set",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:main:mgdl:one:op",
+      "failure_location": {
+        "tag": "thm:main:mgdl:one:op",
+        "quote": "and that $h_k(\\bmx) > 0$ on the cube $\\hat Q_k \\subset \\Omega_1$,"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "def:dilated-cube-cutoff"
+        },
+        {
+          "tag": "eq:g:lower"
+        }
+      ],
+      "failure_explanation": "Strict pointwise improvement must occur on a set of positive d-dimensional measure to make the Lp integral strictly smaller. The construction only guarantees that Q̂_k intersects the superlevel set; for a cube adjacent to a grid or domain boundary, Q̂_k∩[0,1]^d can be merely a face or point. Consequently, the quoted assertion Q̂_k⊂Ω1 is not established and does not by itself justify the strict integral inequality.",
+      "dependent_affected_formal_result_tags": [
+        "thm:main:mgdl"
+      ],
+      "overall_effect": "The pointwise domination and uniform contraction arguments are unaffected, but strict Lp monotonicity in the one-step theorem and the corresponding part of the main theorem are not proved by the old argument.",
+      "least_adequate_overall_repair": "For each selected cube Q, choose a dilation factor strictly between 1 and r and sufficiently close to 1. Because Q meets [0,1]^d, the dilated cube's intersection with [0,1]^d has positive d-dimensional measure; the previously established lower bound on rQ places this intersection in the appropriate sign region, and the cutoff is strictly nonzero there. Use this set, and its negative-side analogue, to justify the strict integral inequalities in the one-step and main theorems.",
+      "classification": "minor_issue",
+      "why_classification": "A genuine positive-measure argument is missing, so the defect is not transcriptional. The required geometric observation is short and local, however, and it restores strict Lp decay without changing any hypothesis, rate, architecture, or downstream conclusion.",
+      "new_version_repair_locator": {
+        "tag": "sec:detailed:proof:thm:main:mgdl:one:op",
+        "quote": "where \\(\\hat r\\hat Q_k\\cap[0,1]^d\\) has positive measure."
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2601.16884:I005",
+      "title": "Positive contraction is too weak for the symmetrization lemma",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:positive:to:balanced:eps:contraction",
+      "failure_location": {
+        "tag": "lem:positive:to:balanced:eps:contraction",
+        "quote": "0\\le g^{+}(\\bm{x})-Tg(\\bm{x})"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|g^{+}-Tg\\|_{L^\\infty(\\Omega)}\n    \\le (1-\\varepsilon)\\|g^{+}\\|_{L^\\infty(\\Omega)}."
+        },
+        {
+          "tag": "item:T:C1"
+        }
+      ],
+      "failure_explanation": "The proof supports symmetrization only when 0≤g+−Tg pointwise, whereas the old hypothesis supplies only an absolute norm bound. For a checkable counterexample on Ω=[0,1], let c=1−ε and J(g)=∫g. Define Tg as g+ minus the constant c||g+||∞ when J(g)≥0 and as g+ plus that constant when J(g)<0. This satisfies the old norm definition for every g. Choose continuous g with ||g||∞=||g+||∞=||g−||∞=1 and J(g)>0. Then Sg=Tg−T(−g)=g−2c, so ||g−Sg||∞=2c>c||g||∞, contradicting the lemma.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The universal symmetrization lemma is false for the operator class stated. The concrete Tε construction need not be lost, because conditions C1 and C2 already establish the stronger one-sided bounds for that particular operator.",
+      "least_adequate_overall_repair": "For an operator T satisfying the old norm definition, first define its pointwise clipping by T_bar g(x)=min{g⁺(x),max{0,Tg(x)}} and state the symmetrization lemma for S_bar g=T_bar g−T_bar(−g). Pointwise clipping cannot increase the error from g⁺, so T_bar satisfies the missing one-sided bounds with the same contraction factor. For the concrete operator T_epsilon, condition C1 gives T_bar=T, so the contraction construction used later is unchanged.",
+      "classification": "minor_issue",
+      "why_classification": "The raw symmetrization formula is genuinely false under the norm-only definition and therefore is not a typo. Nevertheless, continuous pointwise clipping is a short, routine local bypass that preserves the original operator class, contraction factor, and conversion guarantee, while acting identically on the concrete operator used by the paper. No downstream result or substantive rate is weakened.",
+      "new_version_repair_locator": {
+        "quote": "0\\le g^{+}(\\bm{x})-Tg(\\bm{x})\n    \\le (1-\\varepsilon)\\|g^{+}\\|_{L^\\infty(\\Omega)}\\quad \\tn{for all }\\bm{x}\\in\\Omega."
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2601.16884:I006",
+      "title": "Averaged coordinate cutoff lacks dilated-cube support",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:T:positive:eps:contraction",
+      "failure_location": {
+        "tag": "def:dilated-cube-cutoff",
+        "quote": "\\frac{1}{d}\\sum_{i=1}^d \\psi(x_i)."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "item:T:C1"
+        },
+        {
+          "tag": "lem:bounded:overlap:scaling"
+        }
+      ],
+      "failure_explanation": "The lemma treats each constructed Γ_Q as supported in rQ. Under the old formula, however, for d≥2 a point with one normalized coordinate outside [-r,r] and the other d-1 coordinates in [-1,1] lies outside the dilated cube but has Ψ=(d-1)/d>0. Hence cutoff supports are not controlled by the dilated cubes, the 2^d overlap lemma cannot bound their sum, and Tε can be positive where g+ is zero. Condition C1 and the lemma's conclusion are therefore not established.",
+      "dependent_affected_formal_result_tags": [
+        "thm:main:mgdl:one:op",
+        "thm:main:mgdl",
+        "coro:mgdl:residual"
+      ],
+      "overall_effect": "The old cutoff does not have the required support in dimensions d>=2, so the supplied positive-contraction argument and fixed-width prefix realization do not establish the one-step theorem, main theorem, and residual corollary. The corrected construction preserves pointwise nonincrease, strict finite-p decrease for nontrivial effective correction grades, and eventual uniform convergence; this does not certify unrelated parts of the paper.",
+      "least_adequate_overall_repair": "Replace the averaged coordinate formula by the genuine box cutoff Psi(x)=ReLU(1-d+sum_i psi(x_i)). Since 0<=psi<=1, this equals one on the cube and vanishes when any coordinate is outside its r-dilate. Realize the two-hidden-layer cutoff in a width-(5d+1) state carrying the d input coordinates, the 4d hinge values for the next cutoff, and the completed previous cutoff. Subsequent prefixes output one completed correction at a time, and concatenation carries the pending output across contraction-block boundaries. There is one initial zero-output setup index: R_1=f. Relabel or exempt that setup index when stating strict finite-p decrease; do not claim strict decrease from R_0=f to R_1=f, or insert an idle output before every correction. Update the one-step realization and main-theorem indexing with this construction. The support and overlap bounds restore pointwise nonincrease, strict finite-p decrease for nontrivial effective corrections until a zero residual is reached, and eventual uniform convergence. The authors' v3 supplies explicit state/output maps, boundary concatenation, and the initial-index convention, giving concrete evidence for this contained repair.",
+      "classification": "moderate_issue",
+      "why_classification": "The old averaged cutoff leaks outside the dilated cube, and replacing its formula adds a nonlinear layer whose realization must be propagated through the fixed-width state, prefixes, and concatenated contraction blocks. The explicit width-(5d+1) construction and single initial setup index give a contained but nontrivial repair. The convergence and contraction guarantees survive for the effective correction grades, with an additive width change and an explicit initial-index convention. Moderate reflects this construction work; a formula substitution alone would not close the recorded chain.",
+      "new_version_repair_locator": {
+        "tag": "def:dilated-cube-cutoff"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

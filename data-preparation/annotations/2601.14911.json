@@ -1,0 +1,128 @@
+{
+  "paper_id": "2601.14911",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2601.14911:I001",
+      "title": "Wrong residual-product range in the symmetric-MG matrix representation",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma: symmetric multigrid",
+      "failure_location": {
+        "quote": "\\prod_{i=\\ell}^{\\ell'-1}(\\vec{I}-\\lambda \\, \\vec{A}_{\\ell}\\vec{I}_{i}^+(\\vec{D}_{i}^+)^{-1}(\\vec{I}_i^+)^{T})"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "item: sMG step 1"
+        },
+        {
+          "tag": "item: sMG step 2"
+        }
+      ],
+      "failure_explanation": "After presmoothing levels ell through ell'+1, the residual used at level ell' must contain exactly the factors for those already completed levels. For example, at ell' = ell-1 it must contain exactly the level-ell factor. The old range from ell to ell'-1 is either empty under the standard increasing-index convention or contains the current and lower, not-yet-applied levels under a descending convention. Hence s^down_{ell'} = B^down_{ell'}r is false, so the palindromic matrix representation invoked by the symmetry lemma is not established.",
+      "dependent_affected_formal_result_tags": [
+        "corollary: symmetric MG optimality"
+      ],
+      "overall_effect": "The matrix assembled from the old downward factors is not the update produced by the symmetric V-cycle. Consequently, the claimed palindromic error-propagation identity, symmetry lemma, and dependent SPD/optimality corollary lack support until this range is corrected.",
+      "least_adequate_overall_repair": "Let F_i denote the level-i residual factor and replace the downward product by the ordered product over exactly the completed levels, F_{ell'+1} through F_ell, equivalently product_{i=ell'+1}^{ell} F_i under an explicitly stated product-order convention. A direct induction on the descending smoothing levels then identifies each downward update with the algorithmic residual; using that order in the assembled error propagator restores this issue's contribution to the palindromic identity and the dependent SPD/optimality argument.",
+      "classification": "minor_issue",
+      "why_classification": "The algorithm uniquely determines the corrected range, but the old source makes a false matrix-to-algorithm inference involving noncommuting factors, so this is more than a purely transcriptional typo. The required induction and ordering check are short, local, and routine, require no new lemma or proof architecture, and preserve the algorithm, symmetry result, rate, and optimality guarantee without weakening.",
+      "new_version_repair_locator": {
+        "quote": "\\prod_{i=\\ell'+1}^{\\ell}(\\vec{I}-\\lambda \\, \\vec{A}_{\\ell}\\vec{I}_{i}^+(\\vec{D}_{i}^+)^{-1}(\\vec{I}_i^+)^{T})"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2601.14911:I002",
+      "title": "Generic symmetric-MG formula destroys the coarse correction",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemma: symmetric multigrid",
+      "failure_location": {
+        "quote": "where we set $\\vec{D}_0^+ \\coloneqq \\lambda \\,\\vec{A}$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "item: sMG step 3"
+        },
+        {
+          "tag": "eq: coarse solve matrix"
+        }
+      ],
+      "failure_explanation": "The symmetric-MG algorithm applies the exact coarse solve with coefficient one to the residual left by levels ell through 1. In the old generic formula, D_0^+ is assigned lambda A with no level; reading this as lambda A_0 gives a prefactor lambda^{-1}C_0, where C_0 = I_0^+A_0^{-1}(I_0^+)^T. Under the intended descending-product convention, the adjacent level-zero residual factor is F_0 = I-A_ell C_0, and C_0F_0 = 0 because (I_0^+)^TA_ell I_0^+ = A_0. Under a standard empty-product reading, the formula instead omits presmoothing and retains the wrong lambda^{-1} scaling. Either way it is not the algorithm's coarse correction, so the matrix identity used by the symmetry lemma is false.",
+      "dependent_affected_formal_result_tags": [
+        "corollary: symmetric MG optimality"
+      ],
+      "overall_effect": "The old matrix preconditioner omits or misnormalizes the exact coarse solve, defeating its identification with the V-cycle and therefore the symmetry, positive-definiteness, and optimality proof based on that identification.",
+      "least_adequate_overall_repair": "Handle the exact coarse solve separately from the generic smoother formula. Define C_0 = I_0^+ A_0^{-1}(I_0^+)^T and set the coarse update to C_0 applied with coefficient one to the residual left by presmoothing, without a level-zero residual factor on its right. Use F_0 = I-A_ell C_0 only in the residual passed to subsequent upward smoothers, and then re-sum the level updates to obtain the intended palindromic error-propagation formula.",
+      "classification": "minor_issue",
+      "why_classification": "The generic formula is genuinely wrong rather than a typographical miss: its scaling and inclusion of the current coarse residual factor invalidate the asserted update. Nevertheless, the algorithm itself supplies the exact correction, and separating this standard coarse case requires only local matrix bookkeeping. It preserves the V-cycle, linear complexity, symmetry, positive definiteness, and condition-number guarantee with no new lemma or substantive weakening.",
+      "new_version_repair_locator": {
+        "quote": "\\vec{B}^{\\uparrow}_{0} &\\coloneqq \\vec{I}^+_{0}(\\vec{A}_0)^{-1}(\\vec{I}^+_{0})^{T} \\prod_{i=1}^{\\ell}(\\vec{I}-\\lambda \\, \\vec{A}_{\\ell}\\vec{I}_{i}^+(\\vec{D}_{i}^+)^{-1}(\\vec{I}_i^+)^{T})"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2601.14911:I003",
+      "title": "Wrong square-root orientation in the PCG optimality statement",
+      "target_type": "formal_result",
+      "primary_affected_tag": "corollary: symmetric MG optimality",
+      "failure_location": {
+        "tag": "corollary: symmetric MG optimality",
+        "quote": "\\operatorname{cond}_2((\\vec{B}_{\\ell}^{\\SMG})^{-1/2}\\vec{A}_{\\ell}(\\vec{B}_{\\ell}^{\\SMG})^{-1/2}) = \\textnormal{cond}_{\\vec{A}_{\\ell}}(\\vec{B}^{\\SMG}_{\\ell}\\vec{A}_{\\ell}) \\leq C"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq: preconditioner assumption"
+        },
+        {
+          "tag": "eq: linearized MG contracion"
+        }
+      ],
+      "failure_explanation": "The old statement claims that cond2(B^{-1/2}AB^{-1/2}) equals cond_A(BA), while the paper treats B as an approximation of A^{-1} and its proof bounds cond_A(BA). For the admissible SPD matrices A = diag(1,10) and B = A^{-1} = diag(1,0.1), BA is the identity and has condition number 1, whereas B^{-1/2}AB^{-1/2} = diag(1,100) has condition number 100. The supported congruence is B^{1/2}AB^{1/2}, not the inverse-square-root matrix.",
+      "dependent_affected_formal_result_tags": [
+        "theorem: AS condition number bound"
+      ],
+      "overall_effect": "The PCG transformation is inconsistent with the displayed recurrences, and both the symmetric-MG and additive-Schwarz formal optimality statements identify the wrong Euclidean preconditioned matrix. Their bounds on cond_A(BA) remain usable after the orientation is corrected.",
+      "least_adequate_overall_repair": "For a preconditioner B approximating A^{-1}, consistently formulate PCG using the congruence B^{1/2}AB^{1/2}, adjust the transformed variables accordingly, and replace B^{-1/2}AB^{-1/2} by B^{1/2}AB^{1/2} in both the symmetric-multigrid and additive-Schwarz optimality statements. The standard identity cond_2(B^{1/2}AB^{1/2}) = cond_A(BA) then transfers the already proved cond_A(BA) bounds unchanged.",
+      "classification": "minor_issue",
+      "why_classification": "The intended orientation is forced by the preconditioner assumption and displayed PCG recurrences, and the existing energy-norm condition-number proofs remain valid. However, the inverse orientation is propagated through the transformation and an asserted equality, so a consistent algebraic correction and check are needed rather than a single harmless transcription fix. This work is standard and local and causes no loss of scope, rate, or optimality.",
+      "new_version_repair_locator": {
+        "tag": "corollary: symmetric MG optimality",
+        "quote": "\\operatorname{cond}_2((\\vec{B}_{\\ell}^{\\SMG})^{1/2}\\vec{A}_{\\ell}(\\vec{B}_{\\ell}^{\\SMG})^{1/2}) = \\textnormal{cond}_{\\vec{A}_{\\ell}}(\\vec{B}^{\\SMG}_{\\ell}\\vec{A}_{\\ell}) \\leq \\frac{1 + q^2}{1-q^2}"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2601.14911:I004",
+      "title": "AFEM marking evaluates local indicators at the unknown Galerkin solution",
+      "target_type": "algorithm",
+      "primary_affected_tag": "algo: AFEM",
+      "failure_location": {
+        "tag": "item: AFEM 2",
+        "quote": "\\M_{\\ell}[\\theta, u_{\\ell}^{\\underline{k}}] \\coloneqq \\{\\UU_{\\ell} \\subset \\TT_{\\ell} : \\theta \\eta_{\\ell}(u_{\\ell}^{\\underline{k}})^2  \\leq \\eta_{\\ell}(\\UU_{\\ell}, u_{\\ell}^{\\star})^2 \\}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "item: AFEM stopping criterion"
+        },
+        {
+          "tag": "eq: refinement indicators"
+        },
+        {
+          "tag": "eq: discrete problem"
+        }
+      ],
+      "failure_explanation": "The algorithm computes eta_ell(T,u_ell^{underline{k}}) immediately before marking, but its marking set instead requires eta_ell(U_ell,u_ell^star). The exact Galerkin solution u_ell^star is the unknown that the iterative solver approximates and is not supplied by the algorithm. Moreover, no stated relation guarantees eta_ell(u_ell^star)^2 is at least theta eta_ell(u_ell^{underline{k}})^2, so the declared marking family can even be empty. Thus the Mark step is not a computable or generally well-defined step of the stated AFEM.",
+      "dependent_affected_formal_result_tags": [
+        "thm: optimal complexity"
+      ],
+      "overall_effect": "The AFEM cannot perform its marking step under its stated inputs and linear-cost operations, and the optimal-complexity theorem for that algorithm is not established as written.",
+      "least_adequate_overall_repair": "In the marking-family definition, replace the local quantity eta_ell(U_ell,u_ell^star) by eta_ell(U_ell,u_ell^{underline{k}}), so that Dörfler marking uses the element indicators computed immediately before the marking step. The cited inexact-AFEM complexity result then applies to the stated executable algorithm without changing its hypotheses or guarantees.",
+      "classification": "typo",
+      "why_classification": "The old source uniquely forces this one-symbol correction: the family is indexed by u_ell^{underline{k}}, its left-hand side uses the estimator at that iterate, the preceding step computes exactly those local indicators, and u_ell^star is unavailable to the algorithm. An intended reader can make the correction immediately without repairing any mathematical argument or surrendering any substantive promise, so the defect is transcriptional.",
+      "new_version_repair_locator": {
+        "tag": "item: AFEM 2",
+        "quote": "\\M_{\\ell}[\\theta, u_{\\ell}^{\\underline{k}}] \\coloneqq \\{\\UU_{\\ell} \\subset \\TT_{\\ell} : \\theta \\eta_{\\ell}(u_{\\ell}^{\\underline{k}})^2  \\leq \\eta_{\\ell}(\\UU_{\\ell}, u_{\\ell}^{\\underline{k}})^2 \\}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "paper_id": "2505.03205",
+  "version_pair": "v1-v3",
+  "issues": [
+    {
+      "issue_id": "2505.03205:I001",
+      "title": "Missing polynomial tube-width factor in the generalization theorem",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thmGeneralization",
+      "failure_location": {
+        "tag": "thmGeneralization",
+        "quote": "where $\\tilde{O}(\\cdot)$ hides the logarithmic terms dependent on $D,d,q,n,\\alpha,L,R,\\tau_{\\mathcal{M}}, \\text{Vol}(\\mathcal{M})$, and  constant terms dependent on $d$ and $\\text{Vol}(\\mathcal{M})$."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "thmApprox",
+          "quote": "\\left(1+L\\left (\\frac{72}{(1-q)^{2}}\\right)^\\alpha\\right)\\delta^\\alpha=\\epsilon"
+        },
+        {
+          "tag": "approxetai",
+          "quote": "m_T=O(D\\delta^{-d})"
+        },
+        {
+          "tag": "coveringlemma"
+        }
+      ],
+      "failure_explanation": "The theorem claims a generalization bound without an explicit polynomial factor in q and says that the hidden q-dependence is logarithmic. However, its own approximation calculation imposes (1+L(72/(1-q)^2)^alpha) delta^alpha=epsilon, so delta is of order epsilon^(1/alpha)(1-q)^2 as q approaches 1. Since approxetai requires m_T=O(D delta^(-d)) and the covering entropy is linear in m_T up to logarithms, the supported variance bound contains (1-q)^(-2d). The n exponent remains valid for each fixed q, but the asserted tube-width dependence does not.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The intrinsic-dimension sample-rate exponent remains unchanged, but the theorem materially understates deterioration as the admissible tube approaches the reach boundary q=1.",
+      "least_adequate_overall_repair": "Track the tube-width dependence explicitly in the existing proof. The approximation equation requires a net scale of order epsilon^(1/alpha)(1-q)^2 near q=1, so m_T=O(D delta^(-d)) and the covering-entropy term acquire a factor (1-q)^(-2d). Amend thmGeneralization and its proof to state E||T_hat_n-f||^2_{L^2(P)} <= tilde-O((1-q)^(-2d) D^2 d^3 n^(-2alpha/(2alpha+d))) and remove or qualify the assertion that all hidden q-dependence is logarithmic.",
+      "classification": "moderate_issue",
+      "why_classification": "This is not a typo or a no-loss bookkeeping correction: the old theorem coherently promised only logarithmic deterioration in q, while the supported bound deteriorates polynomially in the natural regime q approaching 1. Nevertheless, the existing proof supplies the correction locally, and the hypotheses, model class, n-exponent, and intrinsic-dimension guarantee remain unchanged. The resulting theorem is recognizably comparable with limited but meaningful loss, so the issue is moderate rather than serious.",
+      "new_version_repair_locator": {
+        "tag": "eq:generalizationbound",
+        "quote": "\\mathbb{E}\\|\\hat{\\rm T}_n-f\\|^2_{L^2(P)} \\leq \\tilde{O}\\left((1-q)^{-2d}D^2d^3 n^{-\\frac{2\\alpha}{2\\alpha+d}}\\right)"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    },
+    {
+      "issue_id": "2505.03205:I002",
+      "title": "Unsupported residual decrement in arithmetic-block proofs",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lemsumD",
+      "failure_location": {
+        "tag": "lemsumD",
+        "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $DM$ in the $D+1$-th column."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "Gatinglemma"
+        },
+        {
+          "quote": "{\\rm B}(H) = {\\rm FFN}({\\rm MHA}(H) + H) + {\\rm MHA}(H) + H."
+        }
+      ],
+      "failure_explanation": "In lemsumD the attention stage places x^1+...+x^D+DM in the target column. Because a transformer block outputs FFN(Z)+Z, obtaining the claimed result requires the FFN term to equal -DM in that column and zero elsewhere. Gatinglemma instead states an FFN that preserves a prefix or zeroes data coordinates in the remaining tokens while retaining positional and constant coordinates; its stated conclusion does not supply this negative residual. Thus the claimed block in B(D,3,d_embed) is not constructed. The same unsupported decrement is used directly or through dependencies throughout the arithmetic and approximation chain.",
+      "dependent_affected_formal_result_tags": [
+        "lemadd",
+        "lemcmulti",
+        "lemsq",
+        "lempp",
+        "lemrpower",
+        "lemdiv",
+        "repetatildei",
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "overall_effect": "Without a decrement construction, the exact arithmetic blocks are not proved to belong to the claimed block classes, so the subsequent partition-of-unity transformer and both main results lack their stated construction chain.",
+      "least_adequate_overall_repair": "Use the old Interaction Lemma to replace every shifted-ReLU/decrement step by paired isolated attention heads. For a desired scalar s, one head supplies sigma(s)e_1 and a second head, using a sign-reversed data kernel and negative value matrix, supplies -sigma(-s)e_1; their sum is exactly s e_1. The FFN can then be the zero map. Restate the primitive arithmetic blocks with at most a constant-factor increase in heads, such as 2D instead of D where needed, and propagate that constant through lemrpower, lemdiv, repetatildei, approxetai, thmApprox, and thmGeneralization. Exact arithmetic outputs, weight orders, constant FFN depth, and all downstream approximation and generalization rates are preserved.",
+      "classification": "minor_issue",
+      "why_classification": "The cited Gating Lemma does not justify the negative residual, so the defect is substantive rather than typographical. However, the unrestricted value matrices and ReLU identity sigma(s)-sigma(-s)=s give a short, routine bypass directly from the old source. Applying it mechanically to the affected primitive blocks changes only immaterial constant head counts; all exact operations and downstream asymptotic guarantees survive without a new nontrivial lemma or proof architecture. Thus the least severe complete repair is minor.",
+      "new_version_repair_locator": {
+        "tag": "lemmadecrement",
+        "quote": "there exists a six-layer residual feed-forward network $({\\rm FFN})$ such that"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    }
+  ]
+}

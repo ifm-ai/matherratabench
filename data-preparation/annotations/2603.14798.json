@@ -1,0 +1,142 @@
+{
+  "paper_id": "2603.14798",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2603.14798:I001",
+      "title": "Path velocity versus marginal velocity",
+      "target_type": "other",
+      "primary_affected_tag": "eq:linear_path",
+      "failure_location": {
+        "tag": "eq:linear_path",
+        "quote": "v(z_t,t)= \\xi - x"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:vbar_theta_def"
+        },
+        {
+          "tag": "eq:eo_minimizer"
+        }
+      ],
+      "failure_explanation": "For fixed t in (0,1), different endpoint pairs can produce the same z_t but different values of xi-x. For example, with independent nondegenerate Gaussian X and Xi in one dimension and t=1/2, Xi-X has positive conditional variance given Z_t, so it cannot equal any deterministic function v(Z_t,t). The samplewise quantity is a path velocity; the state-only marginal field is its conditional expectation given the current state and observation.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The old formula conflates the computable samplewise regression target with the deterministic velocity needed for marginal flow dynamics. The training code can still form xi-x, but the mathematical interface between that target and a state-only transport field is not correctly defined by the old equation.",
+      "least_adequate_overall_repair": "Replace the endpoint-dependent expression by a path velocity, \\(V^{\\mathrm{path}}:=\\dot Z_t=\\Xi-X\\), and define the state-only marginal field by \\(v(z,t;y)=\\mathbb E[V^{\\mathrm{path}}\\mid Z_t=z,Y_{\\mathrm{obs}}=y]\\). Use \\(V^{\\mathrm{path}}\\) as the samplewise regression target and the projected field, and its trajectory average, in the marginal-flow construction.",
+      "classification": "minor_issue",
+      "why_classification": "The old equation makes a genuine conceptual identification error, so it is not a typo. However, the conditional-expectation projection is a standard, short, local repair already supported by the old source's conditional-mean regression discussion; it preserves the training method, sampler, and all listed guarantees without a new lemma or substantive loss.",
+      "new_version_repair_locator": {
+        "tag": "projected v"
+      }
+    },
+    {
+      "issue_id": "2603.14798:I002",
+      "title": "Darcy TPFA source sign",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eq:darcy-tpfa",
+      "failure_location": {
+        "tag": "eq:darcy-tpfa"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:darcy_pde"
+        },
+        {
+          "quote": "yielding a sparse SPD linear system"
+        }
+      ],
+      "failure_explanation": "The east, west, north, and south terms in the bracket form the discrete positive-divergence operator. With positive permeability and Dirichlet data, that operator has negative diagonal and nonnegative off-diagonal entries. Equating it to f therefore discretizes +div(a grad u)=f, not the stated -div(a grad u)=f, and does not give the claimed SPD coefficient matrix.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The printed Darcy forward-solver specification has the wrong source/operator sign. The source does not establish whether the implementation followed this printed stencil, so the numerical results cannot be declared affected solely from this defect.",
+      "least_adequate_overall_repair": "Insert a minus sign before the complete discrete flux-divergence bracket, equivalently replace the displayed right-hand side by \\(-f_{i,j}\\), so that the assembled operator discretizes \\(-\\nabla\\!\\cdot(a\\nabla u)\\) and has the claimed SPD sign convention.",
+      "classification": "typo",
+      "why_classification": "The stated PDE and the explicit claim that the matrix is SPD uniquely force the negative of the printed bracket. An adept reader can make this transcriptional sign correction directly, with no mathematical inference or solver redesign, and no effect on the experiments is established from the printed defect alone.",
+      "new_version_repair_locator": "removed_without_successor"
+    },
+    {
+      "issue_id": "2603.14798:I003",
+      "title": "Unsupported function-space Lipschitz extension",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:dimfree_lip_velocity",
+      "failure_location": {
+        "tag": "thm:dimfree_lip_velocity"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "Although Theorem~\\ref{thm:dimfree_lip_velocity} is stated and proved in finite dimensions in \\cite{meng2025pathway},"
+        },
+        {
+          "quote": "We therefore interpret it as a function-space stability statement."
+        }
+      ],
+      "failure_explanation": "The formal result claims a globally Lipschitz Föllmer velocity on the separable Hilbert space. Its only stated support is a result that the paper itself says is proved in finite dimensions. A dimension-independent Lipschitz constant does not by itself establish existence of an infinite-dimensional field, compatibility of the Galerkin fields, convergence of those fields, or passage of the estimate to the limit. Thus the cited result is invoked beyond the scope stated in the old paper.",
+      "dependent_affected_formal_result_tags": [
+        "lem:avg_velocity_lipschitz",
+        "cor:exists_lipschitz_onestep",
+        "thm:lipschitz_onestep_main"
+      ],
+      "overall_effect": "The old function-space regularity theorem is unproved, and consequently the appendix averaged-velocity lemma, its one-step corollary, and the informal main one-step regularity theorem lack their asserted Hilbert-space justification. This does not by itself invalidate the fixed-grid experiments.",
+      "least_adequate_overall_repair": "To retain the recorded Hilbert-space chain, construct the infinite-dimensional velocity field, prove compatibility and convergence of suitable Galerkin fields, justify passage of the dimension-free estimate to the limit, and then re-establish the averaged-velocity lemma, one-step corollary, and main regularity theorem. Without that reconstruction, all four results must be restricted to finite-dimensional Galerkin spaces and the asserted Hilbert-space existence guarantee withdrawn.",
+      "classification": "serious_issue",
+      "why_classification": "A dimension-independent finite-dimensional constant does not supply an infinite-dimensional field or a limiting transport. Preserving the Hilbert-space theorem and its dependent chain requires foundational new construction and convergence arguments, while the supported fallback of retaining only finite-dimensional results removes the chain's central advertised function-space guarantee. Thus no established complete route avoids either essentially new proof architecture or major mathematical loss.",
+      "new_version_repair_locator": {
+        "tag": "thm:one_step_transport_lipschitz"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2603.14798:I004",
+      "title": "Imported velocity estimate does not apply to the interpolation field",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:avg_velocity_lipschitz",
+      "failure_location": {
+        "tag": "lem:avg_velocity_lipschitz"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:linear_path"
+        },
+        {
+          "tag": "thm:dimfree_lip_velocity"
+        }
+      ],
+      "failure_explanation": "Fix an observation and interpret the required state field as the marginal projection. In the admissible finite-dimensional case X and Xi independent with X,Xi distributed as N(0,1), the old path gives Z_t=(1-t)X+tXi and v(z,t)=((2t-1)/((1-t)^2+t^2))z. Its Lipschitz constant tends to 1 as t decreases to 0, whereas the bound L0 t tends to 0 for every finite L0. Thus the field covered by the cited estimate cannot be identified with the old posterior-to-source interpolation field, and integrating that estimate does not prove L0(t+r)/2.",
+      "dependent_affected_formal_result_tags": [
+        "cor:exists_lipschitz_onestep",
+        "thm:lipschitz_onestep_main"
+      ],
+      "overall_effect": "The imported L_0 t estimate does not apply to the actual posterior-to-source marginal field, so it does not justify the averaged bound L_0(t+r)/2 or the one-step constant 1+L_0/2. The revision supplies a direct instantaneous-field bound in covariance-weighted Galerkin geometry, but its fixed-state averaging argument does not itself establish the trajectory-average or genuine transport bound. A contained flow argument yields different constants in that setting. The separate Hilbert-space existence and transfer issue I003 remains unresolved by this repair.",
+      "least_adequate_overall_repair": "Work with the actual marginal velocity of Z_t=(1-t)X+tXi, after resolving the separate path-versus-marginal distinction. In the covariance-weighted finite-dimensional Galerkin setting, use the author's v2 conditional-Gaussian calculation: B_t=(1-t)^2 A+t^2 C, K_t=(1-t)A B_t^(-1), and the Gaussian reference tilted by exp(R_A). Differentiating its log normalizer produces the Hessian and gradient-covariance terms controlled by M_2+M_1^2. If the spectrum of D=C^(-1/2)AC^(-1/2) lies in a fixed [m,M] with m>0, the linear coefficient reduces to ((1-t)lambda-t)/((1-t)^2 lambda+t^2), and the nonlinear prefactor to t(1-t)lambda^2/((1-t)^2 lambda+t^2)^2. These are uniformly bounded, yielding Lip_C(v_t)<=L_v=Theta_0+Theta_1(M_2+M_1^2), independently of time and Galerkin dimension under the stated comparability. For the actual trajectory average, use the backward ODE flow Phi_(tau,t): Gronwall gives Lip_C(Phi_(tau,t))<=exp(L_v(t-tau)). With Delta=t-r>0, define w(z;r,t)=Delta^(-1) integral_r^t v(Phi_(tau,t)(z),tau) d tau and conclude Lip_C(w_(r,t))<=(exp(L_v Delta)-1)/Delta. The one-step map is Phi_(0,1)=Id-w_(0,1), with Lip_C<=exp(L_v). Update the corollary and summary theorem to these constants and this explicit norm/scope. The author's fixed-state average has bound L_v but cannot substitute for the trajectory average. This repairs the interpolation-field estimate and its transport propagation in the weighted Galerkin setting; construction of an infinite-dimensional field and transfer to the old ambient-Hilbert-space claim remain the separate I003 obligation.",
+      "classification": "moderate_issue",
+      "why_classification": "The admissible Gaussian counterexample excludes a mere time-label substitution or integration of the imported L_0 t bound. The direct conditional-Gaussian estimate provides a concrete contained replacement for the instantaneous field, and the standard flow/Gronwall step completes the genuine trajectory-average and one-step bounds with changed constants. A dimension-independent Lipschitz guarantee survives in the stated covariance-weighted finite-dimensional setting. This supports moderate for the field-estimate root, without claiming that the old ambient-Hilbert-space guarantee has been recovered or counting I003's foundational construction and norm-transfer problem a second time.",
+      "new_version_repair_locator": {
+        "tag": "thm:one_step_transport_lipschitz"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2603.14798:I005",
+      "title": "Degenerate averaged-velocity interval",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:avg_velocity_lipschitz",
+      "failure_location": {
+        "tag": "lem:avg_velocity_lipschitz"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:avg_velocity_def"
+        }
+      ],
+      "failure_explanation": "The statement admits 0<=r=t<=1, but at such a pair the displayed average is (1/(t-r)) times an integral over a zero-length interval, hence an undefined 0/0 expression. The argument only supports intervals of positive length; no limiting definition of the exact averaged velocity at r=t is provided.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The theorem is malformed only on the degenerate diagonal. Its nondegenerate interval claim and the one-step case (r,t)=(0,1) are unaffected.",
+      "least_adequate_overall_repair": "Restrict the exact averaged-velocity definition and theorem to positive-length intervals \\(0\\le r<t\\le1\\), and ensure exact time-pair sampling avoids the diagonal. If diagonal values are needed elsewhere, define \\(w(z,t,t)\\) separately by a verified limit such as \\(v(z,t)\\).",
+      "classification": "minor_issue",
+      "why_classification": "This is a genuine domain defect because the displayed quotient is undefined at \\(r=t\\), and the source does not uniquely choose between excluding the diagonal and defining a limiting value. The repair is nevertheless short and routine, affects only the degenerate zero-length interval, and leaves every nondegenerate interval and the one-step case \\((0,1)\\) unchanged.",
+      "new_version_repair_locator": {
+        "tag": "thm:one_step_transport_lipschitz"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    }
+  ]
+}

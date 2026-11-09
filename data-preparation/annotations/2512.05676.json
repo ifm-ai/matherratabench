@@ -1,0 +1,207 @@
+{
+  "paper_id": "2512.05676",
+  "version_pair": "v1-v2",
+  "issues": [
+    {
+      "issue_id": "2512.05676:I001",
+      "title": "Radau IIA stage equations omit the base-state operator term",
+      "target_type": "algorithm",
+      "primary_affected_tag": "sec:modCN",
+      "failure_location": {
+        "tag": "sec:modCN",
+        "quote": "k_1 := f(t_T+\\frac13|T|)-|T| A\\big(\\frac5{12}k_1-\\frac1{12}k_2\\big),"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:cnscheme"
+        }
+      ],
+      "failure_explanation": "The update identifies k_1 and k_2 as stage slopes based at u_T(t_T). At a stage, the state is u_T(t_T)+|T| times the indicated linear combination of slopes, so f-Au contains both -A u_T(t_T) and the displayed increment term. The old formulas retain only the increment. They therefore implement a different method unless A u_T(t_T)=0 and are not equivalent to eq:cnscheme as claimed.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "A reader implementing the displayed stages would not implement the stated Radau/parabolic scheme. The formal analysis based directly on eq:cnscheme does not rely on this erroneous display.",
+      "least_adequate_overall_repair": "With h=|T|, restore the omitted base-state term in both stages: k_1=f(t_T+h/3)-A u_T(t_T)-hA(5k_1/12-k_2/12) and k_2=f(t_{T+1})-A u_T(t_T)-hA(3k_1/4+k_2/4). No change to the variational scheme or its analysis is needed.",
+      "classification": "typo",
+      "why_classification": "The old variational scheme, the stated Radau IIA interpretation, and the update formula uniquely determine the stage states and hence force the two missing copies of -A u_T(t_T). The erroneous display is not used in the formal analysis, so restoring the omitted term is a transcriptional correction rather than a repair of the proof or method.",
+      "new_version_repair_locator": {
+        "tag": "sec:modCN",
+        "quote": "k_1 = (\\Pi_T^2f)(t_T+\\frac13|T|)-Au_\\TT(t_T)-|T| A\\big(\\frac5{12}k_1-\\frac1{12}k_2\\big),"
+      }
+    },
+    {
+      "issue_id": "2512.05676:I002",
+      "title": "Forcing-data contract is weaker than the scheme and estimator require",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eq:cnscheme",
+      "failure_location": {
+        "tag": "eq:cnscheme",
+        "quote": "\\dual{f(t_{T+1})}{v}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:model_problem",
+          "quote": "for an elliptic operator $A\\colon V\\to V^\\star$, $u_0\\in H$, and $f\\in L^2(0,\\tend;V^\\star)$"
+        },
+        {
+          "quote": "\\eta_{\\TT}(T)^2&=|T|^2 \\norm{\\partial_t f-\\partial_t^2u_{\\TT} -\\partial_t Au_{\\TT}}{L^2(T,V^\\star)}^2"
+        },
+        {
+          "tag": "lem:reliability",
+          "quote": "Assume that $f\\in \\SS^2(\\TT;V^\\star)$."
+        }
+      ],
+      "failure_explanation": "An element of L2(0,tend;V*) is an almost-everywhere equivalence class, so f(t_{T+1}) is not defined and a time derivative need not exist. Thus the scheme and estimator executed by the adaptive algorithm are not defined for all advertised inputs. Moreover, the main proof uses estimator-error equivalence from lem:reliability, although that lemma assumes f is in the piecewise-quadratic spline space. The old paper therefore claims an L2 forcing regime while its construction and optimality argument require materially stronger or projected data.",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-1",
+        "lem:stab_red",
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "overall_effect": "For general forcing in the stated L2 class, the discrete solution, estimator, and adaptive loop are not well-defined as written, and the claimed estimator/error approximation-class equivalence and downstream convergence results are not established.",
+      "least_adequate_overall_repair": "Reformulate the method around meshwise projected data, using f_T=Π_T^2f consistently in endpoint evaluations and Petrov-Galerkin right-hand sides; introduce a data-oscillation contribution controlling f-f_T; and re-establish estimator equivalence, discrete reliability, reduction, and quasi-orthogonality for the mesh-dependent projected data. The optimality theorem and every listed downstream result must then be restated in the corresponding total-error or estimator approximation class and under sufficient forcing regularity.",
+      "classification": "serious_issue",
+      "why_classification": "A short assumption-only repair would require forcing to be an exactly resolved initial-mesh spline, which abandons the natural advertised L2 input class and is a major algorithmic-contract loss. Retaining a broad forcing class requires projected data, oscillation control, and a new treatment of mesh-dependent right-hand sides throughout the central adaptive analysis and affected chain. Thus no established complete route avoids both essentially global reconstruction and major loss.",
+      "new_version_repair_locator": {
+        "tag": "eq:cnscheme",
+        "quote": "\\dual{\\Pi_\\TT^{k} f(t_{T+1})}{v}"
+      }
+    },
+    {
+      "issue_id": "2512.05676:I003",
+      "title": "Discrete inf-sup proof assumes an unavailable spectral decomposition",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:infsup",
+      "failure_location": {
+        "tag": "thm:infsup",
+        "quote": "Let $V$ be defined as above (infinite dimensional $V$ is allowed)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:model_problem",
+          "quote": "for an elliptic operator $A\\colon V\\to V^\\star$"
+        },
+        {
+          "tag": "thm:infsup",
+          "quote": "Let $e_1,e_2,\\ldots$ denote the $H$-normalized Eigenfunctions of $A\\colon V\\to V^\\star$ with corresponding Eigenvalues $\\lambda_1\\leq \\lambda_2\\leq \\ldots$."
+        }
+      ],
+      "failure_explanation": "The proof expands every trial function in H-normalized eigenfunctions of A, orders their eigenvalues as positive real numbers, and identifies the V and V* norms mode by mode. The old assumptions provide neither self-adjointness nor discrete spectrum. For example, on V=H=R^2 the coercive matrix A=[[1,-1],[1,1]] satisfies x^T A x=|x|^2 but has eigenvalues 1±i and no real positive orthonormal eigenbasis of the asserted kind. In infinite dimensions the stated Gelfand triple also contains no compactness assumption ensuring a discrete complete eigenfamily.",
+      "dependent_affected_formal_result_tags": [
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:reliability",
+        "thm:optimal_timestepping"
+      ],
+      "overall_effect": "The inf-sup theorem and the general adaptive theory are unsupported for non-self-adjoint elliptic operators and for the advertised infinite-dimensional setting. This root does not by itself defeat the finite-dimensional self-adjoint examples, which are separately subject to the initial-layer issue.",
+      "least_adequate_overall_repair": "Require A to be positive and H-self-adjoint and require the associated realization to have a complete H-orthonormal eigenbasis with positive discrete spectrum—for example, by assuming compact embedding or compact resolvent in the infinite-dimensional case. State these assumptions in the inf-sup theorem and propagate them through its listed dependents; in finite dimensions only the self-adjointness requirement is additional.",
+      "classification": "moderate_issue",
+      "why_classification": "These source-supported assumptions make the modal proof well-defined without changing its conclusions, rates, or downstream proof architecture. They nevertheless exclude the broad and natural class of nonsymmetric elliptic operators, so the repair is a substantive but limited scope restriction rather than a routine technical qualification. A recognizably comparable symmetric parabolic theory survives, making the issue moderate rather than serious.",
+      "new_version_repair_locator": {
+        "tag": "thm:infsup"
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2512.05676:I004",
+      "title": "Initial-layer modes invalidate pure discrete inf-sup stability",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:infsup1_lambda",
+      "failure_location": {
+        "tag": "lem:infsup1_lambda",
+        "quote": "\\sum_{T\\in\\TT}|T|\\lambda|{u_{F}}(t_{T+1})|^2\\simeq \\lambda \\norm{u_{\\rm F}}{L^2(\\II_i)}^2."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:qeval"
+        },
+        {
+          "quote": "We consider $q_T(t)=a(t-t_T)^2 + b(t-t_T) +1$"
+        },
+        {
+          "tag": "eq:conds"
+        }
+      ],
+      "failure_explanation": "Let x=lambda|T| and normalize the invisible polynomial by q_T(t_T)=1. Equation eq:qeval gives q_T(t_{T+1})=2(3-x)/(x^2+4x+6)=O(x^{-1}). Since q_T is a quadratic with left value one, finite-dimensional polynomial norm equivalence gives ||q_T||^2_{L2(T)} at least a fixed multiple of |T|, so its X_lambda norm squared grows at least like x. Concatenating these invisible modes over a large-step region makes every residual test vanish, while the old boundary contribution is only the H-sized initial value. Hence the asserted positive lower bound fails as x tends to infinity. The proof's claimed equivalence of the element L2 norm with right-endpoint values is therefore false.",
+      "dependent_affected_formal_result_tags": [
+        "lem:infsup_lambda",
+        "thm:infsup",
+        "lem:nondegen",
+        "cor:added-1",
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "overall_effect": "The old full-space mesh- and eigenvalue-uniform inf-sup claim fails. Its unrestricted Cea corollary and the error-based approximation class can exploit incompatible initial traces and are not justified. Stability for differences with zero initial trace remains recoverable.",
+      "least_adequate_overall_repair": "Replace the false right-endpoint norm equivalence by a left-endpoint recursion for the invisible modes and prove the corrected stability estimate with the additional initial control |T_1|^{1/2}||u(0)||_V/||u||_X. Extract the ordinary inf-sup estimate on the zero-initial-trace subspace, use it for errors and differences of discrete solutions, and replace the unrestricted Cea estimate and approximation class by versions whose approximants have the prescribed initial trace. Propagate those versions through the listed dependent results.",
+      "classification": "moderate_issue",
+      "why_classification": "The explicit invisible-mode formula supports a contained but nontrivial repair: its large-step norm is controlled by the left trace, while Radau damping controls subsequent traces, and the missing first-trace contribution supplies the remaining bound. The adaptive stability mechanism survives for zero-trace differences, and comparable Cea and optimality statements remain after the initial-trace qualification. Because this requires substantial new estimates and materially changes the unrestricted approximation claim, it is not minor; because it avoids global reconstruction and major loss, it is moderate.",
+      "new_version_repair_locator": {
+        "tag": "thm:infsup",
+        "quote": "\\frac{|T_1|^{\\frac12}\\norm{u(0)}{V}}{\\norm{u}{\\XX}}"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2512.05676:I005",
+      "title": "Model-reduction error estimate applies a reduced-space norm outside its domain",
+      "target_type": "formal_result",
+      "primary_affected_tag": "eq:convergence_time_approx_V_rb_R",
+      "failure_location": {
+        "tag": "eq:convergence_time_approx_V_rb_R"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "L^2(0,\\tend;{V}^{\\text{(rb)}}_R)\\cap H^1(0,\\tend;{V}^{\\text{(rb)}\\star}_R)"
+        },
+        {
+          "quote": "Let $u_h \\in \\XX_h$ be the solution of \\eqref{eq:parabolic_discrete_V_h}"
+        }
+      ],
+      "failure_explanation": "By definition, X_R^(rb) consists of functions valued in V_R^(rb) with derivatives in its dual. The full solution u_h is V_h-valued and generally has a nonzero component outside V_R^(rb); consequently u_h-u_R,T and u_h-P_Ru_h are not elements of X_R^(rb). The theorem nevertheless takes their X_R^(rb) norms and closes the proof with a cross-space triangle inequality. No ambient extension of that norm is defined, and using the natural X_h norm would require control not supplied by the reduced inf-sup estimate.",
+      "dependent_affected_formal_result_tags": [
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "overall_effect": "The basic reduced-basis/time-discretization bound is not a well-formed mathematical assertion, and the exponential and fully discrete model-reduction error theorems inherit the same undefined interface.",
+      "least_adequate_overall_repair": "Define an ambient reduced-space error norm for z in X_h by ||z||_{Z_R}^2=||z||_{L^2(0,t_end;V_h)}^2+||(∂_t z)|_{V_R}||_{L^2(0,t_end;V_R^*)}^2, where the derivative functional is restricted to V_R. This norm agrees with X_R on reduced-valued functions. Replace the ill-typed X_R norms of u_h-u_{R,T} and u_h-P_Ru_h by Z_R in the basic, exponential, and fully discrete bounds.",
+      "classification": "minor_issue",
+      "why_classification": "The old proof already estimates exactly the two components of this ambient norm. The restriction V_h^*→V_R^* is contractive, so the existing X_h projection estimate controls the new approximation term, while the reduced inf-sup estimate controls the reduced-valued component. A definition and routine triangle-inequality check therefore repair the entire affected chain without changing its rates or approximation construction.",
+      "new_version_repair_locator": "removed_without_successor",
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "2512.05676:I006",
+      "title": "Estimator stability has a spurious squared perturbation norm",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:stab_red",
+      "failure_location": {
+        "tag": "eq:stab"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "\\eta_{\\TT}(T)^2&=|T|^2 \\norm{\\partial_t f-\\partial_t^2u_{\\TT} -\\partial_t Au_{\\TT}}{L^2(T,V^\\star)}^2"
+        },
+        {
+          "tag": "eq:red"
+        }
+      ],
+      "failure_explanation": "The estimator is the norm of a residual and hence scales linearly with the data and discrete solution. Under a common scaling by epsilon, the left side of eq:stab and ||u_hat-u_T||_X scale as epsilon, whereas the printed right side scales as epsilon squared. Thus no structural mesh-independent stability constant can make the asserted quadratic estimate hold for arbitrarily small nonzero perturbations. The triangle and inverse estimates referred to by 'analogously' yield one power of the perturbation norm, not two.",
+      "dependent_affected_formal_result_tags": [
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "overall_effect": "The stated stability axiom used for estimator reduction is false, leaving the old optimality proof and its model-reduction consequences unsupported until the exponent is corrected.",
+      "least_adequate_overall_repair": "In eq:stab replace C||u_hat-u_T||_X^2 by C||u_hat-u_T||_X, and use this one-power estimate wherever estimator stability is invoked downstream.",
+      "classification": "typo",
+      "why_classification": "Both homogeneity and the triangle-plus-inverse-estimate argument uniquely force one power of the perturbation norm. No premise, lemma, construction, rate, or proof architecture changes when the spurious exponent is deleted, so this is a transcriptional exponent error.",
+      "new_version_repair_locator": {
+        "tag": "eq:stab"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    }
+  ]
+}

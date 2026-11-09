@@ -1,0 +1,230 @@
+{
+  "paper_id": "1803.09446",
+  "version_pair": "v1-v12",
+  "issues": [
+    {
+      "issue_id": "1803.09446:I001",
+      "title": "Diagonal Hessian expansion omits the A_2 factor",
+      "target_type": "algorithm",
+      "primary_affected_tag": "sec:3",
+      "failure_location": {
+        "tag": "sec:3",
+        "quote": "B_{mm}(\\pi) = Q_{mm}(\\pi)(A_1 + G_m^2A_2 - 2G_mA_2G_m + G_m^2)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:3",
+          "quote": "\\phi_{d,\\tau}^{(1)}(|x|) + \\phi^{(2)}_{d,\\tau}(|x|)x_m^2"
+        },
+        {
+          "tag": "sec:3",
+          "quote": "A_2 =\\{\\phi_{d,\\tau}^{(2)}(|x^{(i)}-x^{(j)}|)\\}_{1\\le i,j\\le N}"
+        }
+      ],
+      "failure_explanation": "For entry (i,j), the quadratic contribution is (A_2)_{ij}(x_m^{(i)}-x_m^{(j)})^2. Its matrix expansion is G_m^2A_2-2G_mA_2G_m+A_2G_m^2. The printed final G_m^2 is therefore wrong, including at generic off-diagonal entries, so an implementation following it computes an incorrect diagonal second-derivative matrix.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The special matrix implementation can compute the wrong Hessian and diffusion contribution. The abstract convergence results use the correctly defined derivatives rather than this expansion, so no formal-result dependency is established.",
+      "least_adequate_overall_repair": "Replace the final G_m^2 in the displayed formula by A_2G_m^2, giving B_{mm}(π)=Q_{mm}(π)(A_1+G_m^2A_2-2G_mA_2G_m+A_2G_m^2). No change to the abstract scheme or convergence results is needed.",
+      "classification": "typo",
+      "why_classification": "The immediately preceding entrywise Hessian formula and the definition of A_2 uniquely force this matrix expansion. This is a single omitted factor in an implementation identity, with no dependent proof or mathematical guarantee requiring repair.",
+      "new_version_repair_locator": {
+        "tag": "subsec:matrix_rep",
+        "quote": "B_{mm} = K_1 + \\tilde{G}_m^2K_2 - 2\\tilde{G}_mK_2G_m + K_2G_m^2"
+      }
+    },
+    {
+      "issue_id": "1803.09446:I002",
+      "title": "Matrix residual omits the zero-order argument",
+      "target_type": "algorithm",
+      "primary_affected_tag": "sec:3",
+      "failure_location": {
+        "tag": "sec:3",
+        "quote": "F_{k,j}(v_k^h) = \\sup_{\\pi\\in K} H\\left(t_{k},x^{(j)},"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:3",
+          "quote": "H:[0,T]\\times\\mathbb{R}^d\\times\\mathbb{R}\\times\\mathbb{R}\\times\\mathbb{R}\\to\\mathbb{R}"
+        },
+        {
+          "tag": "sec:3",
+          "quote": "H(t,x,\\varphi(x), b(x,\\pi)^{\\mathsf{T}}D\\varphi(x),"
+        }
+      ],
+      "failure_explanation": "The declared H takes t, x, the value z, a drift scalar, and a diffusion scalar. The printed matrix implementation supplies t, x, the drift term, and the diffusion term, omitting z. At a collocation center the required value is v^h(t_k,x^{(j)})=v_{k,j}^h. For an admissible H that depends on z, the printed call is not the declared residual and computes a different scheme.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The special matrix implementation is invalid for the stated class of zero-order-dependent nonlinearities. The abstract scheme defines F correctly, so no formal-result dependency on this under-specified call is established.",
+      "least_adequate_overall_repair": "Insert v^h(t_k,x^{(j)})=v^h_{k,j} as the third argument of H, before the displayed drift and diffusion arguments. The remaining matrix residual is unchanged.",
+      "classification": "typo",
+      "why_classification": "The declared arity of H and the preceding abstract definition of F uniquely determine the omitted zero-order argument. The call is merely malformed as printed, and the correction requires no new inference or change of the algorithmic contract.",
+      "new_version_repair_locator": {
+        "tag": "eq:3.2",
+        "quote": "F\\left(\\tilde{y}^{\\ell}; \\sum_{j=1}^N\\theta_j\\Phi((\\tilde{t}^{\\ell},\\cdot) - y^j)\\right)"
+      }
+    },
+    {
+      "issue_id": "1803.09446:I003",
+      "title": "Undefined time index in the backward recurrence",
+      "target_type": "algorithm",
+      "primary_affected_tag": "eq:3.2",
+      "failure_location": {
+        "tag": "eq:3.2",
+        "quote": "v_k^h = v_{k+1}^h- (t_{k+1}-t_i)F_{k+1}(v_{k+1}^h)"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:3",
+          "quote": "v_{k+1,j}^h-v_{k,j}^h = (t_{k+1}-t_k)F_{k+1,j}(v_{k+1}^h)"
+        },
+        {
+          "tag": "rem:3.1",
+          "quote": "v^h(t_k,x) = v^h(t_{k+1},x) - (t_{k+1}-t_k)I(F_{k+1}(v_{k+1}^h))(x)"
+        }
+      ],
+      "failure_explanation": "The displayed algorithm is supposed to determine v_k^h for each k=0,...,n-1, but its time-step factor contains the free index i. Consequently, the displayed recurrence does not define the advertised output. The derivation and the interpolated update both use the local step t_{k+1}-t_k.",
+      "dependent_affected_formal_result_tags": [
+        "lem:4.9",
+        "thm:4.5"
+      ],
+      "overall_effect": "Read literally, the approximate solution is undefined. Lemma 4.9 and the convergence theorem rely on the intended one-step recurrence and are not established for the printed algorithm until the index is corrected.",
+      "least_adequate_overall_repair": "Replace t_{k+1}-t_i by t_{k+1}-t_k in equation (3.2). This makes the recurrence agree with its scalar derivation and with Remark 3.1, after which Lemma 4.9 and Theorem 4.5 use the same intended update.",
+      "classification": "typo",
+      "why_classification": "The free index i has no possible role, while both surrounding formulas uniquely force k. Correcting this transcriptional index restores the already-used recurrence without any proof reconstruction or loss of guarantee.",
+      "new_version_repair_locator": {
+        "tag": "eq:3.2"
+      }
+    },
+    {
+      "issue_id": "1803.09446:I004",
+      "title": "Near-maximizer error uses incompatible time-step scales",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:4.5",
+      "failure_location": {
+        "tag": "thm:4.5",
+        "quote": "+c_m+\\delta_m^{3/2}+\\delta_m J_m"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:4.3-1",
+          "quote": "(v^{h_m}-\\varphi)(s,y)-(\\Delta t)_m^{3/2}."
+        },
+        {
+          "tag": "eq:4.4",
+          "quote": "c_m + (\\Delta t)_m^{3/2}"
+        },
+        {
+          "quote": "where $\\delta_m= t_{k_m+1}-t_{k_m}$"
+        },
+        {
+          "tag": "assum:4.3"
+        }
+      ],
+      "failure_explanation": "The near-maximizer and the resulting contact inequality only give an additive error (Delta t)_m^{3/2}. The proof later writes delta_m^{3/2}, where delta_m=t_{k_m+1}-t_{k_m} and delta_m can be much smaller than (Delta t)_m. Thus the stronger inequality does not follow. If the available error is retained and the inequality is divided by delta_m, the ratio (Delta t)_m^{3/2}/delta_m need not vanish; for an admissible local step delta_m=(Delta t)_m^2 it diverges.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The viscosity subsolution argument, and hence Theorem 4.5, is not established for the allowed non-uniform time grids.",
+      "least_adequate_overall_repair": "Let the minimum step on the m-th grid be δ̲_m=min_i(t_{i+1}-t_i), and choose the near-maximizer in (4.3) with tolerance η_m=δ̲_m^(3/2) instead of (Δt)_m^(3/2). Carry η_m through the contact estimate, and make the analogous choice for the near-minimizer. Since the local step δ_m is at least δ̲_m, η_m/δ_m≤sqrt(δ̲_m)→0, so the viscosity limit follows without any time-grid regularity assumption.",
+      "classification": "minor_issue",
+      "why_classification": "The replacement of the available global-mesh error by a smaller local-step error is an invalid inference, so this is not a typo. Nevertheless, approximate extrema can routinely be selected to the stated minimum-step precision; this is a short local proof repair that preserves arbitrary non-uniform grids and the full conclusion of Theorem 4.5.",
+      "new_version_repair_locator": {
+        "tag": "eq:2.2",
+        "quote": "(v_{n_m}-\\varphi)(s,y) - h_m^{3/2}."
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "1803.09446:I005",
+      "title": "Near-maximizer supremum uses undefined non-grid times",
+      "target_type": "formal_result",
+      "primary_affected_tag": "thm:4.5",
+      "failure_location": {
+        "tag": "eq:4.3-1",
+        "quote": "\\sup_{(s,y)\\in [0,T)\\times\\mathbb{R}^d}"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:3.1"
+        },
+        {
+          "tag": "sec:3",
+          "quote": "we define the function $v^h(t_k,x)$"
+        }
+      ],
+      "failure_explanation": "No temporal extension of v^h is defined: eq:3.1 and the scheme construct v^h(t_k,x) only on the time grid. Thus (v^h-phi)(s,y) and the displayed supremum are undefined for non-grid s. The ensuing contact inequality only needs the next grid time, so the proof should have taken the supremum over grid times.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The near-contact construction in the proof of Theorem 4.5 is literally undefined, although a forced grid-domain reading repairs this particular defect.",
+      "least_adequate_overall_repair": "Restrict the supremum in the near-maximizer construction to the time nodes on which v^{h_m} is defined, namely {t_i^{(m)}:0≤i<n_m}×R^d. For an interior limiting time, the next node t_{k_m+1} is also below T for all sufficiently large m, so the subsequent contact inequality is unchanged.",
+      "classification": "typo",
+      "why_classification": "The old source defines v^h only at grid times and consistently states convergence through sequences of grid nodes. Thus the grid-time domain is the uniquely forced reading of the otherwise ill-typed supremum, and no mathematical inference or guarantee changes.",
+      "new_version_repair_locator": {
+        "tag": "eq:2.2",
+        "quote": "(v_{n_m}-\\varphi)(s,y) - h_m^{3/2}."
+      },
+      "failure_mechanism": "invalid_input_or_dependency"
+    },
+    {
+      "issue_id": "1803.09446:I006",
+      "title": "Radial cutoff does not preserve the interpolation cube",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:4.10",
+      "failure_location": {
+        "tag": "lem:4.10",
+        "quote": "= |\\tilde{u}^{\\varepsilon}(x)-I(\\tilde{u}^{\\varepsilon})(x)|"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "lem:4.10",
+          "quote": "$\\zeta=1$ on $\\{|x|\\le 1\\}$"
+        },
+        {
+          "tag": "lem:4.10",
+          "quote": "\\sup_{x\\in (-R,R)^d}|u(x) - I(u)(x)|"
+        }
+      ],
+      "failure_explanation": "The selected cutoff is only required to equal one when |x/R| is at most one. In dimensions d>=2, cube points can have |x|>R; the stated conditions even permit a cutoff that has already vanished at such a point. Hence u^epsilon=tilde u^epsilon on the cube and equality of their interpolation data do not follow, invalidating the displayed interpolation-error step.",
+      "dependent_affected_formal_result_tags": [
+        "thm:4.5"
+      ],
+      "overall_effect": "Lemma 4.10's proof is incomplete, and Theorem 4.5's use of that lemma to prove J_m tends to zero and to handle terminal interpolation is unsupported until the cutoff is corrected.",
+      "least_adequate_overall_repair": "Choose the smooth compactly supported cutoff ζ to equal one on the entire cube [-1,1]^d—for example, take it equal to one on the Euclidean ball of radius sqrt(d)—and support it in a fixed larger set. Then ũ^ε=u^ε throughout (-R,R)^d and at every interpolation center, while the same derivative and support-volume estimates give the stated H^κ bound. This restores Lemma 4.10 and its uses in Theorem 4.5 without changing the rate.",
+      "classification": "minor_issue",
+      "why_classification": "The proof relies on a false equality, so a cutoff construction must genuinely be corrected rather than merely reread. The required bump-function adjustment is standard, local, and routine, and it preserves the lemma's estimate and the complete dependent convergence argument with no meaningful loss.",
+      "new_version_repair_locator": {
+        "tag": "thm:3.3",
+        "quote": "$\\zeta=1$ on $Q$"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "1803.09446:I007",
+      "title": "Max-min lemma lacks uniform interior localization",
+      "target_type": "formal_result",
+      "primary_affected_tag": "lem:4.11",
+      "failure_location": {
+        "tag": "lem:4.11",
+        "quote": "for $(t,x,z)\\in [0,T]\\times \\mathcal{O}\\times\\mathbb{R}$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "sec:4",
+          "quote": "\\mathcal{X}_{\\delta,\\theta}=\\left\\{w\\in\\mathbb{R}^d: |w|\\le \\delta^{-\\theta}\\right\\}"
+        },
+        {
+          "quote": "take $\\delta_1\\in (0,1]$ such that $x+\\sqrt{\\delta}w\\in\\mathcal{O}$ for all"
+        }
+      ],
+      "failure_explanation": "For a fixed delta, allowed shifts have magnitude up to delta^{1/2-theta}. Points of an open set can be arbitrarily close to its complement, so no positive delta_1 keeps every x+sqrt(delta)w in the domain uniformly for all x in O. The supplied proof chooses delta_1 only after fixing x, which supports a pointwise or compactly interior version, not the stated uniform assertion.",
+      "dependent_affected_formal_result_tags": [
+        "thm:4.5"
+      ],
+      "overall_effect": "Lemma 4.11 is over-stated and can evaluate its test function outside its domain. Theorem 4.5's max-min invocation for moving contact points requires a uniform interior neighborhood.",
+      "least_adequate_overall_repair": "Restate Lemma 4.11 uniformly on every open ball U compactly contained in O: for each such U, choose δ_1 so that δ_1^(1/2-θ) is smaller than dist(U,O^c), and retain the same max-min estimate for x∈U. In Theorem 4.5, choose U around the fixed interior contact point; the moving points y_m lie in U eventually, and every shifted point then remains in O.",
+      "classification": "minor_issue",
+      "why_classification": "Uniformity up to the boundary of an arbitrary open set is unsupported, but compact-interior localization is the standard local form of the same lemma. Establishing it uses only the positive distance to the boundary and preserves the estimate, rate, and full convergence theorem, so the repair is routine and local rather than moderate.",
+      "new_version_repair_locator": {
+        "tag": "lem:2.2",
+        "quote": "open ball $U$ compactly included in $O$"
+      },
+      "failure_mechanism": "statement_support_mismatch"
+    }
+  ]
+}

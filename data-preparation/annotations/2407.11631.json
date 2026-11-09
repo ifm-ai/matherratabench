@@ -1,0 +1,152 @@
+{
+  "paper_id": "2407.11631",
+  "version_pair": "v1-v4",
+  "issues": [
+    {
+      "issue_id": "2407.11631:I001",
+      "title": "Off-by-one index in the old batch-space update",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:wbg",
+      "failure_location": {
+        "tag": "alg:wbg",
+        "quote": "$V_{\\widetilde{n}} := \\spann (V_{\\undertilde{n}}\\oplus \\{ f_{\\undertilde{n}}, \\ldots, f_{\\widetilde{n}}\\} )$"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $V_n\\subset X$ be some subspace of dimension $n\\in\\N$."
+        },
+        {
+          "tag": "alg:wbg"
+        }
+      ],
+      "failure_explanation": "The paper declares that \\(V_n\\) has dimension \\(n\\). For an independent batch, the displayed update adds \\(b\\) vectors to \\(V_{b\\ell}\\), so its intended dimension is \\(b\\ell+b=b(\\ell+1)=\\widetilde n+1\\). Nevertheless, it is assigned to \\(V_{\\widetilde n}\\). In the following iteration, \\(\\undertilde n'=b(\\ell+1)=\\widetilde n+1\\), so the required \\(V_{\\undertilde n'}\\) is undefined. Dependence within a batch creates a separate quality defect but does not remove this indexing contradiction, which already occurs for independent snapshots.",
+      "dependent_affected_formal_result_tags": [
+        "La:Psbg",
+        "th:wbg_hilbert",
+        "col:wbg_hilbert",
+        "Cor:expDecay",
+        "La:Psbg_B",
+        "th:wbg_banach",
+        "theo:Banach"
+      ],
+      "overall_effect": "As written, the algorithm does not provide the space required by its next iteration and does not satisfy the dimension convention used throughout the subsequent matrix analysis.",
+      "least_adequate_overall_repair": "Replace both end-of-batch occurrences of \\(V_{\\widetilde n}\\) by \\(V_{\\widetilde n+1}\\), so the update reads \\(V_{\\widetilde n+1}:=\\operatorname{span}(V_{\\undertilde n}\\oplus\\{f_{\\undertilde n},\\ldots,f_{\\widetilde n}\\})\\), and orthogonalize that same space.",
+      "classification": "typo",
+      "why_classification": "The batch contains exactly \\(b\\) indices, so \\(\\undertilde n+b=\\widetilde n+1\\), which is also the next iteration's value of \\(\\undertilde n\\). The dimension convention and subsequent use of the spaces uniquely force this off-by-one correction; no mathematical inference or construction must be changed for this indexing root.",
+      "new_version_repair_locator": {
+        "tag": "line:n"
+      }
+    },
+    {
+      "issue_id": "2407.11631:I002",
+      "title": "Stale within-batch selections invalidate the diagonal lower bound",
+      "target_type": "formal_result",
+      "primary_affected_tag": "La:Psbg",
+      "failure_location": {
+        "tag": "La:Psbg"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "line:eq:batchfirst"
+        },
+        {
+          "tag": "line:restofbatch"
+        },
+        {
+          "tag": "eq:sigmaf"
+        }
+      ],
+      "failure_explanation": "The lemma claims \\(\\gamma\\sigma_{n+b-1}\\leq |a_{n,n}|=\\sigma_n(f_n)\\) for every batch member, but only the first member satisfies a weak-greedy condition. The others are selected using \\(r_{\\undertilde n}\\), before preceding batch members are incorporated. For a concrete admissible example, take \\(b=2\\), \\(\\gamma=1\\), \\(r_n=\\sigma_n\\), \\(X=\\mathbb R^3\\), and \\(\\mathcal F=\\{e_1,0.9e_1+\\varepsilon e_2,0.5e_3\\}\\) with \\(0<\\varepsilon<0.5\\). The first batch selects the first two elements by their norms. Under the uniquely intended sequential space convention, the second diagonal entry is \\(\\varepsilon\\), while \\(\\sigma_2=0.5\\), contradicting the claimed bound for \\(n=1\\). Thus even linear independence does not rescue the stale-surrogate argument.",
+      "dependent_affected_formal_result_tags": [
+        "th:wbg_hilbert",
+        "col:wbg_hilbert",
+        "Cor:expDecay",
+        "La:Psbg_B",
+        "th:wbg_banach",
+        "theo:Banach"
+      ],
+      "overall_effect": "The principal matrix property fails in both the Hilbert and Banach analyses. Hence the product estimates and all subsequent algebraic and exponential convergence-rate transfers for the old unfiltered batch algorithm are not established.",
+      "least_adequate_overall_repair": "Retain the unfiltered batch algorithm but replace the full-row matrix lemma by a batch-boundary version. Let \\(W_\\ell\\) be the space before batch \\(\\ell\\), let \\(\\tau_\\ell=\\sup_{f\\in\\mathcal F}\\operatorname{dist}(f,W_\\ell)\\), and let \\(g_\\ell\\) be the first member of that batch. Then \\(\\operatorname{dist}(g_\\ell,W_\\ell)\\geq\\gamma\\tau_\\ell\\). Applying the existing determinant argument to the matrix formed from the normalized residuals of the \\(g_\\ell\\), and the analogous norming-functional construction in Banach spaces, gives convergence in the effective greedy index \\(\\ell\\). Restate all listed rates using \\(\\lfloor n/b\\rfloor\\) (or the number of completed batches), with the resulting \\(b\\)-dependent constants and exponential coefficient, rather than claiming a diagonal bound for every stale batch member.",
+      "classification": "moderate_issue",
+      "why_classification": "The counterexample rules out a local repair of the asserted lower bound for all batch members. The batch-boundary argument is nevertheless a concrete, contained bypass using the paper's existing triangular-matrix architecture: arbitrary stale members act only as additional enrichment, while each first member has the required weak-greedy property. It preserves the old algorithm, parallel batch selection, and comparable polynomial and stretched-exponential convergence orders, but requires a nontrivial replacement lemma and a limited \\(b\\)-dependent weakening throughout the Hilbert and Banach chains. It is therefore moderate rather than minor or serious.",
+      "new_version_repair_locator": {
+        "tag": "line:bulk"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2407.11631:I003",
+      "title": "Index-dependent constants are treated as fixed in the rate proof",
+      "target_type": "formal_result",
+      "primary_affected_tag": "col:wbg_hilbert",
+      "failure_location": {
+        "tag": "col:wbg_hilbert",
+        "quote": "By using $\\sigma_{2s} \\leq C_1 (2s)^{-\\alpha}$"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "Rem:c1"
+        }
+      ],
+      "failure_explanation": "If \\(M\\) is the first failure of the polynomial statement, minimality gives \\(\\sigma_{2s}\\leq C_1(2s,b)(2s)^{-\\alpha}\\). The proof instead uses the same \\(C_1\\) as at \\(M\\). Since the paper itself notes that \\(C_1(n,b)\\) decreases with \\(n\\), one generally has \\(C_1(2s,b)\\geq C_1(M,b)\\), so the required stronger estimate does not follow. The exponential cases similarly compare a target value \\(c_1(M,b)\\) with ceilings evaluated at the auxiliary index \\(s\\), although \\(c_1(n,b)\\) increases with \\(n\\). Thus parts (ii) and (iii) are not proved with their displayed index-dependent constants.",
+      "dependent_affected_formal_result_tags": [
+        "Cor:expDecay"
+      ],
+      "overall_effect": "The claimed polynomial and exponential transfer rates with the sharpened target-dependent constants are unsupported. The same asymptotic orders can still be obtained with conservative constants fixed in the induction index.",
+      "least_adequate_overall_repair": "Choose the constants before starting each induction and use those same constants at the failure index and every auxiliary index. A direct conservative choice is \\(\\overline C_1(b)=\\max\\{C_0 2^{\\alpha+1}\\gamma^{-2}(b+3)^{2\\alpha},(b+2)^\\alpha\\}\\) and \\(\\overline c_1(b)=\\min\\{c_0 2^{-(\\alpha+1)}(b+1)^{-\\alpha},(\\ln C_1)b^{-\\alpha}\\}\\). Rerun the existing contradiction arguments with these fixed values, remove the unsupported claim that the constants sharpen with the target index, and propagate the fixed constants through Corollary \\(\\mathrm{Cor{:}expDecay}\\).",
+      "classification": "moderate_issue",
+      "why_classification": "Minimality at \\(M\\) supplies only the bound with the constant evaluated at the smaller auxiliary index, so the displayed inference cannot be repaired by a notational edit. Uniform conservative constants give a contained and source-supported repair with the same hypotheses and polynomial or stretched-exponential orders. They do, however, surrender the advertised target-dependent sharpening, including a quantitatively meaningful exponential-rate coefficient, so the repair is a limited weakening rather than a no-loss minor correction.",
+      "new_version_repair_locator": {
+        "tag": "col:wbg_hilbert"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2407.11631:I004",
+      "title": "The exact exponential-rate ratio ignores the active minimum branches",
+      "target_type": "formal_result",
+      "primary_affected_tag": "Cor:expDecay",
+      "failure_location": {
+        "tag": "eq:loss"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "col:wbg_hilbert"
+        }
+      ],
+      "failure_explanation": "For \\(n\\geq b\\geq2\\), the first branches are \\(A=c_0 4^{-\\alpha}/2\\) for \\(b=1\\) and \\(B=c_0 6^{-\\alpha}/2=(2/3)^\\alpha A\\) for the batch case. The actual definitions are \\(c_1(n,1)=\\min\\{A,\\ln C_1\\}\\) and \\(c_1(n,b)=\\min\\{B,(\\ln C_1)b^{-\\alpha}\\}\\). The proof simply asserts the first-branch values. For example, with \\(\\alpha=1\\), \\(b=2\\), \\(c_0=1\\), \\(\\gamma=1\\), and \\(C_0=e^{0.02}/2\\), one has \\(\\ln C_1=0.01\\), so the two constants are \\(0.01\\) and \\(0.005\\), whereas the claimed ratio gives \\(0.006\\overline6\\). These parameters are admissible, and even the zero compact set satisfies the width hypothesis.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The universal exact rate-loss factor and the downstream interpretation based on replacing \\(n\\) by \\(2n/3\\) are unsupported. Only the separately defined minimum-based convergence constants remain available.",
+      "least_adequate_overall_repair": "Retain the actual minimum formulas. With \\(A=c_0 4^{-\\alpha}/2\\), \\(x=\\ln C_1\\), and \\(r=(2/3)^\\alpha\\), state \\(c_1(n,1)=\\min\\{A,x\\}\\) and \\(c_1(n,b)=\\min\\{rA,b^{-\\alpha}x\\}\\). For positive rate constants this yields \\(b^{-\\alpha}c_1(n,1)\\leq c_1(n,b)\\leq r c_1(n,1)\\). The asserted equality with factor \\(r\\) should be restricted to the case \\(b^{-\\alpha}x\\geq rA\\), when the first branches are active, and the unconditional interpretation as replacing \\(n\\) by \\(2n/3\\) should be removed.",
+      "classification": "moderate_issue",
+      "why_classification": "The correction is algebraically local and leaves the underlying minimum-based convergence estimate intact. However, the logarithmic branches are active for a natural admissible set of parameters, not merely an exceptional degeneracy, and in that regime the corollary's principal universal exact factor is false. Replacing it by a conditional equality and universal bounds is a meaningful but limited weakening of a recognizably comparable rate-comparison result, hence a moderate issue.",
+      "new_version_repair_locator": "removed_without_successor",
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    },
+    {
+      "issue_id": "2407.11631:I005",
+      "title": "Reversed inequality in the Banach exponential case split",
+      "target_type": "formal_result",
+      "primary_affected_tag": "theo:Banach",
+      "failure_location": {
+        "tag": "theo:Banach",
+        "quote": "$\\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil s + q\\geq 2\\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil s$"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "$q \\in \\left\\lbrace 1, 2, \\ldots, \\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil - 1 \\right\\rbrace$"
+        }
+      ],
+      "failure_explanation": "Let \\(L=\\lceil2+(b-1)/s\\rceil\\). In Case 2 the proof assumes \\(1\\leq q\\leq L-1\\) and \\(s\\geq1\\). Hence \\(q<L\\leq Ls\\), so \\(Ls+q<2Ls\\), not \\(Ls+q\\geq2Ls\\). The first comparison in the ensuing displayed chain is thus unsupported, and the intended exponent contradiction does not follow from that chain.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The proof of the Banach-space stretched-exponential estimate is incomplete for all shifted indices in Case 2, although the intended estimate can be recovered by a local rearrangement once the rate constant is treated consistently.",
+      "least_adequate_overall_repair": "Let \\(L=\\lceil2+(b-1)/s\\rceil\\) and \\(M=Ls+q\\). Replace the false comparison by \\(M<2Ls\\). Using the same admissible rate constant throughout the contradiction, write \\(C_1\\sqrt M e^{-c_1M^\\alpha}<\\sigma_M\\leq\\sigma_{Ls}\\leq C_1\\sqrt s e^{-c_0s^\\alpha/2}\\). Since \\(M>s\\), the square-root factor can be discarded in the favorable direction, giving \\(c_1>(c_0/2)(s/M)^\\alpha>(c_0/2)(2L)^{-\\alpha}\\), which supplies the intended contradiction.",
+      "classification": "minor_issue",
+      "why_classification": "The displayed inequality is not merely a transcriptional typo because the proof uses its wrong direction. Nevertheless, the correct inequality and the existing square-root prefactor yield a short, routine rearrangement confined to Case 2. No new lemma, proof architecture, hypothesis, convergence order, or substantive guarantee is needed, so the defect is minor.",
+      "new_version_repair_locator": {
+        "tag": "__STAGED_AUTOGEN_1DA52255783690F8_FORMAL_000010__"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning"
+    }
+  ]
+}

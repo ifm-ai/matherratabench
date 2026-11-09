@@ -1,0 +1,91 @@
+{
+  "paper_id": "2605.01446",
+  "version_pair": "v1-v3",
+  "issues": [
+    {
+      "issue_id": "2605.01446:I001",
+      "title": "Unrestricted symmetric-kernel plug-in lacks a reflection-compatibility condition",
+      "target_type": "prose_claim",
+      "primary_affected_tag": null,
+      "failure_location": {
+        "quote": "The same solver applies to the symmetric-kernel\nvariant (m2) by replacing $\\Omega$ with $\\Omega_s =\n\\tfrac{1}{2}(\\Omega + a\\Omega^*)$~\\cite{Espinoza2005}."
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "eq:sym-kernel"
+        },
+        {
+          "tag": "eq:P-q"
+        },
+        {
+          "tag": "prop:curvature"
+        }
+      ],
+      "failure_explanation": "The quoted abstract claim says that the same solver applies to the symmetric-kernel variant merely by substituting the displayed two-term matrix. The old paper actually establishes its convex-QP and SMO formulas only for a symmetric PSD kernel matrix, as required by the block Hessian in eq:P-q and the symmetry used in prop:curvature; it gives no condition ensuring that the reflected matrix has those properties. Indeed, K(x,x')=(x+1)(x'+1) is a Mercer kernel, but on x_1=0,x_2=1 it gives Ω=[[1,2],[2,4]] and Ω*=[[1,0],[2,0]], hence Ω_s=[[1,1],[2,2]] for a=+1, which is not symmetric. The material difference is therefore unrestricted applicability to Mercer kernels versus applicability only to reflection-compatible kernels producing a valid symmetric PSD Ω_s.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The generic m2 substitution can supply a nonsymmetric or non-PSD matrix to formulas and convergence reasoning that require a valid kernel Gram matrix. Consequently, the unqualified m2 applicability and even-case convergence claims do not follow, while the m1 solver and compatible m2 instances remain unaffected.",
+      "least_adequate_overall_repair": "Scope the displayed two-term m2 substitution, its convex-QP formulas, and its inherited convergence guarantee to cases in which K_s(x,x′) = (K(x,x′) + aK(x,−x′))/2 is itself a symmetric Mercer kernel. Give a concrete sufficient premise, such as a reflection-closed domain with K(−x,−x′) = K(x,x′), and justify positive semidefiniteness through the even/odd feature-space projection rather than by asserting that Ω* is automatically PSD. For unsupported kernels, withdraw the unmodified-solver and convergence claims.",
+      "classification": "moderate_issue",
+      "why_classification": "The repair is contained within the m2 extension and preserves the same QP, solver, and convergence guarantee for reflection-compatible kernels, so no global reconstruction is needed. It nevertheless withdraws the coherent, unqualified promise for arbitrary Mercer kernels—a nondegenerate kernel-class restriction—so it entails meaningful but limited loss and exceeds a minor technical qualification.",
+      "new_version_repair_locator": {
+        "quote": "The second summand $\\Omega^*$ is PSD provided\nthe function $(\\bfx, \\bfx') \\mapsto K(\\bfx, -\\bfx')$ is itself a\nvalid Mercer kernel."
+      }
+    },
+    {
+      "issue_id": "2605.01446:I002",
+      "title": "Reversed lower- and upper-bound multiplier signs in KKT stationarity",
+      "target_type": "other",
+      "primary_affected_tag": "eq:kkt-stationarity",
+      "failure_location": {
+        "tag": "eq:kkt-stationarity",
+        "quote": "G_i - s_i\\rho = \\mu_i - \\lambda_i"
+      },
+      "diagnostic_evidence": [
+        {
+          "quote": "with $\\lambda_i u_i = 0$ and $\\mu_i(u_i - C_{k(i)}) = 0$ such that"
+        },
+        {
+          "tag": "tab:kkt"
+        }
+      ],
+      "failure_explanation": "The old source assigns λ_i to the lower bound through λ_i u_i=0 and μ_i to the upper bound through μ_i(u_i-C_{k(i)})=0. With nonnegative multipliers, the dual-QP Lagrangian contains -λ_i u_i+μ_i(u_i-C_{k(i)}), so differentiation gives G_i-s_iρ-λ_i+μ_i=0 and hence G_i-s_iρ=λ_i-μ_i. The old right-hand side μ_i-λ_i would reverse all lower- and upper-bound inequalities, contrary to tab:kkt.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "The displayed stationarity equation is internally inconsistent with the multiplier conventions and would yield reversed bound-state inequalities if followed literally. The ensuing KKT table and downstream formulas already use the corrected convention, so the defect is localized.",
+      "least_adequate_overall_repair": "Replace the stationarity equation by G_i − s_iρ = λ_i − μ_i, retaining λ_i u_i = 0 for the lower bound and μ_i(u_i − C_{k(i)}) = 0 for the upper bound. No changes to the KKT table or downstream formulas are required.",
+      "classification": "typo",
+      "why_classification": "The stated multiplier assignments and the immediately following KKT table uniquely force the corrected sign order. The rest of the paper already uses that order, so this is a localized transcriptional reversal rather than an error requiring repair of any argument or construction.",
+      "new_version_repair_locator": {
+        "tag": "eq:kkt-stationarity"
+      }
+    },
+    {
+      "issue_id": "2605.01446:I003",
+      "title": "Undefined unshrinking restart in the SMO pseudocode",
+      "target_type": "algorithm",
+      "primary_affected_tag": "alg:smo",
+      "failure_location": {
+        "tag": "alg:smo",
+        "quote": "continue outer loop"
+      },
+      "diagnostic_evidence": [
+        {
+          "tag": "alg:smo",
+          "quote": "\\For{$t = 1, 2, \\ldots, \\mathrm{maxiter}$}"
+        },
+        {
+          "tag": "eq:full-violation"
+        }
+      ],
+      "failure_explanation": "Algorithm alg:smo closes its sole For loop before reconstructing the full gradient. If the reconstructed full-set violation exceeds tolerance, it resets the active set and then instructs execution to “continue outer loop,” although no outer loop exists. The reset therefore cannot execute the promised return to working-set selection and two-variable updates. The new Repeat/While structure encloses optimization and reconstruction, giving the restart a defined destination.",
+      "dependent_affected_formal_result_tags": [],
+      "overall_effect": "On an admissible path where the shrunk active set appears converged but a frozen variable violates full KKT, the old procedure cannot complete its prescribed unshrinking cycle and therefore cannot reliably meet its output contract or certify the returned iterate.",
+      "least_adequate_overall_repair": "Introduce one defined global loop, governed by the existing maxiter counter, around the working-set iterations and full-gradient reconstruction. Upon active-set convergence, reconstruct and compute Δfull; if Δfull exceeds tolerance, reset the active and frozen sets and continue that loop, otherwise recover the bias and return. If the iteration budget is exhausted, report that certification was not obtained.",
+      "classification": "minor_issue",
+      "why_classification": "The nonexistent continuation target is a genuine executable-algorithm defect on a reachable unshrinking path, so it is not a typo. However, the preceding prose already specifies the intended restart, and a short local loop restructuring implements it without a new optimization argument, changed guarantee, or mathematical loss.",
+      "new_version_repair_locator": {
+        "tag": "alg:smo",
+        "quote": "\\Repeat"
+      }
+    }
+  ]
+}
