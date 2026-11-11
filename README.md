@@ -559,8 +559,8 @@ gold data.
 
 ## License
 
-The code and benchmark annotations are available under the MIT License.
-[MIT License text](https://opensource.org/license/mit)
+The code and benchmark annotations are available under the Apache License, Version 2.0 (Apache-2.0).
+[Apache License text](https://www.apache.org/licenses/LICENSE-2.0)
 
 Paper sources are downloaded separately from arXiv.
 
