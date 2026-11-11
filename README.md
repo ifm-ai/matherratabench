@@ -559,10 +559,10 @@ gold data.
 
 ## License
 
-**[TODO: license for the code.]**
+The code and benchmark annotations are available under the MIT License.
+[MIT License text](https://opensource.org/license/mit)
 
-**[TODO: license for the annotations, if different. Paper sources are
-downloaded from arXiv rather than bundled; if licensing is the reason, say so.]**
+Paper sources are downloaded separately from arXiv.
 
 ## Citation
 
