@@ -1,0 +1,199 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "which approximates $\\hat{\\rho}(\\bm{k})\\,\\hat{\\varphi}(\\bm{k})$.",
+          "tag": "alg:SE_Fourier"
+        },
+        {
+          "quote": "    \\hat \\aii_{\\bm k}\\,e^{-\\frac{2\\pi}{L}\\i\\, \\bm k\\cdot(h\\bm l)},",
+          "tag": "alg:SE_Fourier"
+        },
+        {
+          "quote": "    \\hat f_{\\bk} \\;=\\; \\sum_{\\br\\in\\Z^3} c_{\\bk + m\\br}(f).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Both displayed transforms are unnormalized, so F^{-1}F = |I_m| Id. With the stated conventions the spreading transform is â_k = |I_m| Σ_r c_{k+mr}ρ̂(k+mr) ≈ (|I_m|/V)φ̂(k)ρ̂(k), not ρ̂(k)φ̂(k); after the deconvolution 1/φ̂(k)^2 and the unnormalized inverse transform the pipeline of Algorithm alg:SE_Fourier (and of eq:matform) returns (|I_m|^2/V^2)φ^far = h^{-6}φ^far instead of φ^far. No consistent choice of DFT normalization makes all displayed formulas correct: relative to a 1/|I_m|-normalized inverse transform the diagonal factor must be h^3(M̂/φ̂^2), not V^{-1}(M̂/φ̂^2).",
+      "failure_location": {
+        "quote": "\\dfrac{1}{V}\\,\\dfrac{\\hat M(\\bk)}{\\hat\\varphi(\\bk)^2}\\,\\hat \\ai_{\\bk},",
+        "tag": "alg:SE_Fourier"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Fix the transform normalization consistently, e.g. use b̂_k = h^3 (M̂(k)/φ̂(k)^2) â_k together with a 1/|I_m|-normalized inverse FFT, and state eq:alias with the matching factor.",
+      "overall_effect": "Algorithm alg:SE_Fourier and the matrix form eq:matform return a constant multiple of the far-field potential; the claim â_k ≈ ρ̂(k)φ̂(k) and the aliasing identity eq:alias are mis-normalized by |I_m| (equivalently the inverse transform is missing 1/|I_m|). The error estimates, being stated in Fourier-series coefficients, are unaffected.",
+      "primary_affected_tag": "alg:SE_Fourier",
+      "target_type": "algorithm",
+      "title": "Fast Fourier-space summation is mis-scaled by FFT normalization",
+      "why_classification": "A short, local change of normalization constants restores the algorithm's output scale and every guarantee; no lemma, construction or rate is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "is unimportant in practice, since this region is never used.",
+          "tag": null
+        },
+        {
+          "quote": "The Fourier-transformed mollifier is evaluated at all available wavenumbers (also outside the bandlimit)",
+          "tag": null
+        },
+        {
+          "quote": "    \\frac{c_s}{r_c} = \\omega_{\\max} = \\frac{2\\pi}{L} K_{\\max}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The closed form for the mollifier transform holds for radial frequencies |ω| ≤ c_s/r_c = ω_max = πm/L, i.e. for grid modes with |k| ≤ m/2. The algorithms sum over the whole cube I_m, whose corner modes have |k| up to (√3/2)m and hence |ω| up to √3 ω_max > c_s/r_c; roughly half of the volume of I_m lies outside the radial band. For those modes the closed form is invalid and the defining integral (or ψ̂) must be used, so the claim that the out-of-band region 'is never used' is false.",
+      "failure_location": {
+        "quote": "\\eqref{eq:gammahatintegral} is never used in practice, since only Fourier modes within the band",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Evaluate γ̂_{r_c}^{c_s} at the corner modes from its defining integral (or via ψ̂_0^{c_s}) and delete the claim; alternatively truncate the Fourier sum to |k| ≤ m/2 and redo the truncation analysis.",
+      "overall_effect": "The practical simplification advertised in Section 4.2 and in the caption of Table tab:mollifiers is wrong: the out-of-band transform is needed for a large fraction of the modes, as the paper's own reference computation admits. The same out-of-band values enter the mollifier factor of the aliasing bound, where the closed form is nevertheless used (see ISSUE-004).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that all required Fourier modes lie inside the PSWF band",
+      "why_classification": "Computing the mollifier transform at the out-of-band modes by quadrature is routine and preserves the method, the error rates and the parameter rules; only the false claim is withdrawn."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:PSWF_split_errors"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "until slowly decaying $\\mathrm{sinc}$-type oscillations in the PSWF spectrum dominate the total error",
+          "tag": null
+        },
+        {
+          "quote": "which provides an error estimate for the far-field direct sum for a general mollifier $\\gamma_{\\sigma}$.",
+          "tag": "lemma:dirsumerr_L2"
+        },
+        {
+          "quote": "    = \\frac{1}{V^2}\\sum_{|\\mathbf{k}|>\\Kmax} |\\hat{\\rho}(\\mathbf{k})|^2 \\, |\\hat M(\\mathbf{k})|^2 .",
+          "tag": "lemma:dirsumerr_L2"
+        }
+      ],
+      "failure_explanation": "|M̂(ω)|^2 = 16π^2|γ̂_σ(ω)|^2/ω^4 is not nonincreasing in |ω| for the mollifiers considered. For the compactly supported PSWF mollifier the spectrum is a decaying sinc-type oscillation (|γ̂| ≈ 2ψ(1)|sin(r_cω)|/(λψ(0) r_c ω) outside the band, as the paper itself notes), so |M̂|^2 has infinitely many local maxima; for a general even nonnegative mollifier (e.g. a rescaled indicator) γ̂ is a sinc and is again non-monotone. The lattice-to-continuum estimate of Lemma lem:cubecover requires a nonincreasing integrand, so the passage from the lattice sum to the radial integral is not justified. (The same display also sums over the complement of the Euclidean ball |k| > K_max although the truncation retains the cube I_m.)",
+      "failure_location": {
+        "quote": "Since $|\\hat M(\\bk)|^2$ is radial and nonincreasing in $|\\bk|$, the",
+        "tag": "lemma:dirsumerr_L2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the monotone covering step by a comparison valid for oscillatory radial profiles (e.g. apply the covering bound to a nonincreasing radial envelope of |M̂|^2, or a bounded-variation version of the lattice comparison) and re-collect constants.",
+      "overall_effect": "Lemma lemma:dirsumerr_L2's estimate is unproved, and with it Proposition prop:PSWF_split_errors, the split-error model eq:PSWF_model and the c_s selection rule of Algorithm alg:parameter.",
+      "primary_affected_tag": "lemma:dirsumerr_L2",
+      "target_type": "formal_result",
+      "title": "Truncation bound relies on false monotonicity of the mollified spectrum",
+      "why_classification": "A replacement lattice-comparison argument for non-monotone (sinc-oscillating) spectra is required, which is more than a local edit, but the statement's form, the exponential rates and all parameter guarantees survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\hat{\\psi}_0^c(\\omega)=\\int_{-1}^1 \\psi_0^c(x)e^{\\i \\omega x}\\,dx$. For $\\omega\\in[-c,c]$,",
+          "tag": "lem:PSWFrelation"
+        },
+        {
+          "quote": "    \\left|\\tfrac{2}{m}(k_i + m r_i)\\right| \\in [1,3],",
+          "tag": null
+        },
+        {
+          "quote": "\\text{no closed form}, & \\text{otherwise}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Lemma lem:PSWFrelation gives ψ̂_0^c(ω) = λ_0 ψ_0^c(ω/c) only for |ω| ≤ c. The proof of Proposition prop:interpol_est substitutes this identity into the numerator of the aliasing ratio at the shifted modes k+mr, whose arguments 2(k_i+mr_i)/m lie in [1,3] (as the paper itself computes), i.e. at frequencies up to 3c_w where the tables state that no closed form exists. The displayed ratio is therefore not the ratio of Fourier-series coefficients of the window, and eq:interpol_est contains values of ψ_0^{c_w} outside [-1,1], where the paper never defines it (and where a literal ODE/Legendre extension is O(1), not O(e^{-c_w}), making the bound false). The same substitution is used for the mollifier factor ψ_0^{c_s}(2|k|/m) at corner modes with 2|k|/m up to √3.",
+      "failure_location": {
+        "quote": "\\psi_0^{c_w}\\!\\Big(\\tfrac{2}{m}(k_i+m r_i)\\Big)^2}",
+        "tag": "prop:interpol_est"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Re-derive the aliasing estimate using the true transforms ψ̂_0^{c_w}, ψ̂_0^{c_s} outside the band (bounded through the edge values ψ_0(1) and their 1/|ω| decay) and re-sum over the cube; refit the constant A_w if needed.",
+      "overall_effect": "Proposition prop:interpol_est's bound is unsupported and partly ill-defined; the closed-form aliasing model eq:window_err_model, the balancing rule eq:cwW and the c_w step of Algorithm alg:parameter inherit the defect, so the advertised accuracy control is not established.",
+      "primary_affected_tag": "prop:interpol_est",
+      "target_type": "formal_result",
+      "title": "Aliasing bound applies the in-band PSWF transform identity outside its range",
+      "why_classification": "The repair needs a new bound on the out-of-band PSWF transform and a contained re-derivation of the aliasing sum (with possible refitting of constants), but the e^{-c_w} rate, the model's structure and the parameter scheme survive, so no major loss occurs."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We then solve \\eqref{eq:cwcs_model_dimless} for $c_w$ using the Lambert $W$ function and obtain",
+          "tag": null
+        },
+        {
+          "quote": "where $W$ is the Lambert $W$ function.",
+          "tag": null
+        },
+        {
+          "quote": "in the interval $7 \\le c \\le 35$:",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The argument -2 B_w^2 e^{-2c_s}/c_s lies in (-1/e,0), where the real Lambert W function has two branches, and the balancing equation √c_w e^{-c_w} = const genuinely has two positive solutions (c ↦ √c e^{-c} is unimodal with maximum at c = 1/2). The formula c_w = -W(...)/2 is therefore ambiguous: the principal branch returns c_w ≈ 0 (about 1.3e-10 for the paper's test values r_c = 0.1, L = 1, c_s = 10), giving a degenerate window with P = 0 or 1 and destroying the accuracy, while the W_{-1} branch gives the intended c_w ≈ 12.6. The small root also lies far outside the fitted range c ≥ 7 of the error models used to derive the formula.",
+      "failure_location": {
+        "quote": "$c_w = -\\frac{1}{2}W\\big(-2 B_w^2 \\frac{e^{-2c_s}}{c_s}\\big)$",
+        "tag": "alg:parameter"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Specify the branch, e.g. take W_{-1} (equivalently require c_w > 1, or c_w inside the fitted range) in eq:cwW and in step 2 of Algorithm alg:parameter.",
+      "overall_effect": "Algorithm alg:parameter is not well defined as written; a literal implementation (e.g. MATLAB's lambertw, principal branch) returns a window parameter that cannot deliver the prescribed tolerance ε.",
+      "primary_affected_tag": "alg:parameter",
+      "target_type": "algorithm",
+      "title": "Window parameter c_w is not determined by the stated Lambert W formula",
+      "why_classification": "A one-line branch specification makes the procedure well defined and restores the promised accuracy control, with no further mathematical content lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:dirsumerr_L2",
+        "prop:PSWF_split_errors"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For any $\\bx\\in Q_{\\bm{k}}$ one has $||\\bx|-|\\bm{k}||\\le\\sqrt{3}/2$.",
+          "tag": "lem:cubecover"
+        },
+        {
+          "quote": "Let $f:[0,\\infty)\\to[0,\\infty)$ be nonincreasing. For $K>\\sqrt{3}/2$,",
+          "tag": "lem:cubecover"
+        }
+      ],
+      "failure_explanation": "On the cell Q_k one only has |k| - √3/2 ≤ |x| ≤ |k| + √3/2, so monotonicity gives f(|x|) ≤ f(|k| - √3/2), not f(|k|) ≤ f(|x|); the cell-wise comparison used in the proof is invalid. The statement itself fails: with f = 1_{[0,1]} (nonincreasing and nonnegative) and K = 0.9 > √3/2, the left side equals 6 (the six lattice points of norm 1) while the right side is (4π/3)(1 - 0.034^3) ≈ 4.19.",
+      "failure_location": {
+        "quote": "Monotonicity of $f$ then yields the stated bound.",
+        "tag": "lem:cubecover"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Weaken the bound to Σ_{|k|>K} f(|k|) ≤ ∫_{|x|>K-√3} f(|x|) dx, which follows at once from f(|k|) ≤ f(|x| - √3/2) on each unit cell and only shifts ω_* by √3π/L.",
+      "overall_effect": "The covering estimate used in the proof of Lemma lemma:dirsumerr_L2, and hence the radial reduction in Proposition prop:PSWF_split_errors, rests on a false lemma; the shift ω_* = ω_max - √3π/L is not justified as stated.",
+      "primary_affected_tag": "lem:cubecover",
+      "target_type": "formal_result",
+      "title": "Lattice covering lemma is false as stated",
+      "why_classification": "Changing the constant in the integration region is a short local repair that keeps every rate and guarantee; proving the constant as stated would instead require a nontrivial lattice-counting argument and is not the least repair."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2602.16591",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "5a7eb2381d02244a14f856ec8d079a82235af947f81b4666b55d9a1bda2341cf",
+  "status": "ok"
+}

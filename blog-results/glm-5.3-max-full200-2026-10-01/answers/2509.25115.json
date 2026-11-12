@@ -1,0 +1,258 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We smoothly extend both function so that they are constant in the normal direction to the original boundary",
+          "tag": null
+        },
+        {
+          "quote": "x = X(s) + r(x) n(s) \\quad \\forall x \\in \\extdomain{}",
+          "tag": null
+        },
+        {
+          "quote": "f\\left(x + r(x) \\overline{n}(x)\\right) & x \\in \\extdomain{} \\backslash \\domain{}",
+          "tag": "eq:fbar"
+        },
+        {
+          "quote": "\\overline{n}(x) = -\\frac{\\nabla\\phi(x)}{|\\nabla\\phi(x)|}",
+          "tag": "eq:normal"
+        }
+      ],
+      "failure_explanation": "The paper's own parametrization x = X(s) + r(x)n(s) (with r < 0 in Ω and n̄ the outward normal per (eq:normal)) gives the closest boundary point X(s) = x − r(x)n(s), so a normal-constant extension must be ḡ(x) = g(x − r(x)n̄(x)) and f̄(x) = f(x − r(x)n̄(x)). Both (eq:gbar) and (eq:fbar) instead use x + r(x)n̄(x): for x ∈ Ω this evaluates the boundary datum g at a strictly interior point (in 1D on Ω = (−1,1), x = 1−δ gives ḡ(x) = g(1−2δ) instead of g(1)), so ḡ is not constant along normals; for x ∈ B\\Ω it evaluates f at a point strictly outside Ω, where f is not defined, so f̄ is circular/ill-defined.",
+      "failure_location": {
+        "quote": "\\overline{g} = g{\\left(x + r(x) \\overline{n}(x) \\right)}",
+        "tag": "eq:gbar"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace x + r(x)n̄(x) by x − r(x)n̄(x) in (eq:gbar) and (eq:fbar) (equivalently ḡ(x) = g(X(s)) with X(s) = x − r(x)n(s)), making both extensions well defined and constant in the normal direction.",
+      "overall_effect": "The extended data ḡ and f̄ used in the right-hand sides of every method are not the claimed closest-point extensions; as written f̄ is undefined on B\\Ω. Coercivity proofs are unaffected (they use g only symbolically), but the well-definedness of the discrete problems' data and accuracy statements tied to these extensions are unreliable.",
+      "primary_affected_tag": "eq:extension",
+      "target_type": "algorithm",
+      "title": "Sign error in the definitions of the extended data ḡ and f̄; the constructions are ill-defined as written",
+      "why_classification": "A single forced local sign correction, supported by the paper's own parametrization two lines earlier, restores the stated construction; no formal result or guarantee depends on the erroneous form."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:SBMadv"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\phi |\\nabla u|^2 + \\epsilon^{-2}(1-\\phi)u^2",
+          "tag": "eq:sbmnorm"
+        },
+        {
+          "quote": "D {|\\nabla (\\phi u)|}^2",
+          "tag": "thm:sbm_pd"
+        },
+        {
+          "quote": "\\phi |\\nabla u|^2 + \\epsilon^{-3}(1-\\phi)u^2",
+          "tag": "eq:ddm1norm"
+        }
+      ],
+      "failure_explanation": "The proof correctly derives a(u,u) = ∫_B D|∇(φu)|² + (D/ε²)(1−φ)u² dx, but then declares this 'identical, up to epsilon scaling, to DDM1' and concludes coercivity with respect to ‖u‖² = ∫_B φ|∇u|² + ε⁻²(1−φ)u² dx. The two gradient terms are inequivalent: |∇(φu)|² does not dominate φ|∇u|². Counterexample family: for the tanh phase field take u = w/φ with w smooth, supported where φ ∈ (δ/2, δ), oscillating at wavenumber k = 1/(εδ); then a(u,u) ≤ C(a²k²|S| + a²|S|/(ε²δ²)) while ‖u‖² ≥ c·a²k²|S|/δ, so a(u,u)/‖u‖² → 0 as δ → 0. Hence no coercivity constant c > 0 exists for the stated norm; DDM1's term-by-term argument does not carry over.",
+      "failure_location": {
+        "quote": "This is identical, up to epsilon scalling, to DDM1, so following the results (\\cref{thm:ddm1_pd}), this method is coercive.",
+        "tag": "thm:sbm_pd"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate thm:sbm_pd (and thm:SBMadv) with the natural energy norm ‖u‖² = ∫_B |∇(φu)|² + ε⁻²(1−φ)u² dx, which is a norm on H¹₀(B) and for which coercivity follows term by term; the advection part of thm:SBMadv is unchanged.",
+      "overall_effect": "The coercivity guarantee of thm:sbm_pd, and of thm:SBMadv whose proof invokes it for the diffusion part ('Coerciveness has already been shown for the diffusion term in thm:sbm_pd'), is unreliable as stated.",
+      "primary_affected_tag": "thm:sbm_pd",
+      "target_type": "formal_result",
+      "title": "SBM coercivity (thm:sbm_pd) is claimed with respect to an inequivalent norm and is false as stated",
+      "why_classification": "The theorem is false as stated and its proof rests on an invalid equivalence of inequivalent norms; the supported repair replaces the norm (the corrected norm no longer controls φ|∇u|², so the stated guarantee content changes and propagates to thm:SBMadv), but it is local, needs no new proof architecture, and leaves a recognizably comparable coercivity result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Multiplying by $\\phi$ and substituting \\cref{eq:mixed0-strong1} gives a new method",
+          "tag": null
+        },
+        {
+          "quote": "+ \\frac{D}{\\epsilon^{2}}(1-\\phi)(u-g)",
+          "tag": "eq:mixed0-strong2"
+        }
+      ],
+      "failure_explanation": "Multiplying −∇·(φDσ) + Dσ·∇φ + (D/ε²)(1−φ)(u−g) = φf by φ and substituting φσ = ∇(φu) − g∇φ yields the penalty term (D/ε²)φ(1−φ)(u−g), not the displayed (D/ε²)(1−φ)²(u−g). The discrepancy is essential: the literal derivation output φ(1−φ) vanishes in the exterior (φ = 0), so the derived method would exert no control on u in B_ext and could not be coercive, whereas thm:mixed0's coercivity proof relies on the un-derived (1−φ)² coefficient for exterior control (∫_{B_ext}(D/ε²)u²). The claimed derivation therefore does not produce the method analysed.",
+      "failure_location": {
+        "quote": "+ \\frac{D}{\\epsilon^{2}}(1-\\phi)^2 (u-g)",
+        "tag": "eq:mixed0-strongFull"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the derivation (e.g., do not multiply the penalty term by φ, or explicitly present (D/ε²)(1−φ)²(u−g) as a modelling choice replacing the derived φ(1−φ) coefficient), keeping meth:mixed0 and thm:mixed0 as stated.",
+      "overall_effect": "The derivation narrative of the central new method Mix0DDM (and, by template, the rationale for its stabilising structure) is unsupported; the method itself, as defined by meth:mixed0, is unaffected.",
+      "primary_affected_tag": "eq:mixed0-strongFull",
+      "target_type": "other",
+      "title": "Mix0DDM derivation produces a φ(1−φ) penalty, not the (1−φ)² penalty actually used",
+      "why_classification": "The method and its coercivity theorem are stated and proven independently of the flawed algebraic step; a local correction of the derivation (or an explicit statement of the coefficient choice) repairs it with no loss of mathematical content."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\int_{\\extdomain{}}\\phi^2{\\left(m -  \\frac{1}{2} \\nabla \\cdot b \\right) |u|^2 \\;dx} \\geq 0.",
+          "tag": "thm:mixed1adv"
+        },
+        {
+          "quote": "- \\frac{1}{2} \\phi^2 \\nabla \\cdot b |u|^2",
+          "tag": "thm:mixed1adv"
+        },
+        {
+          "quote": "+ \\phi m |u|^2",
+          "tag": "thm:mixed1adv"
+        },
+        {
+          "quote": "m - \\frac{1}{2}\\nabla \\cdot b \\geq 0",
+          "tag": "eq:advCoercive"
+        }
+      ],
+      "failure_explanation": "The advection and mass terms of a(u,u) reduce to ∫_B [φ b·∇φ − φ[b·∇φ]⁻ + φm − ½φ²∇·b]u² dx. The proof supports the m/∇·b part only by 'φ² < φ' together with the true but insufficient inequality ∫φ²(m − ½∇·b)u² ≥ 0; the needed inequality ∫(φm − ½φ²∇·b)u² ≥ 0 requires φm ≥ φ²m, i.e. the unstated hypothesis m ≥ 0, which (eq:advCoercive) does not imply. Counterexample within the stated hypotheses: planar interface, b = (0, d·x₂) with d = ∇·b < 0 (so b·∇φ ≡ 0 and the stabiliser −φ[b·∇φ]⁻ vanishes), m = d/2 (so m − ½∇·b = 0), and |d| > 2D/ε²; for u constant on a thin strip where φ ≈ 1−γ (γ small), a(u,u) ≈ c²|S|γ[D/ε²(1 + 81γ) − |d|/2] < 0, so the bilinear form is indefinite. Hence thm:mixed1adv is false as stated (thm:ddm1adv, thm:SBMadv, thm:mixed0adv do not share this defect, since their mass terms enter as φ(m − ½∇·b) or φ²(m − ½∇·b)).",
+      "failure_location": {
+        "quote": "Since $\\phi \\in (0,1)$ we have $\\phi^2 < \\phi$ and consequently,",
+        "tag": "thm:mixed1adv"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the hypothesis m ≥ 0 (or ∇·b ≥ 0, or a smallness bound on |[∇·b]⁻| relative to D/ε²) to thm:mixed1adv; with m ≥ 0 the existing proof is valid. All applications in the paper (m = 0 or m = 3/(2τ) > 0) remain covered.",
+      "overall_effect": "The coercivity guarantee of thm:mixed1adv, and the claim that meth:mixed1adv's stabilising term yields 'a stable scheme', are unreliable for data with m < 0 even when (eq:advCoercive) holds.",
+      "primary_affected_tag": "thm:mixed1adv",
+      "target_type": "formal_result",
+      "title": "Mix1DDM with advection (thm:mixed1adv) is not coercive under the stated hypotheses; the proof needs m ≥ 0",
+      "why_classification": "The theorem is false in a subregime of its advertised hypotheses, as a concrete counterexample shows; the least repair adds a standard local condition (m ≥ 0) that preserves every application in the paper, but it excludes a data regime the theorem claims to cover — a limited weakening leaving a recognizably comparable result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "E_{H^1} & = {\\|\\chi_{\\domain{}} (u-u_h)\\|}_{H^{1}}",
+          "tag": null
+        },
+        {
+          "quote": "Find $u \\in U$ such that",
+          "tag": "meth:mixed0"
+        },
+        {
+          "quote": "due to the boundary conditions being included in $\\sigma \\approx \\nabla u$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims E_{H¹} = ‖χ_Ω(u − u_h)‖_{H¹} and, for Mix0DDM and Mix1DDM, computes it as E_{L²} + ‖χ_Ω(∇u − σ_h)‖_{L²}. But σ_h is never defined: the mixed methods (meth:mixed0, meth:mixed1 and their advection versions) are scalar primal formulations for u alone and produce no discrete flux. The H¹ errors and EOCs reported for the mixed methods — including the headline claim that Mix0DDM performs significantly better in the H¹ error — therefore rest on an unspecified quantity, and the displayed equality with the H¹ norm also fails for the plain sum as written.",
+      "failure_location": {
+        "quote": "E_{L^2} + {\\|\\chi_{\\domain{}} (\\nabla u  - \\sigma_h)\\|}_{L^2}  & \\text{\\MixedZ{} or \\MixedO{}}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Define σ_h explicitly for the mixed methods (e.g., via the discrete analogue of φσ = ∇(φu) − g∇φ on Ω, or by stating which post-processed gradient the code uses) and replace the plain sum by the H¹-norm combination; the reported numbers then correspond to a stated quantity.",
+      "overall_effect": "The reported H¹ errors and EOCs for Mix0DDM/Mix1DDM, and all comparisons based on them, cannot be reproduced or interpreted from the source.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "H¹ errors for the mixed methods are defined via an undefined discrete flux σ_h",
+      "why_classification": "A local definitional addition plus a routine norm correction restores well-definedness of the reported metrics; no formal result, method, or guarantee is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nabla p  \\cdot n  = p_N",
+          "tag": "eq:poisson_Neumann"
+        },
+        {
+          "quote": "\\approx \\int_{\\extdomain{}}{ \\phi u \\cdot \\nabla q + g \\cdot \\nabla\\phi q \\;dx}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For −∇·(D∇p) = f with ∇p·n = p_N and n the outward normal (the paper's standing convention, cf. (eq:normal) and the divergence-term derivation just below, which correctly uses n·δ ≈ −∇φ), integration by parts gives ∫_B φD∇p·∇v = ∫_B φfv + ∫_B D·p_N|∇φ|v, so the strong form is −∇·(φD∇p) = φf + D·p_N|∇φ|, i.e. the p_N term enters with a minus sign on the left and with the factor D. The displayed (eq:DDNeumann) has +p_N|∇φ| on the left and no D, so it is not the diffuse-domain approximation of the stated Neumann problem.",
+      "failure_location": {
+        "quote": "-\\nabla \\cdot (\\phi D \\nabla p) + p_N |\\nabla\\phi| = \\phi f.",
+        "tag": "eq:DDNeumann"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Correct (eq:DDNeumann) to −∇·(φD∇p) − D·p_N|∇φ| = φf (or state explicitly the sign convention for p_N under which the displayed form holds).",
+      "overall_effect": "The recalled Neumann DDM approximation is incorrect as displayed; within the paper it is used only with homogeneous data (p_N = 0, 'the term disappears'), so no downstream result is affected.",
+      "primary_affected_tag": "eq:DDNeumann",
+      "target_type": "other",
+      "title": "Diffuse-domain Neumann formula (eq:DDNeumann) has the wrong sign and drops the factor D",
+      "why_classification": "A local sign/factor correction to a recalled background formula that is never used with non-homogeneous Neumann data; no result depends on it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\int_{\\extdomain{}}{ (p I - \\nu \\nabla u) \\nabla \\phi \\;dx}",
+          "tag": null
+        },
+        {
+          "quote": "which will extend to remove the cylinder from the mesh",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims C_d, C_l are obtained from (2/(ρLU²_mean))∫_{∂Ω}(ν∇u − pI)n dS and its diffuse counterpart ∫_B(pI − ν∇u)∇φ dx. Drag and lift are components of the fluid force on the cylinder, i.e. stress integrals over the cylinder surface only; ∂Ω also contains the no-slip walls and the inflow boundary, whose shear and pressure contributions change the value. With n the outward normal of the fluid domain, both displayed integrals equal minus the standard force on the cylinder, whereas the reported values (C_{d,max} ≈ 2.74–3.08 against the reference 2.95) follow the standard positive convention. Moreover, since only the cylinder is diffuse, ∇φ is supported near the cylinder, so the diffuse integral approximates the cylinder-only integral and the claimed equivalence between the two displayed formulas also fails. The formulas thus do not define the quantities reported in tab:nscoef.",
+      "failure_location": {
+        "quote": "\\int_{\\domainbnd{}}{ (\\nu \\nabla u - p I) n \\;dS}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Restrict the stress integral to the cylinder surface Γ_cyl (the diffuse version already does this implicitly) and fix the orientation/sign so that C_d and C_l match the benchmark convention of the cited reference values.",
+      "overall_effect": "The stated definitions of the benchmark quantities of interest (drag, lift) are incorrect; the comparison against reference values in tab:nscoef relies on computations not specified by the displayed formulas.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Drag/lift coefficient formulas integrate the stress over the whole boundary and carry the wrong sign",
+      "why_classification": "The defect is confined to the displayed definitions of the measured quantities; the reported drag values match the reference sign and magnitude, indicating the computation used the correct cylinder-only integral, so a local correction of the formulas restores consistency without affecting results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "To make this method coercive, so we add the term",
+          "tag": null
+        },
+        {
+          "quote": "\\int_{\\extdomain{}}{\\frac{D}{4}|\\nabla \\phi|^2 (u-g)v\\; dx}.",
+          "tag": "eq:mixed0-stabterm"
+        },
+        {
+          "quote": "DDM1 (\\cref{meth:ddm1}) is symmetric and coercive",
+          "tag": "thm:ddm1_pd"
+        }
+      ],
+      "failure_explanation": "The conclusion asserts Mix0DDM was 'the only method proven to be coercive without an additional stabilisation term'. The body establishes the opposite for Mix0DDM: the term (D/4)|∇φ|²(u−g)v (eq:mixed0-stabterm) is introduced precisely 'to make this method coercive', and thm:mixed0 proves coercivity of the stabilised method. Furthermore, DDM1 (thm:ddm1_pd) is coercive with no terms beyond its B.C. penalty, so Mix0DDM is not the only such method under any reading except the advection-stabilisation reading (thm:mixed0adv needs no inflow term), which the sentence does not state.",
+      "failure_location": {
+        "quote": "\\MixedZ{} method was the only method proven to be coercive without an additional stabilisation term",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Reword to the true statement, e.g. 'Mix0DDM was the only method whose advection terms are coercive without an additional inflow stabilisation term'.",
+      "overall_effect": "Misleading summary of what was proven about the stabilisation requirements of the new methods.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Conclusion falsely states Mix0DDM was proven coercive without a stabilisation term",
+      "why_classification": "A local wording correction of a summary sentence; no formal result, method, or computation is affected."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2509.25115",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n04-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e666f826e14a5b72e8547ef351f83f79d7af01ee390bce4f1a9f9be9d615d6ae",
+  "status": "ok"
+}

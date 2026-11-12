@@ -1,0 +1,78 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "in order to compute one entry $y_{i_1i_2\\ldots i_N}$ in \\eqref{e:yi1i2iN}, we need one division",
+          "tag": null
+        },
+        {
+          "quote": "in order to fully determine $\\Y$, we need $n_1n_2\\ldots n_NN$ divisions",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{n_1n_2\\ldots n_N}{2}\\Bigg[5\\sum_{j = 1}^{N}n_j - N\\Bigg] + \\frac{n_1n_2\\ldots n_N}{2}\\Bigg[5\\sum_{j = 1}^{N}n_j - 3N - 2\\Bigg] + n_1n_2\\ldots n_NN",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Let P = n_1...n_N and S = sum_j n_j. The paper's own (verifiable) intermediate counts are (P/2)[5S - N] multiplications and (P/2)[5S - 3N - 2] additions/subtractions, and its per-entry analysis of the recursion (e:yi1i2iN) states exactly one division per entry, i.e. P divisions in total, not the claimed P*N divisions. Moreover, even accepting P*N divisions, the displayed sum (P/2)[5S - N] + (P/2)[5S - 3N - 2] + PN equals P[5S - N - 1], not the printed P[5S - N + 1] (an arithmetic slip of 2P). With the correct division count P, the true total is P[5S - 2N]. A direct count for N = 2, n_1 = n_2 = 2 gives 64 flops, while the printed formula gives 76.",
+      "failure_location": {
+        "quote": "= n_1n_2\\ldots n_N\\Bigg[5\\sum_{j = 1}^{N}n_j - N + 1\\Bigg]",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the divisions count to n_1...n_N and recompute the final total as n_1...n_N[5*sum_j n_j - 2N], making the per-entry, aggregate and final tallies mutually consistent.",
+      "overall_effect": "The exact flop count stated in Section 2.1 for the method (excluding Schur decompositions) is wrong (by P(N+1) overall), denting the abstract's promise to 'calculate accurately the computational cost'. The derived asymptotic claims (about 5Nn^{N+1} flops, O(n^{N+1}) total, 25Nn^3 for the Schur decompositions) and all algorithms and results remain valid.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Total flop count of the method is arithmetically wrong (divisions overcounted; final sum inconsistent with its own terms)",
+      "why_classification": "The repair is a short, local, routine arithmetic correction that leaves the method, all algorithms, Theorem 1, and the asymptotic cost and leading-constant claims intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "u(\\xx, 0) = \\exp(-\\xx\\cdot\\xx)",
+          "tag": "e:uxt"
+        },
+        {
+          "quote": "u_t(\\xx, t) = \\Delta u(\\xx, t) + 2\\xx\\cdot\\nabla u(\\xx, t) + (2N+1)u(\\xx, t) - \\exp(-\\xx\\cdot\\xx)",
+          "tag": "e:uxt"
+        },
+        {
+          "quote": "The solution at $t = 1$, taking $N = 6$ dimensions, took $25.73$ seconds to execute, and the error was $9.6811\\times10^{-14}$",
+          "tag": null
+        },
+        {
+          "quote": "we are able to compute with great accuracy the solution of an advection-diffusion equation on $\\mathbb R^N$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At t = 0 the claimed solution equals 2*exp(-x.x), which contradicts the initial condition u(x,0) = exp(-x.x) stated in (e:uxt). Writing u = g(t)exp(-|x|^2), the spatial terms of the PDE reduce it to g' = g - 1 with g(0) = 1, whose solution is g identically 1: the actual solution of the stated IVP is the steady state u(x,t) = exp(-x.x). The function (1+e^t)exp(-|x|^2) does satisfy the differential equation, but it corresponds to the initial condition 2*exp(-|x|^2), so it is not the solution of the stated problem.",
+      "failure_location": {
+        "quote": "Moreover, the solution of \\eqref{e:uxt} is $u(\\xx, t) = (1+\\exp(t))\\exp(-\\xx\\cdot\\xx)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Make the model self-consistent: state the initial condition in (e:uxt) as u(x,0) = 2*exp(-x.x), for which the claimed solution (1+e^t)exp(-x.x) is correct and the test is non-degenerate, and re-verify the reported numerical error against it; alternatively, keep the stated initial condition and replace the claimed solution by the actual steady-state solution u(x,t) = exp(-x.x).",
+      "overall_effect": "The ground-truth solution used to validate the advection-diffusion experiment (Section 5.2) is wrong for the stated problem, so the reported error 9.6811e-14 at t = 1, N = 6 is unsupported as described: with the stated initial condition the numerical solution approximates exp(-x.x), and its discrepancy against the claimed (1+e)exp(-x.x) would be of order e*exp(-|x|^2), i.e. O(1). The abstract's claim of computing the advection-diffusion solution 'with great accuracy' is unreliable as stated. The algorithm, Theorem 1 and the other numerical tests are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed exact solution of the advection-diffusion test problem contradicts its stated initial condition",
+      "why_classification": "The false solution claim undermines the section's validation numbers and the abstract's accuracy claim for this application, and the repair requires a choice between two different corrections of the model plus re-establishing the numerical comparison; it is nevertheless contained to this example, leaving the algorithm, Theorem 1 and a comparable validation intact."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2412.15840",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n04-reserve",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d355df1c8786c244bfb34e8cdaf2d27ff412465fb86eaa3ee0e5c7a234cfa7a2",
+  "status": "ok"
+}

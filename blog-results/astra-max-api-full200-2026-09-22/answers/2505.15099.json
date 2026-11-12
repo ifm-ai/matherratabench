@@ -1,0 +1,305 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "rem:PR_justification",
+        "thm:LTE_trees",
+        "thm:added-1",
+        "thm:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tp{y}(\\ts) = \\big[y(\\ts + c_1 \\dt)^T, \\dots, y(\\ts + c_s \\dt)^T\\big]^T \\in \\mathbb{R}^s \\otimes \\mathbb{R}^\\nvar",
+          "tag": "Eq:ExactSol"
+        },
+        {
+          "quote": "\\norm{y^{(k)}(\\timevar)} &\\leq M\n                    &\\quad &\\forall \\, \\timevar \\in [\\ts, \\tf],\n                    &\\quad k &= 1, \\dots, r+1,",
+          "tag": "eq:ODE_assumptions:diff"
+        },
+        {
+          "quote": "If all diagonal entries, $a_{i,i}$, of a DIRK method are positive, it is both AS- and ASI-stable (by \\cite[Lemmas~4.3~\\&~4.4]{burrage1986study}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "No restriction keeps the abscissae inside the interval where the derivative bounds hold. For example, take A=[[1,0],[-2,1]], b=(1,0), so c=(1,-1); this method is AS- and ASI-stable. With r=1, J=-K, g=0 and y(0)=K^{-2}, the first two solution derivatives are bounded by 1 on [0,1]. Nevertheless, the second exact stage value is K^{-2} exp(Kh), whereas the numerical stage is O(K^{-2}). Since gamma_1=0, the asserted stiffness-independent O(h^2) stage remainder is false for fixed positive h as K increases.",
+      "failure_location": {
+        "quote": "where $\\norm{\\varepsilon_{Y}} \\leq D \\dt^{r+1}$, $\\norm{\\varepsilon_{y}} \\leq D \\dt^{r+1}$, and $\\norm{\\varepsilon_{g}} \\leq D \\dt^{r}$ hold with a constant $D$ depending only on $M$, $L$ and method coefficients (but not on $Z$).",
+        "tag": "thm:LTE"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Require the solution derivative bounds, uniformly in stiffness, on an enlarged interval containing every stage evaluation used in the analysis. Alternatively, restrict the abscissae so that all such evaluations remain inside the assumed interval.",
+      "overall_effect": "The stage expansion and the subsequent error arguments lack their claimed coverage for unrestricted abscissae under regularity assumptions confined to the integration interval.",
+      "primary_affected_tag": "thm:LTE",
+      "target_type": "formal_result",
+      "title": "Uniform stage-error expansions use solution values outside the interval of assumed regularity",
+      "why_classification": "This requires a genuine strengthening of the uniform regularity domain or a restriction of method coverage, but does not require new global proof architecture or different convergence rates."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "rem:PR_justification",
+        "thm:LTE_trees",
+        "thm:added-1",
+        "thm:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Throughout, we view $Y_n$ and $y_n$ (and by extension $\\dY[n]$) as a function of two independent variables $h$ and $Z$.",
+          "tag": null
+        },
+        {
+          "quote": "Y_n &=& \\one \\otimes y_{n} &+ (A \\otimes Z) Y_n &&+ \\dt (A \\otimes I) \\, \\tp{g}(Y_n),",
+          "tag": "eq:RK_kron:stages"
+        },
+        {
+          "quote": "where $Z \\coloneqq \\dt J$ and",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The actual numerical stages at h=0 with Z frozen are (I-A⊗Z)^{-1}(1⊗y0), not generally 1⊗y0. Their error therefore need not have zero constant term or uniformly bounded h-derivatives. For implicit Euler, J=-K, g≡K and y0=1 give the exact equilibrium y≡1 with fixed L and M. At frozen Z=-1, however, ΔY(h,Z)=(1-hK)/2. Its constant term is 1/2 and its derivative grows with K. The defect expansion used in the proof assumes Z=hJ, so it cannot simultaneously serve as the defect of these actual stages with Z independent.",
+      "failure_location": {
+        "quote": "Since the matrix inverses in \\cref{eq:LTE} are bounded, the norms of $\\|f_1\\|, \\|f_2\\|, \\|f_2'\\|$ are bounded by constants depending only on $L, M$ and the method coefficients (e.g., by induction on the derivatives of $\\dY[0]^{(j)}$ via \\cref{eq:LTEa}).",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Define a separate frozen-Z error equation using the trajectory defect vec(y)-1⊗y0-h(A⊗I)vec(y'), prove its smoothness and uniform remainder bounds by contraction, and then prove that its solution agrees with the actual RK error when Z=hJ.",
+      "overall_effect": "The proposed differentiability argument does not establish the stiffness-independent Taylor remainders, even after ensuring that all exact stage times are admissible.",
+      "primary_affected_tag": "thm:LTE",
+      "target_type": "formal_result",
+      "title": "Freezing Z does not give the claimed Taylor expansion of the actual RK error",
+      "why_classification": "A contained auxiliary construction and uniform-remainder argument can preserve the intended conclusions, but this is more than a notational correction or routine omitted algebra."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "rem:PR_justification",
+        "thm:LTE_trees",
+        "thm:added-1",
+        "thm:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "All partial derivatives of $g$ up to order $r$ exist and are continuous, and $y$ is $r+1$ times continuously differentiable.",
+          "tag": "assump:ODE"
+        },
+        {
+          "quote": "\\dg[0] = \\sum_{k=1}^{r-1} \\sum_{\\ell=0}^{r-1-k}",
+          "tag": "Eq:dgFull"
+        }
+      ],
+      "failure_explanation": "Under g∈C^r, the time-dependent map g^{(k)}(y(t)) has only r-k guaranteed derivatives. Expanding every such map through degree r-1 with an O(h^r) remainder uses unavailable derivatives; even for k=1, the asserted remainder generally requires additional regularity. The later truncation of the combined series does not validate this intermediate Taylor assertion.",
+      "failure_location": {
+        "quote": "\\sum_{\\ell = 0}^{r-1} \\frac{\\dt^{\\ell}}{\\ell!} \\diff[\\ell]{}{\\dt} \\tp{g}^{\\, (k)}\\big(\\tp{y}(\\ts ) \\big)\\Big|_{\\dt = 0} + \\order{ \\dt^{r} }.",
+        "tag": "eq:PowerSeries_gk"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Expand g^{(k)} only through degree r-1-k, with remainder O(h^{r-k}); multiplying by k stage-error factors of size O(h) then gives the required O(h^r) remainder.",
+      "overall_effect": "The nonlinear coefficient derivation invokes Taylor expansions not justified by the stated hypotheses.",
+      "primary_affected_tag": "thm:LTE",
+      "target_type": "formal_result",
+      "title": "The Taylor expansion of g derivatives exceeds the assumed smoothness",
+      "why_classification": "The graded Taylor truncation is a short local repair that preserves the stated regularity assumptions, coefficients and error orders."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "thm:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "symmetric $k$-linear maps $\\bimap_{\\ell, k} : \\mathbb{V}^{\\otimes k} \\rightarrow \\mathbb{V}$",
+          "tag": null
+        },
+        {
+          "quote": "\\big(b^T \\otimes I\\big) \\big(I - A \\otimes Z\\big)^{-1} \\big((A C^{\\ell}) \\otimes I\\big) \\, \\G(\\timevar).",
+          "tag": null
+        },
+        {
+          "quote": "\\G(\\ts) \\mleft( \\dY[0][m_1], \\dots, \\dY[0][m_{k}] \\mright).",
+          "tag": "eq:LTE_coeffs:g"
+        }
+      ],
+      "failure_explanation": "The solution coefficients depend on stage coefficients in R^{sN}, not recursively on earlier solution coefficients in R^N. The displayed W therefore has domain (R^{sN})^k rather than the required (R^N)^k. It also contains an extra A compared with the stated solution functional. Consequently, the asserted second application of the abstract-recursion lemma is not a valid construction.",
+      "failure_location": {
+        "quote": "Similarly, the result for $\\varphi(\\treevar)= \\oc[\\treevar][Z][t]$ follows by setting $\\mathbb{V} = \\R^{\\nvar}$, $\\dy[0][i] = \\vy[i]$, keeping the same $\\scalvar_{\\ell, k}$ as for $\\dY[0][i]$, and taking",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use the already established stage-tree expansion as input to the solution-error formula, and collect terms using the same combinatorial factors. The root output operator must contain C^ell, not A C^ell.",
+      "overall_effect": "The proof does not establish the solution-error tree expansion by the claimed abstract-recursion argument.",
+      "primary_affected_tag": "thm:LTE_trees",
+      "target_type": "formal_result",
+      "title": "The solution-error recursion is incorrectly treated as a closed recursion on R^N",
+      "why_classification": "Direct substitution supplies a short local bypass without changing the tree formulas, order conditions or convergence guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "All partial derivatives of $g$ up to order $r$ exist and are continuous, and $y$ is $r+1$ times continuously differentiable.",
+          "tag": "assump:ODE"
+        },
+        {
+          "quote": "Under \\cref{assump:ODE} (with $r \\geq p, \\psl$)",
+          "tag": "thm:convergence"
+        }
+      ],
+      "failure_explanation": "The assumption supplies a smoothness index r, but this theorem never requires r≥p_SL. Its proof uses the tree expansion through order p_SL to obtain an O(h^{p_SL+1}) remainder. If r is smaller, that expansion is unavailable; for sufficiently large p_SL, some asserted tree differentials are not even defined.",
+      "failure_location": {
+        "quote": "Let $(A,b,c)$ be an AS- and ASI-stable Runge--Kutta method with semilinear order $\\psl$. \n    Then the Runge--Kutta method applied to any initial value problem \\cref{eq:ODE} satisfying \\cref{assump:ODE}, has",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add r≥p_SL to the hypotheses of the main LTE theorem.",
+      "overall_effect": "The stated local-error guarantee covers insufficiently smooth problems. The global theorem already imposes the missing order-compatible regularity and is not independently affected by this omission.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "The main LTE theorem omits the required relation between smoothness and semilinear order",
+      "why_classification": "This standard local smoothness condition makes the existing proof applicable and preserves the advertised smooth-problem rates and methods."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{i=0}^{s-1} \\sum_{j=0}^{s-1} (b^T A^i A^j \\so{2}) Q_i(Z) g'(y(\\timevar)) Q_j(Z) y''(\\timevar) .",
+          "tag": null
+        },
+        {
+          "quote": "However, for our semilinear analysis, scalar problems allow terms in \\cref{eq:LTE_coeffs} to commute, for example $I \\otimes g'(y(t))$ and $(I - A \\otimes Z)^{-1}$, and leads to an incomplete set of order conditions.",
+          "tag": "rem:classical_special_case"
+        },
+        {
+          "quote": "F(\\tau; Z, t) \\coloneqq \\big(I - R(Z)\\big)^{-1} \\oc[\\treevar][Z][t],",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The tree expressions contain rational functions of Z separated by derivatives of g and, more generally, multilinear maps. They are not evaluations at Z of the scalar rational function obtained by replacing Z with z. Thus Nevanlinna's functional-calculus bound does not imply either displayed estimate for F. Moreover, allowed matrices Z can be singular, so I-R(Z) is singular. Classical cancellation at scalar z=0 does not establish that a noncommuting tree expression lies in its range: a derivative map can transfer an input from a stiff eigenspace into ker(Z). The claimed removable-pole argument therefore does not justify the matrix-valued shifted error.",
+      "failure_location": {
+        "quote": "\\norm{F(\\tau; Z, t_n)} \\leq \\sup_{(z, t) \\in \\C^{-} \\times [\\ts,\\tf]} |F(\\tau; z, t)| < \\infty,",
+        "tag": "eq:leading_error_function1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Retain the standard q=p_SL bound and withdraw the general superconvergence branch. Preserving that branch requires a new noncommutative range/cancellation argument with uniform bounds, including singular Z, or additional structural hypotheses that ensure such cancellation.",
+      "overall_effect": "The general stiffness-uniform extra order q=p_SL+1 is unsupported. The standard q=p_SL accumulation argument does not use this invalid functional-calculus step.",
+      "primary_affected_tag": "thm:convergence",
+      "target_type": "formal_result",
+      "title": "The superconvergence proof applies scalar functional calculus to noncommuting matrix expressions",
+      "why_classification": "The supported weakening loses the central extra-order guarantee; preserving it for the stated vector-valued regime requires substantially different justification, not a scalar pole-removal correction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\qo{\\ell+1} = 0 \\qquad \\textrm{and} \\qquad b^T \\beta = 0 \\qquad \\forall \\beta \\in V_{\\treevar}.",
+          "tag": "eq:OC_Root"
+        },
+        {
+          "quote": "Furthermore, $s$ is the number of stages, $p$ is the classical order, and $\\psl$ is the semilinear order from \\cref{def:semilinear_order}.",
+          "tag": null
+        },
+        {
+          "quote": "A complete parameterization of all DIRK-$(2,2,3)$, and DIRK-$(3,3,3)$ methods can be found in \\cite[Section~7]{biswas2022algebraic}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Through order three, the definition requires B(p_SL) in addition to weak stage order. The omitted distinction produces the impossible DIRK-(2,2,3) classification. Semilinear order three implies b^T1=1, b^Tc=1/2, b^Tc^2=1/3 and b^T gamma_2=0, hence b^TAc=1/6. These are the classical order-three conditions, so a method of classical order exactly two cannot have semilinear order three.",
+      "failure_location": {
+        "quote": "The conditions in \\cref{def:semilinear_order} can be satisfied via the simplifying assumptions \\cref{eq:simplifying_assumptions}, and reduce to the weak stage order conditions when $\\psl \\leq 3$ (see \\cref{rem:WSO}).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "State the equivalence as weak stage order plus B(p_SL), and correct or remove the DIRK-(2,2,3) entry under the paper's naming convention.",
+      "overall_effect": "The claimed equivalence and the catalogue of existing semilinear-order methods misclassify a weak-stage-order property as semilinear order.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Weak stage order is equated with semilinear order without the quadrature conditions",
+      "why_classification": "This withdraws a substantive method-family classification, but the loss is confined to the equivalence statement and catalogue; the constructed methods and algebraic definition remain recognizable and unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "This approach guarantees stability by ensuring that the spectrum of the resulting method-of-lines (MOL) matrix confined to the left-half complex plane.",
+          "tag": null
+        },
+        {
+          "quote": "As the theory in \\cref{sec:error_analysis} allows for any inner-product-norm, we measure all spatial errors in a scaled $\\ell^2$-norm which approximates the $L^2$-norm in space.",
+          "tag": null
+        },
+        {
+          "quote": "\\mu(J)\n                \\coloneqq \\max_{0 \\neq x \\in \\R^{\\nvar}} \\frac{\\langle x, J x \\rangle}{\\langle x, x \\rangle} \\leq 0.",
+          "tag": "eq:ODE_assumptions:linear"
+        }
+      ],
+      "failure_explanation": "The theorem requires nonpositive logarithmic norm in the inner product used for its estimates. A left-half-plane spectrum does not establish that hypothesis in the chosen scaled Euclidean norm. For example, J=[[-1,K],[0,-1]] has spectrum {-1} but logarithmic Euclidean norm -1+K/2. Allowing different inner products does not make every chosen norm admissible, and changing to a dissipative norm requires controlling norm-equivalence constants for a stiffness-uniform conclusion. No such verification is supplied for the stated MOL error bound.",
+      "failure_location": {
+        "quote": "\\underbrace{\\|U(\\tf)-u^{\\mathrm{MOL}}(\\tf)\\|_{2}}_{\\leq D \\dt^{q} \\textrm{ from \n \\cref{thm:convergence}} }",
+        "tag": "Eq:Triangle"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Establish the required dissipativity or an appropriate uniform energy estimate for each discretization and norm. Without that verification, retain the triangle inequality but present the PDE convergence observations as empirical rather than as applications of the uniform theorem.",
+      "overall_effect": "The displayed stiffness-uniform temporal error estimate is not established for the PDE discretizations in the reported spatial norm, independently of the superconvergence proof defect.",
+      "primary_affected_tag": "Eq:Triangle",
+      "target_type": "other",
+      "title": "The PDE error bound is invoked without establishing dissipativity in the measured norm",
+      "why_classification": "A contained stability argument could justify the application; alternatively, a limited weakening of the PDE interpretation leaves the abstract ODE theory and numerical experiments intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose a Runge--Kutta method is A-, AS-, and ASI-stable, has classical order $p$, and semilinear order $\\psl \\geq 1$.",
+          "tag": "thm:convergence"
+        },
+        {
+          "quote": "\\textbf{EDIRK-(19,5,4)} & \\cref{app:ESDIRK-(1054)} & 1.12E-2 & 9.10 & A($\\ang{89.8}$)",
+          "tag": "tab:method_properties"
+        },
+        {
+          "quote": "In addition, the EDIRK-(19,5,4) method is shown here as an example of a method of interest for PDE problems, which can be constructed via extrapolation.",
+          "tag": null
+        },
+        {
+          "quote": "In turn, for errors above this value, the theory in \\cref{sec:error_analysis} controls the fully discrete error with respect to the MOL solution; and thus the new methods are expected to converge at their full order $p$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The PDE discussion applies the theorem-backed bound to the studied new methods, including EDIRK-(19,5,4). The source reports only A(89.8°)-stability for that scheme, whereas the theorem requires A-stability on the entire left half-plane. Neither an applicable sectorial convergence theorem nor a replacement stability estimate for this scheme and the tested MOL operator is established. Repairing the theorem's superconvergence argument or verifying dissipativity of the MOL matrix would not supply this missing method hypothesis.",
+      "failure_location": {
+        "quote": "\\underbrace{\\|U(\\tf)-u^{\\mathrm{MOL}}(\\tf)\\|_{2}}_{\\leq D \\dt^{q} \\textrm{ from \n \\cref{thm:convergence}} }",
+        "tag": "Eq:Triangle"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Exclude EDIRK-(19,5,4) from theorem-backed convergence assertions and describe its results as empirical, unless a sectorial or operator-specific stability argument is supplied.",
+      "overall_effect": "The extrapolated method's observed PDE convergence cannot be attributed to the stated global theorem.",
+      "primary_affected_tag": "Eq:Triangle",
+      "target_type": "other",
+      "title": "The theorem-backed PDE bound includes a scheme with only sectorial stability",
+      "why_classification": "This is a limited loss of theoretical coverage for the extrapolated scheme, rather than a change to the main A-stable methods or the abstract theorem's valid scope."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2505.15099",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6126411d2378a7472a9f6ced6be434b2aeb2361034528608d64f09e66b971afc",
+  "status": "ok"
+}

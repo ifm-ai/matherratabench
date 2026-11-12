@@ -1,0 +1,190 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "It turns out that, if $f$ is element wise quadratic in time, this scheme is equivalent to a third order Radau IIA method, a collocation scheme that evaluates at $t_{T+1}$ and $2t_T/3+t_{T+1}/3$ on each element $T\\in\\TT$. Thus, an equivalent form of the method reads as",
+          "tag": null
+        },
+        {
+          "quote": "\\dual{\\partial_t u_\\TT(t_{T+1})}{v}+\\dual{Au_\\TT(t_{T+1})}{v}&= \\dual{f(t_{T+1})}{v} \\quad\\text{for all }T\\in\\TT\\text{ and all }v\\in V.\\notag",
+          "tag": "eq:cnscheme"
+        }
+      ],
+      "failure_explanation": "For the Radau IIA collocation form of the scheme the stage relation is k_1 = f(t_T+|T|/3) - A U_1 with stage value U_1 = u_T(t_T) + |T|(5/12 k_1 - 1/12 k_2). The displayed formula omits the term -A u_T(t_T) (and analogously in k_2), so the displayed system is the 2-stage Radau IIA method applied to the equation with the current solution value dropped; it is equivalent to eq:cnscheme only when A u_T(t_T) = 0, which is not assumed. Hence the claimed 'equivalent form of the method' is false as written.",
+      "failure_location": {
+        "quote": "k_1 := f(t_T+\\frac13|T|)-|T| A\\big(\\frac5{12}k_1-\\frac1{12}k_2\\big),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Insert the missing term -A u_T(t_T) into both displayed stage equations, which restores the exact equivalence with the 2-stage Radau IIA tableau.",
+      "overall_effect": "The advertised equivalence between the implemented scheme (eq:cnscheme) and the third-order Radau IIA collocation method is not established by the displayed construction; no labelled result or rate depends on this display.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Displayed Radau IIA form omits the A u_TT(t_T) stage term",
+      "why_classification": "A local insertion of one omitted term in a displayed construction repairs it; no theorem, estimate, or advertised guarantee depends on the display."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that $f\\in \\SS^2(\\TT;V^\\star)$. Then,\n    the estimator is reliable and efficient in the sense",
+          "tag": "lem:reliability"
+        },
+        {
+          "quote": "\\eta_{\\TT}(T)^2&=|T|^2 \\norm{\\partial_t f-\\partial_t^2u_{\\TT} -\\partial_t Au_{\\TT}}{L^2(T,V^\\star)}^2,",
+          "tag": null
+        },
+        {
+          "quote": "for an elliptic operator $A\\colon V\\to V^\\star$, $u_0\\in H$, and $f\\in L^2(0,\\tend;V^\\star)$, we solve",
+          "tag": null
+        },
+        {
+          "quote": "With this,~\\eqref{eq:cnscheme} is equivalent to: Find $u_\\TT\\in\\XX_\\TT$ such that",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Theorem thm:optimal_timestepping is proved by applying the framework of [infsup], whose remaining requirements are the estimator properties of Lemma lem:reliability and the identification of the computed solution with the Petrov-Galerkin solution. Lemma lem:reliability explicitly hypothesizes f elementwise quadratic in S^2(T;V*), the estimator eta_T(T)^2 = |T|^2 ||d_t f - d_t^2 u_T - d_t A u_T||^2 requires the time derivative of f, and the equivalence between the implemented scheme (eq:cnscheme) and the analyzed Petrov-Galerkin problem requires the point-test identity \\int_T <f, \\Psi_T v> = |T|<f(t_{T+1}), v>, which holds only for f elementwise quadratic in time. The theorem assumes none of this: the model problem only assumes f in L^2(0,t_end;V^*), for which the estimator is undefined and the scheme is not the Petrov-Galerkin method whose optimality is invoked. The proof therefore does not support the stated (\\#T_l)^{-s} guarantee as stated.",
+      "failure_location": {
+        "quote": "However, due to Lemma~\\ref{lem:reliability}, both quantities are equivalent.",
+        "tag": "thm:optimal_timestepping"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add to Theorem thm:optimal_timestepping (and to the algorithm's description) the hypothesis that f is elementwise quadratic in time (equivalently f in S^2(T;V*) with d_t f in L^2(V*) for every generated mesh); all steps of the proof, including the scheme-to-Petrov-Galerkin equivalence, then apply verbatim.",
+      "overall_effect": "The rate-optimality guarantee of Theorem thm:optimal_timestepping (and, through it, the guarantees of Algorithm alg:timeadapt and of Theorems eq:convergence_time_approx_V_rb_R, thm:exp_conv and thm:fully_discrete_error, which invoke the estimator eta and Lemma lem:reliability) is unsupported for the model problem's general right-hand side f in L^2(0,t_end;V*); the pipeline is only valid for data that are elementwise quadratic in time.",
+      "primary_affected_tag": "thm:optimal_timestepping",
+      "target_type": "formal_result",
+      "title": "Main optimality theorem established only for time-regular (piecewise quadratic) data",
+      "why_classification": "The repair is a limited weakening (restricting to the standard class of piecewise smooth right-hand sides) that leaves the method, the rate and every guarantee intact for that regime, but it excludes the advertised generality f in L^2(0,t_end;V*), which exceeds a purely local fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:reliability",
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We may choose equivalent norms on $V$ and $V^\\star$ such that $\\norm{e_{i}}{V}=\\lambda_i^{1/2} = \\norm{e_{i}}{V^\\star}^{-1}$ for all $i\\in\\N$ and that $(e_{i})_{i\\in\\N}$ is an orthogonal basis of $V$ and $V^\\star$.",
+          "tag": null
+        },
+        {
+          "quote": "To that end let $\\{e_1,\\ldots,\\}$ be {the} eigenbasis induced by $A$, orthogonal in $V$ and orthonormal in $H$.",
+          "tag": "lem:nondegen"
+        },
+        {
+          "quote": "Note that the eigenvectors $e_i$ are orthogonal in $V$, $V^*$, and $H$ such that $\\norm{e_i}{V}^2=\\lambda_i$, and $\\norm{e_i}{V^*}^2=\\lambda_i^{-1}$ and $\\norm{e_i}{H}=1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof of Theorem thm:infsup decouples the bilinear form by expanding u = sum_i e_i u_i and using a(u,v) = sum_i \\int (d_t + lambda_i) u_i v_i, which requires eigenfunctions of A that are simultaneously orthogonal in V, V* and H, i.e. a self-adjoint A (with compact resolvent for infinite-dimensional V). The model problem (eq:parabolic_problem) posits only an elliptic (coercive) operator A: V -> V*, for which such a basis need not exist (eigenfunctions of a nonsymmetric coercive operator are neither H/V-orthogonal nor diagonalizing); also the norm choice ||e_i||_V = lambda_i^{1/2} = ||e_i||_{V*}^{-1} used throughout presumes symmetry of A. Hence the inf-sup theorem, and Lemma lem:nondegen which is built on the same eigenbasis, are not established for the stated generality.",
+      "failure_location": {
+        "quote": "Let $u\\in S^2(\\TT,V)$ and consider its eigen decomposition $u=\\sum_i e_i {u}_i$ with ${u}_i \\in S^2(\\TT,\\R)$.",
+        "tag": "thm:infsup"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the hypothesis that A is self-adjoint (and that V embeds compactly into H when V is infinite dimensional), which validates the eigen-decomposition used in the proofs of Lemma lem:nondegen and Theorem thm:infsup; a proof valid for nonsymmetric coercive A would instead require new arguments replacing the spectral decoupling.",
+      "overall_effect": "The central inf-sup stability result (and, with it, the Cea lemma, well-posedness, discrete reliability, the optimality theorem thm:optimal_timestepping and the MOR convergence theorems that build on it) is unproven for non-self-adjoint elliptic operators; the argument covers only self-adjoint coercive A (e.g. A_h = -Delta).",
+      "primary_affected_tag": "thm:infsup",
+      "target_type": "formal_result",
+      "title": "Inf-sup stability proof relies on a spectral decomposition valid only for self-adjoint A",
+      "why_classification": "The source-supported resolution is to add the (standard) self-adjointness hypothesis, which preserves the method, the rates and all downstream results for the intended setting but excludes the advertised generality of possibly nonsymmetric elliptic operators; that limited weakening is more than a local routine fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:infsup0_lambda",
+        "lem:infsup1_lambda",
+        "thm:infsup",
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:reliability",
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "f_{T_{k-1}}(t_{k}) - f_{T_{k}}(t_{k}) = -l_{T_{k-1}}(t_{k}),",
+          "tag": "lem:infsup1_lambda"
+        },
+        {
+          "quote": "We may assume\n    that $\\widetilde u$ is of the form\n     $\\widetilde u =  \\alpha_{1} l_T + \\alpha_{2} q_T$ with the linear function $l_T(t):=(t-t_{T})/|T|$",
+          "tag": "lem:infsup0_lambda"
+        },
+        {
+          "quote": "we decompose any function $u\\in \\SS^2(\\TT,\\R)$ into three parts, i.e.,\n$u=u_{\\rm F}+u_{\\rm Quad}+u_{\\rm Lin}\\in {\\rm F}_{\\II_i} + {\\rm Quad}_{\\II_i} + {\\rm Lin}_{\\II_i}$",
+          "tag": "lem:infsup_lambda"
+        }
+      ],
+      "failure_explanation": "As defined, Lin_{II_i} consists of globally affine functions on the region vanishing at the left endpoint of every element; for any region with more than one element this imposes at least two independent constraints, so Lin_{II_i} = {0} and the announced decomposition u = u_F + u_Quad + u_Lin of an arbitrary u in SS^2(II_i;R) does not exist. The proofs of Lemmas lem:infsup0_lambda and lem:infsup1_lambda in fact use the piecewise-affine space with one degree of freedom per element, whose functions jump between elements (the recursion 'f_{T_{k-1}}(t_k) - f_{T_k}(t_k) = -l_{T_{k-1}}(t_k)' relies on such jumps); under the literal definition the two ansatz degrees of freedom per element required for the elementwise test construction do not exist, so the proof of Lemma lem:infsup_lambda, which applies the three lemmas to an arbitrary u in S^2(T,R), is not established.",
+      "failure_location": {
+        "quote": "the linear part ${\\rm Lin}_{\\II_i}:=\\set{q\\in \\PP^1(\\II_i;\\R)}{q(t_T)=0\\text{ for all }T\\in\\II_i}$,",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Redefine Lin_{II_i} as the (discontinuous) piecewise-affine space with one degree of freedom per element, Lin_{II_i} := {q : q|_T in P^1(T), q(t_T) = 0 for all T in II_i} without any continuity requirement across nodes; with this reading all subsequent displays, recursions and estimates hold verbatim.",
+      "overall_effect": "The elementwise decomposition underlying all scalar inf-sup lemmas (lem:infsup0_lambda, lem:infsup1_lambda) and hence the proof of Lemma lem:infsup_lambda, Theorem thm:infsup and every result built on the discrete inf-sup stability becomes void as written.",
+      "primary_affected_tag": "lem:infsup_lambda",
+      "target_type": "formal_result",
+      "title": "Decomposition space 'Lin' is the zero space as defined",
+      "why_classification": "A local one-line redefinition of the space (which the proofs already use implicitly) restores the construction; every rate, estimate and conclusion survives unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "eq:exponential_convergence_RB",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "     \\lesssim  \\vartheta \\sum_{m>K} \n    \\cosh(\\vartheta m)^{-1/2}\n    \\sum_{n>K}\n     \\cosh(\\vartheta n)^{-1/2}\n    \\\\\n    &\\lesssim  \\vartheta \\sum_{m>K} \n    \\exp(-\\frac{m \\vartheta}{2})\n    \\sum_{n>K}\n     \\exp(-\\frac{n \\vartheta}{2})\n     \\lesssim \\frac{1}{\\vartheta} \\exp(-K\\vartheta).",
+          "tag": "thm:error_L2_sinc"
+        },
+        {
+          "quote": "Proposition \\ref{prop:error_L2_sinc}\nand \\eqref{eq:error_decomp_inter} together with $\\vartheta = \\left( \\frac{2 \\pi d}{ K} \\right)^\\frac{1}{2}$ yield the final result.",
+          "tag": "thm:error_L2_sinc"
+        }
+      ],
+      "failure_explanation": "The proof's own tail estimate yields B^2 <~ theta^{-1} exp(-K theta), hence B <~ theta^{-1/2} exp(-K theta/2); with vartheta = (2 pi d / K)^{1/2} the truncation term is of size K^{1/2} exp(-sqrt(pi d K/2)), a factor K^{1/4} larger than the polynomial prefactor K^{1/4} claimed in the statement. The A-term carries no polynomial factor, so the argument as written establishes only the weaker bound with K^{1/2}; the claimed prefactor is never produced. The same K^{1/4}-rate is then inherited without justification by the bounds (eq:error_bound_1)-(eq:error_bound_2) and by Lemma eq:exponential_convergence_RB and Theorems thm:exp_conv and thm:fully_discrete_error.",
+      "failure_location": {
+        "quote": "C(d)\n    K^\\frac{1}{4}\n    \\exp\n    \\left(\n        -\\sqrt{\\frac{\\pi d K}{2}}\n    \\right)\n    (\\norm{F }{\\mathcal{N}_2(\\mathcal{D}_d;X)}+C),",
+        "tag": "thm:error_L2_sinc"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Sharpen the tail estimate using the exact orthogonality I_{m,n} = vartheta delta_{mn} of the shifted sinc functions, giving B^2 <~ vartheta sum_k ||F(z_k)||^2/phi'(z_k) <~ C^2 vartheta^2 exp(-3 K vartheta), which reestablishes the claimed (indeed stronger) bounds; alternatively weaken every occurrence of K^{1/4} to K^{1/2} (and the derived R-prefactors accordingly).",
+      "overall_effect": "The stated polynomial prefactors (K^{1/4}, R^{1/4}, R^{1/2} in the exponential-convergence results) are unsupported by the given argument; the exponential rates themselves are unaffected, and the honest computation even yields a stronger (exponential-only) tail bound.",
+      "primary_affected_tag": "thm:error_L2_sinc",
+      "target_type": "formal_result",
+      "title": "Sinc interpolation theorem claims K^{1/4} rate its proof does not deliver",
+      "why_classification": "A contained recomputation of one displayed chain (or a purely polynomial weakening of the prefactors) restores all statements with the same exponential rates; no new construction or loss of guarantee is involved."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2512.05676",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "70525655112dd5e6a4b9e036ce5bd3048782cdaa98dd74861d388a6c2188eeea",
+  "status": "ok"
+}

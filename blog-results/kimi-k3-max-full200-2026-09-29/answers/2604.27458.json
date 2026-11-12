@@ -1,0 +1,116 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ hC_F\\|u_{\\hat\\theta}-\\hat u\\|_{L^\\infty(\\Omega_T)}\\|\\nabla \\hat u\\|_{L^1(\\Omega_T)}",
+          "tag": null
+        },
+        {
+          "quote": "&\\le \\mathcal L_{\\mathrm{reg}}(\\hat u)+Ch\\varepsilon\n\t\\le \\mathcal L_{\\mathrm{reg}}(\\hat u)+Ch^3.",
+          "tag": null
+        },
+        {
+          "quote": "\\varepsilon:=C_F^{-1}h^2.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the proof (both in the L_reg estimate \\eqref{eq:proof_reg} and in the I_1 estimate \\eqref{eq:proof_I1}) the term C_F\\|u_{\\hat\\theta}-\\hat u\\|_{L^\\infty}\\|\\nabla\\hat u\\|_{L^1(\\Omega_T)} is absorbed into C\\varepsilon (resp. Ch\\varepsilon). With the chosen \\varepsilon=C_F^{-1}h^2 this absorption is valid only if \\|\\nabla\\hat u\\|_{L^1(\\Omega_T)} is uniformly O(1). The lemma's hypotheses (measure of \\Omega_s, |\\partial\\Omega_s|, shape-regular O(h) mesh on \\Omega_r) contain no such gradient bound, so as stated the constant in the conclusion silently depends on \\|\\nabla\\hat u\\|_{L^1}, which is not controlled and which matters because the lemma is applied to h-dependent families \\hat u.",
+      "failure_location": {
+        "quote": "and such that $\\hat u$ is piecewise linear on $\\Omega_r$ with a shape-regular mesh of size $O(h)$. Then there exists a $\\tanh$ neural network, structured as in \\eqref{def:NN}, with depth $O(\\log(N_{patch}))$",
+        "tag": "lem:loss_cpwl_approx"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the hypothesis \\|\\nabla\\hat u\\|_{L^1(\\Omega_T)}\\le C (uniform in h) to the lemma and note that each competitor constructed in the paper satisfies it.",
+      "overall_effect": "The loss-transfer lemma is not established under its stated hypotheses alone; a hidden dependence on \\|\\nabla\\hat u\\|_{L^1} remains. Every concrete application in the paper (shock strip, rarefaction, shock-birth, and multi-D competitors) does satisfy \\|\\nabla\\hat u\\|_{L^1}=O(1) (gradient O(h^{-2}) on layers of measure O(h^2), etc.), so no downstream result is affected once the hypothesis is made explicit.",
+      "primary_affected_tag": "lem:loss_cpwl_approx",
+      "target_type": "formal_result",
+      "title": "Lemma lem:loss_cpwl_approx needs an unstated bound on \\|\\nabla\\hat u\\|_{L^1}",
+      "why_classification": "Adding a standard local condition that is satisfied in every application preserves all conclusions, rates, and scope; no new argument or construction is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:shock_interaction",
+        "thm:rarefaction",
+        "thm:compound_wave",
+        "thm:shock_smooth_initial",
+        "thm:main_1d",
+        "thm:more_general_case"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "To simplify the presentation, we assume throughout that \\(\\Omega\\) is sufficiently large so that \\(\\operatorname{supp}u(\\cdot,t)\\subset\\Omega\\) for all \\(t\\in[0,T]\\). This allows us to ignore boundary effects.",
+          "tag": null
+        },
+        {
+          "quote": "\\L_{bc}(v) := &\\ \\|v(\\cdot,0)-u_0(\\cdot)\\|_{L^1(\\Omega)},\\quad",
+          "tag": "eq:loss_func"
+        },
+        {
+          "quote": "Hence, the contributions over those interior faces across which \\(\\tilde u_h\\) is continuous cancel pairwise. The only remaining face terms are the jumps across \\(\\Gamma^*:=\\bigcup_i\\Gamma_{i}^*\\) and \\(\\partial\\Omega_\\Sigma\\), which give rise to \\(I_1\\) and \\(I_2\\), respectively.",
+          "tag": "thm:more_general_case"
+        }
+      ],
+      "failure_explanation": "The skeleton identity \\eqref{eq:1st_term_reformulated} (likewise the heuristic \\eqref{eq:motivation_J_identity} and the multi-D \\eqref{eq:md_error_identity}) keeps only the t=0 and t=T terms and the interior jump terms; the lateral contribution \\int_{\\partial\\Omega\\times(0,T)}(\\mathbf f(u_{\\theta^*})-\\mathbf f(\\tilde u_h))\\sgn(u_{\\theta^*}-\\tilde u_h)\\cdot n_x (with \\tilde u_h=0 near \\partial\\Omega) is dropped without comment. The only justification offered is supp u(\\cdot,t)\\subset\\Omega, which constrains the exact solution, not the network minimizer. The loss \\eqref{eq:loss_func} penalizes only the initial trace (L_{bc} at t=0); no term constrains the trace of u_{\\theta^*} on \\partial\\Omega\\times(0,T), and the one-sided family J_{ent}(v;k_h)\\le Ch yields no lower bound on this lateral flux (the candidate bounds are circular, involving \\|v(T)\\|_1 itself). Concretely, since the weak/entropy formulations \\eqref{eq:weak_formulation}/\\eqref{eq:entropy_solution} use test functions compactly supported in \\Omega\\times[0,T), boundary-inflow functions (e.g., an admissible shock entering through \\partial\\Omega with zero initial data) are also 'entropy solutions' of the same IVP, and by the paper's own competitor estimates they admit network approximations with loss O(h) while having O(1) final-time L^1 error from the compactly supported solution. Hence the loss as defined cannot distinguish the target solution, and the loss-to-error stability step underlying every error theorem is not closed.",
+      "failure_location": {
+        "quote": "Since $\\tilde u_h$ is continuous across all faces of $\\partial\\Lambda_h$ except those on $\\Gamma_j$, the mesh-skeleton contributions cancel pairwise and we obtain",
+        "tag": "thm:shock"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Enforce lateral boundary behavior: add a boundary penalty such as \\|v\\|_{L^1(\\partial\\Omega\\times(0,T))} (or a characteristic boundary-condition term) to the loss, or restrict the ansatz to networks vanishing on \\partial\\Omega\\times(0,T) (consistent with the Dirichlet conditions already used in the sine-wave numerics). The CPwL/NN competitors vanish near \\partial\\Omega, so their loss bounds survive; the dropped term is then zero or bounded by the penalty (O(h)), and every stability argument closes with unchanged rates and complexity.",
+      "overall_effect": "The common stability step that converts the small loss of a minimizer into an L^1 error bound is unsupported: the dropped lateral boundary term can have the unfavorable sign and is not controlled by the loss. All L^1 convergence results (Theorems thm:shock, thm:shock_interaction, thm:rarefaction, thm:compound_wave, thm:shock_smooth_initial, thm:main_1d, thm:more_general_case), and the corresponding abstract/intro claims, rely on this step.",
+      "primary_affected_tag": "thm:shock",
+      "target_type": "formal_result",
+      "title": "Stability identities drop the lateral boundary flux; the loss imposes no boundary condition on ∂Ω×(0,T)",
+      "why_classification": "The repair modifies the paper's central object (the loss/ansatz) and every stability proof must be revisited, so it is more than a local patch; but it is a contained, standard change requiring no new global proof architecture, and all stated rates, regimes, and complexity guarantees survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The proof follows the same strategy as a single shock (Theorem~\\ref{thm:shock}) and a single rarefaction (Theorem~\\ref{thm:rarefaction}), so we omit the details.",
+          "tag": "thm:compound_wave"
+        },
+        {
+          "quote": "For compound waves, which exhibit characteristics of both rarefaction and shock waves, we obtain the worst-case estimate\n$O(h^{1/2}|\\ln h|)$.",
+          "tag": "thm:main_1d"
+        },
+        {
+          "quote": "\\lesssim\njL\\int_{\\Gamma\\setminus E_h}\n\\Bigl(|\\nabla u^-|+|\\nabla u^+|\\Bigr)\\,\\d s\n\\lesssim Mh\\,|\\ln h|",
+          "tag": null
+        },
+        {
+          "quote": "(t-\\tau_q)\\,|\\nabla u(x,t)|+(t-\\tau_q)^2\\,|\\nabla^2u(x,t)|\\le C,",
+          "tag": "assump:piecewise_smooth"
+        }
+      ],
+      "failure_explanation": "The stated rate (h|\\ln h|)^{1/2} is what results from balancing the strip-selection residual |\\ln h|/M against Mh. But for a compound wave the shock borders a rarefaction fan emanating from the wave point, where |\\nabla u|\\sim(t-\\tau_q)^{-1} (Assumption assump:piecewise_smooth(ii)). The shifted-interface transfer along that shock therefore contributes jL\\int_\\Gamma|\\nabla u^\\pm|ds \\lesssim Mh|\\ln h|, and the volume residual on the strip likewise carries the log — exactly as in the structurally identical shock-birth computation (\\eqref{eq:shock_birth_shifted_trace_est}, \\eqref{eq:shock_birth_volume_tilde}), where the same Mh|\\ln h| term appears. Balancing |\\ln h|/M with Mh|\\ln h| gives M\\sim h^{-1/2} and the rate h^{1/2}|\\ln h|, which is strictly worse than the stated (h|\\ln h|)^{1/2}. The paper's own main-1D appendix confirms this: it assigns compound pieces the estimate O(h^{1/2}|\\ln h|), contradicting the standalone statement. The omitted proof cannot follow the cited strategy and yield the stated bound.",
+      "failure_location": {
+        "quote": "\\|u_{\\theta^*}(\\cdot,T)-u(\\cdot,T)\\|_{L^1(\\Omega)}\n\\le C(h|\\ln h|)^{1/2}.",
+        "tag": "thm:compound_wave"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the bound as \\|u_{\\theta^*}(\\cdot,T)-u(\\cdot,T)\\|_{L^1(\\Omega)} \\le C h^{1/2}|\\ln h|, the rate the shifted-interface strategy actually delivers once the rarefaction-side (t-\\tau_q)^{-1} gradient singularity along the shock is accounted for, matching the main-1D appendix.",
+      "overall_effect": "Only the standalone compound-wave theorem overstates the rate. The main 1D theorem (thm:main_1d) is unaffected because its appendix already uses the weaker O(h^{1/2}|\\ln h|) for compound pieces, so no other result inherits the error.",
+      "primary_affected_tag": "thm:compound_wave",
+      "target_type": "formal_result",
+      "title": "Compound-wave rate (h|ln h|)^{1/2} is unsupported; the cited strategy yields h^{1/2}|ln h|",
+      "why_classification": "The correction is a one-line restatement, but it necessarily loses mathematical content (a |\\ln h|^{1/2} factor in the claimed rate); the loss is limited to this theorem since the headline results already use the weaker rate."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2604.27458",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "fa599861b356dd36e3308395e26809b1b1a6ac97dfcedb1c1c3afa8cb15e2896",
+  "status": "ok"
+}

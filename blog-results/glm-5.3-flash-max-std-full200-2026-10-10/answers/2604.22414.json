@@ -1,0 +1,134 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\sup_{(t,x)\\in\\overline{Q_T}} |\\phi_\\theta(t,x)| < \\infty$ for any parameter $\\theta$.",
+          "tag": "con:weight"
+        },
+        {
+          "quote": "-\\rho\\Big(\\sum_{i=1}^{9}\\|\\phi_{\\theta^i}-1\\|^2_{Q^i}+\\sum_{i=1}^{d}\\|\\phi_{\\bar{\\theta}^i}-1\\|^2_{L^2(Q_T)}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The inner maximization runs over weight networks subject only to per-parameter boundedness (Assumption \\ref{con:weight}); there is no uniform bound on the class. The only counterweight is the quadratic penalty $-\\rho\\|\\phi-1\\|^2$. Scaling a weight network, e.g. $\\phi_{\\theta^1}\\equiv M$ while keeping the others at 1, multiplies the PDE-residual term by $M^2$ and the corresponding penalty by $M^2$; whenever the state/control networks have nonzero time-derivative residual the coefficient of $M^2$ is positive, so the inner supremum is $+\\infty$. Hence the displayed min–max problems have no finite value for essentially every candidate, i.e. the advertised training construction is not a well-defined optimization problem as written (the experiments implicitly fix the weights to $[0.2,5]$, which the theory does not assume).",
+      "failure_location": {
+        "quote": "\\min_{\\theta,\\bar\\theta}\\,\\max_{\\theta^i,\\bar\\theta^i,\\tilde\\theta^i}\\;\\|\\bar{\\mathcal{R}}_{Q}^{1}\\|_{Q}^2 +\\lambda \\|\\bar{\\mathcal{R}}_{\\Gamma}^{1}\\|_{\\Gamma}^2 -\\rho \\|\\mathcal{R}_{NN}^{1}\\|_{NN}^2.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a uniform bound on the weight networks (or scale the penalty with the residual) so the inner supremum is finite; the displayed formulations then define a genuine min–max problem. No theoretical statement needs to change.",
+      "overall_effect": "The advertised min–max structure of the method (intro items (iii)–(iv), the displays in Sections 2.1–2.2) is not a well-defined training problem under the stated assumptions; only the experimentally bounded weight range yields a finite objective.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "WeightedPINN min–max training problems are ill-posed (inner supremum is +∞)",
+      "why_classification": "A standard local restriction (bounded weight range, as already used in the experiments) restores a well-posed training problem; no theorem, rate, or advertised conclusion changes."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:errorWave",
+        "thm:errorHeatb",
+        "thm:errorWaveb"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ \\|\\phi_{\\theta^6}(0,\\cdot)u_{\\theta}(0,\\cdot)-\\phi_{\\theta^7}(0,\\cdot)u_0\\|_{L^2(\\Omega)}^2",
+          "tag": "eq:barRG1"
+        },
+        {
+          "quote": "$\\sup_{(t,x)\\in\\overline{Q_T}} |\\phi_\\theta(t,x)| < \\infty$ for any parameter $\\theta$.",
+          "tag": "con:weight"
+        },
+        {
+          "quote": "\\|\\bar{\\mathcal R}_{\\Gamma}^1(u_\\theta)\\|_{\\Gamma}\\le \\frac{P}{\\sqrt{|\\Gamma|}}\\|u_\\theta-u\\|_{H^1(\\Gamma)} \\le \\tilde C_2\\|u_\\theta-u\\|_{H^2(Q_T)},",
+          "tag": "thm:errorHeat"
+        }
+      ],
+      "failure_explanation": "The theorems assert that for ANY parameters of the weight networks (Assumption (A2) only bounds each network), networks exist making the weighted loss ≤ C₃(𝒲^{-1/d}𝓛^{-1/d}+δ)² → 0. This is false: taking the admissible weight φ_{θ⁶}≡0 and φ_{θ⁷}≡1, the initial-condition term of ‖R̄_Γ¹‖² equals ‖φ_{θ⁷}(0)u₀‖² = ‖u₀‖² for every choice of u_θ, so the loss is ≥ λ‖u₀‖²/|Γ| − ρ‖R¹_NN‖² for all networks — the claimed o(1) bound is unattainable. Independently, for unequal operator weights (e.g. φ_{θ¹}≡2, others ≡1) the weighted equation residual of the exact solution equals (φ₁−φ₂)∂_tu + (φ₁−φ_Δ)Δu-type nonzero terms, and the proof's estimates — ‖R̄¹_Γ(u_θ)‖_Γ ≤ (P/√|Γ|)‖u_θ−u‖_{H¹(Γ)} and ‖R̄¹_Q(u_ε,f_ε)‖_Q ≤ (P/√|Q_T|)(‖∂_tû‖+‖Δû‖+…) — silently drop these weight-mismatch terms (φ₆−φ₇)(0)u, (φ₈−φ₉)(T)z₀ and (φ₁−φ₂)v(u), (φ₂−φ_{θ̄ⁱ})∂_{xᵢxᵢ}u, so the chain of estimates does not prove the stated bound. The same failure occurs in the wave and bilinear variants.",
+      "failure_location": {
+        "quote": "there exist neural networks \\(u_{\\theta}\\) and \\(f_{\\bar{\\theta}}\\) with width \\(C_1 \\mathcal{W}\\log \\mathcal{W}\\) and depth \\(C_2 \\mathcal{L}\\log \\mathcal{L}\\), respectively, such that\n\t\t\t\\begin{align*}\n\t\t\t\t\\|\\bar{\\mathcal{R}}_Q^{1}\\|^2_{Q}+\\lambda\\|\\bar{\\mathcal{R}}_\\Gamma^{1}\\|^2_{\\Gamma}-\\rho\\|\\mathcal R_{NN}^{1}\\|_{NN}^2\n\t\t\t\t\\le C_3 (\\mathcal{W}^{-1/d}\\mathcal{L}^{-1/d} + \\delta)^2.",
+        "tag": "thm:errorHeat"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair preserves the statement; at minimum, a repair must either restrict the admissible weight networks (e.g., require matched weights to coincide, so weighted residuals vanish at exact solutions) or weaken the bound by irreducible weight-mismatch terms; either way the 'any weight networks' regime advertised in Theorems (thm:errorHeat, thm:errorWave, thm:errorHeatb, thm:errorWaveb) is abandoned.",
+      "overall_effect": "The paper's central theoretical guarantee — that the WeightedPINN loss can be made arbitrarily small by increasing width/depth, for arbitrary weight networks satisfying (A2) — is false; the standard-PINN special case (φ≡1) survives, but the advertised adaptive-weight regime is unsupported.",
+      "primary_affected_tag": "thm:errorHeat",
+      "target_type": "formal_result",
+      "title": "Existence/approximation theorems for WeightedPINN loss are false for mismatched admissible weights",
+      "why_classification": "The advertised guarantee (arbitrarily small weighted loss for any bounded weight networks) is false, as shown by the φ≡0 counterexample; every supported resolution excludes the advertised weight regime or adds irreducible mismatch terms, i.e. major loss for the paper's central theoretical claim."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:error_estWave"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let \\(\\bar u\\in C\\bigl([0,T];L^{2}(\\Omega)\\bigr)\\cap L^{2}\\bigl(0,T;H^{1}(\\Omega)\\bigr)\\) be the weak solution of  \n\t\t\\begin{align*}\n\t\t\t\\partial_{t}\\bar u-\\Delta\\bar u+v(\\bar u)&=f_{\\bar\\theta} \\mathbf 1_{\\omega} \\quad\\text{in }Q_{T},\\\\\n\t\t\t\\bar u&=0 \\quad\\text{on }\\Sigma_{T},\\\\\n\t\t\t\\bar u(T)&=z_{0} \\quad\\text{in }\\Omega .\n\t\t\\end{align*}",
+          "tag": "thm:error_estHeat"
+        },
+        {
+          "quote": "Applying Gr\\\"onwall's inequality to \\eqref{eq:energy} gives, for any \\(t\\in[0,T]\\),\n\t\t\t\\begin{align*}\n\t\t\t\t\\|\\hat u(t)\\|_{L^{2}(\\Omega)}^{2}\n\t\t\t\t&\\le e^{C_{0}(T-t)}\\Bigl(\n\t\t\t\t\\|\\hat u(T)\\|_{L^{2}(\\Omega)}^{2}",
+          "tag": "thm:error_estHeat"
+        },
+        {
+          "quote": "The controllability estimate of \\cite[Theorem 1.6]{fernandez-cara_guerrero_2006} yields a constant \\(C_{2}=C_{2}(Q_{T},\\mathcal L_{v})\\) such that\n\t\t\\begin{equation}\\label{eq:f_est1}\n\t\t\t\\|f-f_{\\bar\\theta\\|_{L^{2}(q_{T})}\n\t\t\t\\le C_{2}\\,\\|u_{0}-\\bar u(0)\\|_{L^{2}(\\Omega)}",
+          "tag": "eq:f_est1"
+        }
+      ],
+      "failure_explanation": "The theorem is false as stated. Let (u₁,f₁) be any exact solution–control pair for (Heat1) with data (u₀,z₀) and let w = α(t)φ(x) with α∈C_c^∞(0,T), φ∈C_c^∞(ω); then (u₁+w, f₁+∂_t w−Δw) is another exact solution–control pair with the same initial and terminal data, and its PINN/WeightedPINN loss (with unit weights, which the hypothesis allows since the weight class contains 1) is 0. Networks approximating this second pair satisfy the hypothesis with arbitrarily small δ while ‖u₁−u_θ‖ and ‖f₁−f_{\\bar θ}‖ = α‖φ‖ can be arbitrarily large, contradicting the conclusion (Cδ with δ→0). Thus the control is not determined by the data, and the claimed reconstruction guarantee fails. The proof is also invalid on its own terms: (i) it defines ū as the weak solution of the semilinear heat equation with a TERMINAL condition ū(T)=z₀ — a backward parabolic problem that is ill-posed and unsolvable for general z₀∈L²(Ω); (ii) it applies the Grönwall inequality backward in time to the parabolic energy inequality to bound ‖û(t)‖ for t<T by ‖û(T)‖, which is exactly the ill-posed backward-heat estimate and does not follow from the forward energy inequality (eq:energy); (iii) it invokes the controllability estimate of [Theorem 1.6, fernandez-cara_guerrero_2006], which asserts the existence of a control of minimal norm, to bound the norm of the specific difference f−f_θ̄ — controls achieving the same terminal state are non-unique (loop controls), so the inference is invalid. The wave analogue (thm:error_estWave) inherits the same non-uniqueness counterexample and the same invalid backward/controllability steps, and additionally its energy identity mishandles the boundary term ∫∂_tû(∇û·ν) by replacing it with ∫∂_tu_θ(∇u_θ·ν).",
+      "failure_location": {
+        "quote": "Then, there exists a constant \\(C>0\\), depending only on \\(Q_T\\), \\(v\\), and \\(\\lambda\\) such that\n\t\t\\begin{align*}\n\t\t\t\\max_{t\\in [0,T]}\\|u(t)-u_\\theta(t)\\|^2_{L^2(\\Omega)}\n\t\t\t+\\|u-u_\\theta\\|^2_{L^2(0,T;H^1(\\Omega))}\n\t\t\t+\\|f-f_{\\bar{\\theta}}\\|^2_{L^2(q_T)}\n\t\t\t\\le C \\delta.",
+        "tag": "thm:error_estHeat"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must abandon the closeness-to-the-given-control guarantee (e.g., restate closeness to some solution–control pair and correct the energy argument to run forward in time with a lifting of the boundary data), which abandons the advertised control-reconstruction guarantee.",
+      "overall_effect": "The paper's central 'reconstruction' guarantee — that a small WeightedPINN loss certifies approximation of the solution and, crucially, of the control — is false as stated in both the heat and wave theorems, and the surrounding prose ('Theorem ... show that if we can find the neural networks with sufficiently small WeightedPINN loss, then these networks approximate the solution and control') inherits the failure.",
+      "primary_affected_tag": "thm:error_estHeat",
+      "target_type": "formal_result",
+      "title": "Converse stability theorems are false: small loss does not identify the control",
+      "why_classification": "The stated guarantee type (control is identified up to Cδ) is false due to non-uniqueness of controls; any repair either drops the control-reconstruction guarantee or must impose a nontrivial uniqueness/selection hypothesis not available in the source — a central guarantee change, hence serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The domain \\(\\omega\\subset\\Omega\\) contains a neighborhood of the boundary \\(\\partial \\Omega\\).",
+          "tag": "con:wave"
+        },
+        {
+          "quote": "The domain $\\Omega$ is the unit ball in $\\mathbb{R}^d$, and the control region $\\omega$ is defined such that $\\Omega \\setminus \\omega$ is the closed ball centered at $(1/d,\\dots,1/d)$ with radius $3/4$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With d = 10 the excluded closed ball has center (0.1,…,0.1) and radius 3/4; its distance to the unit sphere is 1 − 1/√10 ≈ 0.684 < 0.75, so the closed ball meets ∂Ω (and in fact sticks out of Ω, so 'Ω∖ω is the closed ball' is itself impossible since Ω∖ω ⊂ Ω). Hence the described ω excludes boundary points and admits no collar neighborhood of ∂Ω, directly contradicting the claim that Assumption (A2)[con:wave] ('ω⊂Ω contains a neighborhood of the boundary ∂Ω') is satisfied, and contradicting the added assertion that ω contains the entire boundary.",
+      "failure_location": {
+        "quote": "the control region $\\omega$ is defined such that $\\Omega \\setminus \\omega$ is the closed ball centered at $(1/d,\\dots,1/d)$ with radius $3/4$. We choose $\\omega$ so that Assumption~\\ref{con:wave} is satisfied. For simplicity, we further assume that $\\omega$ contains the entire boundary $\\partial\\Omega$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Redefine ω as Ω minus a strictly interior ball of radius < 1 − |c| (so that a collar neighborhood of ∂Ω lies in ω) and drop the contradictory sentence; the numerical study is otherwise unaffected.",
+      "overall_effect": "The described experimental configuration is not well defined and does not satisfy the theoretical assumption it claims to satisfy; the wave-equation experiments in Situation 3 are set up outside the advertised theory.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Situation 3's control region contradicts the stated satisfaction of Assumption (A2)/boundary containment",
+      "why_classification": "A purely local redefinition of ω in the experiment description restores consistency; no rate, conclusion, or methodological claim is lost."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2604.22414",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "150c96ec1dc8bb115e9e398e2472b8004f83f2f7e2d892e50db58dd5cb9e08b1",
+  "status": "ok"
+}

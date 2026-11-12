@@ -1,0 +1,101 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "only Fourier modes within the band\n$[-c_s/r_c,\\, c_s/r_c]$ are required.",
+          "tag": null
+        },
+        {
+          "quote": "For $\\omega\\in[-c,c]$,\n    \\begin{align}\\label{eq:PSWFrelation}\n        \\hat{\\psi}_0^c(\\omega) = \\lambda_0\\, \\psi_0^c(\\omega/c).\n    \\end{align}",
+          "tag": "lem:PSWFrelation"
+        }
+      ],
+      "failure_explanation": "The displayed bound sums over all $k\\in\\mathcal{I}_m$. For even $m$, $\\mathcal{I}_m=\\{-m/2,\\ldots,m/2-1\\}$, so there are modes with $|k|>m/2$ (e.g. corner modes). The factor $\\psi_0^{c_s}(2|k|/m)$ comes from the identity $\\hat\\gamma_{r_c}^{c_s}(\\omega)=\\psi_0^{c_s}(r_c\\omega/c_s)/\\psi_0^{c_s}(0)$, which is valid only for $|\\omega|\\le c_s/r_c$, i.e. $|k|\\le m/2$. For $|k|>m/2$ the argument $2|k|/m$ exceeds $1$, so the factor is not the correct Fourier transform and is outside the stated domain of $\\psi_0$. The bound is therefore ill-defined and the substitution in its proof is invalid for a large set of Fourier modes.",
+      "failure_location": {
+        "quote": "\\sum_{\\boldsymbol{k}\\in\\mathcal{I}_{\\boldsymbol{m}}\\setminus\\{\\boldsymbol{0}\\}}\n    \\frac{\\psi_0^{c_s}\\!\\left(\\tfrac{2}{m}|\\boldsymbol{k}|\\right)^2",
+        "tag": "prop:interpol_est"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace $\\psi_0^{c_s}(2|k|/m)$ by the full $\\hat\\gamma_{r_c}^{c_s}(2\\pi|k|/L)$ for modes with $|k|>m/2$ (equivalently use $\\hat\\psi_0^{c_s}(2\\pi r_c|k|/L)/(\\lambda_0\\psi_0^{c_s}(0))$), and re-evaluate the aliasing sum/approximation; specify evaluation of the mollifier transform outside the closed-form band.",
+      "overall_effect": "The aliasing error bound is ill-defined for many Fourier modes, the PSWF fast algorithm's use of $\\hat M(k)$ for corner modes is not covered, and the closed-form aliasing model derived from this bound is unreliable for those modes.",
+      "primary_affected_tag": "prop:interpol_est",
+      "target_type": "formal_result",
+      "title": "PSWF mollifier transform used outside its valid band in aliasing bound",
+      "why_classification": "It invalidates the stated bound as written for many modes, but the repair is a local replacement using the tail representation already given; the main exponential decay and parameter selection likely survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "c_{\\bk}(\\tilde f)\n    = \\frac{1}{V}\\int_{\\Omega} \n        \\tilde f(\\bx)\\, e^{-\\frac{2\\pi}{L}\\, \\i\\, \\bk \\cdot \\bx}\\, d\\bx\n    \\;=\\; \\frac{1}{V}\\, \\hat f\\!\\left(\\tfrac{2\\pi}{L}\\bk\\right).",
+          "tag": null
+        },
+        {
+          "quote": "\\hat\\ai_{\\bm{k}}\n    =\n    \\sum_{\\bm{l}\\in\\mathcal{I}_{\\bm{m}}}\n        \\ai_{\\bm{l}}\\,\n        e^{\\frac{2\\pi}{L}\\i\\,\\bm{k}\\cdot(h\\bm{l})}",
+          "tag": null
+        },
+        {
+          "quote": "\\hat{g}_{\\bk} :=\n        \\dfrac{\\hat{f}_{\\bk}}{c_{\\bk}(\\tilde{\\varphi}_t)}",
+          "tag": "lem:aliasing"
+        }
+      ],
+      "failure_explanation": "Using the paper's identity $c_k(\\tilde\\varphi)=V^{-1}\\hat\\varphi(2\\pi k/L)$, the FFT of the spread grid is approximately $N c_k\\hat\\rho=(N/V)\\hat\\varphi\\hat\\rho$, $N=m^3$. Lemma aliasing requires the grid coefficients $\\hat g_k=\\hat f_k/c_k=\\hat M\\hat\\rho/\\hat\\varphi$. Thus the diagonal scaling must be $\\hat g_k/\\hat a_k=(V/N)\\hat M/\\hat\\varphi^2=h^3\\hat M/\\hat\\varphi^2$. The algorithm uses $V^{-1}\\hat M/\\hat\\varphi^2$, missing a factor $V^2/N$. Hence the algorithm as written does not compute the stated far-field potential.",
+      "failure_location": {
+        "quote": "\\hat \\aii_{\\bm k}:=\n    \\begin{cases}\n        \\dfrac{1}{V}\\,\\dfrac{\\hat M(\\bm k)}{\\hat\\varphi(\\bm k)^2}\\,\\hat \\ai_{\\bm k},\n        & \\bm k\\in\\mathcal{I}_{\\bm{m}}\\setminus\\{\\bm{0}\\},\\\\[2pt]\n        0, & \\bm k=\\bm 0.\n    \\end{cases}",
+        "tag": "alg:SE_Fourier"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the diagonal scaling to $h^3\\hat M(k)/\\hat\\varphi(k)^2$ (equivalently $V/m^3\\,\\hat M/\\hat\\varphi^2$) and specify the FFT normalization consistently with $c_k=V^{-1}\\hat\\varphi$; or redefine the deconvolution factors accordingly.",
+      "overall_effect": "Algorithm SE_Fourier as written is dimensionally inconsistent and yields a potential scaled by a factor depending on the grid size and volume. Numerical results and parameter selection relying on the displayed algorithm are not justified by it.",
+      "primary_affected_tag": "alg:SE_Fourier",
+      "target_type": "algorithm",
+      "title": "Diagonal scaling in fast Ewald algorithm misses grid normalization",
+      "why_classification": "The algorithm's stated operation fails as written, but the repair is a short local normalization factor that preserves all substantive claims once the convention is fixed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, we restrict our attention to\n    aliasing errors arising from the interpolation step.",
+          "tag": null
+        },
+        {
+          "quote": "\\hat g_{\\boldsymbol{k}}\n    := \\frac{1}{V}\\,\n       \\frac{\\hat M(\\boldsymbol{k})\\,\\hat\\rho(\\boldsymbol{k})}\n            {c_{\\boldsymbol{k}}(\\tilde\\varphi_t^{c_w})},\n    \\qquad \\boldsymbol{k}\\in\\mathcal{I}_{\\boldsymbol{m}}",
+          "tag": "prop:interpol_est"
+        },
+        {
+          "quote": "\\ai_{\\bm l}:=\\sum_{j=1}^n \\rho_j\\,\\tilde\\varphi(\\bm{x}_j-h\\bm l)",
+          "tag": "alg:SE_Fourier"
+        }
+      ],
+      "failure_explanation": "The abstract and conclusions claim rigorous error estimates for the fast Ewald method. The aliasing Proposition only bounds an idealized interpolation step where the grid Fourier coefficients $\\hat g_k$ are set directly to $\\hat f_k/c_k$. The actual Algorithm first spreads the particles, so its grid coefficients contain additional aliasing from the spreading step. The paper merely states that spreading errors are similar and restricts attention to interpolation, but does not bound the full $S^T F^{-1} C D F S$ operator. Thus the claimed rigorous guarantee for the algorithm is not established.",
+      "failure_location": {
+        "quote": "We provide a complete description of the method and derive rigorous error estimates.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Either add a spreading-aliasing bound and combine it with the interpolation bound to cover the full algorithm, or weaken the prose to state that only the interpolation component is rigorously analyzed.",
+      "overall_effect": "The rigorous guarantee for Algorithm SE_Fourier is incomplete; the closed-form aliasing model and parameter selection are not rigorously justified for the full fast algorithm.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Rigorous aliasing analysis omits spreading error of fast Ewald algorithm",
+      "why_classification": "Requires an additional nontrivial but contained analysis or a weakening of the rigorous-error claim; the method itself is not abandoned."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2602.16591",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n04b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "5a7eb2381d02244a14f856ec8d079a82235af947f81b4666b55d9a1bda2341cf",
+  "status": "ok"
+}

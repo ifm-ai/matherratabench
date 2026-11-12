@@ -1,0 +1,145 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "k_2 :=f(t_{T+1})-|T| A\\big(\\frac34 k_1{+}\\frac14 k_2\\big).",
+          "tag": null
+        },
+        {
+          "quote": "u_\\TT(t_{T+1}) &= u_\\TT(t_T) + |T|\\big(\\frac34 k_1 + \\frac14 k_2\\big)",
+          "tag": null
+        },
+        {
+          "quote": "q_{T}(t_{T+1}) = 2\\,\\frac{3-|T|\\lambda}{|T|^2\\lambda^2 + 4|T|\\lambda + 6}",
+          "tag": "eq:qeval"
+        }
+      ],
+      "failure_explanation": "The two-stage Runge-Kutta form is not the stated scheme/Radau IIA method: the stage derivatives must satisfy k_i=f(...)-A(u_T(t_T)+|T| sum_j a_ij k_j). As written, for f=0 and A=lambda I the stage system is homogeneous and gives k_1=k_2=0, hence u_T(t_{T+1})=u_T(t_T) for every lambda and |T|, contradicting the damping endpoint factor computed for the actual scheme in eq:qeval.",
+      "failure_location": {
+        "quote": "k_1 := f(t_T+\\frac13|T|)-|T| A\\big(\\frac5{12}k_1-\\frac1{12}k_2\\big),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Rewrite the stage equations as k_1=f(t_T+|T|/3)-A(u_T(t_T)+|T|(5 k_1/12-k_2/12)) and k_2=f(t_{T+1})-A(u_T(t_T)+|T|(3 k_1/4+k_2/4)), keeping the same update weights.",
+      "overall_effect": "The displayed classical time-stepping implementation is inconsistent with the analyzed Petrov-Galerkin scheme and with Radau IIA; an implementation based on this display would not damp the lambda-mode. The later inf-sup/optimality analysis uses the Petrov-Galerkin formulation, so it is not itself built on this display.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Classical Radau update omits the current state in the stage equations",
+      "why_classification": "The repair is a direct correction of one displayed computational formula and preserves the analyzed scheme and all formal guarantees; no proof architecture or rate changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "for an elliptic operator $A\\colon V\\to V^\\star$, $u_0\\in H$, and $f\\in L^2(0,\\tend;V^\\star)$, we solve",
+          "tag": "eq:parabolic_problem"
+        },
+        {
+          "quote": "\\eta_{\\TT}(T)^2&=|T|^2 \\norm{\\partial_t f-\\partial_t^2u_{\\TT} -\\partial_t Au_{\\TT}}{L^2(T,V^\\star)}^2,",
+          "tag": null
+        },
+        {
+          "quote": "Assume that $f\\in \\SS^2(\\TT;V^\\star)$. Then,",
+          "tag": "lem:reliability"
+        },
+        {
+          "quote": "However, due to Lemma~\\ref{lem:reliability}, both quantities are equivalent.",
+          "tag": "thm:optimal_timestepping"
+        }
+      ],
+      "failure_explanation": "The theorem is stated under the model-problem assumption f in L^2(0,t_end;V^*), but the estimator already differentiates f and the optimality proof equates the error and estimator approximation classes through Lemma lem:reliability, which is only assumed for f in S^2(TT;V^*). The efficiency part also uses a polynomial inverse inequality for the residual; no data-oscillation term is included. Thus the proof applies a key lemma outside its stated hypothesis.",
+      "failure_location": {
+        "quote": "Let $V$ be finite dimensional and let the initial mesh $\\TT_0$ be uniform. Moreover, let the marking parameter $0<\\theta\\leq 1$ be sufficiently small, and let the grading parameter $G\\in\\N$ be sufficiently large.",
+        "tag": "thm:optimal_timestepping"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis f in S^2(TT_0;V^*) (equivalently f remains piecewise quadratic on every trisection refinement) to Theorem thm:optimal_timestepping and to the downstream results using its setting, or else augment the estimator and approximation class with data oscillation and prove the corresponding reliability/efficiency statements. The least source-supported repair is the added hypothesis already isolated in Lemma lem:reliability.",
+      "overall_effect": "Rate optimality is not established for general L^2 right-hand sides as stated. The model-order-reduction error theorems that say they are in the setting of Theorem thm:optimal_timestepping inherit the same unsupported scope for the time-discretization error/estimator terms.",
+      "primary_affected_tag": "thm:optimal_timestepping",
+      "target_type": "formal_result",
+      "title": "Main optimality theorem omits the right-hand-side regularity used by the estimator theory",
+      "why_classification": "The fix is contained and uses an assumption already present in the paper, so no new optimality architecture is needed; but it narrows the advertised right-hand-side regime rather than being a purely local degenerate-case correction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:infsup_lambda",
+        "thm:infsup",
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:reliability",
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "q_{T}(t_{T+1}) = 2\\,\\frac{3-|T|\\lambda}{|T|^2\\lambda^2 + 4|T|\\lambda + 6}",
+          "tag": "eq:qeval"
+        }
+      ],
+      "failure_explanation": "With gamma=lambda|T_0|, eq:qeval gives |q_{T_0}(t_1)|=2|3-gamma|/(gamma^2+4 gamma+6), which is asymptotic to 2/gamma for large gamma, not <=1/(4 gamma). For example gamma=10 gives |q|=14/146>1/40. The proof only needs the true uniform bound gamma |q(gamma)|^2<=C(gamma_0) for gamma>=gamma_0, but the stated stronger inequality is false.",
+      "failure_location": {
+        "quote": "Note that~\\eqref{eq:qeval} implies $q_{T_0}(t_1)\\leq 1/(4\\lambda|T_0|)$",
+        "tag": "lem:infsup1_lambda"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the false pointwise inequality by the uniform consequence of eq:qeval: for gamma=lambda|T_0|>=gamma_0, lambda|T_0| |q_{T_0}(t_1)|^2 = gamma |q(gamma)|^2 <= C(gamma_0), and then estimate lambda|T_0| |f_{T_0}(t_1)|^2 <= C(gamma_0)|u(I_i^-)|^2.",
+      "overall_effect": "The large-time-step inf-sup proof contains an invalid estimate; as written, the scalar inf-sup lemma and the results built on uniform inf-sup stability are not supported by the displayed argument, although the needed consequence follows from the same explicit formula.",
+      "primary_affected_tag": "lem:infsup1_lambda",
+      "target_type": "formal_result",
+      "title": "False pointwise decay bound for the invisible Radau mode",
+      "why_classification": "The repair is a local replacement of one rational-function bound by a uniform bound already implied by the same display; the lemma statement, constant selection strategy, rate, and downstream proof architecture are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{f}{L^2_\\alpha\\left(\\mathbb{R}_+;V\\right)}",
+          "tag": "eq:norm_equiv"
+        },
+        {
+          "quote": "\\varepsilon\n    \\left(\n        V_R\n    \\right)\n    \\coloneqq",
+          "tag": "eq:min_epsilon_time"
+        }
+      ],
+      "failure_explanation": "The quantity epsilon(V_R) is a sum of squared Hardy-space norms. For the Laplace transform on Re s=alpha, the Paley-Wiener isometry uses the time weight e^{-2 alpha t}; since e^{-2 alpha t}>=e^{-2 alpha t_end} on [0,t_end], the squared time-domain projection error is bounded by e^{2 alpha t_end} epsilon(V_R), not by e^{alpha t_end} epsilon(V_R). Data concentrated near t=t_end show that the displayed factor is generally too small for alpha t_end>0.",
+      "failure_location": {
+        "quote": "\\leq e^{\\alpha \\tend} \\varepsilon",
+        "tag": "eq:eps_V_R_Laplace"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace e^{alpha t_end} by e^{2 alpha t_end} in the squared estimate in eq:eps_V_R_Laplace, equivalently state the unsquared bound with factor e^{alpha t_end} sqrt(epsilon(V_R)).",
+      "overall_effect": "The displayed justification for the reduced-basis goal functional is false as written. After taking square roots, the correct squared estimate still yields the e^{alpha t_end} factor appearing in the exponential-convergence theorem, but the stated squared inequality itself is invalid.",
+      "primary_affected_tag": "eq:eps_V_R_Laplace",
+      "target_type": "other",
+      "title": "Wrong exponential weight in the Paley-Wiener projection estimate",
+      "why_classification": "Only one exponential factor in a squared estimate must be corrected; the subsequent unsquared exponential factor and the convergence rates remain the same, so no substantive guarantee is lost."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2512.05676",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "70525655112dd5e6a4b9e036ce5bd3048782cdaa98dd74861d388a6c2188eeea",
+  "status": "ok"
+}

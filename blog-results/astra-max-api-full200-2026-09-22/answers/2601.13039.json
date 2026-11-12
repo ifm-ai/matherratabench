@@ -1,0 +1,513 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\textbf{if} {sufficiently accurate} \\textbf{then} stop",
+          "tag": "alg:statIterGLE"
+        },
+        {
+          "quote": "\\Delta_{k,k-1} \\vcentcolon= \\|(\\tilde \\fZ_k-\\tilde \\fZ_{k-1})\\tilde \\fSigma_k^{\\frac{1}{2}}\\|_\\Frob+\\|(\\tilde\\fZ_k-\\tilde\\fZ_{k-1})\\tilde\\fSigma_{k-1}^{\\frac{1}{2}}\\|_\\Frob.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Eigenfactors are not unique, and no alignment or continuity rule is imposed. For the scalar problem A=-1, N=1, B=1, exact stationary iterates are X_k=1-2^{-k}. The admissible eigenfactors Z_k=(-1)^k sqrt(X_k) give zero inner residuals but Delta_{k,k-1}=(sqrt(X_k)+sqrt(X_{k-1}))^2 tending to 4. Thus the proposed stopping test can fail indefinitely although the matrix approximation converges to the exact solution.",
+      "failure_location": {
+        "quote": "Replacing $\\|\\fX_k-\\fX_{k-1}\\|_\\Frob$ with the right-hand side of \\eqref{eq:46} has the advantage that we only need $\\calO(\\stateDim)$ floating point operations for its evaluation (assuming $\\stateDim_k,\\stateDim_{k-1}\\ll \\stateDim$).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Use a factor-invariant evaluation of the matrix-difference norm, for example through a QR factorization of the concatenated low-rank factors and a small signed Gram matrix, rather than requiring the unaligned factor difference to become small.",
+      "overall_effect": "Convergence of the matrix iteration does not ensure termination of the proposed certified implementation at an arbitrarily small tolerance.",
+      "primary_affected_tag": "alg:statIterGLE",
+      "target_type": "algorithm",
+      "title": "The factor-dependent stopping estimator need not converge to zero",
+      "why_classification": "A routine low-rank norm computation bypasses the defect without changing the convergence assumptions, accuracy guarantee, or linear-in-state-dimension cost for fixed ranks."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Using $\\|\\fE\\|_2\\le\\|\\fE\\|_{\\Frob}$ and $\\sigma_{\\min}(\\calL)=2\\sigma_{\\min}(\\fA)$ yields",
+          "tag": null
+        },
+        {
+          "quote": "\\|\\calL^{-1}\\|_2\\|\\gleOper\\|_2 = \\frac{1}{2\\sigma_{\\mathrm{min}}(\\fA)}\\Bigg\\|\\sum_{j=1}^{M}\\fN_j\\otimes\\fN_j\\Bigg\\|_2",
+          "tag": "eq33"
+        }
+      ],
+      "failure_explanation": "Hurwitz stability does not imply sigma_min(L)=2 sigma_min(A). Take A=[[-1,2],[-2,-1]], BB^T=2I, X=I, and X_l=0. Then A is even normal and strictly dissipative, while the claimed bound gives 1=||X_l-X||_2 <= sqrt(2/5), which is false. The same invalid identity also underlies the practical contraction estimate and rescaling.",
+      "failure_location": {
+        "quote": "\\|\\fE_\\indKS\\|_2 \\leq \\frac{\\|\\fR_\\indKS\\|_{\\Frob}}{2\\sigma_{\\min}(\\fA)},",
+        "tag": "eqn:lyap:errorResidual"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Retain the valid factor ||L^{-1}||_2=1/sigma_min(L) already appearing in the proof, and use it consistently in the residual estimates, contraction estimate, scaling, and stopping tolerances. The source-supported general repair requires conditioning the n^2-dimensional Lyapunov operator; preserving the advertised sparse large-scale efficiency requires an additional certified conditioning method.",
+      "overall_effect": "The residual certificates, their tolerance budgets, and the proposed verification/enforcement of the contraction condition are unreliable for the stated general-Hurwitz regime.",
+      "primary_affected_tag": "prop1",
+      "target_type": "formal_result",
+      "title": "The Lyapunov residual bound uses a false singular-value identity",
+      "why_classification": "The available general repair abandons the inexpensive n-dimensional certificate and moves the conditioning computation to an n^2-dimensional operator. Restricting A to recover the stated scalar formula would instead exclude an advertised regime."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We observe that the smallest singular value $\\sigma_{\\min}(\\fA)$ needs to be computed only once.",
+          "tag": null
+        },
+        {
+          "quote": "and \\eqref{eq33} is computable in $\\calO(\\stateDim)$ floating points operations if the involved matrices are sparse.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The computations in question are extremal singular-value computations, not single sparse matrix-vector products. Sparsity supplies no uniform bound on spectral iteration counts, conditioning, required accuracy, or the work needed to certify an extremal value. None of these quantities is controlled in the source, so the asserted total O(n) preprocessing cost does not follow.",
+      "failure_location": {
+        "quote": "The computational cost is $\\calO(\\stateDim)$ floating point operations if $\\fA$ is sparse.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Separate spectral preprocessing cost from O(nnz(A)) matrix-vector-product cost and state complexity in terms of the spectral solver's iterations and accuracy requirements. Use certified bounds when those values enter an error certificate.",
+      "overall_effect": "The stated linear-time cost of preparing the certification constants is unsupported independently of the incorrect Lyapunov constant.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Sparsity alone does not establish linear-time spectral preprocessing",
+      "why_classification": "This requires a substantive qualification of the efficiency claim, but the numerical framework can remain comparable with explicitly accounted-for preprocessing."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\calK_\\indKS(\\fA,{\\fB}_k) = \\spann \\{{\\fB}_k,\\fA{\\fB}_k,\\fA^2{\\fB}_k,\\ldots,\\fA^{\\indKS-1}{\\fB}_k\\}.",
+          "tag": "eq:krol:def"
+        },
+        {
+          "quote": "with $\\fA_\\indKS \\vcentcolon= \\fV_\\indKS^\\T\\fA\\fV_\\indKS$ and ${\\fB}_\\indKS \\vcentcolon= \\fV^\\T_\\indKS{\\fB}_k$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A Hurwitz matrix need not have Hurwitz orthogonal compressions. For A=[[-1,2],[0,-1]] and B=(1,1)^T, the first proposed Krylov space has basis v=B/sqrt(2), giving v^TAv=0 and v^TB=sqrt(2). The projected equation is therefore 2=0. Taking a sufficiently small nonzero N, such as 0.1I, also satisfies the stationary contraction assumption, so that assumption does not prevent this failure.",
+      "failure_location": {
+        "quote": "\\fA_\\indKS\\fY_\\indKS + \\fY_\\indKS\\fA_\\indKS^\\T + {\\fB}_\\indKS{\\fB}_\\indKS^\\T = \\zeroMat,",
+        "tag": "eqn:lyap:projected"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Test the projected problem before solving or accepting it, and enlarge or change the subspace when the projected Lyapunov operator is singular or its solution cannot supply the required positive-semidefinite factor. Requiring a Hurwitz projected matrix is a sufficient safeguard.",
+      "overall_effect": "The prescribed inner construction can fail before producing the positive-semidefinite factor needed by the outer algorithm.",
+      "primary_affected_tag": "eqn:lyap:projected",
+      "target_type": "algorithm",
+      "title": "The proposed Galerkin Lyapunov solve can be unsolvable for Hurwitz input",
+      "why_classification": "A local projected-stability check and subspace-expansion safeguard preserves the method and its conditional error analysis without excluding general Hurwitz inputs."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA\\fX_k + \\fX_k\\fA^\\T + \\sum_{j=1}^{M}\\left(\\fN_j\\fX_{k-1}\\fN_j^\\T\\right) + {\\fB}_{1}{\\fB}_{1}^\\T = \\zeroMat",
+          "tag": "eq30"
+        },
+        {
+          "quote": "\\State Set ${\\fB}_k \\vcentcolon= [\\fN_1\\fZ_{k-1},\\ldots,\\fN_M\\fZ_{k-1},{\\fB}_1]$",
+          "tag": "alg:statIterGLE"
+        }
+      ],
+      "failure_explanation": "In the implemented iteration, the right-hand side uses the previous approximate iterate. If X_k denotes its exact local Lyapunov solution, the sequence X_k is not the exact stationary sequence required by Proposition prop2. If X_k instead denotes the ideal exact stationary iterate, the reported local residual does not bound X_k-tilde X_k as used in the proof. The argument conflates these two sequences.",
+      "failure_location": {
+        "quote": "Let $\\fX_k$ be the exact solution of the Lyapunov equation~\\eqref{alg:statIterGLE:lyap} computed at step $k$ of \\Cref{alg:statIterGLE}. Using \\Cref{prop1,prop2} we obtain",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Apply the contraction argument directly to the inexact fixed-point equation. With q=||L^{-1}Pi||_2 and c=||L^{-1}||_2, it gives ||X-tilde X_k||_F <= q/(1-q)||tilde X_k-tilde X_{k-1}||_F + c/(1-q)||R_k||_F. This implies the corrected stated estimate, including its extra nonnegative previous-residual term.",
+      "overall_effect": "The proof of the inexact-iteration certificate has an independent gap even after the Lyapunov conditioning constant is corrected.",
+      "primary_affected_tag": "teo1",
+      "target_type": "formal_result",
+      "title": "The inexact-iteration proof applies the exact-iteration estimate outside its hypotheses",
+      "why_classification": "A short rearrangement of the already-established contraction argument repairs the proof and preserves, indeed strengthens, the claimed estimate once the separate conditioning defect is fixed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA_j+\\fA^{\\T}_j\\prec\\zeroVec,\\quad\\text{ for all }j\\in\\switchingSet.",
+          "tag": "eqn:ass:ndeAj"
+        },
+        {
+          "quote": "where we used the fact that $\\fw^{\\T}\\fA_j^{\\T}\\fw<0$ for all $\\fw\\in\\R^{\\stateDim}\\setminus \\{\\zeroVec\\}$ due to \\eqref{eqn:ass:ndeAj}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Strict dissipativity only gives w^TA_j^Tw <= -alpha_j||w||^2, where alpha_j=-lambda_max((A_j+A_j^T)/2), not the claimed bound with sigma_min(A_j). For A=-I+10[[0,1],[-1,0]], alpha=1 whereas sigma_min(A)=sqrt(101) and kappa(A)=1. With two identical modes, B_1=B_2=I, X=I, tilde X=diag(1.1,0.9), and mu=0.1, all stated matrix conditions hold, but the corrected Gramian has local LMI matrix [[-1.4,-2],[-2,-1]], which has a positive eigenvalue.",
+      "failure_location": {
+        "quote": "\\perturbation \\;\\ge\\; \\max_{j\\in\\switchingSet} \\frac{\\sigma_1(\\fA_j)}{\\sigma_\\stateDim(\\fA_j)} \\|\\fX-\\tilde \\fX\\|_2\\;=\\;\\max_{j\\in\\switchingSet}\\kappa(\\fA_j)\\|\\fX-\\tilde \\fX\\|_2,",
+        "tag": "eqn:ass:teo4"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the denominator sigma_min(A_j) by alpha_j=-lambda_max((A_j+A_j^T)/2) throughout the theorem and practical perturbation rule, using mu >= max_j ||A_j||_2 ||X-tilde X||_2/alpha_j.",
+      "overall_effect": "The condition-number perturbation and the practical choice in eqn:cond:LMI do not guarantee LMI preservation or the resulting stability/error certification.",
+      "primary_affected_tag": "teo4",
+      "target_type": "formal_result",
+      "title": "The LMI-preserving perturbation uses singular values instead of the dissipativity margin",
+      "why_classification": "The same construction survives on the entire strictly dissipative class, but the required perturbation can be arbitrarily larger than the advertised one and materially changes the quantitative guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA_j=(\\fJ_j-\\fR_j)\\fQ_j,",
+          "tag": "eqn:dH"
+        },
+        {
+          "quote": "with $\\fJ_j\\in\\R^{\\stateDim\\times\\stateDim}$ skew-symmetric, $\\fR_j\\in\\R^{\\stateDim\\times\\stateDim}$ symmetric positive semi-definite, and $\\fQ_j\\in\\R^{\\stateDim\\times\\stateDim}$ symmetric positive definite",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For Q=I the stated factorization gives A+A^T=-2R, which is only negative semidefinite when R is semidefinite. Hurwitz stability does not upgrade this to strict negativity: A=[[0,1],[-1,-1]] is Hurwitz and has Q=I and R=diag(0,1), but A+A^T=diag(0,-2).",
+      "failure_location": {
+        "quote": "Whenever $\\fQ_j=\\fI_{\\stateDim}$ for all $j\\in\\switchingSet$, it is straightforward to check that \\eqref{eqn:ass:ndeAj} is verified.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Require R_j to be positive definite in the Q_j=I sufficient condition, or directly check strict negativity of the symmetric part.",
+      "overall_effect": "The paragraph incorrectly identifies an additional class satisfying the strict hypothesis of Theorem teo4.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A semidefinite dissipative factor does not imply strict dissipativity",
+      "why_classification": "A standard local strengthening corrects the explanatory sufficient condition without changing the theorem or its intended strictly dissipative scope."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\stateRed(t^{+}_{k})&=\\fW^{\\T}_{\\switch_k}\\fV_{\\switch_{k-1}}\\stateRed(t^-_k),",
+          "tag": "eqn:new:red:system"
+        },
+        {
+          "quote": "\\reduceBis{\\fA}_j^{\\T}\t\\reduceBis{\\fP}+\t\\reduceBis{\\fP}\t\\reduceBis{\\fA}_j \\prec \\zeroMat,\\quad\\text{for all }j\\in\\switchingSet",
+          "tag": null
+        },
+        {
+          "quote": "to verify the quadratic stability property.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proposed stability test controls only evolution between switches. At a switch, a quadratic energy changes through J_{ji}=W_j^TV_i and can increase unless J_{ji}^TP_jJ_{ji} <= P_i is also controlled. Even scalar flows A_j=-1 satisfy the displayed flow LMI while alternating reset gains of 2 cause exponential growth for sufficiently short dwell times. No nonexpansiveness or compensating bound for the PBR reset maps is established.",
+      "failure_location": {
+        "quote": "To overcome these limitations, we propose a novel \\MOR strategy for \\SLS that guarantees the stability of the \\ROM and provides a generalized error bound without requiring the \\LMIs to hold.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Make stability conditional on verified hybrid Lyapunov conditions: strict flow inequalities for positive-definite P_j and J_{ji}^TP_jJ_{ji} <= P_i for every allowed transition. Alternatively, impose a quantitatively justified dwell-time restriction that explicitly includes reset amplification.",
+      "overall_effect": "The advertised switched-ROM stability guarantee and the proposed reduced LMI verification are unsupported; stability of the flow matrices alone is insufficient.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Continuous-flow LMIs do not certify stability of the PBR reset system",
+      "why_classification": "The arbitrary-switching stability guarantee cannot be retained from the stated test. A complete repair introduces additional global transition hypotheses or excludes switching signals from the advertised regime."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, each subsystem of the switched system $\\switchedSysRedJumps $ defined in \\eqref{eqn:new:red:system} is stable.",
+          "tag": "prop:stab"
+        },
+        {
+          "quote": "$\\Lambda(\\mathbf{\\Sigma}_1)\\cap\\Lambda(\\mathbf{\\Sigma}_2) = \\emptyset$",
+          "tag": "thm:BTerrorBound"
+        }
+      ],
+      "failure_explanation": "The PBR stability discussion does not impose the spectral separation needed to exclude marginal truncations. For the one-mode system A=[[0,1],[-1,-1]], B=(0,sqrt(2))^T, C=B^T, the exact Gramians are P=Q=I. Keeping the first coordinate is an allowed square-root truncation and gives reduced A=0. No dwell-time condition can make this mode asymptotically stable, including for a constant switching signal. A weak interpretation of 'stable' in Proposition prop:stab therefore does not support the subsequent asymptotic claim.",
+      "failure_location": {
+        "quote": "Moreover, if the solution of the \\LMI is not successful, it is possible to exploit the fact that the asymptotic stability of the \\SLS can still be guaranteed under a minimum switching time condition; see \\cite[Sec.~3.2.1]{Lib03}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Before invoking a dwell-time result, require and verify that every reduced mode is Hurwitz. For the stated balancing argument, enforce a retained/discarded spectral gap by truncating complete repeated-singular-value blocks.",
+      "overall_effect": "The fallback asymptotic-stability assertion is invalid for allowed truncations that split a repeated balanced singular value.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A dwell-time restriction cannot cure marginal modes created by splitting repeated singular values",
+      "why_classification": "The repair imposes a substantive restriction on admissible truncations or requires an additional reduced-mode verification, but leaves a comparable PBR method available."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo6"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bar \\fV_j\\;\\vcentcolon=\\tilde \\fS_j\\fU_j\\fSigma_j^{-1/2}\\quad\\text{and}\\quad\\bar\\fW_j\\;\\vcentcolon=\\;\\tilde \\fR_j\\fV_j\\fSigma_j^{-1/2} =\\bar \\fV^{-\\T}_j.",
+          "tag": null
+        },
+        {
+          "quote": "In practice, this is done by adding $\\tol$ to each of the diagonal entries of $\\Sigma_j$ for $j=1,\\ldots,M$.",
+          "tag": null
+        },
+        {
+          "quote": "The proof of \\Cref{teo5} requires \\eqref{eqn:bal:gra} to be invertible.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The computed Gramian factors are generally low rank, so they cannot yield an invertible n-dimensional balancing map. Changing zero singular values after forming S^TR does not increase the rank of S or R. If Sigma is replaced by Sigma+tol I in the displayed maps while retaining the factors, then Wbar^TVbar=diag(sigma_i/(sigma_i+tol)), not I. Thus the proposed regularization does not supply the full balanced coordinates or inverse metrics required by the lemma.",
+      "failure_location": {
+        "quote": "\\sigma(\\switch(t_K^{+}))^2{\\bfX}_c^{\\T}(t)\\fSigma^{-1}_{\\switch(t)}{\\bfX}_c(t)",
+        "tag": "eqn:swi:con:fac"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Complete or regularize both Gramians to positive-definite matrices in the original coordinates before balancing, then recompute consistent transformations, projections, and residual terms. A low-rank-plus-identity implementation can use the span of the stored factors and an explicitly defined complement.",
+      "overall_effect": "The PBR error analysis is not justified for the low-rank numerical Gramians that motivate the method, and the stated singular-value padding does not repair its hypotheses.",
+      "primary_affected_tag": "teo5",
+      "target_type": "formal_result",
+      "title": "Low-rank Gramians do not provide the invertible full balancing used by the error proof",
+      "why_classification": "A contained but nontrivial full-rank completion and balancing construction is needed; merely editing a denominator or padding the singular-value list is insufficient."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo6"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fSigma^{-1}_{j}\\bar \\fA_{j}+\\bar \\fA_{j}^\\T\\fSigma^{-1}_{j}+\\fSigma^{-1}_{j}\\bar \\fB_{j}\\bar \\fB_{j}^{\\T}\\fSigma^{-1}_{j}-\\lambda_{1}(\\fM_c(j))\\fSigma^{-2}_{j}\\;\\preceq \\;\\zeroMat.",
+          "tag": "eqn:rech:cond"
+        },
+        {
+          "quote": "\\sum_{k=0}^{K}\\lambda_{1}(\t\\fM_c(\\switch(t_k^{+})))\\int_{t_k}^{t_{k+1}}\\|\\bfX_c(s)\\|_2^2\\,\\ds",
+          "tag": "eqn:swi:con:fac"
+        }
+      ],
+      "failure_explanation": "The proof replaces lambda_1(M_c) x^T Sigma^{-2}x by lambda_1(M_c) sigma_min(Sigma)^{-2}||x||^2. This is an upper bound only when lambda_1(M_c) is nonnegative. Negative values are expressly allowed and arise when the LMIs hold strictly. For Sigma=diag(2,1), x=e_1, and lambda_1(M_c)=-1, the asserted comparison is -1/4 <= -1. Consequently the stated H_c can be too negative, and the lemma's radicand need not be a valid nonnegative upper bound.",
+      "failure_location": {
+        "quote": "\\le &\\;\\lambda_{1}(\\fM_c(\\switch(t_k^{+})))\\frac{1}{\\sigma(\\switch(t_k^{+}))^{2}}\\|\\bfX_c(t)\\|_2^2",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Use max(lambda_1(M_c),0) in the scalar upper estimate and corresponding H_c definition, or retain a correctly weighted quadratic residual term. Propagate that corrected definition into the multi-block bound.",
+      "overall_effect": "The single-block error estimate and its iterated use are not valid across the claimed signed-LMI-residual regime.",
+      "primary_affected_tag": "teo5",
+      "target_type": "formal_result",
+      "title": "The controllability-energy estimate reverses an inequality for negative residual eigenvalues",
+      "why_classification": "A local sign-aware rederivation preserves the framework, but the quantitative bound must be weakened or replaced in a parameter regime explicitly covered by the paper."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The proof follows directly by applying the sub-additivity of the square root function to \\Cref{teo5}",
+          "tag": null
+        },
+        {
+          "quote": "\\iota(\\stateDimRed, \\Upsilon)\\;\\vcentcolon=&\\;-",
+          "tag": "eqn:iota"
+        },
+        {
+          "quote": "\\gleH_{c,\\switch}(\\stateDim,\\stateDimRed)+\\gleH_{o,\\switch}(\\stateDim,\\stateDimRed)-\\left(\\gleG_{o,\\switch}(\\stateDim,\\stateDimRed)+\\gleG_{c,\\switch}(\\stateDim,\\stateDimRed)\\right)",
+          "tag": "eq:err:est:2"
+        }
+      ],
+      "failure_explanation": "When G_{c,o,q}<0, the Heaviside factor activates sqrt(G_{c,o,q}), which is not real, and the displayed minus sign treats a harmful jump contribution as a decrease of the bound. In the lemma, that case contributes the positive quantity -G under the radical. Subadditivity does not justify the stated signed splitting. Similarly, sqrt(H) times H(H) should be defined through a positive part rather than multiplying an undefined real square root by zero.",
+      "failure_location": {
+        "quote": "\\sum_{k=\\stateDimRed+1}^{\\tilde \\stateDim}   \\gleG_{c,o,\\switch}(s_{k+1},s_{k})^{\\frac{1}{2}}H(-   \\gleG_{c,o,\\switch}(s_{k+1},s_{k})),",
+        "tag": "eq:err:est:3"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "For each truncation step use 2 sigma ||u|| + sqrt(max(H,0)) + sqrt(max(-G,0)), and then sum the stepwise estimates. Update the estimator definitions and interpretations consistently.",
+      "overall_effect": "The main PBR bound and the numerical estimator iota are not valid real-valued upper bounds for the switching regime they are intended to cover.",
+      "primary_affected_tag": "teo6",
+      "target_type": "formal_result",
+      "title": "The square-root splitting gives a non-real and wrongly signed switching contribution",
+      "why_classification": "The telescoping strategy survives, but a claimed negative correction must become a nonnegative error contribution, changing the quantitative guarantee rather than merely its notation."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA_j\\fDelta_j+\t\\fDelta_j\\fA_j^{\\T}+\t\\fV^{+}_j  \\fSigma^{+}_j(\\fV^{+}_j)^{\\T}\\;=\\;\\zeroVec .",
+          "tag": "eqn:pert:lyap"
+        },
+        {
+          "quote": "The matrix $\\hat \\fX_j\\vcentcolon=\\tilde{\\fX}_j+\\fDelta_j$ with $\\fDelta_j$ being the unique solution of~\\eqref{eqn:pert:lyap} satisfies",
+          "tag": "prop5"
+        }
+      ],
+      "failure_explanation": "The correction controls a local LMI residual, not monotonicity of balanced truncation error. For A=-I, B=C^T=diag(sqrt(8),sqrt(2)), exact Gramians are diag(4,1). Approximate Gramians diag(epsilon,1), with 0<epsilon<1, produce a one-state ROM retaining the second coordinate. Correcting their single positive residual restores diag(4,1) and makes the ROM retain the first coordinate. For input only in the second channel, the original ROM is exact while the corrected ROM has nonzero output error. Changing the Gramians also changes singular-value and trajectory terms, so reducing a residual alone does not ensure a smaller total bound.",
+      "failure_location": {
+        "quote": "Their number may not be small in general; however, even computing a few of the largest ones is enough to tighten the error bound and improve the accuracy of the \\ROM.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Limit the guarantee to the proved local LMI improvement and present improvements in ROM error or total estimator as empirical observations, not consequences of residual correction.",
+      "overall_effect": "The claimed accuracy and total-estimator improvement is stronger than Proposition prop5 establishes.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Residual correction does not guarantee improved ROM accuracy",
+      "why_classification": "A substantive performance claim must be withdrawn, but the residual-correction construction and its valid LMI property remain available."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Evaluating \\Cref{teo6} requires computing all reduced state trajectories from dimension $\\stateDimRed$ to $\\stateDim$, which is computationally inefficient.",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, it is reasonable to approximate the reduced state at higher dimensions using the trajectory computed at a smaller dimension—provided that the last reduced state components are significantly smaller than the target accuracy.",
+          "tag": null
+        },
+        {
+          "quote": "\\stateBal_1(t)+\\stateRed(t)",
+          "tag": "eqn:new:var"
+        }
+      ],
+      "failure_explanation": "Balancing is a normalization of two Gramian matrices, not a guarantee of rapid coordinatewise decay of every driven trajectory. In a diagonal balanced system with independent input channels, an input can drive only an omitted coordinate while all coordinates of the smaller ROM, including its last coordinates, are zero. Thus the proposed test on the smaller trajectory gives no bound on the missing higher-dimensional states. Substituting those states into G and H without reconstruction-error bounds can understate the certificate.",
+      "failure_location": {
+        "quote": "However, since the reduced system is in a balanced form, the entries of the state decay rapidly.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "Retain the full and intermediate trajectories for certified evaluation and explicitly label the substitution as an uncontrolled heuristic. A certified cheaper evaluator would require additional state-reconstruction error bounds.",
+      "overall_effect": "The rationale for the proposed reduced-cost evaluation of the a-posteriori bound is false; the formal bound requires the actual trajectories appearing in its definitions.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Balancing does not justify replacing higher-dimensional trajectories by lower-dimensional ones",
+      "why_classification": "The exact-trajectory bound can remain intact, but the proposed efficiency shortcut cannot retain a certification claim without a contained new error analysis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA_1(i,j)\\vcentcolon=\\begin{cases} -1, & \\mbox{if }i=j \\\\",
+          "tag": "eqn:synt:ex"
+        },
+        {
+          "quote": "\\frac{1}{2}, & \\mbox{if }i-1=j\\\\",
+          "tag": "eqn:synt:ex"
+        },
+        {
+          "quote": "\\frac{4}{5}, & \\mbox{if }i-1=j\\\\",
+          "tag": "eqn:synt:ex"
+        },
+        {
+          "quote": "-\\frac{1}{5}, & \\mbox{if }i+1=j\\\\",
+          "tag": "eqn:synt:ex"
+        }
+      ],
+      "failure_explanation": "For n>1, the one-sided shift in A_1 gives A_1A_1^T-A_1^TA_1 nonzero boundary diagonal entries. The unequal-magnitude upper and lower off-diagonals similarly make A_2 nonnormal. Consequently normality cannot justify the example's use of the dissipativity hypothesis.",
+      "failure_location": {
+        "quote": "Moreover, both $\\fA_1$ and $\\fA_2$ are normal matrices, so the hypothesis of \\Cref{teo4} holds.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-015",
+      "least_adequate_overall_repair": "Verify dissipativity directly: the symmetric parts have Gershgorin upper bounds -1 for A_1+A_1^T and -2.8 for A_2+A_2^T, so both are strictly negative definite.",
+      "overall_effect": "The stated verification of the example's applicability to Theorem teo4 is mathematically incorrect, although the required hypothesis happens to hold.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The synthetic example matrices are incorrectly claimed to be normal",
+      "why_classification": "A short direct check replaces the false normality inference and preserves the example's applicability."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-K\\nu^2\\fB^\\T_1+\\ir \\fB^\\T_2",
+          "tag": "eqn:ref:mat:BS"
+        },
+        {
+          "quote": "\\psi(L,t)=0, \\quad \\psi(S,t)=S-\\ee^{-\\ir t}K,\\quad0\\le t \\le T.",
+          "tag": "ibcBS"
+        },
+        {
+          "quote": "\\frac{1}{2}\\nu^2s^2\\frac{\\partial^2\\psi}{\\partial s^2}+\\ir s\\frac{\\partial \\psi}{\\partial s}-\\ir \\psi",
+          "tag": "eq:BS"
+        }
+      ],
+      "failure_explanation": "Eliminating the nonzero Dirichlet boundary makes both the diffusion and convection boundary vectors multiply the same trace S-K exp(-alpha t). With the two temporal components 1 and exp(-alpha t), both boundary contributions therefore need column coefficients S and -K. The displayed matrix applies these coefficients only to the diffusion contribution; the convection contribution has the same positive coefficient in both columns. No single parameter-independent convection boundary vector B_2 can absorb both missing factors.",
+      "failure_location": {
+        "quote": "S\\nu^2\\fB^\\T_1+\\ir\\fB^\\T_2\\\\",
+        "tag": "eqn:ref:mat:BS"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-016",
+      "least_adequate_overall_repair": "Derive the boundary forcing consistently, using columns S(nu^2 B_1+alpha B_2) and -K(nu^2 B_1+alpha B_2) under the natural temporal input representation, with any normalization compensated in the inputs. Recompute or relabel the affected experiment accordingly.",
+      "overall_effect": "The displayed switched input matrices are not the claimed centered-difference realization of the stated boundary conditions under the indicated two-component boundary representation.",
+      "primary_affected_tag": "eqn:ref:mat:BS",
+      "target_type": "other",
+      "title": "The Black–Scholes input matrix does not consistently encode the stated boundary trace",
+      "why_classification": "The underlying MOR theory is unaffected, but correcting the numerical model changes its input-output behavior and requires a contained re-discretization and revalidation of the example."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\stx(t_0) &= \\zeroVec,",
+          "tag": "eqn:sDAE"
+        },
+        {
+          "quote": "\\out(t) &= \\fC_{\\switch(t)}\\stx(t),",
+          "tag": "eqn:sDAE"
+        },
+        {
+          "quote": "\\psi(L,t)=0, \\quad \\psi(S,t)=S-\\ee^{-\\ir t}K,\\quad0\\le t \\le T.",
+          "tag": "ibcBS"
+        },
+        {
+          "quote": "in the interval $[0, 200]$ with $K=80$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The selected state output starts at zero and, for the displayed bounded inputs, remains continuous from zero. The prescribed boundary trace instead starts at S-K=120 and has that nonzero right limit. An eliminated Dirichlet boundary value is a known input/feedthrough quantity, not the last interior state. Thus e_n^T x cannot be the asserted boundary price in this zero-initial strictly proper model.",
+      "failure_location": {
+        "quote": "where the output matrix $\\fC$ accounts for the average fair price of the option and its value at the boundary $s=S$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-017",
+      "least_adequate_overall_repair": "Represent the prescribed boundary trace as an explicit known output/feedthrough term, identically in the FOM and ROM, and revise the second-output comparisons. Retain e_n^T x only if it is identified as an interior-state observable.",
+      "overall_effect": "The physical interpretation of the second output and the associated numerical comparisons is incorrect, independently of the boundary-input coefficient issue.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The claimed boundary output is incompatible with the zero-initial strictly proper state model",
+      "why_classification": "The experiment's stated observable must change or its output realization must be augmented; this is a substantive but localized correction rather than a change to the general MOR architecture."
+    }
+  ],
+  "issues_found": 17,
+  "paper_id": "2601.13039",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "bd667d07baf9874b99b339d8a0a6b0aa8d1d403f5cfe7b718aa7b9a572affb14",
+  "status": "ok"
+}

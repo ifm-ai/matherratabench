@@ -1,0 +1,109 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "However, applying the IMEX scheme  \\eqref{eq:full_tensor_imex} across all K-S-L steps leads to instability, because the S-step evolves backward in time. This behavior was first observed empirically in \\cite{coughlin2022efficient} and later proved in \\cite{zhang2025stability}. As suggested in \\cite{zhang2025stability}, we propose a hybrid IMEX scheme: the K and L steps use an implicit (backward Euler) update for the Fokker--Planck operator, while the S step uses an explicit (forward Euler) update.",
+          "tag": null
+        },
+        {
+          "quote": "In each substep, we employ the second-order IMEX scheme discussed above.",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{S_{ij}^{(2)} - S_{ij}^{(1)}}{\\Delta t} = - \\langle \\mathcal{A}_h(f^{(1)}), X_{i}^{n+1} V_{j}^{n} \\rangle_{xv}^h - \\frac{1}{\\varepsilon}\\langle \\mathcal{L}_h^{n+1}(f^{(1)}), X_{i}^{n+1} V_{j}^{n} \\rangle_{xv}^h",
+          "tag": "eq:S_fd_forward"
+        }
+      ],
+      "failure_explanation": "The paper's first-order section states (citing its own stability analysis) that applying an implicit IMEX update across all K-S-L steps leads to instability because the S-step evolves backward in time, and it prescribes an explicit forward-Euler FP update in the S-step; the first-order scheme accordingly uses the fully explicit update of eq:S_fd_forward. The second-order scheme instead applies the same implicit trapezoidal IMEX in every substep, including both S-substeps, where the unknown S^{(2)} (and S^{(4)}) appears inside the implicit FP term (1/(2ε))⟨L_h^{n+1}(f[S^{(2)}])⟩. No stability analysis is given for this choice, and it contradicts the paper's stated requirement for the backward S-step; moreover the implicit S-correction can become singular for stiff modes (the matrix I + (Δt/(2ε))M_{n+1} is singular when Δt·λ/(2ε) = 1 for an eigenvalue λ of the S-step FP matrix M_{n+1}). Hence the second-order scheme's stiff-regime stability is unsupported as written.",
+      "failure_location": {
+        "quote": "\\frac{S^{(2)}_{ij} - S^{(1)}_{ij}}{\\Delta t/2} = - \\big\\langle \\mathcal{A}_h(f[S^{(1)},\\ast]),X^{(1)}_i V^n_j \\big\\rangle_{xv}^h - \\frac{1}{2\\varepsilon}\\big\\langle \\mathcal{L}_{h}^{n}(f[S^{(1)}]) + \\mathcal{L}_{h}^{n+1}(f[S^{(2)}]),X^{(1)}_i V^n_j \\big\\rangle_{xv}^h",
+        "tag": "alg:second_order"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Either provide a stability analysis showing that the implicit trapezoidal FP update in the backward S-substeps remains stable for Δt ≫ ε, or redesign the S-substeps to follow the paper's stated requirement (explicit FP update in the S-step, as in eq:S_fd_forward) while preserving second-order accuracy, and verify the resulting scheme's order and stability.",
+      "overall_effect": "The second-order low-rank IMEX scheme's central guarantee of ε-independent stability is unestablished; the claims of robustness and AP behavior for the second-order scheme (abstract, conclusions, numerical experiments) rest on an unjustified design. The first-order scheme (alg:first_order), the separable FP stencil, and the AP theorem (thm:main_AP) are unaffected.",
+      "primary_affected_tag": "alg:second_order",
+      "target_type": "algorithm",
+      "title": "Second-order scheme uses implicit FP updates in the backward S-step, contradicting the paper's own stability requirement",
+      "why_classification": "The defect is not a local typo: the S-step design contradicts the paper's own stated stability requirement and no supporting analysis is supplied, so the second-order scheme's stiff-regime guarantee is unestablished. A repair requires a nontrivial redesign of the S-substeps plus a new stability analysis (or a proof that the implicit S-update is stable for the backward step); this is more than a minor patch, but the first-order scheme, the separable discretization, and the AP theorem all survive, so the loss is confined to the second-order scheme's unsupported guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{D}(u) \\ge \\lambda_N \\| u - \\bar{u} \\|_{v}^{h,2}.",
+          "tag": "prop:coercivity"
+        },
+        {
+          "quote": "[\\mathcal{D}(u)]_p := \\frac{1}{\\Delta v^2} \\sum_{q=1}^{N_v-1} (u_{p,q+1}-u_{p,q})^2.",
+          "tag": "prop:coercivity"
+        },
+        {
+          "quote": "\\|u\\|_{v}^{h,2} \\le \\Big( \\|u-\\bar{u}\\|_v^h + \\|\\bar{u}\\|_v^h \\Big)^2 \\le \\Big(1 + \\sqrt{L_v M_{\\max}}\\Big)^2 \\|u-\\bar{u}\\|_{v}^{h,2}.",
+          "tag": "prop:coercivity"
+        },
+        {
+          "quote": "\\langle \\phi, \\psi \\rangle_v^h = \\sum_{q=1}^{N_v} \\phi_q\\,\\psi_q\\,\\Delta v,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the paper's inner-product convention (⟨φ,ψ⟩_v^h = Σ_q φ_qψ_qΔv, so ||w||_v^{h,2} = Σ_q w_q²Δv), the discrete Poincaré inequality Σ_q(u_{q+1}-u_q)² ≥ 4sin²(π/(2N_v))Σ_q(u_q-ū)² yields D(u) ≥ λ_N||u-ū||_v^{h,2}/Δv, not D(u) ≥ λ_N||u-ū||_v^{h,2} as displayed; the display is stronger by a factor 1/Δv and is not valid in general (it holds only when Δv ≤ 1). In addition, the displayed chain ū² ≤ ||u-ū||^{h,2}||M||^{h,2} ≤ L_vM_max||u-ū||^{h,2} does not imply the next line's constant (1+√(L_vM_max))²: that constant requires the sharp bound ||M||_v^{h,2} ≤ M_max (from ⟨1,M⟩_v^h = 1 and M ≤ M_max), i.e. ū² ≤ M_max||u-ū||^{h,2}, whereas the loose factor L_vM_max would give (1+L_v√M_max)². The stated constant γ_h = M_minλ_N/(1+√(L_vM_max))² is nevertheless valid (the final assembly -⟨L_h(f),u⟩ ≥ M_minλ_NΣ_p||u-ū||_p^{h,2}Δx is correct), so the proposition's statement stands; only the displayed intermediate steps fail to prove what they claim.",
+      "failure_location": {
+        "quote": "\\bar{u}^2 = |\\langle u - \\bar{u}, M \\rangle_v^h|^2 \\le \\|u - \\bar{u}\\|_{v}^{h,2} \\, \\|M\\|_{v}^{h,2} \\le L_v M_{\\max} \\|u - \\bar{u}\\|_{v}^{h,2}.",
+        "tag": "prop:coercivity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the two displays: weaken the Poincaré display to D(u) ≥ λ_N||u-ū||_v^{h,2}/Δv (equivalently, define D(u) := Σ_q(u_{q+1}-u_q)²Δv), and replace the loose factor L_vM_max by the sharp bound M_max obtained from ⟨M,1⟩_v^h = 1, so that the constant (1+√(L_vM_max))² follows.",
+      "overall_effect": "Only the proof of prop:coercivity is affected. The proposition's statement, and hence the use of γ_h as a symbolic positive constant in asm:small_fluct and thm:main_AP, remains valid.",
+      "primary_affected_tag": "prop:coercivity",
+      "target_type": "formal_result",
+      "title": "Coercivity proof's intermediate displays are inconsistent with the paper's norm conventions and do not yield the stated constant",
+      "why_classification": "The proposition's statement and its constant are valid; the repair is a short local correction of two displayed estimates in the proof, with no loss of content and no effect on downstream results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{L}_{h} \\;=\\; \\beta \\otimes \\mathcal{T}^{(\\alpha)} \\;+\\; \\beta^{-1} \\otimes \\mathcal{T}^{(1/\\alpha)}.",
+          "tag": "prop:fluctuation_bound"
+        },
+        {
+          "quote": "[\\mathcal{L}_{h}(f)]_{p,q} \\;=\\;\\frac{1}{\\Delta v^2} \\left[ \\alpha_{q+1/2}\\beta_p\\,f_{p,q+1} -\\Big(\\frac{1}{\\alpha_{q+1/2}\\beta_p}+\\alpha_{q-1/2}\\beta_p\\Big)\\,f_{p,q} +\\frac{1}{\\alpha_{q-1/2} \\beta_p} \\,f_{p,q-1} \\right],",
+          "tag": "eq:fp_discrete_separable"
+        },
+        {
+          "quote": "\\|\\mathcal{T}^{(\\alpha)}\\|_v^h \\le \\frac{2\\alpha_{\\max}}{\\Delta v^2} \\quad \\text{and} \\quad \\|\\mathcal{T}^{(1/\\alpha)}\\|_v^h \\le \\frac{2}{\\alpha_{\\min}\\Delta v^2}.",
+          "tag": "prop:fluctuation_bound"
+        }
+      ],
+      "failure_explanation": "The separable stencil eq:fp_discrete_separable shows that the β-part of L_h is β_p·(1/Δv²)(α_{q+1/2}f_{q+1} - α_{q-1/2}f_q) and the β^{-1}-part is (1/β_p)(1/Δv²)(f_{q-1}/α_{q-1/2} - f_q/α_{q+1/2}); both are two-point operators. The three-point difference operators T^(α) and T^(1/α) displayed in the proof do not appear in the stencil's decomposition, so the displayed identity L_h = β⊗T^(α) + β^{-1}⊗T^(1/α) is false as written. The claimed norm bounds (2α_max/Δv² and 2/(α_minΔv²)) are the correct bounds for the actual two-point operators — the displayed three-point operators would only yield 3α_max/Δv² and 3/(α_minΔv²) — so the proposition's conclusion and the constant κ_h remain valid; only the displayed definitions are wrong.",
+      "failure_location": {
+        "quote": "(\\mathcal{T}^{(\\alpha)} w)_q = \\frac{1}{\\Delta v^2} \\big( \\alpha_{q+1/2}(w_{q+1}-w_q) - \\alpha_{q-1/2}(w_q-w_{q-1}) \\big),",
+        "tag": "prop:fluctuation_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the displayed definitions by the correct two-point operators (T^(α)w)_q = (α_{q+1/2}w_{q+1} - α_{q-1/2}w_q)/Δv² and (T^(1/α)w)_q = (w_{q-1}/α_{q-1/2} - w_q/α_{q+1/2})/Δv²; the stated norm bounds then follow directly.",
+      "overall_effect": "Only the proof display of prop:fluctuation_bound is affected; the bound and the constant κ_h used in asm:small_fluct and thm:main_AP are unchanged.",
+      "primary_affected_tag": "prop:fluctuation_bound",
+      "target_type": "formal_result",
+      "title": "Displayed tensor decomposition of the discrete FP operator defines operators inconsistent with the separable stencil",
+      "why_classification": "The proposition's statement and constant are valid; the repair is a local correction of two displayed definitions, with no effect on the result or on downstream results."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2601.11900",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0a3cd4bfe32954879edc6b7c61b5ec215bbd2b3813d7c0aaa4b12d7a1620d81d",
+  "status": "ok"
+}

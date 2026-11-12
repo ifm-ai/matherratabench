@@ -1,0 +1,264 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Starting from any initialization $\\w_0$, for any stationary point $\\bar{\\w}$ attained by \\mkl, we have that $\\bar{\\w} \\in \\mathcal{B}_r(\\ws)$",
+          "tag": "lemma:vector"
+        },
+        {
+          "quote": "Now at $\\bar{w}$, we have $\\nabla \\widetilde{F}(\\bar{\\w}) = 0$.",
+          "tag": "lemma:vector"
+        },
+        {
+          "quote": "Now, we can repeat the above analysis recursively for every corresponding $\\w_C$ and $\\tilde{\\w}$ in the landscape and so now $\\theta_j$ is a function of $\\tilde{\\w}$ as well as is represented in the theorem statement.",
+          "tag": "sec:vector"
+        }
+      ],
+      "failure_explanation": "Stationarity at $\\bar w$ means $\\sum_i p_i(\\bar w)\\nabla f_i(\\bar w)=0$, but the proof substitutes probabilities evaluated at a different, remote point $\\w_C=C\\bar w$ (chosen so outliers have the lowest loss there). The selection probabilities depend on the loss ranking at the evaluation point, so $p_i(\\w_C)\\neq p_i(\\bar w)$ in general, and the resulting weighted-mean expression and all later bounds do not constrain actual MKL stationary points; at best they analyze a virtual fixed point with adversarially frozen weights, and no self-consistency (that the ranking at the solution reproduces the assumed weights) is verified. Two further gaps: the derived bound $\\|\\bar w-\\ws\\|\\le\\|\\widetilde w-\\ws\\|/\\cos\\theta_j\\ge\\|\\widetilde w-\\ws\\|$ does not place $\\bar w$ inside $\\mathcal B_r(\\ws)$ (the $l_m$–$l_M$ crossing used is not the binding one for the region where all outliers outrank all clean samples), and the elimination of every other ordering is only asserted recursively. The sufficient condition is also written in terms of $\\theta_{M,\\bar w}$, a property of the unknown stationary point.",
+      "failure_location": {
+        "quote": "\\sum_{i\\notin \\mathbb{O}} p_i(\\w_C) \\nabla f_i(\\bar{\\w}) &= - \\sum_{j \\in \\mathbb{O}}  p_j(\\w_C) \\nabla f_j(\\bar{\\w})",
+        "tag": "lemma:vector"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the frozen-weight analysis with a rigorous region-by-region fixed-point argument: in each loss-ordering region solve the genuine stationarity equation with probabilities evaluated at the candidate point, and show that under a condition on problem data (not on the unknown $\\bar w$) no self-consistent solution exists outside $\\mathcal B_r(\\ws)$.",
+      "overall_effect": "The paper's central global landscape guarantee — from any initialization every stationary point lies in the good ball — is unsupported. This also underlies the scalar-case conclusions drawn from Condition cond:1, the 'very strong worst-case guarantee' prose, and the 'Effect of $\\kappa$/$\\gamma$' paragraphs. Theorem theorem:relativebounds is only conditional on $\\wsm\\in\\mathcal B_r(\\ws)$, so its advertised force loses the justification that attained solutions are ever in the ball.",
+      "primary_affected_tag": "lemma:vector",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:vector proof computes stationary points with selection probabilities evaluated at the wrong point; global in-ball guarantee unproven",
+      "why_classification": "This is the paper's main global guarantee; the source contains no valid argument for it and any repair requires a new proof architecture (self-consistent fixed-point/landscape analysis) or a major change of the guarantee, so it is serious even though no labelled result formally depends on it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=(1 - \\epsilon) n L \\norm{\\wsgd - \\ws}\\\\",
+          "tag": "lemma:sgdbound"
+        },
+        {
+          "quote": "$$\\norm{ \\sum_{i\\in\\mathcal{O}} \\nabla f_i(\\wsgd)} = \\min\\left(\\epsilon n  G(\\wsgd), (1 - \\epsilon) n L \\norm{\\wsgd - \\ws}\\right)$$",
+          "tag": "lemma:sgdbound"
+        },
+        {
+          "quote": "For the sake of simplicity, we will assume that $\\norm{\\nabla f_i(\\bs{w})} \\leq G ~\\forall~i\\in \\mathbb{O}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "From $\\nabla F(\\wsgd)=0$ one obtains $\\|\\sum_{i\\notin O}\\nabla f_i(\\wsgd)\\|=\\|\\sum_{i\\in O}\\nabla f_i(\\wsgd)\\|$. The proof upper-bounds both sides (by $(1-\\epsilon)nL\\|\\wsgd-\\ws\\|$ and by $\\epsilon nG$) and then asserts $\\epsilon G\\le(1-\\epsilon)L\\|\\wsgd-\\ws\\|$, a lower bound on SGD's error that two upper bounds cannot yield. $G$ is only an upper bound on outlier gradients, so the claim is false under the stated assumptions whenever the aggregate outlier gradient at $\\wsgd$ is small or cancels: e.g. clean losses $w^2$ ($\\ws=0$) with outliers $2(w-1)^2$ and $(w+2)^2$ satisfy Assumptions 1-3 and the separation $d(\\ws,C_i)\\ge2\\delta$, but the outlier gradients at $\\ws$ cancel, giving $\\wsgd=\\ws$ and making the claimed inequality read $\\epsilon G\\le0$. A lower bound on $\\|\\sum_{j\\in O}\\nabla f_j(\\wsgd)\\|$ is indispensable and is assumed nowhere.",
+      "failure_location": {
+        "quote": "\\epsilon G \\leq (1 - \\epsilon)  L \\norm{\\wsgd - \\ws}",
+        "tag": "lemma:sgdbound"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add a hypothesis lower-bounding the aggregate outlier influence, e.g. $\\|\\sum_{j\\in\\mathbb O}\\nabla f_j(\\wsgd)\\|\\ge \\epsilon n g$ for some $g>0$ (ruling out gradient cancellation), and replace $G$ by that lower bound in the lemma; the existing combination with lemma:m2lboundstrongconvexity then yields theorem:relativebounds in the same form for the restricted outlier regime.",
+      "overall_effect": "Lemma lemma:sgdbound is false as stated; Theorem theorem:relativebounds (every in-ball MKL stationary point is closer to $\\ws$ than SGD by the factor $\\alpha<1$) inherits the defect and fails in cancelling-outlier instances, where $\\|\\wsgd-\\ws\\|=0$ while the in-ball MKL stationary point is bounded away from $\\ws$. The setup prose 'now vanilla SGD on the entire loss function will {\\em not} converge to $\\ws$' is the same unsupported assertion.",
+      "primary_affected_tag": "lemma:sgdbound",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:sgdbound derives a lower bound on SGD's error from upper bounds; false without a lower bound on outlier gradient influence",
+      "why_classification": "A contained repair exists — one new restrictive hypothesis plus the paper's own short combination argument — leaving a recognizably comparable comparison theorem, but it narrows the advertised outlier regime and the current proof cannot be fixed locally: more than minor, not a rebuild."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\norm{ \\wsm - \\ws}^2 &\\leq \\sum_{i\\in\\mathcal{O}}p_i(\\wsm) \\norm{ \\wsm - \\ws} G(\\wsgd) \\notag \\\\",
+          "tag": "sec:lemmam2lboundstrongconvexity"
+        },
+        {
+          "quote": "&f_i(\\bs{w}) < f_j(\\bs{w})~ \\forall~i \\notin \\mathbb{O},~j \\in \\mathbb{O}, \\\\",
+          "tag": "eq:defball"
+        },
+        {
+          "quote": "it is possible that \\mkl~gets stuck at any one of the many local minimas that exist close to the outlier center $w_B$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof's key step bounds the total outlier selection probability by $\\sum_{i\\in\\mathbb O}p_i(\\wsm)\\le\\epsilon^k$, which holds only when every outlier has higher loss than every clean sample at $\\wsm$, i.e. $\\wsm\\in\\mathcal B_r(\\ws)$. The statement omits this hypothesis and claims the bound for any stationary point. Stationary points outside the ball exist — the paper itself describes MKL getting stuck at local minima close to the outlier center $w_B$ when Condition 1 fails — and for them $\\|\\wsm-\\ws\\|$ is $\\Theta(\\delta)$, violating the claimed $O(\\epsilon^k)$ bound.",
+      "failure_location": {
+        "quote": "Let $\\wsm$ be any first order stationary point attained by \\mkl.",
+        "tag": "lemma:m2lboundstrongconvexity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the hypothesis $\\wsm\\in\\mathcal B_r(\\ws)$ (equivalently, that all outliers rank below all clean samples at $\\wsm$); the given proof then goes through unchanged.",
+      "overall_effect": "The lemma is false as stated. Its only downstream use is in Theorem theorem:relativebounds, whose own statement already supplies the missing hypothesis ('for any $\\wsm \\in \\mathcal{B}_r(\\ws)$'), so no labelled downstream result is invalidated by this root.",
+      "primary_affected_tag": "lemma:m2lboundstrongconvexity",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:m2lboundstrongconvexity quantifies over all stationary points but its proof requires the in-ball hypothesis",
+      "why_classification": "A short, strictly local repair (one added hypothesis that matches exactly how the lemma is used in theorem:relativebounds); method, conclusion, and advertised scope all survive: minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lambda:= \\min_{\\w} \\lambda_{\\w}",
+          "tag": "eq:lambdasc"
+        },
+        {
+          "quote": "m= m(\\wsm)\\footnote{Note that strong convexity holds since we are only considering the set of good samples}",
+          "tag": "sec:lemmam2lboundstrongconvexity"
+        },
+        {
+          "quote": "m \\norm{ \\wsm - \\ws} &\\leq \\epsilon^k G(\\wsgd)",
+          "tag": "sec:lemmam2lboundstrongconvexity"
+        },
+        {
+          "quote": "Naively, $\\lambda_{\\w} = \\min_i p_i(\\w) \\lambda$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof derives $m(\\wsm)\\,\\|\\wsm-\\ws\\|\\le\\epsilon^k G$, where $m(\\wsm)$ is the secant/strong-convexity constant of the good-sample weighted sum $\\sum_{i\\notin O}p_i(\\wsm)\\nabla f_i(\\wsm)$ at $\\wsm$. The statement instead uses $\\lambda=\\min_w\\lambda_w$ with $\\lambda_w$ the Lemma lemma:sc constants of the full surrogate (all samples). Since the full surrogate equals the good part plus a convex outlier part, $\\lambda_w\\ge m(w)$ for every $w$, so $\\lambda=\\min_w\\lambda_w$ need not satisfy $\\lambda\\le m(\\wsm)$ — the substitution goes the wrong way and is justified nowhere (the text only offers the 'naive' identity $\\lambda_w=\\min_i p_i(w)\\lambda$). A $\\lambda$ larger than the valid constant makes the stated bound stronger than what is proved.",
+      "failure_location": {
+        "quote": "\\norm{\\wsm -\\ws}  \\leq \\dfrac{\\epsilon^k G}{\\lambda}",
+        "tag": "lemma:m2lboundstrongconvexity"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Define $\\lambda$ directly as a uniform lower bound on the good-part secant constants $m(w)$ — positivity follows from the source's own observation that $\\min_i p_i(w)\\ge 1/n^k>0$ together with Assumption 2 — and use that $\\lambda$ in both the lemma and theorem:relativebounds.",
+      "overall_effect": "The explicit constant in lemma:m2lboundstrongconvexity, and hence the factor $\\alpha(\\epsilon,L,k,\\lambda)=(1-\\epsilon)L\\epsilon^{k-1}/\\lambda$ in theorem:relativebounds, is not the constant the analysis yields; the quantitative comparison bound is unsupported as written.",
+      "primary_affected_tag": "lemma:m2lboundstrongconvexity",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:m2lboundstrongconvexity states the bound with lambda from eq:lambdasc but its proof establishes a different constant",
+      "why_classification": "The repair is a local definitional correction using positivity already argued in the source; the form and rates of all claims are unchanged: minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ 2\\eta_t^2\\sum_{i\\in \\mathcal{G}} p_i(\\bs{w_t}) \\norm{\\nabla f_{i}( \\wg)}^2 + \\eta_t^2\\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t})\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+2  \\eta_t \\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t}) \\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right)",
+          "tag": "lem:R"
+        },
+        {
+          "quote": "\\textit{No outliers} $$ d(\\ws,C_i) \\leq \\delta ~ \\text{for all $i$}$$",
+          "tag": null
+        },
+        {
+          "quote": "Theorem \\ref{thm:R} implies that for any stochastic algorithm in the both noisy and noiseless setting",
+          "tag": "thm:R"
+        }
+      ],
+      "failure_explanation": "In the noisy setting good samples need not satisfy $\\nabla f_i(\\wg)=0$ (only $d(\\wg,C_i)\\le\\delta$), and the per-sample expansion produces the variance term $2\\eta_t^2\\sum_{i\\in\\mathcal G}p_i\\|\\nabla f_i(\\wg)\\|^2$ on the right side. The main-text statement of Theorem thm:R drops this term from $R_t$, while the appendix version (Theorem lem:R) and its proof include it. As stated thm:R is false in the noisy regime it advertises: with no outliers and $\\bs{w_t}=\\wg$ it asserts $\\mathbb E\\|\\Delta_{t+1}\\|^2\\le0$, whereas the true value is $\\eta_t^2\\sum_i p_i\\|\\nabla f_i(\\wg)\\|^2>0$.",
+      "failure_location": {
+        "quote": "- 2  \\sum_{i\\notin \\mathbb{O}} p_i(\\bs{w_t}) \\langle{ \\bs{w_t} - \\wg,\\nabla f_{i}( \\wg)\\rangle}+ \\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t}) \\left(2\\eta_t\\norm{\\nabla f_{i}( \\wg)}^2+ \\eta_t\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+2\\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right) \\right)",
+        "tag": "thm:R"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restore the missing term $2\\eta_t^2\\sum_{i\\notin\\mathbb O}p_i(\\bs{w_t})\\|\\nabla f_i(\\wg)\\|^2$ to the bound — equivalently, adopt the appendix statement lem:R verbatim in the main text.",
+      "overall_effect": "The one-step contraction bound of the Convergence Rates section is invalid exactly in the noisy settings it claims to cover; the appendix Theorem lem:R and Corollary cor:added-1 (which uses the correct $R_t$) are unaffected.",
+      "primary_affected_tag": "thm:R",
+      "target_type": "formal_result",
+      "title": "Theorem thm:R omits the good-sample variance term from R_t; the stated bound is false in the noisy setting",
+      "why_classification": "The correction is a single term already present and proved in the paper's own appendix; every substantive convergence claim and the subsequent discussion survive with it: minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In the rest of the paper, we will focus on the ``with replacement\" scenario for ease of presentation; this choice does not change our main ideas or results.",
+          "tag": null
+        },
+        {
+          "quote": "\\norm{\\wsm -\\ws}  \\leq \\dfrac{\\epsilon^k G}{\\lambda}",
+          "tag": "lemma:m2lboundstrongconvexity"
+        },
+        {
+          "quote": "However, if we knew the fraction of corruption, then with the right $k$ and smart initialization, it is possible to guarantee consistency.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper declares the with-replacement sampling model. In that model, at any point of $\\mathcal B_r(\\ws)$ the probability of selecting an outlier is exactly $\\epsilon^k>0$ for every finite $k$, so $\\nabla\\tilde F(\\ws)=\\sum_{j\\in\\mathbb O}p_j(\\ws)\\nabla f_j(\\ws)\\neq0$ in general: $\\ws$ is not a stationary point and the paper's own analysis only yields a neighborhood $\\|\\wsm-\\ws\\|\\le\\epsilon^k G/\\lambda$, never exact convergence at finite $k$. E.g. scalar quadratics with $n=3$, one outlier at $w_B=10$, and $k=2=n\\epsilon+1$: the in-ball stationary point is the weighted mean $\\bar w=10/9\\neq\\ws$. Exact convergence with $k\\ge n\\epsilon+1$ holds only for the without-replacement variant (every $k$-set then contains a clean sample, driving in-ball outlier probability to 0) and only if iterates remain in the ball — conditions the claim does not state and that contradict the declared model. The paper establishes neighborhood convergence, not consistency.",
+      "failure_location": {
+        "quote": "To ensure consistency, i.e. $\\norm{\\wsm -\\ws} \\rightarrow 0$, we require that $k \\geq n\\epsilon + 1$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Weaken the claim to the supported statement: with-replacement MKL converges to a neighborhood of radius $O(\\epsilon^k G/\\lambda)$ (shrinking with $k$), and exact convergence to $\\ws$ is possible only for the without-replacement variant with $k>\\epsilon n$ and iterates confined to $\\mathcal B_r(\\ws)$.",
+      "overall_effect": "A conclusion-section guarantee of exact consistency (with known $\\epsilon$, the right $k$, and smart initialization) that the formal results do not support and that is false for the declared sampling model; it misstates what the analyzed algorithm can achieve and contradicts the paper's own neighborhood bound.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Conclusion claims exact consistency for k >= n*epsilon+1, which is false for the paper's declared with-replacement model",
+      "why_classification": "The consistency promise must be withdrawn or re-scoped to a different sampling variant plus ball conditions — a limited weakening of an advertised guarantee with no dependents, while the paper's neighborhood-convergence results survive: moderate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\begin{assumption}[\\textbf{Equal minimum values}]",
+          "tag": null
+        },
+        {
+          "quote": "And thus we use Lemma \\ref{lemma:m2lboundstrongconvexity} in conjunction with \\ref{lemma:sgdbound}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper defines only Assumptions 1-3 (plus an unnumbered prose bound $\\|\\nabla f_i\\|\\le G$ for outliers); assumptions N1, N2, A4, A5 and the symbols $N, N'$ are never defined, so the lemma's hypotheses — hence its validity — are undetermined as written. The proof indicates the intended premises (noiseless outlier setting, $\\wsm\\in\\mathcal B_r(\\ws)$, Lipschitz gradients, and the $G$-bound on outlier gradients), under which the bound does hold, but the statement must be re-hypothesized to be checkable.",
+      "failure_location": {
+        "quote": "For any $\\wsm \\in  \\mathcal{B}_r(\\ws)$ that satisfies assumptions N1, N2, A4 and A5, there exists $N'\\geq N$ and $\\epsilon' \\leq \\epsilon$ such that,",
+        "tag": "lemma:m2lbound"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace 'assumptions N1, N2, A4 and A5' with the premises actually used by the proof: Assumptions 1-3, the noiseless outlier setting, $\\wsm\\in\\mathcal B_r(\\ws)$, and the outlier gradient bound $\\|\\nabla f_i\\|\\le G$.",
+      "overall_effect": "None beyond the lemma itself: the text explicitly discards it in favor of lemma:m2lboundstrongconvexity, so no downstream result is affected; the lemma as stated is simply not a well-defined claim.",
+      "primary_affected_tag": "lemma:m2lbound",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:m2lbound is conditioned on assumptions N1, N2, A4 and A5 that do not exist in the paper",
+      "why_classification": "The lemma is unused downstream and its intended hypotheses are identifiable from its own proof; relabelling the premises is a short local repair with no loss: minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ \\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{\\eta_t^2}{n}\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+  \\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{2  \\eta_t}{n} \\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right)",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "the parameter $\\bs{w_t}$  satisfies $\\sup_{i \\in \\mathcal{G}}f_{i}(\\bs{w_t})\\leq \\inf_{j \\in \\mathbb{O} }f_{j}(\\bs{w_t})$",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "If  we are at the same point $\\bs{w_t}$ for both SGD and MKL-SGD and $p_i(\\bs{w_t})< \\dfrac{1}{N}$ for $i \\in \\mathbb{O}$, we have\n$R_t^{(SGD)}>R_t^{(MKL)}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof bounds MKL-2's outlier terms $\\sum_{i>|\\mathcal G|}\\frac{2(n-i)}{n(n-1)}(f_i(\\wg)-f_i(\\bs{w_t}))$ by the SGD expression $\\frac1n\\sum_{i>|\\mathcal G|}(f_i(\\wg)-f_i(\\bs{w_t}))$ via $\\frac{2(n-i)}{n(n-1)}\\le\\frac1n$; this term-by-term comparison requires $f_i(\\wg)-f_i(\\bs{w_t})\\ge0$ for outliers, which no hypothesis implies (the condition $\\sup_{i\\in\\mathcal G}f_i(\\bs{w_t})\\le\\inf_{j\\in\\mathbb O}f_j(\\bs{w_t})$ does not compare $f_j(\\bs{w_t})$ with $f_j(\\wg)$). When $f_j(\\bs{w_t})>f_j(\\wg)$ the inequality reverses and the conclusion fails: e.g. $n=4$, good losses $w^2$ ($\\wg=0$), two outliers $(w-10)^2$, at $\\bs{w_t}=-1$ all hypotheses hold ($|\\mathcal G|=n/2$; good losses $1\\le121$; good gradients at $\\wg$ vanish so the noise-level condition holds) but the outlier bracket equals $100-121=-21<0$ with MKL weights below uniform, yielding $R_t^{(MKL_2)}>R_t^{(SGD)}$ for small $\\eta_t$. The same sign error underlies the main-text claim that $R_t^{(SGD)}>R_t^{(MKL)}$ whenever $p_i(\\bs{w_t})<1/N$ for outliers.",
+      "failure_location": {
+        "quote": "R_t^{(MKL_2)} &\\leq R_t^{(SGD)}.",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Add a hypothesis forcing the outlier brackets nonnegative, e.g. $f_j(\\bs{w_t})\\le f_j(\\wg)$ for all $j\\in\\mathbb O$ (or otherwise control the negative part), and restate the comparison under the strengthened conditions; the remainder of the proof then goes through.",
+      "overall_effect": "The corollary's sufficient conditions do not suffice; the advertised conclusion — MKL-2 one-step-dominates SGD even when more than half the data is corrupted — is false as stated, as is the matching main-text comparison built on eq:expressR.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Corollary cor:added-1's claim that MKL-2 dominates SGD fails because outlier loss-difference terms can be negative",
+      "why_classification": "A contained fix exists (an extra, restrictive hypothesis) leaving a formally comparable sufficient condition, but it substantially narrows the result's scope and the proof's key comparison step is invalid as written: moderate."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2001.03316",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-max-2026-09-29-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d10c7474fbe52751d29cd038f650e3f1381876416035c1862f7697927c71b083",
+  "status": "ok"
+}

@@ -1,0 +1,200 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:LS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$ \\bm{c} =(c_{\\bm{\\nu}_1},...,c_{\\bm{\\nu}_s})\\in\\C^s$",
+          "tag": null
+        },
+        {
+          "quote": "the entries are defined as $\\Psi_{ij}=\\frac{1}{\\sqrt{m}}\\psi_{\\bm{\\nu}_j}(\\bm{y}_i)$ and $b_i=\\frac{1}{\\sqrt{m}}(f(\\bm{y}_i) + n_i)$ for $i=1, \\dots, m$",
+          "tag": null
+        },
+        {
+          "quote": "$ \\bm{\\Psi} \\in\\C^{m\\times s}$ and $ \\bm{b} \\in\\C^m$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The least squares problem minimizes over z in R^s but the coefficients c, the matrix Psi, and the data b are all complex-valued (Psi in C^{m x s}, b in C^m, c in C^s). Minimizing over R^s yields a different optimizer than the complex least squares solution (Psi^* Psi)^{-1} Psi^* b given immediately afterward. The convergence theory for least squares (Corollary cor:LS) applies to the complex least squares problem, not the stated real-variable problem.",
+      "failure_location": {
+        "quote": "\\min_{ \\bm{z} \\in\\R^s} \\norm{ \\bm{\\Psi}  \\bm{z} - \\bm{b} }_2^2.",
+        "tag": "eq:ls"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Change the minimization domain in eq:ls from R^s to C^s.",
+      "overall_effect": "The least squares procedure as stated does not produce the complex least squares solution used in the subsequent formulas and convergence theory. Corollary cor:LS references eq:ls and therefore addresses the wrong optimization problem.",
+      "primary_affected_tag": "eq:ls",
+      "target_type": "algorithm",
+      "title": "Least squares problem minimizes over R^s instead of C^s",
+      "why_classification": "A one-character change (R to C) restores the correct complex least squares formulation. All subsequent formulas, theorems, and convergence guarantees then apply without modification."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:CS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min \\limits_{ \\bm{z} \\in \\mathbb{C}^N} \\lambda \\|  \\bm{z}  \\|_{1, \\bm{w} } + \\|  \\boldsymbol{\\Psi}  \\bm{z}  - \\bm{b}  \\|_2",
+          "tag": null
+        },
+        {
+          "quote": "\\min_{ \\bm{z} \\in\\C^N} \\norm{ \\bm{z} }_{1,\\bm{w}} \\quad \\text { subject to } \\norm{ \\bm{\\Psi} \\bm{z} - \\bm{b} }_2\\leq\\eta",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The weighted l1 'norm' is defined as sum of w_i z_i without absolute values. For complex z this yields a complex number (not a real-valued norm), making the weighted SR-LASSO objective lambda * ||z||_{1,w} + ||Psi z - b||_2 the sum of a complex and a real quantity — ill-defined. Even for real z, sum of w_i z_i can be negative and is not a norm. The correct definition is sum of w_i |z_i|.",
+      "failure_location": {
+        "quote": "\\| \\bm{z}\\|_{1, \\bm{w}} := \\sum\\limits_{i=1}^N w_iz_i",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace w_i z_i with w_i |z_i| in the weighted norm definition.",
+      "overall_effect": "The weighted SR-LASSO (eq:wSR-LASSO) and weighted QCBP (eq:wqcbp) optimization problems are ill-defined. Corollary cor:CS (which specifies minimizers of eq:wSR-LASSO) is stated for an ill-defined program.",
+      "primary_affected_tag": "eq:wSR-LASSO",
+      "target_type": "algorithm",
+      "title": "Weighted l1 norm definition omits absolute values",
+      "why_classification": "Adding absolute value bars is a forced local correction that makes the norm well-defined and restores all weighted optimization programs and their guarantees. No new lemma or argument is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exist a compact set $\\mathcal{K}\\subset \\mathbb{C}^d$, with $\\mathcal{U} \\subset \\mathcal{K}$",
+          "tag": "ass:diffusion_matrix"
+        },
+        {
+          "quote": "$\\bm{C}:[0,T] \\times  \\mathcal{U}  \\to \\C^{|V| \\times |V|}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Theorem thm:mainthm requires K to satisfy both K subset U (from its own statement) and U subset K (from Assumption ass:diffusion_matrix). These are contradictory for any nontrivial compact K in C^d. The only possibility K = U = [-1,1]^d has empty interior in C^d, making the holomorphy conclusion vacuous. Additionally, the type C: [0,T] x R^{|V| x |V|} is malformed (should be C: [0,T] x U to C^{|V| x |V|}).",
+      "failure_location": {
+        "quote": "let the parametric diffusivity matrix $ \\bm{C}:[0,T] \\times \\R^{|V| \\times |V|}$ satisfy Assumption \\ref{ass:diffusion_matrix} for some compact $\\mathcal{K}\\subseteq\\C^d$ such that $\\mathcal{K} \\subset \\mathcal{U}$.",
+        "tag": "thm:mainthm"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change 'K subset U' to 'U subset K' (matching Assumption ass:diffusion_matrix) and correct the type of C to [0,T] x U to C^{|V| x |V|}.",
+      "overall_effect": "As stated, Theorem thm:mainthm is vacuously true and provides no mathematical content. The type of C is also wrong. Downstream corollaries reference the theorem but use the corrected hypotheses via the proof, so they are not directly invalidated by the statement errors.",
+      "primary_affected_tag": "thm:mainthm",
+      "target_type": "formal_result",
+      "title": "Theorem thm:mainthm has contradictory hypotheses and malformed type for C",
+      "why_classification": "Both corrections are forced from the cited assumption and the definition of C. After correction the theorem is valid and all proofs and downstream results are unaffected. No new argument is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:maincor",
+        "cor:LS",
+        "cor:CS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We consider networks where edge weights may change in time, i.e., $\\bm{W}: [0, \\infty ) \\rightarrow \\mathbb{R}^{|V|\\times |V|}$.",
+          "tag": null
+        },
+        {
+          "quote": "&\\leq \\sum_{j \\in V}\\abs{\\tilde{C}_{ij}(t, \\bm{z} )}W(t)_{ij} + \\sum_{k \\in V}\\abs{\\tilde{C}_{ik}(t, \\bm{z} )}W(t)_{ik}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The inequality chain bounds |C_ij| W_{ij} by max|C_ij| times sum of W_{ij}, using W_{ij} without absolute values. This requires W_{ij} >= 0 (so that |C_ij W_{ij}| = |C_ij| W_{ij} and the inequality |C_ij| <= max|C| can be multiplied by W_{ij} without reversing). The paper defines W: [0,infinity) to R^{|V| x |V|} with no sign restriction. For negative W_{ij}, the inequality is false.",
+      "failure_location": {
+        "quote": "&\\leq 2 \\cdot \\max_{j \\in V}\\abs{\\tilde{C}_{ij}(t, \\bm{z} )}\\cdot \\sum_{j \\in V}W(t)_{ij} < \\infty.",
+        "tag": "thm:mainthm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Either add the hypothesis W(t)_{ij} >= 0 for all i,j,t (standard for graph edge weights) or replace W(t)_{ij} with |W(t)_{ij}| in the norm bound.",
+      "overall_effect": "The Lipschitz constant for h(t,s,u,z) in Step 1 of Theorem thm:mainthm is not established for graphs with negative edge weights. The bound B and holomorphy conclusion are unestablished for such graphs, and Corollaries cor:maincor, cor:LS, cor:CS (which use B) inherit the gap.",
+      "primary_affected_tag": "thm:mainthm",
+      "target_type": "formal_result",
+      "title": "Lipschitz bound in proof of thm:mainthm assumes non-negative edge weights without stating it",
+      "why_classification": "Adding a standard non-negativity condition on edge weights (or using |W_{ij}|) is a local fix that preserves all claims, guarantees, and the advertised scope. No new lemma or construction is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:maincor",
+        "cor:LS",
+        "cor:CS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "& = 2 \\cdot \\text{Re} \\langle  \\tilde{\\bm{u}}, \\tilde{\\bm{M}} \\tilde{\\bm{u}}  \\rangle \\\\\n&\\leq 2 r(\\tilde{\\bm{M}}) \\| \\tilde{\\bm{u}} \\|_2^2 = 2 r(\\tilde{\\bm{M})} \\bm{v}(t,\\bm{z})",
+          "tag": null
+        },
+        {
+          "quote": "\\tilde{\\bm{v}}(t) \\leq \\tilde{\\bm{v}}(0) \\cdot \\exp \\left(2\\cdot \\int_0^T \\sup_{ \\bm{z}  \\in \\mathcal{H}} \\| \\tilde{\\bm{M}} (t, \\bm{z} )\\|_{2\\to 2} \\, d t\\right)",
+          "tag": null
+        },
+        {
+          "quote": "which corresponds to \\eqref{eq:unif_upper_bound_ext}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The derivation gives dv/dt <= 2 beta(t) v but the proof writes dv/dt <= beta(t) v (missing factor of 2). This error propagates to v_tilde' <= beta v_tilde. The Gronwall result exp(2 integral beta) is inconsistent with v_tilde' <= beta v_tilde (which gives exp(integral beta)); the extra factor of 2 compensates the earlier missing factor. Moreover, v_tilde = sup ||u_tilde||^2 is a squared quantity, but the claim that it 'corresponds to' the bound on ||f_tilde|| (unsquared) skips the square-root step. The errors partially compensate so the bound B is valid but not correctly derived.",
+      "failure_location": {
+        "quote": "\\frac{\\partial \\bm{v}(t,\\bm{z})}{\\partial t} \\leq \\beta (t) \\bm{v}(t,\\bm{z})",
+        "tag": "thm:mainthm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the differential inequality to dv/dt <= 2 beta(t) v, propagate to v_tilde' <= 2 beta v_tilde, apply Gronwall to obtain v_tilde(T) <= ||u_0||^2 exp(2 integral beta), then take the square root to get sup ||u_tilde(T)|| <= ||u_0|| exp(integral beta) <= B.",
+      "overall_effect": "The uniform upper bound B(u_0,T,M) in Theorem thm:mainthm (Step 2) is not correctly established by the proof. Corollaries cor:maincor, cor:LS, cor:CS rely on B and their proofs inherit the derivation gap.",
+      "primary_affected_tag": "thm:mainthm",
+      "target_type": "formal_result",
+      "title": "Gronwall derivation in proof of thm:mainthm has multiple interacting errors",
+      "why_classification": "The fix involves correcting a constant factor in two lines and adding a square-root step. All are short, local, routine changes. The theorem's bound, all convergence rates, and all downstream guarantees are preserved without new lemmas or replacement arguments."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:LS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\underbrace{\\int_{-1}^{1} \\psi_{\\nu_k}(x_k) dx_k}_{=0}",
+          "tag": null
+        },
+        {
+          "quote": "let $\\{\\psi_{\\bm{\\nu}}\\}$ be either the Chebyshev or Legendre basis",
+          "tag": null
+        },
+        {
+          "quote": "$\\psi_{\\bm{\\nu}}(\\bm{y}) = \\prod\\limits_{k=1}^d \\sqrt{2\\nu_k+1}P_{\\nu_k}(y_k)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof computes c_nu = integral of f(x) psi_nu(x) dx using the Lebesgue measure. The correct coefficient is c_nu = <f, psi_nu>_{L^2_rho} = integral of f(x) conj(psi_nu(x)) rho(x) dx. The key claim integral from -1 to 1 of psi_{nu_k}(x_k) dx_k = 0 is true for Legendre polynomials (orthogonal to constants w.r.t. the uniform/Lebesgue measure) but false for Chebyshev polynomials: e.g., integral of T_2(x) dx from -1 to 1 = -2/3 != 0. The proof therefore fails to establish c_nu = 0 for the Chebyshev basis.",
+      "failure_location": {
+        "quote": "c_{\\bm{\\nu}}  \n    & = \\int_{\\mathcal{U}} f(\\bm{x}) \\psi_{\\bm{\\nu}}(\\bm{x}) d\\bm{x}",
+        "tag": "th:main_ls"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the Lebesgue integral with the L^2_rho inner product in the coefficient computation: c_nu = integral of f(x) conj(psi_nu(x)) rho(x) dx. Then use orthogonality in L^2_rho (the inner product of 1 with psi_{nu_k} equals 0 for nu_k >= 1) to conclude c_nu = 0.",
+      "overall_effect": "Theorem th:main_ls is unestablished for the Chebyshev basis. Since Corollary cor:LS allows either the Chebyshev or Legendre basis and its proof invokes th:main_ls, the Chebyshev case of cor:LS is unestablished.",
+      "primary_affected_tag": "th:main_ls",
+      "target_type": "formal_result",
+      "title": "Proof of th:main_ls uses Lebesgue measure instead of L2_rho inner product",
+      "why_classification": "Replacing the integral with the correct L^2_rho inner product and invoking orthogonality in L^2_rho is a local, routine correction of the computation. The proof structure (factorize the coefficient and use orthogonality) is unchanged. All claims, including the Chebyshev case, are preserved without new lemmas."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2502.06595",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "26936f3f91a7aefa7b2cdb949cf63aa8c5c3502e118636d01fae5814b32e6852",
+  "status": "ok"
+}

@@ -1,0 +1,155 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We then apply the projector-splitting integrator to \\eqref{eq:VPFP-1} using Strang splitting\n\\[\\mathcal{K}(\\tfrac{\\Delta t}{2}) \\circ \\mathcal{S}(\\tfrac{\\Delta t}{2}) \\circ \\mathcal{L}(\\Delta t) \\circ \\mathcal{S}(\\tfrac{\\Delta t}{2}) \\circ \\mathcal{K}(\\tfrac{\\Delta t}{2}).\\]\nIn each substep, we employ the second-order IMEX scheme discussed above.",
+          "tag": null
+        },
+        {
+          "quote": "To obtain $E^{n+1}$, we need $f^{n+1/2}$ which can be computed using the first-order low-rank scheme (Algorithm \\ref{alg:first_order}) with step size $\\Delta t/2$. Then \n\\[\\hat{\\rho}^{n+1} = \\rho^n + \\Delta t \\langle \\mathcal{A}_h(f^{n+1/2}), 1 \\rangle_v^h.\\]\nSolving the Poisson equation using $\\hat{\\rho}^{n+1}$ yields $E^{n+1}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The first K-step is a half-step (\\Delta t/2) from t^n to t^{n+1/2}, but its second stage uses \\mathcal{L}_h^{n+1}, the field at the end of the full step. It should use \\mathcal{L}_h^{n+1/2}. Similarly, the first stage uses \\mathcal{L}_h^{n+1/2} instead of an intermediate field such as \\mathcal{L}_h^{n+1/4}. The same inconsistency occurs in the first S-step, the second S-step, and the second K-step. Thus the half-step substeps do not implement the stated second-order IMEX scheme for their own time intervals, and the Strang splitting is not correctly discretized.",
+      "failure_location": {
+        "quote": "\\frac{K^{(1)}_{j} - K^{n}_{j}}{\\Delta t/2} &= \\langle \\mathcal{A}_h(f[K^{n,\\ast}]),V^n_j\\rangle_v^h + \\frac{1}{2\\varepsilon}\\langle \\mathcal{L}_{h}^{n}(f[K^{n}]) + \\mathcal{L}_{h}^{n+1}(f[K^{(1)}]),V^n_j\\rangle_v^h.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Compute the required intermediate fields (e.g., E^{n+1/4} and E^{n+3/4}) and use them in the half-step IMEX stages, or redesign the splitting so that all substeps use only the available fields at t^n, t^{n+1/2}, and t^{n+1} while still achieving second order.",
+      "overall_effect": "The claimed second-order accuracy of Algorithm 2 is not supported by the written scheme. The numerical experiments reporting second-order convergence may not correspond to the scheme as specified.",
+      "primary_affected_tag": "alg:second_order",
+      "target_type": "algorithm",
+      "title": "Second-order scheme uses full-step fields in half-step substeps",
+      "why_classification": "The second-order scheme's central guarantee is second-order temporal accuracy. The defect requires substantial modification of the half-step time discretization, so no comparable second-order scheme survives without such changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:main_AP"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[\n  [\\mathcal{L}_{h}(f)]_{p,q}\n  \\;=\\;\\frac{1}{\\Delta v^2} \\left[\n     \\alpha_{q+1/2}\\beta_p\\,f_{p,q+1}\n     -\\Big(\\frac{1}{\\alpha_{q+1/2}\\beta_p}+\\alpha_{q-1/2}\\beta_p\\Big)\\,f_{p,q}\n     +\\frac{1}{\\alpha_{q-1/2} \\beta_p} \\,f_{p,q-1}\n  \\right],\n\\]",
+          "tag": "eq:fp_discrete_separable"
+        },
+        {
+          "quote": "\\[\n    (\\mathcal{T}^{(\\alpha)} w)_q = \\frac{1}{\\Delta v^2} \\big( \\alpha_{q+1/2}(w_{q+1}-w_q) - \\alpha_{q-1/2}(w_q-w_{q-1}) \\big), \\\\\n    (\\mathcal{T}^{(1/\\alpha)} u)_q = \\frac{1}{\\Delta v^2} \\big( \\alpha_{q+1/2}^{-1}(w_{q+1}-w_q) - \\alpha_{q-1/2}^{-1}(w_q-w_{q-1}) \\big).\n\\]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Expanding the separable stencil shows that \\mathcal{L}_h = \\beta A + \\beta^{-1} B, where A and B are first-order difference operators, not the divergence-form operators \\mathcal{T}^{(\\alpha)} and \\mathcal{T}^{(1/\\alpha)}. For example, the term \\beta\\otimes\\mathcal{T}^{(\\alpha)} would produce a \\beta^{-1}/\\alpha_{q+1/2} f_{q+1} contribution that is absent from \\mathcal{L}_h. Moreover, the norm bound stated for \\mathcal{T}^{(\\alpha)} as a Laplacian is incorrect; the true bound is about 4\\alpha_{\\max}/\\Delta v^2, not 2\\alpha_{\\max}/\\Delta v^2. The proposition's conclusion is true with the correct decomposition, but the proof as written is invalid.",
+      "failure_location": {
+        "quote": "We observe that this operator acts as a sum of tensor products involving multiplication by spatial weights $\\beta$ and $\\beta^{-1}$:\n\\[\n  \\mathcal{L}_{h} \\;=\\; \\beta \\otimes \\mathcal{T}^{(\\alpha)} \\;+\\; \\beta^{-1} \\otimes \\mathcal{T}^{(1/\\alpha)}.\n\\]",
+        "tag": "prop:fluctuation_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the incorrect tensor-product decomposition with the correct decomposition \\mathcal{L}_h = \\beta A + \\beta^{-1} B, where A and B are the first-order difference operators defined by the stencil, and redo the norm bounds. This preserves the proposition's conclusion and the theorem's bound.",
+      "overall_effect": "The proof of Proposition \\ref{prop:fluctuation_bound} is invalid, and consequently the proof of Theorem \\ref{thm:main_AP}, which relies on it, is unsupported as written.",
+      "primary_affected_tag": "prop:fluctuation_bound",
+      "target_type": "formal_result",
+      "title": "False tensor-product decomposition in fluctuation projection bound",
+      "why_classification": "The proposition's statement is true and the repair is a contained correction to the proof, but it requires a nontrivial replacement of the operator decomposition and norm estimates."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:main_AP"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[[\\mathcal{D}(u)]_p := \\frac{1}{\\Delta v^2} \\sum_{q=1}^{N_v-1} (u_{p,q+1}-u_{p,q})^2.\\]",
+          "tag": null
+        },
+        {
+          "quote": "\\[\\bar{u}^2 = |\\langle u - \\bar{u}, M \\rangle_v^h|^2 \\le \\|u - \\bar{u}\\|_{v}^{h,2} \\, \\|M\\|_{v}^{h,2} \\le L_v M_{\\max} \\|u - \\bar{u}\\|_{v}^{h,2}.\\]",
+          "tag": null
+        },
+        {
+          "quote": "\\[\\|u\\|_{v}^{h,2} \\le \\Big( \\|u-\\bar{u}\\|_v^h + \\|\\bar{u}\\|_v^h \\Big)^2 \\le \\Big(1 + \\sqrt{L_v M_{\\max}}\\Big)^2 \\|u-\\bar{u}\\|_{v}^{h,2}.\\]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The discrete Poincaré inequality as written is dimensionally inconsistent: with D = (1/\\Delta v^2)\\sum (u_{q+1}-u_q)^2 and \\|u-\\bar u\\|_v^2 = \\Delta v\\sum (u_q-\\bar u)^2, the correct inequality is D \\ge \\lambda_N \\|u-\\bar u\\|_v^2/\\Delta v. Also, the Cauchy-Schwarz bound uses L_v M_{\\max}, which would require a factor L_v\\sqrt{M_{\\max}} in the triangle inequality, not \\sqrt{L_v M_{\\max}}. The final constant \\gamma_h is correct if one uses the sharper bound \\|M\\|_v^2 \\le M_{\\max}, but the proof as written has inconsistent factors.",
+      "failure_location": {
+        "quote": "Then pointwise:\n\\[\n  \\mathcal{D}(u) \\ge \\lambda_N \\| u - \\bar{u} \\|_{v}^{h,2}.\n\\]",
+        "tag": "prop:coercivity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the Poincaré inequality by dividing by \\Delta v (or adjust the subsequent combination), and replace the Cauchy-Schwarz bound with \\|M\\|_v^2 \\le M_{\\max} to obtain the stated factor. This is a local correction.",
+      "overall_effect": "The proof of Proposition \\ref{prop:coercivity} contains invalid intermediate inequalities, and consequently the proof of Theorem \\ref{thm:main_AP} is unsupported as written, though the final statements are correct.",
+      "primary_affected_tag": "prop:coercivity",
+      "target_type": "formal_result",
+      "title": "Factor errors in coercivity proof",
+      "why_classification": "The final proposition and theorem statements are correct and the repair is a short, local factor correction that does not change the mathematical content."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[\\big\\|\\mathcal L_{h}^{n+1}(f^{n+1})\\big\\|_{xv}^h\n  \\;\\le\\;\n  \\Theta \\Big( \\varepsilon\\,\\|G^{n+1}\\|_{xv}^h \\;+\\; \\kappa_h\\,M_{\\max}^{n+1}\\,\\sqrt{L_v}\\,\\big\\|\\rho^{n+1}\\big\\|_x^h \\Big),\\]",
+          "tag": "thm:main_AP"
+        },
+        {
+          "quote": "Although Theorem \\ref{thm:main_AP} only proves AP property up to the spatial fluctuation  $\\mathcal{O}(\\kappa_h)$, we observe in the numerical experiments that the first-order scheme exhibits an AP error of $\\mathcal{O}(\\varepsilon)$, regardless of the field fluctuation.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The formal bound contains the term \\kappa_h M_{\\max}^{n+1}\\sqrt{L_v}\\|\\rho^{n+1}\\|_x^h, which is independent of \\varepsilon. As \\varepsilon\\to 0, this term does not vanish unless \\kappa_h=0. Therefore the theorem does not establish an AP property in the usual sense when the field fluctuation is nonzero. The abstract's unqualified claim of proving an AP property when the field fluctuation is small is materially stronger than the formal result, which only gives a bound that can remain O(\\kappa_h) as \\varepsilon\\to 0.",
+      "failure_location": {
+        "quote": "For the first-order scheme, we prove an asymptotic-preserving (AP) property when the field fluctuation is small.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Qualify the abstract claim to match the theorem, e.g., \"we prove an AP property up to a spatial-field-fluctuation term\" or \"we prove a bound showing relaxation to equilibrium up to O(\\kappa_h).\"",
+      "overall_effect": "The abstract and introduction may mislead readers into thinking the first-order scheme is AP for small nonzero field fluctuations, whereas the theorem only proves a bound with an \\varepsilon-independent field-fluctuation term.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Abstract overstates AP property for nonzero field fluctuation",
+      "why_classification": "The main advertised AP guarantee is overstated; correcting it requires weakening the abstract's claim, but the paper's actual theorem and numerical results remain."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[\n  f^0(x,v)=\\frac{\\rho^0(x)}{\\sqrt{2\\pi}}\n  \\left(e^{-\\tfrac{v^2}{2}}+e^{-\\tfrac{(v-1.5)^2}{2T_{\\rm cold}}}\\right),\n  \\qquad T_{\\rm cold}=5\\times10^{-3},\n\\]",
+          "tag": null
+        },
+        {
+          "quote": "\\int_{\\Omega_x}(\\rho(x,0)-\\eta(x))\\,\\dx=0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The integral of f^0 over v is \\rho^0(x)(1+\\sqrt{T_{\\rm cold}}), so the actual initial density is not \\rho^0(x) but (1+\\sqrt{T_{\\rm cold}})\\rho^0(x). Since \\eta(x) is defined to have the same integral as \\rho^0(x), the initial data violates the global neutrality condition required for the periodic Poisson equation. This makes the bump-on-tail numerical test inconsistent with the stated VPFP setup.",
+      "failure_location": {
+        "quote": "with spatially localized density and background charge\n\\[\n  \\rho^0(x)=0.3+\\exp\\!\\Big(-\\frac{(x-0.3)^2}{0.01}\\Big),\\qquad\n  \\eta(x)=0.3+\\exp\\!\\Big(-\\frac{(x-0.6)^2}{0.01}\\Big),\n\\]",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Rescale the initial distribution by 1/(1+\\sqrt{T_{\\rm cold}}) or adjust \\eta(x) so that the initial density satisfies neutrality.",
+      "overall_effect": "The bump-on-tail numerical experiment may not solve the stated periodic VPFP problem, potentially affecting the validity of the reported comparison in that test.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Bump-on-tail initial data violates neutrality condition",
+      "why_classification": "The error is confined to one numerical test setup and can be fixed by a simple rescaling; it does not affect the main method or theoretical results."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2601.11900",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n01a",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0a3cd4bfe32954879edc6b7c61b5ec215bbd2b3813d7c0aaa4b12d7a1620d81d",
+  "status": "ok"
+}

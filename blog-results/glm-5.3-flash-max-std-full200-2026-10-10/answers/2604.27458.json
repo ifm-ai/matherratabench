@@ -1,0 +1,85 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:shock_interaction",
+        "thm:rarefaction",
+        "thm:compound_wave",
+        "thm:shock_smooth_initial",
+        "thm:main_1d",
+        "thm:more_general_case"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\L_{bc}(v) := &\\ \\|v(\\cdot,0)-u_0(\\cdot)\\|_{L^1(\\Omega)},\\quad \\L_{reg}(v) := h\\int_{\\Omega_T}|\\nabla \\cdot \\mathbf{F}(v)|\\,\\d\\z.",
+          "tag": "eq:loss_func"
+        },
+        {
+          "quote": "Since $\\nabla\\!\\cdot\\mathbf F(u)=0$ pointwise on $\\Omega_T^\\pm$ and $u$ is compactly supported in $\\Omega$, integrating by parts separately on $\\Omega_T^\\pm$ yields the identity",
+          "tag": "rem:motivation"
+        },
+        {
+          "quote": "Throughout, $\\Omega\\subset\\mathbb{R}^d$ is chosen to be bounded but large enough so that $\\supp u(\\cdot,t)\\subset\\Omega$ for $t\\in[0,T]$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The skeleton sum in Step 4 runs over all faces of all cells, including the faces on the lateral outer boundary of Omega_T, where no adjacent cell exists and cancellation is impossible. The asserted identity (eq:1st_term_reformulated) keeps only the T-term, the t=0 term and the Gamma_j jump, silently dropping int_{dOmega x (0,T)} (f(u_theta*)-f(0)) sgn(u_theta*) . n_x. The standing assumption supp u(.,t) subset Omega makes only the exact solution and the interpolants (u_0, tilde u_h) vanish near the boundary; u_theta* is an arbitrary continuous tanh network, the loss (eq:loss_func) contains no lateral-trace penalty, and |f(v)-f(0)| grows like |v|+|v|^2, so this term is generally nonzero and is not controlled by L(theta*) or by anything else in the proof. The same omission occurs in eq:part1_Lu_rarefaction, eq:md_error_identity, eq:shock_birth_error_identity and the identity in Appendix D.5. The paper therefore proves less than claimed: the L1-stability step and hence all final error estimates are unproven as written.",
+      "failure_location": {
+        "quote": "Since $\\tilde u_h$ is continuous across all faces of $\\partial\\Lambda_h$ except those on $\\Gamma_j$, the mesh-skeleton contributions cancel pairwise and we obtain",
+        "tag": "eq:1st_term_reformulated"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a lateral-trace component to the loss, e.g. L_lat(v) = int_{dOmega x (0,T)} (|v|+|v|^2) ds dt, and in each stability identity bound the dropped boundary term by L_lat(u_theta*). All competitors constructed in the paper vanish near dOmega (since supp u is compactly supported in Omega), so every loss upper bound is unchanged, and all stated rates survive verbatim.",
+      "overall_effect": "Every L1 error estimate in the paper (Theorems 4.2, 4.3, 4.5, 4.6, 4.7 and 5.2, and the corresponding abstract/introduction guarantees) is unproven: the stability mechanism that converts the small loss of the minimizer into an L1 error requires a boundary contribution that no hypothesis or loss term controls. The construction lemmas (small loss) remain valid.",
+      "primary_affected_tag": "thm:shock",
+      "target_type": "formal_result",
+      "title": "Stability identities drop an uncontrolled lateral boundary flux of the neural-network minimizer",
+      "why_classification": "The supported resolution is contained: one new (standard) loss component and a one-line estimate per proof; no new lemma, construction or reoptimization is needed and every rate, regime and advertised guarantee survives. It exceeds minor because the loss functional central to all statements must be redefined and the key identity of every stability proof re-verified, rather than fixing a local degenerate case."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:shock_smooth_initial",
+        "thm:compound_wave",
+        "thm:main_1d"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $L=O(h)$ denote the strip width and define shifted strips $\\Lambda_j$ ($j=1,\\dots,M$) by shifting $\\Lambda_0$ to the left by $jL$.",
+          "tag": null
+        },
+        {
+          "quote": "We assume $\\Lambda_h$ is quasi-uniform and shape-regular in the standard finite element sense with mesh size $h:=\\underset{K \\in \\Lambda_h}{\\max} h_K$, $h_K:=\\operatorname{diam}\\left(K\\right)$.",
+          "tag": null
+        },
+        {
+          "quote": "V_h := \\Big\\{ v_h\\in L^\\infty(\\Omega_T)\\;:\\; v_h|_K\\in\\mathbb{Q}^1(K)\\ \\ \\forall K\\in\\Lambda_h \\Big\\}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A function of V_h is a single polynomial per cell, so its jump set is contained in the mesh skeleton. Gamma_j is defined as the left boundary of the translate of the cell strip Lambda_0 by jL; for a general quasi-uniform partition (simplices or hexahedra are both allowed) a translate of a union of cells is not a union of cells, so no tilde u_h in V_h can be continuous across all mesh faces and discontinuous exactly along Gamma_j. The premise that such a test function exists is therefore unestablished, and Step 4's pairwise cancellation of skeleton contributions (which leaves only the jumps along Gamma_j) fails for admissible meshes; the same translated-strip construction is reused in the proofs of Theorems 4.6, 4.7 and Appendix D.5.",
+      "failure_location": {
+        "quote": "Define $\\tilde u_h$ as the (elementwise) $\\mathbb{Q}^1$ Lagrange interpolant of $u$ on the left of $\\Gamma_j$ and of $u_{\\rm ext}^+$ on the right of $\\Gamma_j$. By construction $\\tilde u_h\\in V_h^c$ and is continuous across all mesh faces except those lying on $\\Gamma_j$.",
+        "tag": "thm:shock"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that Lambda_h is a uniform Cartesian (translation-invariant) partition — the case used in all computations — or define the strips Lambda_j as successive unions of cells rather than rigid translates; either fix is local and leaves every estimate, rate and conclusion unchanged.",
+      "overall_effect": "On general quasi-uniform meshes the DPwP test function tilde u_h of Theorem 4.2 (and of the transplanted constructions in Theorems 4.6, 4.7 and Appendix D.5) is not well defined as described, so the h^{1/2}-type estimates relying on it are unsupported for the advertised mesh class.",
+      "primary_affected_tag": "thm:shock",
+      "target_type": "formal_result",
+      "title": "Shifted-interface strips presuppose a translation-invariant mesh that the hypotheses do not assume",
+      "why_classification": "A short, local, routine repair (one added hypothesis already satisfied by the meshes used in the experiments, or a cell-wise reinterpretation of the strips) fully restores the construction and every substantive claim; no new argument, rate change or scope loss is involved."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2604.27458",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "fa599861b356dd36e3308395e26809b1b1a6ac97dfcedb1c1c3afa8cb15e2896",
+  "status": "ok"
+}

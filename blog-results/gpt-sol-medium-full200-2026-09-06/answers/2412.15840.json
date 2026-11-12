@@ -1,0 +1,128 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "y_{i_1i_2\\ldots i_N} = \\frac{\\displaystyle{c_{i_1i_2\\ldots i_N} - \\sum_{j = 1}^{N}\\sum_{k = i_j+1}^{n_j}t_{j, i_jk}y_{i_1i_2\\ldots i_{j-1}k i_{j+1}\\ldots i_N}}}{\\displaystyle{\\sum_{j = 1}^{N}t_{j, i_ji_j}}}.",
+          "tag": "e:yi1i2iN"
+        },
+        {
+          "quote": "In what regards the uniqueness of the solution, the coefficients are uniquely determined from \\eqref{e:yi1i2iN} in a recursive way.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Nonzero sums of eigenvalues characterize invertibility of the Kronecker-sum operator, hence existence and uniqueness for every right-hand side. They are not necessary for existence for a fixed right-hand side: a singular equation may be compatible and have multiple solutions, for example when every \\(\\A_j=0\\) and \\(\\B=0\\).",
+      "failure_location": {
+        "quote": "Therefore, \\eqref{e:sylvesterND} and \\eqref{e:TjYC} have a solution if and only if, when taking an eigenvalue of each matrix $\\A_j$, their sum is always different from zero",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the existence claim by a unique-solvability claim, or separately state the compatibility condition required for existence in the singular case.",
+      "overall_effect": "The paper's claimed iff criterion for existence is false, although the same condition correctly supports the unique-solution back substitution used by the solver.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Nonsingularity is incorrectly characterized as existence",
+      "why_classification": "A local correction to “has a unique solution” preserves the algorithm, its condition, and all results concerning the nonsingular regime."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In what regards $\\Y$, in order to compute one entry $y_{i_1i_2\\ldots i_N}$ in \\eqref{e:yi1i2iN}, we need one division",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, in order to fully determine $\\Y$, we need $n_1n_2\\ldots n_NN$ divisions",
+          "tag": null
+        },
+        {
+          "quote": "= n_1n_2\\ldots n_N\\Bigg[5\\sum_{j = 1}^{N}n_j - N + 1\\Bigg],",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "There is one division for each of the \\(n_1\\cdots n_N\\) entries of \\(\\Y\\), not \\(N\\) divisions per entry. Moreover, even substituting the paper's stated \\(Nn_1\\cdots n_N\\) division count into its preceding multiplication and addition formulas does not yield the displayed final total. Under the paper's own convention of using \\(N-1\\) additions for the denominator, the total is \\((n_1\\cdots n_N)(5\\sum_j n_j-2N)\\), not the claimed expression.",
+      "failure_location": {
+        "quote": "These, together with the $n_1n_2\\ldots n_NN$ divisions needed to compute $\\Y$, make the following number of floating point operations (excluding the Schur decompositions) to implement the method:",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Recount the divisions as one per tensor entry and recompute the final sum consistently, also choosing consistently whether initialization by zero is counted as an addition.",
+      "overall_effect": "The advertised exact operation count is unreliable, though the concluding asymptotic order \\(\\mathcal O(n^{N+1})\\) remains unchanged.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Floating-point operation count overcounts divisions and is algebraically inconsistent",
+      "why_classification": "The repair is a routine local operation recount and does not alter the algorithm or its asymptotic complexity."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\A_j \\equiv (a_{j,i_1i_2})\\in\\CC^{n_j\\times n_j}$, and $\\B\\equiv(b_{i_1i_2\\ldots i_N})\\in\\CC^{n_1\\times n_2\\times\\ldots\\times n_N}$ are time independent",
+          "tag": "theo:evolND"
+        },
+        {
+          "quote": "\\sum_{j = 1}^{N}\\A_j\\square_j\\X = \\F,",
+          "tag": "e:sylvesterNDC"
+        },
+        {
+          "quote": "\\A\\Y(t) = \\exp(t\\A)[\\A\\Y(0) + \\C] - \\C.",
+          "tag": "e:AY"
+        },
+        {
+          "quote": "On the other hand, it is straightforward to implement Theorem~\\ref{theo:evolND} by adapting Listing~\\ref{code:sylvesterND}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem correctly shows only that the ODE solution satisfies an equation for \\(\\A\\Y(t)\\). Recovering \\(\\Y(t)\\) by the paper's Sylvester solver additionally requires the Kronecker sum \\(\\A\\) to be invertible, but no such hypothesis is imposed. For example, if every \\(\\A_j=0\\), then the ODE has the unique solution \\(\\X(t)=\\X(0)+t\\B\\), whereas the proposed Sylvester equation reduces to \\(0=0\\) and cannot determine \\(\\X(t)\\).",
+      "failure_location": {
+        "quote": "On the other hand, it is possible to generalize this result to $N$ dimensions, and reduce the calculation of the solution of \\eqref{e:evolND} at any given $t$ to a matrix equation of the form of \\eqref{e:sylvesterND}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either restrict the computational claim to invertible Kronecker sums or provide a different recovery formula or algorithm that handles singular sums while retaining the unique ODE solution.",
+      "overall_effect": "The claimed method for computing solutions of arbitrary constant-coefficient multidimensional ODE systems, including the associated implementation guarantee, fails whenever an eigenvalue sum is zero. The formal theorem's satisfaction identity remains true but is insufficient for computation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The Sylvester reformulation does not compute arbitrary ODE solutions in the singular case",
+      "why_classification": "Adding invertibility excludes an advertised class of arbitrary constant-coefficient systems, while retaining that scope requires a new computational construction rather than the stated Sylvester solve."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& u(\\xx, 0) = \\exp(-\\xx\\cdot\\xx),",
+          "tag": "e:uxt"
+        }
+      ],
+      "failure_explanation": "At \\(t=0\\), the claimed solution equals \\(2\\exp(-\\xx\\cdot\\xx)\\), not the prescribed initial value \\(\\exp(-\\xx\\cdot\\xx)\\). In fact, writing \\(u=a(t)e^{-\\xx\\cdot\\xx}\\) reduces the stated problem to \\(a'=a-1\\), \\(a(0)=1\\), whose solution is the stationary value \\(a(t)=1\\).",
+      "failure_location": {
+        "quote": "Moreover, the solution of \\eqref{e:uxt} is $u(\\xx, t) = (1+\\exp(t))\\exp(-\\xx\\cdot\\xx)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Either change the initial condition to \\(2\\exp(-\\xx\\cdot\\xx)\\), which matches the claimed nonstationary solution, or replace the exact solution by \\(\\exp(-\\xx\\cdot\\xx)\\) and adjust the numerical comparison accordingly.",
+      "overall_effect": "The stated exact solution and consequently the claimed interpretation of the final numerical error for the displayed initial-value problem are unreliable.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed advection-diffusion solution violates the initial condition",
+      "why_classification": "A short local correction to either the initial datum or the reference solution yields a valid problem of the same type without changing the numerical method."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2412.15840",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d355df1c8786c244bfb34e8cdaf2d27ff412465fb86eaa3ee0e5c7a234cfa7a2",
+  "status": "ok"
+}

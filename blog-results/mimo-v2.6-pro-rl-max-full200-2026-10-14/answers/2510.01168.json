@@ -1,0 +1,118 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lambda-bound",
+        "lambda-uniform-bound",
+        "lem:added-1",
+        "thm:sub_iters",
+        "lem:subsolver_output",
+        "thm:outer_bound",
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then there exists a constant $\\zeta > 0$ such that for every $z \\in \\cS$, one can find a point $y \\in \\cY$ (possibly depending on $z$) satisfying $\\bc(y, z) \\leq -\\zeta$.",
+          "tag": "thm:UniSlater"
+        },
+        {
+          "quote": "\\bc_{j}(y, z^k) > -\\zeta_k \\quad  \\forall y\\in\\cY, \\, \\forall k.",
+          "tag": "thm:UniSlater"
+        }
+      ],
+      "failure_explanation": "The conclusion quantifies $\\bar{c}(y,z)\\le -\\zeta$, meaning all $m$ components simultaneously. Its negation gives $\\forall y\\,\\exists j(y,k)$ with $\\bar{c}_{j(y,k)}(y,z^k)>-\\zeta_k$, where the index depends on $y$. The proof incorrectly upgrades this to a single $j$ satisfying $\\bar{c}_j(y,z^k)>-\\zeta_k$ for every $y\\in\\mathcal{Y}$. The remaining argument (passing to the limit to get $\\bar{c}_j(y,z)\\ge0$ for all $y$, then using MFCQ and a directional derivative to contradict this) depends on this unjustified single-$j$ claim.",
+      "failure_location": {
+        "quote": "Then there exist a positive sequence $\\{\\zeta_k\\}$, a sequence $\\{z^k\\} \\subset \\cS$, and some $j \\in \\{1,...,m\\}$ such that $\\lim_{k\\to\\infty }\\zeta_k = 0$ and",
+        "tag": "thm:UniSlater"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Work throughout with $g(y):=\\max_j \\bar{c}_j(y,z)$ instead of a single $\\bar{c}_j$. From $\\forall y: g(y)>-\\zeta_k$ derive $\\min_y g(y)\\ge-\\zeta_k$; pass to $z^k\\to z$ to obtain $\\min_y g(y)\\ge0$ at the limit; note $g(z)=\\max_j c_j(z)\\le0$ forces $\\max_j c_j(z)=0$; apply MFCQ to find a direction along which every active $\\bar{c}_j$ becomes strictly negative, contradicting $\\min_y g(y)\\ge0$. The compactness/MFCQ/directional-derivative architecture is preserved.",
+      "overall_effect": "The uniform Slater property is unproven. Every result depending on the explicit multiplier bound (SCP convergence rate, iteration complexity, oracle complexity) is unreliable until the proof is repaired.",
+      "primary_affected_tag": "thm:UniSlater",
+      "target_type": "formal_result",
+      "title": "Unjustified single-index extraction in proof of uniform Slater theorem",
+      "why_classification": "The wrong inference requires restructuring several proof lines to use $\\max_j$ arguments, but the theorem is correct and the repair uses the same mathematical ideas without new proof architecture or loss of content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lambda-uniform-bound",
+        "lem:added-1",
+        "thm:sub_iters",
+        "lem:subsolver_output",
+        "thm:outer_bound",
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "0 \\in \\nabla g(z^k) + \\Big(L_{k} + \\sum_{j=1}^m \\lambda^{k}_j L_{c_j}\\Big)(z^{k+1}-z^k) + \\partial q(z^{k+1}) + \\sum_{j=1}^m \\lambda^{k}_j \\nabla c_j(z^k)",
+          "tag": "thm:sub_well"
+        },
+        {
+          "quote": "$z^{k+1} = \\mathop{\\arg\\min}_z \\widetilde{L}(z, \\lambda^k), $",
+          "tag": "lambda-bound"
+        },
+        {
+          "quote": "+ \\frac{L_k}{2}\\|\\hat{y}^k-z^{k+1}\\|^2 + q(\\hat{y}^k) - q(z^{k+1})\\Big)",
+          "tag": "lambda-bound"
+        }
+      ],
+      "failure_explanation": "The auxiliary function $\\phi$ (and the Lagrangian $\\widetilde{L}=\\phi+\\langle\\lambda,\\bar{c}\\rangle$) is defined without $q(z)$, so the claim $z^{k+1}=\\arg\\min_z\\widetilde{L}(z,\\lambda^k)$ is false: the KKT stationarity condition \\eqref{thm2_KKT_Stationary} involves $\\partial q(z^{k+1})$. Moreover, the step bounding $\\frac{L_k}{2}(\\|\\hat{y}^k-z^k\\|^2-\\|z^{k+1}-z^k\\|^2)$ by $\\frac{L_k}{2}\\|\\hat{y}^k-z^{k+1}\\|^2$ is a false geometric inequality (it would require $\\langle\\hat{y}^k-z^{k+1},z^{k+1}-z^k\\rangle\\le0$, which does not hold in general).",
+      "failure_location": {
+        "quote": "$\\phi(z)= \\langle \\nabla g(z^k), z \\rangle + \\frac{L_k}{2}\\|z - z^k\\|^2$.",
+        "tag": "lambda-bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Include $q(z)$ in $\\phi$ (so $\\phi(z)=\\langle\\nabla g(z^k),z\\rangle+\\frac{L_k}{2}\\|z-z^k\\|^2+q(z)$), making $z^{k+1}=\\arg\\min\\widetilde{L}(z,\\lambda^k)$ valid by KKT. Replace the false inequality by $\\frac{L_k}{2}(\\|\\hat{y}^k-z^k\\|^2-\\|z^{k+1}-z^k\\|^2)\\le\\frac{\\bar{L}}{2}D_\\mathcal{Y}^2$ to obtain the stated bound.",
+      "overall_effect": "The proof of the explicit $\\ell_1$ multiplier bound is invalid. The stated bound is correct but unproven as written; every result that uses this bound is unreliable.",
+      "primary_affected_tag": "lambda-bound",
+      "target_type": "formal_result",
+      "title": "Lagrangian omits q and false geometric inequality in multiplier bound proof",
+      "why_classification": "Both corrections are local and routine (fix a definition, use the diameter bound), preserving every substantive claim and guarantee with no new argument or reoptimization."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1",
+        "thm:sub_iters",
+        "lem:subsolver_output",
+        "thm:outer_bound",
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "It is well-known that $\\partial (\\phi_1 + \\phi_2)(x) = \\nabla \\phi_1(x) + \\partial \\phi_2(x)$ if $\\phi_1$ is continuously differentiable at $x$ and $\\phi_2$ is lower or upper semicontinuous at $x$",
+          "tag": null
+        },
+        {
+          "quote": "\\partial  \\bh(z,w) \\supseteq \\hat{\\partial} \\bh(z,w) \\supseteq",
+          "tag": "lem:distBound"
+        }
+      ],
+      "failure_explanation": "The paper's own sum rule $\\partial(\\phi_1+\\phi_2)=\\nabla\\phi_1+\\partial\\phi_2$ produces plus signs. Applied to $\\bar{h}=g+q+\\delta_{\\bar{c}\\le0}+\\delta_\\mathcal{Y}$, the correct formula is $\\partial\\bar{h}\\ni\\begin{pmatrix}\\nabla g+\\partial q\\\\ \\mathcal{N}_\\mathcal{Y}\\end{pmatrix}+\\widehat{\\mathcal{N}}_{\\bar{c}\\le0}$ with all plus signs. The displayed formula uses minus signs before $\\hat{\\partial}q$, $\\hat{\\partial}\\delta_\\mathcal{Y}$, and $\\hat{\\partial}\\delta_{\\bar{c}\\le0}$, so the claimed element \\eqref{lem3_subdiffElem} does not belong to the set generated by the (wrong) formula, and the derivation of the distance bound is broken.",
+      "failure_location": {
+        "quote": "\\begin{pmatrix} \\nabla g(z) - \\hat{\\partial} q(z) \\\\ -\\hat{\\partial} \\delta_{\\cY}(w) \\end{pmatrix} - \\hat{\\partial} \\delta_{\\,\\bc(\\cdot, \\cdot) \\leq 0} (z,w)",
+        "tag": "lem:distBound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change the three minus signs to plus signs in the subdifferential formula \\eqref{lem2_subdiff}. The subsequent verification of \\eqref{lem3_subdiffElem} and the norm bounds then follow correctly.",
+      "overall_effect": "The subdifferential formula is incorrect, invalidating the derivation of the element used to bound dist(0, ∂h̄). The lemma's conclusion is correct but the proof chain through the formula is broken.",
+      "primary_affected_tag": "lem:distBound",
+      "target_type": "formal_result",
+      "title": "Wrong signs in subdifferential formula of SCP error bound lemma",
+      "why_classification": "The fix is a formula-level sign correction restoring the standard sum-rule derivation; the lemma's conclusion and all guarantees are preserved."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2510.01168",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d17b6d2db9f9f8947adf6598ba23ac99b5546b1c478249f69c37b19e3c5cf5a5",
+  "status": "ok"
+}

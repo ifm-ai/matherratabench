@@ -1,0 +1,161 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "y^{(\\ell)} = \\sigma^{(\\ell)}\\left(W^{(\\ell)} y^{(\\ell-1)} + b^{(\\ell)}\\right).",
+          "tag": "eq:nn_layer"
+        },
+        {
+          "quote": "A sufficient condition for the width to ensure injectivity of the encoder is $n_\\ell \\geq n_\\text{in}$, for $\\ell = 1,\\ldots, L-1$.",
+          "tag": "th:reduction"
+        },
+        {
+          "quote": "Therefore, the encoder can be written as: $\\Psi' = \\phi'\\circ\\psi'$, where $\\phi' : \\mathbb{R}^N\\to\\mathbb{R}^n$ is a linear function, and $\\psi':\\mathbb{R}^N\\to\\mathbb{R}^M$, $M \\geq N$, a non-linear function.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A layer $y\\mapsto\\sigma(Wy+b)$ with output dimension at least the input dimension need not be injective: width alone guarantees nothing (e.g., a zero or rank-deficient $W$ collapses inputs; a ReLU layer with $W=(1,1)^T$ maps every negative input to $(0,0)$). Layer injectivity requires full column rank of $W$ together with an injective (strictly monotone) activation, hypotheses the theorem does not state — and it even invokes the ReLU-based \\Cref{th:uap}, whose activations are not injective. Moreover, even if all hidden layers were injective, the final layer $\\phi':\\mathbb{R}^N\\to\\mathbb{R}^n$ with $n<N$ cannot be injective on $\\mathbb{R}^N$; the encoder is injective on $\\mathcal{M}$ only if the last linear projection is injective on the reshaped manifold $\\psi'(\\mathcal{M})$, a further condition the theorem neither states nor establishes (the prose after the proof itself says the role of $\\psi'$ is to make the last-layer reduction injective). Hence the stated sufficient width condition does not ensure injectivity and does not imply $\\Varepsilon_1=0$.",
+      "failure_location": {
+        "quote": "To ensure the injectivity of the encoder approximated by a neural network, each layer must be injective, condition which is satisfied when $n_\\ell \\geq n_{\\ell-1}$ for all hidden layers, so $n_\\ell \\geq n_\\text{in}$ for $\\ell = 1,\\ldots,L-1$.",
+        "tag": "th:reduction"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restate the theorem with the missing hypotheses: hidden layers with full-column-rank weight matrices and strictly increasing activations (or another verified injectivity condition), plus an explicit condition that the final linear layer be injective on $\\psi'(\\mathcal{M})$ (e.g., a generic projection with $n\\geq 2m+1$, consistent with \\Cref{th:latent_dim}).",
+      "overall_effect": "The sufficient condition of \\Cref{th:reduction} is false as stated, so the design guideline of the following remark and the main-results bullet claiming that reduction at the last layer ensures null representation error are unsupported; an architecture built by the stated rule can fail to be injective. The convergence results do not use this criterion (\\Cref{th:fully_works} invokes only the universality/approximation part, which stands), so the impact is confined to the architecture-design claim.",
+      "primary_affected_tag": "th:reduction",
+      "target_type": "formal_result",
+      "title": "Width condition in Theorem th:reduction does not ensure injectivity of the encoder",
+      "why_classification": "The repair is contained in one theorem and its short proof and preserves the design message, but it requires genuinely new hypotheses (rank/activation conditions and a last-layer injectivity condition) rather than a typo-level or purely local fix; the rest of the paper is unaffected."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:latent_dim"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the map $B_r((t^*,\\mu^*)) \\ni (t, \\mu) \\to u_N$ is injective $\\forall (t^*, \\mu^*) \\in [0,T]\\times\\mathcal{P}$, with $r$ small enough. Then, the set $\\{u_N(t;\\mu)\\}_{t\\in[0,T], \\mu \\in \\mathcal{P}}$ is a $a$-manifold.",
+          "tag": "th:manifold"
+        },
+        {
+          "quote": "Global injectivity can be obtained by augmenting the solution set with parameters and time, i.e. considering the set $\\{(u_N(t;\\mu), t, \\mu)\\}_{t \\in [0,T],\\, \\mu \\in \\mathcal{P}}$",
+          "tag": "remark:augmentation"
+        },
+        {
+          "quote": "\\textit{Under the hypothesis of \\Cref{th:manifold}, the minimum latent dimension is $n \\leq 2a+1$.}",
+          "tag": "th:latent_dim"
+        }
+      ],
+      "failure_explanation": "The hypothesis is only local injectivity of $(t,\\mu)\\mapsto u_N$. The proof correctly obtains that the restriction to a small closed ball is a homeomorphism onto its image $U$, but local Euclideanity of $\\mathcal{M}$ requires the image of an open ball to be open in $\\mathcal{M}$. Local injectivity does not give this: another sheet of $\\mathcal{M}$ may pass through the same point with preimages far away in the domain, so the image can fail to be locally Euclidean at the crossing (standard example: a figure-eight immersion of a compact interval is continuous and locally injective everywhere, yet its image is not a manifold at the crossing). This is compatible with the ODE setting because trajectories for different $\\mu$ solve different vector fields and can cross transversally while the map stays locally injective. The compactness argument cannot detect such crossings. The omitted needed hypothesis is global injectivity (i.e., that the solution map is a topological embedding) on $[0,T]\\times\\mathcal{P}$; the paper's own Observation remark:augmentation implicitly acknowledges the gap, since only the augmented map is globally injective.",
+      "failure_location": {
+        "quote": "By the continuity and by the compactness of $\\mathcal{P}$, we have that $U$ is compact and $B_r((t,\\mu))\\to U$ has a continuous inverse, thus $B_r((t,\\mu))\\to U$ is a local homeomorphism. We conclude that $U$ is locally Euclidean, so $\\{u_N(t;\\mu)\\}_{t\\in[0,T], \\mu \\in \\mathcal{P}}$ is a $a$-manifold, that we denote by $\\mathcal{M}$.",
+        "tag": "th:manifold"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Strengthen the hypothesis to global injectivity of $(t,\\mu)\\mapsto u_N$ on $[0,T]\\times\\mathcal{P}$ — then compactness gives an embedding and $\\mathcal{M}$ is an $a$-manifold (with boundary) — or formulate the result for the augmented set of \\Cref{remark:augmentation}; the $2a+1$ latent bound and the downstream constructions then stand unchanged.",
+      "overall_effect": "\\Cref{th:manifold}, one of the advertised main results, is false as stated, and \\Cref{th:latent_dim}, which is proved under its hypotheses, inherits the restriction, as does the manifold-based framework of the later sections whenever the parameter-to-solution map is not globally injective (e.g., crossing trajectory families or periodic solutions); the main-results bullet restating the manifold claim is affected by the same root.",
+      "primary_affected_tag": "th:manifold",
+      "target_type": "formal_result",
+      "title": "Local injectivity of the solution map does not imply the solution set is an a-manifold",
+      "why_classification": "A source-supported fix exists (assume global injectivity or use the paper's own augmentation), but it strengthens the theorem's hypotheses and excludes the non-injective regime unless the augmented formulation is adopted — a limited weakening leaving a recognizably comparable result, with no new global proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "By calling $A = J_{\\Psi'}\\Lambda J_{\\Psi}$, the numerical solution at timestep $k+1$ is:",
+          "tag": null
+        },
+        {
+          "quote": "(J_{\\Psi}J_{\\Psi'}) \\Lambda w = \\lambda w.",
+          "tag": null
+        },
+        {
+          "quote": "constructing the decoder as $J_\\Psi = (J_{\\Psi'}^\\top J_{\\Psi'})^{-1}J_{\\Psi'}^\\top$, which can be enforced in the optimization process",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The nonzero eigenvalues of $A=J_{\\Psi'}\\Lambda J_\\Psi$ equal those of $\\Lambda P$ (equivalently of $P\\Lambda$), where $P=J_\\Psi J_{\\Psi'}$ is the orthogonal projection onto $V=\\mathrm{col}(J_\\Psi)$. Idempotency of $P$ (eigenvalues $0$ and $1$) does not transfer to the product $\\Lambda P$: the nonzero spectrum of $\\Lambda P$ is generally not contained in the spectrum of $\\Lambda$. Counterexample: $\\Lambda=\\mathrm{diag}(-1,-2)$ with $V=\\mathrm{span}\\{(1,1)^T\\}$ gives the reduced eigenvalue $-3/2\\notin\\{-1,-2\\}$; with the nonsymmetric $\\Lambda=[[-1,10],[0,-2]]$ (eigenvalues $-1,-2$) the same $V$ gives a positive reduced eigenvalue $+7/2$, so the reduced model can even lose stability. Eigenvalue preservation holds only if $V$ is $\\Lambda$-invariant (e.g., spanned by eigenvectors), a hypothesis the proposed construction does not enforce. (Additionally, the displayed formula $J_\\Psi=(J_{\\Psi'}^\\top J_{\\Psi'})^{-1}J_{\\Psi'}^\\top$ is undefined as written, since $J_{\\Psi'}^\\top J_{\\Psi'}\\in\\mathbb{R}^{N\\times N}$ has rank $n<N$; the intended pseudoinverse is $J_{\\Psi'}^\\top(J_{\\Psi'}J_{\\Psi'}^\\top)^{-1}$.) Hence the claim that the \\node\\ timestep bound is, in the worst scenario, that of the \\Node\\ is unsupported for the general model problem of this section.",
+      "failure_location": {
+        "quote": "Due to the specific assumptions made in the construction of the decoder, the projection sets some eigenvalues to zero while leaving the others unchanged. Therefore, the eigenvalues $\\neq 0$ are those of $\\Lambda$, so the bound on the timestep of the \\node\\ is, in the worst scenario, the same as that of the \\Node.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the hypothesis that $V=\\mathrm{col}(J_\\Psi)$ is a $\\Lambda$-invariant subspace (then the nonzero eigenvalues of $A$ are indeed eigenvalues of $\\Lambda$), or restrict to symmetric negative-definite $\\Lambda$ and justify the timestep-bound conclusion via Cauchy interlacing of the compression $P\\Lambda|_V$.",
+      "overall_effect": "The advertised special case in which reduction is guaranteed not to tighten the Forward-Euler stability bound does not hold under the stated construction; only the generic advice to check the eigenvalues of $A$ case by case survives. The analogous-conclusions statement in the subsequent linear-encoder/non-linear-decoder bullet inherits the doubt. For symmetric negative-definite $\\Lambda$ the timestep-bound conclusion could be recovered by interlacing, but that is not the argument given and the section allows non-symmetric $\\Lambda$. No formal result elsewhere depends on this claim.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Orthogonal-projection autoencoder does not preserve the eigenvalues of Lambda",
+      "why_classification": "The claim is false as stated; the repair either imposes a restrictive structural hypothesis the proposed loss-based construction does not deliver, or narrows $\\Lambda$ to the symmetric case with a new short argument — a contained but genuine weakening of the advertised guarantee, with no impact on the paper's convergence results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "H = \\|\\m w_n - \\m u_n \\|_\\infty \\leq (\\eps_{\\Psi'} + \\eps_{F_n}T) e^{L_{F_n,\\mu} T}.",
+          "tag": "eq:bound_H"
+        },
+        {
+          "quote": "\\max_{\\mu} \\|\\m u_N - \\m \\uut_N \\|_{\\infty} \\leq L_{\\Psi}(\\eps_{\\Psi'}(\\myw) + \\eps_{F_n}(\\Delta t_\\text{train},\\myw)T) e^{L_{F_n} T} + L_{\\Psi}C_{1}\\Delta t^P + \\eps_{\\Psi}(\\myw).",
+          "tag": "eq:final_error-1"
+        }
+      ],
+      "failure_explanation": "The theorem's hypothesis list assumes only continuity of $\\Psi'$, $\\Psi$, and $F_n$, but both the statement and the proof use Lipschitz constants: the reconstruction error is bounded through $L_\\Psi$, and the Grönwall step yielding \\eqref{eq:bound_H} requires $F_n$ Lipschitz (which is also what gives existence/uniqueness for the \\node). Mere continuity provides none of these constants, and convergence of the scheme $M_n$ applied to $\\dot w_n=N_{F_n}(w_n)$ additionally needs $N_{F_n}$ Lipschitz. The hypotheses as written therefore do not support the conclusion.",
+      "failure_location": {
+        "quote": "We make the following assumptions: $\\Psi'$, $\\Psi$, and $F_n$ are continuous functions;",
+        "tag": "th:global_convergence"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add to the theorem's assumptions the standing Lipschitz hypotheses already used in the paper (as in \\Cref{th:L_{F_n}}: $\\Psi$, $\\Psi'$ Lipschitz, $J_{\\Psi'}$ Lipschitz and bounded, $F_N$ bounded) and Lipschitz continuity of $N_{F_n}$ — conditions automatically satisfied by the neural-network realizations employed.",
+      "overall_effect": "The headline bound \\eqref{eq:final_error-1} and its vanishing-error statement, together with the main-results restatement, are strictly stated under insufficient hypotheses; only the hypothesis level is affected, not the derivation itself.",
+      "primary_affected_tag": "th:global_convergence",
+      "target_type": "formal_result",
+      "title": "Global convergence theorem assumes only continuity but uses Lipschitz constants",
+      "why_classification": "Adding the Lipschitz hypotheses is a short, local, routine repair — the conditions are already introduced earlier and hold automatically for the networks used — and it leaves the bound, the rate, and the advertised scope entirely unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "It follows that a necessary condition for $\\max_{k=0,1,\\ldots}\\|N_{F_n}(t_k) - F_n(t_k)\\| \\to 0$ is that $\\|J_{N_{\\Psi'}}(t_k)-J_{\\Psi'}(t_k)\\|_\\infty \\to 0$, therefore, an accurate representation of the encoder and its Jacobian is necessary.",
+          "tag": null
+        },
+        {
+          "quote": "So, for $|\\myw|\\to\\infty$ and $\\Delta t, \\Delta t_{\\text{train}} \\to 0$, we have $\\max_{\\mu} \\|\\m u_N - \\m \\uut_N \\|_{\\infty} \\to 0$.}",
+          "tag": "th:global_convergence"
+        }
+      ],
+      "failure_explanation": "The theorem's assumptions and its convergence sentence are strategy-unspecific, but the proof justifies $\\eps_{F_n}\\to0$ only for the fully data-driven strategy via \\Cref{th:fully_works}. Under the semi data-driven strategy, training matches $N_{F_n}$ to $J_{N_{\\Psi'}}F_N$, so $\\eps_{F_n}\\to0$ requires $\\|J_{N_{\\Psi'}}-J_{\\Psi'}\\|_\\infty\\to0$ — which the paper itself identifies as a necessary condition, but which follows neither from sup-norm universal approximation of $\\Psi'$ (arbitrarily small $\\|\\kappa\\|$ is compatible with O(1) Jacobian error, e.g. $\\kappa(x)=\\eta\\sin(x/\\eta)$) nor from any stated hypothesis (global loss minimum, enough data, proper architecture). Thus the unqualified convergence conclusion is not established for the semi data-driven strategy.",
+      "failure_location": {
+        "quote": "Using the fully data-driven training, by \\Cref{th:fully_works}, we have that $\\eps_{F_n} \\to 0$ as $|\\myw| \\to \\infty$ and $\\Delta t_{\\text{train}} \\to 0$.",
+        "tag": "th:global_convergence"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the convergence statement to the fully data-driven strategy, or add the hypothesis $\\|J_{N_{\\Psi'}}-J_{\\Psi'}\\|_\\infty\\to0$ as $|\\myw|\\to\\infty$ (with a $C^1$-capable architecture/training) for the semi data-driven case.",
+      "overall_effect": "The convergence guarantee of \\Cref{th:global_convergence} and its main-results restatement are unproven for the semi data-driven strategy — precisely the strategy advertised to allow online refinement $\\Delta t<\\Delta t_\\text{train}$ and used as strategy 2 in Test 2. The error bound itself (in terms of the $\\eps$'s) and the fully data-driven case are unaffected.",
+      "primary_affected_tag": "th:global_convergence",
+      "target_type": "formal_result",
+      "title": "Vanishing-error conclusion proved only for the fully data-driven strategy",
+      "why_classification": "Either repair is a short, local edit — a scope restriction or the addition of a condition the paper itself already states to be necessary — preserving the central bound and the fully data-driven guarantee with no new lemma or change to the proof architecture."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2509.21280",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "19e6e96dd9ce47adb57a09625f6049b746db9e746b768969ac4dfbdbdddf7897",
+  "status": "ok"
+}

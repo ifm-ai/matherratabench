@@ -6,7 +6,7 @@ paper and lists the non-typo issues it finds, giving each a severity, a target
 type, and a location. A judging model then checks which annotated (gold) issues
 the agent recovered.
 
-This repository accompanies our **MathErrataBench blog post [TODO: add link]**.
+This repository accompanies our [MathErrataBench blog post](https://ifm.ai/blog/matherratabench/).
 Browse the 200 papers in **[PAPERS.md](paper-list-info/PAPERS.md)**, or filter
 **[papers.csv](paper-list-info/papers.csv)** in a spreadsheet. Both list titles,
 authors, input versions, arXiv links, and issue counts.
@@ -20,8 +20,8 @@ authors, input versions, arXiv links, and issue counts.
 | 3. Evaluate | [`evaluation/`](evaluation/) | A judging model matches predictions to gold issues and writes one report per paper. | `generated/evaluation/<run>/` |
 | 4. Score | [`scoring/`](scoring/) | Compute issue-level and paper-level metrics from the reports. | `generated/scores/` |
 
-Step 1 alone reconstructs the benchmark. The GitHub Release archive holds the
-saved answers and judgments behind the blog post. See
+Step 1 alone reconstructs the benchmark. The [`blog-results/`](blog-results/)
+folder holds the saved answers and judgments behind the blog post. See
 [Reproducing the blog post](#reproducing-the-blog-post). The scripts create
 `generated/` on first use.
 
@@ -399,7 +399,7 @@ representative papers first to budget a full run.
 | [score_papers.py](scoring/score_papers.py) | Calculates the fraction of papers in which every eligible gold issue was recovered. |
 | [score_tags.py](scoring/score_tags.py) | Optional. Measures primary-tag coverage directly from parsed predictions and gold, without the judge. |
 | [metrics.py](scoring/metrics.py) | Shared scoring functions used by the issue scorer, the paper scorer, and the reproduction script. |
-| [reproduce_blog_results.py](scoring/reproduce_blog_results.py) | Recomputes the blog post's results from the GitHub Release archive. |
+| [reproduce_blog_results.py](scoring/reproduce_blog_results.py) | Recomputes the blog post's results from [`blog-results/`](blog-results/). |
 | [results.md](scoring/results.md) | The blog post's score table, metric definitions, and answer and judgment counts. |
 
 The scorers read the saved reports and make no model calls, so you can change
@@ -517,33 +517,20 @@ policy from a pinned revision. The [results page](scoring/results.md) lists
 the five scores for each of the eleven models, defines the metrics, and
 explains the answer and judgment counts.
 
-To recompute those numbers, download `matherratabench-blog-results-v1.tar.gz`
-from this repository's GitHub Releases page. It contains the selected parsed
-answers and accepted judgments used for the post. The parser in step 2 takes
-one supplied answer per paper. The original campaign selected those answers
-using its attempt and eligibility records. The archive has one folder per
-model run.
+The answers and accepted judgments used for the post are in
+[`blog-results/`](blog-results/), one folder per model run; its
+[README](blog-results/README.md) describes the files. The parser in step 2
+takes one supplied answer per paper. The original campaign selected those
+answers using its attempt and eligibility records.
 
-| File in the extracted archive | What it contains |
-|---|---|
-| `results/<run-id>/answers/<paper-id>.json` | The model's parsed findings for one paper: description, location, proposed repair, severity, target type, and primary tag. 2,155 files across the 11 runs. |
-| `results/<run-id>/judgments/<paper-id>.json` | The accepted judge response for one paper: for each eligible gold issue, whether it was recovered, which findings support the match, and the judge's reasoning. 2,115 files. |
-| `results/<run-id>/model_run_index.json` | The run's settings and all 200 papers, with their arXiv versions and which answers and judgments exist. |
-| `blog_results_index.json` | The 11 runs to score, the gold manifest's fingerprint, and the expected scores to compare against. |
-
-From the repository root, create a local `results/` directory with
-`mkdir -p results` and save the downloaded archive there. Extract it and pass
-the folder that contains `blog_results_index.json` to the replay script.
+To recompute the scores, run this from the repository root:
 
 ```bash
-tar -xzf results/matherratabench-blog-results-v1.tar.gz -C results/
-python3 scoring/reproduce_blog_results.py --bundle results/matherratabench-blog-results-v1
+python3 scoring/reproduce_blog_results.py
 ```
 
-The script builds the same paper reports as `evaluate.py` and uses the same
-scoring functions. Combining the eleven runs, it reproduces the pooled recovery
-of 645 of 717 gold issues and the 85 of 200 papers in which every model missed
-at least one issue.
+See the [blog-results README](blog-results/README.md) for what the script
+checks and prints.
 
 ## Reporting gold errors
 
@@ -554,16 +541,30 @@ offer this benchmark as a scalable resource for evaluating mathematical
 review, with judgments that remain open to correction. Authors and experts in
 the relevant topics are best positioned to assess these judgments. If you
 believe an annotation is incorrect or missing important context, please
-contact us at **[email address]**. We welcome community input to improve the
+contact us at [Elizaveta.Rebrova@gmail.com](mailto:Elizaveta.Rebrova@gmail.com). We welcome community input to improve the
 gold data.
 
 ## License
 
-The code and benchmark annotations are available under the Apache License, Version 2.0 (Apache-2.0).
-[Apache License text](https://www.apache.org/licenses/LICENSE-2.0)
-
-Paper sources are downloaded separately from arXiv.
+The code, gold annotations and saved results in this repository are released
+under the Apache License, Version 2.0; see [LICENSE](LICENSE). The papers are
+not included: `prepare.py` downloads their sources from arXiv. The annotations
+and saved model answers quote short excerpts from the papers as evidence. Those
+excerpts remain the work of the papers' authors and are not covered by the
+Apache license; each paper's license is recorded as `licence_url` in
+[gold-manifest.json](data-preparation/gold-manifest.json).
 
 ## Citation
 
-**[TODO: BibTeX entry for the blog post or paper.]**
+If you use MathErrataBench, please cite the blog post:
+
+```bibtex
+@article{rebrova2026matherratabench,
+  author  = {Rebrova, Elizaveta and Sreenivasan, Kartik and Yurochkin, Mikhail},
+  title   = {{MathErrataBench}: Can {LLMs} find the issues in numerical
+             analysis preprints?},
+  journal = {IFM Blog},
+  year    = {2026},
+  note    = {https://ifm.ai/blog/matherratabench/}
+}
+```

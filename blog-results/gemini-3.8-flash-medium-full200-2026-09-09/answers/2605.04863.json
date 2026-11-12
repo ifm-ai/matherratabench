@@ -1,0 +1,39 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Each time step of UM-SRD can be decomposed into:\n\\begin{enumerate}\n  \\item Pre-merge: apply $S_j$ to map $U^n$ to neighborhood averages $Q^{n,-1}$ (lifted to the original mesh). By Proposition~\\ref{prop:TVD-SRD},\n  \\begin{equation}\n    TV(Q^{n,-1}) \\le TV(U^n).\n  \\end{equation}\n  \\item Neighborhood finite volume update on the merged mesh: $Q^{n,-1} \\mapsto Q^n$. By Proposition~\\ref{prop:TVD-Q-update},\n  \\begin{equation}\n    TV(Q^n) \\le TV(Q^{n,-1}).\n  \\end{equation}\n  \\item Blended redistribution: $Q^n \\mapsto U^{n+1}$ via $R_j(s_j)$. By Proposition~\\ref{prop:TVD-R},\n  \\begin{equation}\n    TV(U^{n+1}) \\le TV(Q^n).\n  \\end{equation}\n\\end{enumerate}",
+          "tag": "thm:TVD-UMSRD"
+        },
+        {
+          "quote": "In component form, for $i \\in M_j$,\n\\begin{equation}\n  U^{n+1}_i = (1 - s_j) U^*_i + s_j \\sum_{k \\in W_i} w_{i,k} \\hat{Q}^*_k,\n\\end{equation}\nwhile for cells $i$ not in any small-cell neighborhood we set $U^{n+1}_i = U^*_i$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The UM-SRD algorithm defined in Section 3 and Algorithm 1 evaluates the explicit finite-volume update on the cut-cell mesh to get $U^* = B(U^n)$ and then sets $U^{n+1} = (1 - s_j) U^* + s_j S_j(U^*)$. Under the stated CFL condition $a\\Delta t/h \\le 1$ with small cell volume fraction $\\alpha < 1/2$, the local CFL number on the cut cell is $a\\Delta t/(\\alpha h) > 1$. Consequently, $U^*$ is not TVD and generates large spurious over/undershoots. For any monotonic step profile (e.g., $U_i^n = 0$ for $i < j$ and $U_i^n = 1$ for $i \\ge j$), the blended update produces $TV(U^{n+1}) > TV(U^n)$ for any $s_j \\in [0, 1)$ (for instance, with $\\alpha = 0.05, a\\Delta t/h = 0.5$, $TV(U^{n+1}) = 19 - \\frac{120}{7}s_j$, which is $> 1$ for all $s_j \\in [0, 1]$). Moreover, the proof of Theorem 1 does not analyze the UM-SRD operator; it invents an artificial three-step process where blending $R_j(s_j)$ is applied to merged-mesh averages $Q^n$. Because $Q^n$ is already spatially flat on $M_j$, $S_j(Q^n) = Q^n$, making $R_j(s_j)Q^n = Q^n$ identically for all $s_j$. This artificial operator does not match UM-SRD and fails to recover the base scheme $U^*$ when $s_j = 0$.",
+      "failure_location": {
+        "quote": "Under the assumptions above (1D, one small cell with $\\alpha < 1/2$, merging left, first-order upwind, CFL $a \\Delta t / h \\le 1$), the UM-SRD time-stepping operator is TVD on the original mesh:\n\\begin{equation}\n  TV(U^{n+1}) \\le TV(U^n) \\quad \\text{for all } n \\ge 0.\n\\end{equation}",
+        "tag": "thm:TVD-UMSRD"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish stability of the nonlinear blended update $(1 - s_j^n) U^* + s_j^n S_j(U^*)$ accounting for the state-dependent shut-off mechanism $s_j^n$, or restrict the analysis to the small-cell CFL condition $a\\Delta t / (\\alpha h) \\le 1$ (which would sacrifice the primary advertised objective of cut-cell stabilization).",
+      "overall_effect": "Theorem 1 is completely invalidated. The central theoretical result that UM-SRD is total variation diminishing under the full-mesh CFL condition is false.",
+      "primary_affected_tag": "thm:TVD-UMSRD",
+      "target_type": "formal_result",
+      "title": "Theorem 1 claims TVD stability for UM-SRD under full-mesh CFL, but the actual operator is not TVD and the proof analyzes an incompatible merged-mesh scheme",
+      "why_classification": "Theorem 1 is the primary theoretical guarantee of the paper. Its statement is false as formulated, its proof analyzes an incompatible operator, and any complete resolution requires entirely new nonlinear proof architecture or a major loss in the advertised CFL stability regime."
+    }
+  ],
+  "issues_found": 1,
+  "paper_id": "2605.04863",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7818cd4cd642c55846288cd8538a55a3a2f19a519b1a0153dbaf44ab1fba0b17",
+  "status": "ok"
+}

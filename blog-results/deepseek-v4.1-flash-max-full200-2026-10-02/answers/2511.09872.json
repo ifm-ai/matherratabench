@@ -1,0 +1,141 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "convRBSK",
+        "convRBSK_relaxed",
+        "convRBSK_relaxed_pave",
+        "convRBSK_sharper"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\max_{\\tau\\sim\\bbb{P}} \\|S_{\\tau} A_{\\tau}\\|_2^2, & \\mbox{if $p_{ij}=0$},",
+          "tag": "lem6"
+        },
+        {
+          "quote": "since $S$ is a nonsingular diagonal real matrix, $B_{S;i}$ is diagonally positive definite,",
+          "tag": "convRBSK"
+        }
+      ],
+      "failure_explanation": "The lemma uses B_{S;i}^{-1/2}, and the theorem's proof asserts B_{S;i} is positive definite. But if A has a zero row j with p_{ij}>0 and every draw with τ_i=j selects only zero rows (e.g. q=1 and a zero row is sampled with positive probability), then the maximum defining β^S_{i,j} is 0. Hence B_{S;i} has a zero diagonal entry, B_{S;i}^{-1/2} is undefined, and the matrix D in Theorem convRBSK is not well-defined.",
+      "failure_location": {
+        "quote": "\\E\\left(\\|A_{\\tau}^{\\dag}r_{\\tau}\\|_2^2\\right) &\\geq& \\sum_{i=1}^{q}\\|B_{S;i}^{-\\frac{1}{2}} P_i^{\\frac{1}{2}}S r\\|_2^2,",
+        "tag": "lem6"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Assume A has no zero rows, or define/handle the zero-row entries separately (they do not affect r ∈ range(A)); then B_{S;i} is positive on the relevant subspace and D remains well-defined.",
+      "overall_effect": "The convergence-rate bounds in Theorem convRBSK and all results using its D matrix are not well-defined for matrices with zero rows sampled in this way.",
+      "primary_affected_tag": "lem6",
+      "target_type": "formal_result",
+      "title": "B_{S;i} can be singular when zero rows are sampled",
+      "why_classification": "This is a degenerate zero-row boundary case with a local fix that does not change the main method or rate guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "convRBSK",
+        "convRBSK_relaxed",
+        "convRBSK_relaxed_pave",
+        "convRBSK_sharper"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let the columns of matrices  $V_{\\tau}\\in\\reals^{n\\times d_{\\tau}}$ and $W_{\\tau}\\in\\reals^{n\\times (d-d_{\\tau})}$ be the orthonormal bases of the subspaces $\\range(A_{\\tau}^{\\T})$ and $\\mathcal{W}_{\\tau}$, respectively.",
+          "tag": "lem7"
+        },
+        {
+          "quote": "\\xi &=& \\min_{\\tau\\sim\\bbb{P}} \\lambda_{\\min}\\left(W_{\\tau}^{\\T}A^{\\T} D^2AW_{\\tau}\\right)",
+          "tag": "convRBSK"
+        }
+      ],
+      "failure_explanation": "If d_τ = d, then W_τ has n×(d-d_τ)=n×0 columns. The matrix W_τ^T A^T D^T D A W_τ is 0×0, so λ_min is not defined. The theorem still minimizes this quantity over all τ and uses it for k>0, so the rate bound is ill-defined in this full-block-rank case.",
+      "failure_location": {
+        "quote": "\\|DAy\\|_2^2 &\\geq& \\xi_{\\tau}\\|y\\|_2^2 \\quad \\mbox{with $\\xi_{\\tau}=\\lambda_{\\min}\\left( W_{\\tau}^{\\T}A^{\\T}D^{\\T}DAW_{\\tau} \\right)$},",
+        "tag": "lem7"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Handle d_τ=d separately (the error is zero after such a projection) or define ξ_τ=1 for full-rank blocks and exclude them from the minimum where appropriate.",
+      "overall_effect": "The k>0 convergence-rate constants in Theorem convRBSK and its corollaries are undefined when a sampled block spans the entire row space, even though the algorithm may then converge exactly in one step.",
+      "primary_affected_tag": "lem7",
+      "target_type": "formal_result",
+      "title": "ξ is undefined when a sampled block spans the full row space",
+      "why_classification": "This is a boundary case with a local fix that preserves the convergence conclusions."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "remark:relaxOne",
+        "remark:relaxTwo"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\pr(\\{1\\})\t&=& \\pr(\\tau=(1,1)) = \\bbb{p}_{11} = \\frac{1}{2},",
+          "tag": "exampRowPaving"
+        },
+        {
+          "quote": "\\beta^S &=& \\max_{\\tau_{\\txttiny{E}}\\in\\mathcal{T}}\\|S_{\\tau_\\txttiny{E}}A_{\\tau_\\txttiny{E}}\\|_2^2, & \\txt{Example \\ref{exampRowPaving}},",
+          "tag": "remark:relaxOne"
+        },
+        {
+          "quote": "we denote by $G_{\\tau}$ the batch-sampling matrix including the rows of a matrix $G\\in\\reals^{m\\times n}$ indexed by $\\tau$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In a row paving with blocks of size less than q, a draw τ may repeat indices to pad the batch. For example, Example row paving uses τ=(1,1) for the effective set {1}. Then A_τ contains two copies of row 1, so ||S_τ A_τ||_2^2 = 2||S_1 A_1||_2^2, not ||S_{T_1} A_{T_1}||_2^2. Thus the maximum over draws with τ_i=j is not the unique-block norm. The theorem's B_S and the remark's β^S formula are too small, so the claimed inequality D^2 ⪰ S^T B_S^{-1} \\hat P S can fail for rows in padded blocks.",
+      "failure_location": {
+        "quote": "Since the marginal distributions $p_{ij}$ are positive,\nthe quantities $\\beta_{i,j}^S$ introduced in Lemma \\ref{lem6} are of the form\n\\begin{eqnarray*}\n\n  \\beta_{i,j}^S &=& \\|S_{T_{\\mathcal{I}(j)}}A_{T_{\\mathcal{I}(j)}}\\|_2^2,\\ \\forall j=1,\\ldots,m,\n\\end{eqnarray*}",
+        "tag": "convRBSK_relaxed_pave"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace B_S and β^S by the actual maxima over draws including repetitions, e.g. B_t = max_{τ with effective set T_t} ||S_τ A_τ||_2^2, and update the proof and remarks accordingly.",
+      "overall_effect": "The specialized row-paving bound in Theorem convRBSK_relaxed_pave and the β^S formulas in Remark remark:relaxOne are invalid for variable-size row pavings with repeated padding indices; numerical comparisons using this bound may be optimistic.",
+      "primary_affected_tag": "convRBSK_relaxed_pave",
+      "target_type": "formal_result",
+      "title": "Repeated row indices are ignored in row-paving B_S and β^S formulas",
+      "why_classification": "The specialized theorem's bound is invalid for an advertised row-paving regime, but a contained correction using the actual draw norms preserves a comparable intermediate bound."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "then, with probability at least $1-\\delta$, the mean squared error satisfies",
+          "tag": "convRBSK_sharper"
+        },
+        {
+          "quote": "If the sample covariance satisfies $\\cov\\left(\\xi_{\\tau^{(k-1)}},\\|x^{(k)}-x_{\\star}\\|_2\\right)\\geq 0$",
+          "tag": "convRBSK_sharper"
+        },
+        {
+          "quote": "\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\xi_{\\tau^{(k-1,j)}}\\|x^{(k,j)}-x_{\\star}\\|_2^2 \\geq \\left(\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\xi_{\\tau^{(k-1,j)}}\\right)\\left(\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\|x^{(k,j)}-x_{\\star}\\|_2^2\\right).",
+          "tag": "convRBSK_sharper"
+        }
+      ],
+      "failure_explanation": "The theorem states a deterministic expectation bound 'with probability at least 1-δ', which is ill-posed. The proof derives a high-probability inequality for sample averages (thm4Eq8), then takes expectation, which does not preserve the bound without an additional δ-probability failure term and does not identify the sample average with the population expectation. Moreover, Lemma 5 is applied to products ξ_j ||e_j||_2^2 while the assumed covariance condition is on ξ and ||e||_2, not on ||e||_2^2; the required covariance implication is not established. The sample-size condition also depends on S although the conclusion minimizes over S.",
+      "failure_location": {
+        "quote": "Taking expectation on both sides of (\\ref{thm4Eq8}) leads to the sharper estimate (\\ref{thm4Eq2}).",
+        "tag": "convRBSK_sharper"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must state a well-defined probabilistic guarantee (e.g. on a sample-average error) or add a population covariance condition and rederive a deterministic expectation bound without taking expectation of a high-probability inequality.",
+      "overall_effect": "The sharper concentration-based convergence-rate bound in Theorem convRBSK_sharper is not supported; its advertised probabilistic guarantee and numerical comparisons using it are unreliable.",
+      "primary_affected_tag": "convRBSK_sharper",
+      "target_type": "formal_result",
+      "title": "Theorem convRBSK_sharper's probabilistic expectation bound is not established",
+      "why_classification": "The central sharper convergence guarantee is not established and the proof's probabilistic logic is fundamentally flawed; repairing it would require a new argument or changed assumptions and guarantee type."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2511.09872",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n01b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "73f96c8b1573f56b57360efd52a5ed58fb02d8b49792678ac619b2bc2b98cb01",
+  "status": "ok"
+}

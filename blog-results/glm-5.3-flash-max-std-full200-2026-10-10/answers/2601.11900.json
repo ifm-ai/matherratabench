@@ -1,0 +1,128 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In each substep, we employ the second-order IMEX scheme discussed above.",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{f^{n+1} - f^n}{\\Delta t} = \\mathcal{A}_h(f^{n+1/2}) + \\frac{1}{2\\varepsilon}\\Big( \\mathcal{L}_h[E^n](f^n) + \\mathcal{L}_h[E^{n+1}](f^{n+1}) \\Big)",
+          "tag": "eq:step_coupled"
+        },
+        {
+          "quote": "\\mathcal{K}(\\tfrac{\\Delta t}{2}) \\circ \\mathcal{S}(\\tfrac{\\Delta t}{2}) \\circ \\mathcal{L}(\\Delta t) \\circ \\mathcal{S}(\\tfrac{\\Delta t}{2}) \\circ \\mathcal{K}(\\tfrac{\\Delta t}{2}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Strang substeps 1, 2, 4, 5 each evolve over a half step (e.g. the first K/S-substeps cover [t^n, t^{n+1/2}]). The stated second-order IMEX pattern (eq:stage_coupled--eq:step_coupled) anchors its implicit trapezoidal rule at the endpoints of its own step, which for these half-substeps would be E^n and E^{n+1/2}. Instead, all four half-step corrector equations pair the trapezoid with the full-step fields L_h^n and L_h^{n+1}, one of which lies outside each half-substep's interval (E^{n+1} for the first K/S-substeps, E^n for the second K/S-substeps); moreover the implicit-Euler predictors use E^{n+1/2} at a node t^n + dt/4 where no field is computed. So the displayed half-step equations are not the second-order IMEX scheme applied on their own intervals, and the advertised second-order (and stiff-accuracy) guarantee of Algorithm alg:second_order is not supported by the construction as written. (The central L-step, spanning the full step, is consistent.)",
+      "failure_location": {
+        "quote": "    \\frac{S^{(2)}_{ij} - S^{(1)}_{ij}}{\\Delta t/2} &= - \\big\\langle \\mathcal{A}_h(f[S^{(1),\\ast}]),X^{(1)}_i V^n_j \\big\\rangle_{xv}^h - \\frac{1}{2\\varepsilon}\\big\\langle \\mathcal{L}_{h}^{n}(f[S^{(1)}]) + \\mathcal{L}_{h}^{n+1}(f[S^{(2)}]),X^{(1)}_i V^n_j \\big\\rangle_{xv}^h.",
+        "tag": "alg:second_order"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Re-derive the half-step sub-equations with fields anchored at each half-substep's own endpoints: either predict/compute the additional field values needed at the half-substep nodes (extra density predictions plus Poisson solves, reusing the existing machinery), or explicitly restate the scheme as a field-frozen variant and weaken the second-order claim accordingly.",
+      "overall_effect": "The advertised second-order temporal accuracy of the second-order low-rank scheme (and the AP behavior reported for it) is unsupported: the half-step sub-equations as written carry an O(Delta t) temporal misalignment of the implicit field nodes, so the second-order designation of alg:second_order is unproven.",
+      "primary_affected_tag": "alg:second_order",
+      "target_type": "algorithm",
+      "title": "Second-order scheme's half-step sub-equations use implicit field nodes outside their substep intervals",
+      "why_classification": "The repair is contained (re-specifying the four half-step field nodes with existing machinery, or restating the scheme as a field-frozen variant with a correspondingly limited order claim); the method, architecture, and a recognizably comparable second-order construction survive, so this is more than minor but not a major loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "  \\bar{u}^2 = |\\langle u - \\bar{u}, M \\rangle_v^h|^2 \\le \\|u - \\bar{u}\\|_{v}^{h,2} \\, \\|M\\|_{v}^{h,2} \\le L_v M_{\\max} \\|u - \\bar{u}\\|_{v}^{h,2}.",
+          "tag": "prop:coercivity"
+        },
+        {
+          "quote": "  \\gamma_h:=\\frac{M_{\\min}\\,\\lambda_N}{\\Big(1+\\sqrt{{L_v\\,M_{\\max}}}\\Big)^2}",
+          "tag": "prop:coercivity"
+        }
+      ],
+      "failure_explanation": "With the paper's discrete norms, the constant velocity function bar(u) has norm ||bar u * 1||_v^h = sqrt(L_v)|bar u|, not |bar u|. From the displayed Cauchy-Schwarz estimate |bar u| <= sqrt(L_v M_max)||u - bar u||_v^h one obtains ||u||_v^h <= (1 + L_v sqrt(M_max))||u - bar u||_v^h, which is weaker than the displayed final inequality with constant (1 + sqrt(L_v M_max))^2 (the factor sqrt(L_v) is silently dropped). Hence the displayed chain does not establish the coercivity constant gamma_h as explicitly defined; the constant is only recoverable by sharpening the intermediate step to ||M||_v^{h,2} <= M_max (valid since <M,1>_v^h = 1).",
+      "failure_location": {
+        "quote": "  \\|u\\|_{v}^{h,2} \\le \\Big( \\|u-\\bar{u}\\|_v^h + \\|\\bar{u}\\|_v^h \\Big)^2 \\le \\Big(1 + \\sqrt{L_v M_{\\max}}\\Big)^2 \\|u-\\bar{u}\\|_{v}^{h,2}.",
+        "tag": "prop:coercivity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Sharpen the displayed intermediate bound to ||M||_v^{h,2} <= M_max * <1,M>_v^h = M_max (justified by the assumed normalization <M,1>_v^h = 1); the triangle step then yields exactly the displayed constant (1 + sqrt(L_v M_max))^2 and the proposition holds verbatim.",
+      "overall_effect": "The explicitly stated coercivity constant gamma_h of Proposition prop:coercivity is not established by the proof as written; the downstream Assumption asm:small_fluct and Theorem thm:main_AP, which are stated in terms of 'the coercivity constant from Proposition prop:coercivity', remain valid once the (true, sharp) constant is supplied, so no formal result is lost.",
+      "primary_affected_tag": "prop:coercivity",
+      "target_type": "formal_result",
+      "title": "Coercivity constant's norm-comparison step is invalid: a sqrt(L_v) factor is silently dropped",
+      "why_classification": "A one-line standard sharpening of the Cauchy-Schwarz step (using the normalization already assumed) completes the proof; every stated constant, the assumption regime, and the main theorem survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "     \\alpha_{q+1/2}\\beta_p\\,f_{p,q+1}\n     -\\Big(\\frac{1}{\\alpha_{q+1/2}\\beta_p}+\\alpha_{q-1/2}\\beta_p\\Big)\\,f_{p,q}\n     +\\frac{1}{\\alpha_{q-1/2} \\beta_p} \\,f_{p,q-1}",
+          "tag": "eq:fp_discrete_separable"
+        },
+        {
+          "quote": "(\\mathcal{T}^{(\\alpha)} w)_q &= \\frac{1}{\\Delta v^2} \\big( \\alpha_{q+1/2}(w_{q+1}-w_q) - \\alpha_{q-1/2}(w_q-w_{q-1}) \\big),",
+          "tag": "prop:fluctuation_bound"
+        },
+        {
+          "quote": "\\|\\mathcal{T}^{(\\alpha)}\\|_v^h \\le \\frac{2\\alpha_{\\max}}{\\Delta v^2}",
+          "tag": "prop:fluctuation_bound"
+        }
+      ],
+      "failure_explanation": "The proof claims L_h factors as beta (x) T^(alpha) plus beta^{-1} (x) T^(1/alpha) with T^(alpha)w = (alpha_{q+1/2}(w_{q+1}-w_q) - alpha_{q-1/2}(w_q-w_{q-1}))/Delta v^2 and an analogous T^(1/alpha) (written with u in place of w). The actual stencil eq:fp_discrete_separable splits into two-point factors (alpha_{q+1/2} w_{q+1} - alpha_{q-1/2} w_q)/Delta v^2 and (alpha_{q-1/2}^{-1} w_{q-1} - alpha_{q+1/2}^{-1} w_q)/Delta v^2; expanding the displayed three-point operators with the beta/beta^{-1} weights produces extra cross terms (e.g. -alpha_{q+1/2} beta_p w_q + alpha_{q-1/2} beta_p w_{q-1} in the first factor) that are not in L_h. Moreover the claimed induced norms ||T^(alpha)|| <= 2 alpha_max/Delta v^2 are false for the displayed three-point operators (for constant alpha their l^2-induced norms reach ~4 alpha_max/Delta v^2). The proof's decomposition and norm estimates therefore fail as written; the proposition's stated bound remains true for the genuine two-point stencil factors, which satisfy exactly the displayed norm bounds.",
+      "failure_location": {
+        "quote": "  \\mathcal{L}_{h} \\;=\\; \\beta \\otimes \\mathcal{T}^{(\\alpha)} \\;+\\; \\beta^{-1} \\otimes \\mathcal{T}^{(1/\\alpha)}.",
+        "tag": "prop:fluctuation_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Redefine the velocity factors as the stencil's actual two-point operators T^(alpha): (alpha_{q+1/2} w_{q+1} - alpha_{q-1/2} w_q)/Delta v^2 and T^(1/alpha): (alpha_{q-1/2}^{-1} w_{q-1} - alpha_{q+1/2}^{-1} w_q)/Delta v^2 (fixing the u/w typo); the triangle-inequality row estimates then give precisely the claimed norms 2 alpha_max/Delta v^2 and 2/(alpha_min Delta v^2) and the constant kappa_h stands.",
+      "overall_effect": "The proof of Proposition prop:fluctuation_bound is invalid as written (its operator decomposition and induced-norm estimates are false for the operators it displays); the statement itself, the constant kappa_h in eq:kappa_h_def, and Theorem thm:main_AP's use of it remain valid once the two-point stencil factors are used.",
+      "primary_affected_tag": "prop:fluctuation_bound",
+      "target_type": "formal_result",
+      "title": "Fluctuation-bound proof decomposes the stencil into velocity operators that do not match the stencil and whose claimed norms are false",
+      "why_classification": "A local, routine repair (define the difference operators as the stencil's actual two-point factors) restores the proof verbatim with the same constant kappa_h; no claim, rate, or guarantee of the paper changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\varepsilon(x)=\n\\begin{cases}\n\\varepsilon_0+\\tfrac12\\big(\\tanh(5-10x)+\\tanh(5+10x)\\big), & x\\le 0.3,\\\\[2pt]\n\\varepsilon_0, & x>0.3,\n\\end{cases}\n\\qquad \\varepsilon_0=10^{-3},\\quad x\\in[-1,1],",
+          "tag": null
+        },
+        {
+          "quote": "\\varepsilon_0=10^{-3},\\quad x\\in[-1,1],",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose asserts a kinetic left part and a fluid right part. Evaluating the prescribed function: at x = -1, tanh(5+10x) = tanh(-5) ~ -1, so epsilon(-1) = eps_0 + 1/2(tanh 15 + tanh(-5)) is approximately 1.0e-3, i.e. of order eps_0, not order one; eps(x) is O(1) only on a middle-left band (roughly x >= -0.5 up to the cutoff 0.3), and at x = 0.3 the left piece still gives eps ~ 0.98 before the definition jumps to eps_0 for x > 0.3. The prescribed profile therefore has a small-eps region at BOTH ends and an O(1) band in the middle-left, contradicting the claimed kinetic-left/fluid-right layout.",
+      "failure_location": {
+        "quote": "so that the left part of the domain has $\\varepsilon(x)$ of order one, while the right part has a smaller, nearly constant value $\\varepsilon(x)\\approx \\varepsilon_0$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Correct the description of the profile (kinetic only for x roughly in [-0.5, 0.3], small eps near both domain ends, with a jump at x = 0.3), or replace the prescribed eps(x) by a profile that actually realizes the stated left-kinetic/right-fluid layout.",
+      "overall_effect": "The description of the mixed-regime test's kinetic/fluid layout is materially misleading; readers are told the left part of the domain is kinetic when the prescribed profile is small near x = -1 and O(1) only in a middle band with a jump at x = 0.3, affecting the interpretation of the reported density/field/error profiles.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Mixed-regime prose mischaracterizes the prescribed epsilon(x) profile",
+      "why_classification": "The prescribed formula itself is used as given in the experiments; only the accompanying characterization is false, so a local prose correction preserves every setup, computation, and reported result."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2601.11900",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0a3cd4bfe32954879edc6b7c61b5ec215bbd2b3813d7c0aaa4b12d7a1620d81d",
+  "status": "ok"
+}

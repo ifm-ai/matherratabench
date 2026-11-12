@@ -1,0 +1,105 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nu_k^{n+1} = (\\frac{1}{\\rho_k c_k^2})^{n+1}= \\frac{1}{\\gamma_k (p^{n+1}+p_{w,k})},",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "p^{n+1} = (\\rho e)^{n}(\\gamma^{n+1}-1)-\\gamma^{n+1} p_{w}^{n+1},",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "F(z_1) = \\frac{z_1 - z_1^n}{\\Delta t_{\\mathrm{im}}} - f(z_1).",
+          "tag": "thm:implicit_solver"
+        }
+      ],
+      "failure_explanation": "The proof applies the intermediate value theorem to F(z_1) = (z_1 - z_1^n)/\\Delta t_{im} - f(z_1) on [0,1], using F(0) \\le 0 \\le F(1) (which follows from f(0)=f(1)=0). This requires F to be continuous on the whole interval, but f(z_1) = \\kappa(z_1)\\nabla\\cdot u^n with \\kappa(z_1) = z_1(1-z_1)(\\nu_1-\\nu_2)/\\nu, \\nu_k(z_1) = 1/(\\gamma_k(p(z_1)+p_{w,k})), \\nu = z_1\\nu_1+(1-z_1)\\nu_2 and p(z_1) = ((\\rho e)^n - B(z_1))/D(z_1), all rational in z_1. The denominators \\gamma_k(p(z_1)+p_{w,k}) and \\nu(z_1) can vanish inside [0,1] even for positive-pressure inputs. Concrete case: \\gamma_1=1.4, p_{w,1}=0, \\gamma_2=4.4, p_{w,2}=6000, (\\rho e)^n = 8645.2, z_1^n = 0.5 gives p^n \\approx 3410 > 0, yet \\nu(z_1)=0 at z_1 = 0.1 with \\nu_1 \\neq \\nu_2 there, i.e. \\kappa has a genuine pole in [0,1]; similarly (\\rho e)^n = 2000, z_1^n = 0.9 (p^n \\approx 537 > 0) gives p(z_1)+p_{w,2}=0 at z_1 \\approx 0.19, where \\nu_2 blows up. So the asserted continuity is false in general and the IVT argument as written is incomplete. The conclusion itself survives: F is rational with F(0) \\le 0 \\le F(1), and a sign-change/pole analysis still yields a root in [0,1]; but this nontrivial step is missing, and the advertised bisection can converge to the pole rather than to a root in the singular case.",
+      "failure_location": {
+        "quote": "The continuity of $F(z_1)$ guarantees the existence of root $z_1^{n+1} \\in [0, 1]$.",
+        "tag": "thm:implicit_solver"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the standing hypothesis that \\gamma_k(p(z_1)+p_{w,k}) > 0 and \\nu(z_1) > 0 for all z_1 \\in [0,1] (automatic for gas-gas with p_{w,1}=p_{w,2}, where p+p_w cancels out of \\kappa, and in the strictly physical regime), or insert the short meromorphic sign-change argument: F is rational, F(0) \\le 0 \\le F(1), and each pole of F forces a sign change that still produces a root in [0,1]. Both are local repairs preserving the theorem's conclusion.",
+      "overall_effect": "The existence conclusion of thm:implicit_solver (the 'unconditionally BP' property of the implicit \\kappa-solver, also advertised in the abstract) remains true, but its proof is incomplete for gas-liquid parameters (p_{w,1} \\neq p_{w,2}). The deferred BP-property argument for the adaptive SDIRK2 scheme (equation adaptive_sdirk2), which explicitly rests on this theorem ('The proof for the BP property of (adaptive_sdirk2) is similar to the proof of Theorem thm:implicit_solver, so omitted'), inherits the same gap. No labelled theorem is logically destroyed, since the root-in-[0,1] conclusion survives by the meromorphic extension.",
+      "primary_affected_tag": "thm:implicit_solver",
+      "target_type": "formal_result",
+      "title": "thm:implicit_solver proves existence via the intermediate value theorem, but continuity of F on [0,1] is not guaranteed (kappa can have poles inside the interval for gas-liquid parameters)",
+      "why_classification": "The theorem's conclusion (existence of z_1^{n+1} \\in [0,1]) is not lost and is restored by a short local argument or a standard added hypothesis; no rate, regime, quantifier, or dependent result changes. Hence minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\theta_{p} = \\begin{cases} \\frac{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\varepsilon_p}{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y))}, & \\text{if } \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y)) < \\varepsilon_p, \\\\ 1, & \\text{otherwise}. \\end{cases}",
+          "tag": "BP_P"
+        },
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        },
+        {
+          "quote": "p(\\mathbf{U}) = \\frac{E - \\frac{|\\rho\\mathbf{u}|^2}{2\\rho} - \\left( \\frac{z_1 \\gamma_1 p_{w, 1}}{\\gamma_1 - 1} + \\frac{z_2 \\gamma_2 p_{w, 2}}{\\gamma_2 - 1} \\right)}{\\frac{z_1}{\\gamma_1 - 1} + \\frac{z_2}{\\gamma_2 - 1}},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Step 2 of the BP limiter chooses \\theta_p from the endpoint values p(\\overline{U}) and \\min p(\\widetilde{U}), which only guarantees p \\ge \\varepsilon_p at every Gauss-Lobatto point if p were concave along the scaling segments from \\overline{U} to \\widetilde{U}(x,y). But p(U) = [E - |\\rho u|^2/(2\\rho) - (z_1\\gamma_1 p_{w,1}/(\\gamma_1-1) + z_2\\gamma_2 p_{w,2}/(\\gamma_2-1))] / (z_1/(\\gamma_1-1) + z_2/(\\gamma_2-1)) is not concave in U when \\gamma_1 \\neq \\gamma_2: its Hessian in the (E, z_1) block is [[0, -d_1/D^2],[-d_1/D^2, *]] with d_1 = 1/(\\gamma_1-1) - 1/(\\gamma_2-1) \\neq 0, which has negative determinant. Concrete failure with \\gamma_1 = 1.4, \\gamma_2 = 1.6, p_{w,1} = p_{w,2} = 0: the element average \\overline{U} has z_1 = 1/2, \\rho_1 = \\rho_2 = 1, u = 0, E = 10, so p(\\overline{U}) = 4.8; a quadrature point with z_1 = 1-10^{-13}, E = -5 (a legal output of Step 1, which constrains only z_1 and the partial densities, both satisfied at the bounds) has p(\\widetilde{U}) = -2 < \\varepsilon_p. Then \\theta_p = (4.8-10^{-13})/(4.8+2) \\approx 0.706, and the limited state at that point has z_1 \\approx 0.853, E \\approx -0.588, hence p \\approx -0.247 < \\varepsilon_p: the limited solution leaves \\mathcal{G}^p. The volume-fraction and partial-density bounds survive (linear constraints, exact under scaling); the pressure bound does not.",
+      "failure_location": {
+        "quote": "\\mathbf{U}_{i,j} = \\overline{\\mathbf{U}}_{i,j}^n + \\theta_{p} \\left( \\widetilde{\\mathbf{U}}_{i,j} - \\overline{\\mathbf{U}}_{i,j}^n \\right),",
+        "tag": "BP_P"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the endpoint-based \\theta_p by the largest \\theta \\in (0,1] such that \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\overline{U} + \\theta(\\widetilde{U}(x,y) - \\overline{U})) \\ge \\varepsilon_p, determined by bisection on the actual pressure values rather than on the chord; this keeps one scalar per element, preserving linearity invariance and element-average conservation, at the cost of extra pressure evaluations per point. No smaller repair works because the closed-form chord formula provably fails.",
+      "overall_effect": "The guarantee (U_ingp) — \\mathbf{U}_\\sigma^n(x,y) \\in \\mathcal{G}^p at all Gauss-Lobatto points — is not delivered by the stated limiter, so the advertised 'BP property of partial densities, pressure, and volume fraction' (abstract, introduction, and the BP limiter subsection) holds only for the linear constraints; the pressure part is false in general. No labelled theorem depends on this guarantee: line-invar-BP and thm:added-1 use only the scalar-per-point scaling (linearity invariance), and thm:convex_Gp is independent, so the formal Abgrall chain is unaffected.",
+      "primary_affected_tag": "BP_P",
+      "target_type": "algorithm",
+      "title": "BP limiter's pressure step (BP_P) does not enforce pressure positivity at all quadrature points",
+      "why_classification": "A central advertised guarantee of the limiter (pressure BP) is not achieved by the stated formula — a substantive loss — but it is restored by a contained new construction (iterative per-element \\theta_p) without changing the proof architecture, the conservation/average properties, or any theorem; no advertised regime is abandoned. Hence moderate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{G} = \\left\\{ \\mathbf{U} : z_1\\rho_1 > 0, z_2\\rho_2 > 0, \\ c^2(\\mathbf{U})>0,\\ z_1\\in[0,1] \\right\\}",
+          "tag": null
+        },
+        {
+          "quote": "Thus, $\\mathbf{U}^{(1)}$ is physically admissible and belongs to $\\mathcal{G}$.",
+          "tag": null
+        },
+        {
+          "quote": "Thus, $\\mathbf{U}^{(2)}$ also belongs to $\\mathcal{G}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The appendix aims to show \\mathcal{G} is non-convex via the midpoint of \\mathbf{U}^{(1)} = [1.2, 0, 0, 1000, 1]^T and \\mathbf{U}^{(2)} = [0, 1000, 0, 6001, 0]^T. But \\mathbf{U}^{(1)} has z_2\\rho_2 = 0 and \\mathbf{U}^{(2)} has z_1\\rho_1 = 0, violating the strict inequalities in the definition of \\mathcal{G}, so both states lie outside \\mathcal{G} and the example does not witness non-convexity of \\mathcal{G} as defined. The subsequent arithmetic is otherwise correct (p^{(1)} = 400, c^2 \\approx 466.67 > 0; p^{(2)} = -5996.6 but c^2 \\approx 0.01496 > 0; midpoint p \\approx -273.33 with 1/(\\rho c^2) \\approx -0.001286 < 0), and the claim is repaired by perturbing both states to have small strictly positive partial densities: by continuity the perturbed endpoints remain in \\mathcal{G} (their c^2 values are strictly positive) and the midpoint still has c^2 < 0 (the value -0.001286 < 0 is strict).",
+      "failure_location": {
+        "quote": "$$\\mathbf{U}^{(1)} =  [1.2, \\ 0, \\ 0, \\ 1000, \\ 1]^T$$$$\\mathbf{U}^{(2)} = [0, \\ 1000, \\ 0,  \\ 6001, \\ 0]^T$$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Perturb the two pure-phase states to have z_k\\rho_k = \\delta > 0 strictly (adjusting z_1 and E accordingly); continuity of c^2 then keeps both endpoints in \\mathcal{G} and the midpoint outside \\mathcal{G}. A one-line repair preserving the entire argument.",
+      "overall_effect": "The demonstration that \\mathcal{G} is non-convex is invalid as written, so the introduction's reference to this counterexample (motivating the stricter set \\mathcal{G}^p) is unsupported in its current form; the underlying claim (non-convexity of \\mathcal{G}) is true, and thm:convex_Gp stands independently with its own proof.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Appendix A counterexample uses states that are not in the admissible set \\mathcal{G}",
+      "why_classification": "The defect is a violated hypothesis in a counterexample, repaired by an arbitrarily small perturbation with no change to the conclusion or to any dependent result (thm:convex_Gp has its own independent proof); purely local. Hence minor."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2604.25672",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6e33d4743ac4690d4731311b541c59b0314910ae99b86bef3e25e9c3e4e7b64a",
+  "status": "ok"
+}

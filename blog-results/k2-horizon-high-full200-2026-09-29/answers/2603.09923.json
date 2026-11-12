@@ -1,0 +1,241 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exists a constant $\\sigma > 0$ such that, for all $\\x\\in\\mathbb{R}^n$, $\\mathbb{E}\\!\\left[\\nabla f(\\x;\\xi)\\right]=\\nabla f(\\x)$, $\\mathbb{E}\\!\\left[\\|\\nabla f(\\x;\\xi)-\\nabla f(\\x)\\|_2^2\\right]\\le \\sigma^2$.",
+          "tag": "ass:sigma"
+        }
+      ],
+      "failure_explanation": "The paper's Assumption 2 requires $\\sigma>0$, so the zero-noise regime $\\sigma=0$ is outside the stated assumptions. The abstract and introduction advertise recovery of the deterministic rate at $\\sigma=0$, but the theorems are only established under the assumption $\\sigma>0$. The proofs use only $\\sigma^2$ and would formally work at $\\sigma=0$, but as written the hypothesis excludes that case.",
+      "failure_location": {
+        "quote": "In particular, in the zero-noise regime where $\\sigma=0$, our bounds reduce to the nearly optimal deterministic rate $\\widetilde{\\mathcal{O}}(T^{-1/2})$ without manual hyperparameter retuning.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Change Assumption 2 to $\\sigma\\ge 0$ (or explicitly state $\\sigma\\ge 0$ and note the proofs only use $\\sigma^2$). This is a one-line relaxation preserving all claims and rates.",
+      "overall_effect": "The advertised zero-noise optimality is unsupported: the main theorems do not cover $\\sigma=0$ under the stated assumptions, even though the prose claims they do.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Zero-noise regime excluded by the noise assumption",
+      "why_classification": "A local one-line relaxation of the noise bound repairs the scope mismatch with no change to proof architecture or rates."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where step \\step{1} uses the fact that $\\gamma_{t}\\leq \\frac{\\alpha_t}{ \\mu (1+\\tau_t^2)} \\leq \\frac{2 \\alpha_t}{ \\mu (1+\\tau_t)^2}$",
+          "tag": "lemma:sum:tail"
+        }
+      ],
+      "failure_explanation": "From $\\gamma_t \\le 2\\alpha_t/(\\mu(1+\\tau_t)^2)$ one obtains $2\\gamma_t\\mu(1+\\tau_t)^2 \\le 4\\alpha_t$, not $\\le \\alpha_t$. The claimed replacement $(1-\\alpha_t) \\le 1 - 2\\gamma_t\\mu(1+\\tau_t)^2$ is therefore unjustified; the correct coefficient is $1/2$, not $2$. The telescoping argument and the constant $C_w$ are not established as written.",
+      "failure_location": {
+        "quote": "&\\overset{\\step{1}}{\\leq}& \\EEE[ B_t + \\|\\s_{t-1}\\|^2 - 2\\gamma_t \\mu (1+\\tau_t)^2 \\|\\s_{t-1}\\|^2 ]",
+        "tag": "lemma:sum:tail"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the coefficient $2$ by $1/2$ in the one-step descent and adjust the telescoping constants; the lemma conclusion and rate survive with a modified constant.",
+      "overall_effect": "The weighted tracking-error bound in Lemma lemma:sum:tail is unproven; the logarithmic objective/gradient bounds, the cumulative tracking bound, the cumulative gradient bound, and Theorem the:it:EMA:M become unreliable.",
+      "primary_affected_tag": "lemma:sum:tail",
+      "target_type": "formal_result",
+      "title": "Invalid coefficient in the weighted tracking-error telescoping for OptEMA-M",
+      "why_classification": "The proof of a central lemma contains an invalid factor; the repair is local and preserves the rate, but the telescoping argument must be reworked."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:M",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exists a constant $\\sigma > 0$ such that, for all $\\x\\in\\mathbb{R}^n$, $\\mathbb{E}\\!\\left[\\nabla f(\\x;\\xi)\\right]=\\nabla f(\\x)$, $\\mathbb{E}\\!\\left[\\|\\nabla f(\\x;\\xi)-\\nabla f(\\x)\\|_2^2\\right]\\le \\sigma^2$.",
+          "tag": "ass:sigma"
+        },
+        {
+          "quote": "\\ts \\EEE[ \\big( \\hat{f}_1 + c_3  +  \\tfrac{c_1 + 2 c_2}{\\alpha^2} \\big) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))]",
+          "tag": "lemma:G:bound:2"
+        }
+      ],
+      "failure_explanation": "The proofs replace the random sum $\\sum_t\\|\\g_t\\|^2$ inside the logarithm by the deterministic bound $4T(\\sigma^2+L\\max_t f(\\x_t))$ pathwise. The only available bound is in expectation, $\\mathbb{E}\\|\\g_t\\|^2 \\le 2\\sigma^2+4L\\,\\mathbb{E}[f(\\x_t)-f_*]$, and bounded variance does not imply any pathwise bound on $\\|\\g_t\\|$ or on the maximum $\\tau_T$. The same invalid pathwise use appears in Lemma lemma:G:bound:2, Lemma lemma:M:sum:s (including $\\tau_T \\le \\sqrt{C_g\\ln(e+T)}$), Lemma lemma:M:sum:m, and Lemma lamma:bound:sum:nabla.",
+      "failure_location": {
+        "quote": "\\ts \\EEE[ \\hat{f}_1 + c_1 C_w \\ln ( e + \\sum_{t=1}^T \\|\\g_t\\|^2) + \\tfrac{4}{\\mu} c_2\\ln(1 + \\sum_{t=1}^T \\|\\g_t\\|^2)] \\nn\\\\ &\\overset{\\step{2}}{\\leq}& \\ts \\EEE[ \\left( \\hat{f}_1 + c_1 C_w + \\tfrac{4 c_2}{\\mu} \\right) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))]",
+        "tag": "lemma:G:bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the pathwise bounds by valid expectation or high-probability bounds on $\\sum_t\\|\\g_t\\|^2$ and on the maximum $\\tau_T$, which under only bounded variance may require new assumptions or a different argument and may worsen the rates.",
+      "overall_effect": "The logarithmic bounds on $\\mathbb{E}[f(\\x_t)-f_*]$ and $\\mathbb{E}\\|\\g_t\\|^2$ are unproven under the stated assumptions; this invalidates the downstream cumulative bounds and both main convergence theorems.",
+      "primary_affected_tag": "lemma:G:bound",
+      "target_type": "formal_result",
+      "title": "Pathwise use of expectation bounds for stochastic gradients and maxima",
+      "why_classification": "The central logarithmic-bounding technique is unsupported under the stated assumptions; repairing it needs new arguments or stronger assumptions and may lose the advertised rates."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "step \\step{1} uses $\\gamma_t\\leq \\frac{\\alpha_t}{ \\mu (1 + \\tau_t^2) } \\leq \\tfrac{\\alpha_t}{\\mu}$",
+          "tag": "lemma:G:bound"
+        }
+      ],
+      "failure_explanation": "From $\\gamma_t \\le \\alpha_t/(\\mu(1+\\tau_t^2)) \\le \\alpha_t/\\mu$ one gets $\\gamma_t^2 \\le \\alpha_t^2/\\mu^2$, not $\\alpha_t^2/\\mu$. The displayed bound is missing a factor $1/\\mu$. The subsequent constants $C_f$ and $C_g$ are correspondingly miscomputed, though the logarithmic form and rates are unaffected.",
+      "failure_location": {
+        "quote": "\\ts \\sum_{t=1}^T \\gamma_t^2 \\|\\m_{t}\\|_2^2 ~~\\overset{\\step{1}}{\\leq}~~ \\ts \\tfrac{1}{\\mu}\\sum_{t=1}^T \\alpha_t^2 \\|\\m_{t}\\|_2^2",
+        "tag": "lemma:G:bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace $1/\\mu$ by $1/\\mu^2$ in the first inequality and propagate the corrected constant through $C_f$ and $C_g$.",
+      "overall_effect": "The constants in Lemma lemma:G:bound are off by a factor $1/\\mu$; downstream uses of $C_f$ and $C_g$ inherit incorrect constants but not the rate.",
+      "primary_affected_tag": "lemma:G:bound",
+      "target_type": "formal_result",
+      "title": "Missing factor $1/\\mu$ in the bound on $\\sum_t \\gamma_t^2\\|\\m_t\\|^2$",
+      "why_classification": "A single-factor algebraic correction; the form and rates of all bounds are preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\ts \\gamma_t = \\min\\left( \\frac{\\alpha_t}{ \\mu (1 + \\tau_t^2) } ,\\, \\left(1 + \\sum_{j=1}^t \\tfrac{\\|\\mathbf{m}_j\\|^2}{\\alpha_j}   \\right)^{-1/2}\\right)",
+          "tag": "lemma:M:sum:s"
+        }
+      ],
+      "failure_explanation": "From the second term of $\\gamma_t$ one only has $\\gamma_t^2 \\le (1+\\sum_j\\|\\m_j\\|^2/\\alpha_j)^{-1}$. The claimed $\\gamma_t^2 \\le \\tau_t^{-2}(1+\\sum_j\\|\\m_j\\|^2/\\alpha_j)^{-1}$ is false when $\\tau_t>1$, since it would require $1 \\le 1/\\tau_t^2$. The step is unnecessary; the valid bound already gives the desired logarithmic sum.",
+      "failure_location": {
+        "quote": "step \\step{4} uses $\\gamma_t^2 \\leq \\tfrac{1}{\\tau_t^2}\\cdot \\tfrac{1}{ 1 + \\sum_{j=1}^t \\|\\m_j\\|^2/\\alpha_j } \\leq \\tfrac{1}{\\tau_t}\\cdot \\tfrac{1}{ 1 + \\sum_{j=1}^t \\|\\m_j\\|^2/\\alpha_j }$",
+        "tag": "lemma:M:sum:s"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Delete the spurious $1/\\tau_t^2$ and $1/\\tau_t$ factors and use $\\gamma_t^2 \\le (1+\\sum_j\\|\\m_j\\|^2/\\alpha_j)^{-1}$ directly.",
+      "overall_effect": "The proof of Lemma lemma:M:sum:s contains an invalid inequality, but the lemma's conclusion remains true via the simpler valid bound; downstream Lemma lemma:M:sum:m and Theorem the:it:EMA:M are affected only in intermediate constants.",
+      "primary_affected_tag": "lemma:M:sum:s",
+      "target_type": "formal_result",
+      "title": "Invalid inequality for $\\gamma_t^2$ in the OptEMA-M tracking bound",
+      "why_classification": "The invalid step is removable by a simpler valid inequality; no rate or conclusion changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Define $c_0:= \\tfrac{\\theta}{2} $, $c_1:=\\tfrac{\\theta}{ 2\\varepsilon^2} $, and $c_2:=\\tfrac{L\\theta^2}{2\\varepsilon^2}$.",
+          "tag": "lemma:OptEMA:M:suff:dec"
+        },
+        {
+          "quote": "We define $\\iota := 1+\\sqrt{C_g}$ and $C_o:= \\tfrac{\\iota^3}{c_0} (2 C_f + 2c_2 + c_1 C_s+1)$.",
+          "tag": "lemma:M:sum:m"
+        }
+      ],
+      "failure_explanation": "The proof of Lemma lemma:M:sum:m redefines $c_0=\\theta\\mu/4$ and $c_1=\\theta/(\\mu\\varepsilon)$, whereas the lemma statement's $C_o$ is defined using the constants $c_0=\\theta/2$ and $c_1=\\theta/(2\\varepsilon^2)$ from Lemma lemma:OptEMA:M:suff:dec. The proof therefore does not establish the stated $C_o$; it establishes a bound with different constants.",
+      "failure_location": {
+        "quote": "Define $c_0:= \\tfrac{\\theta \\mu }{4}$, $c_1:=\\tfrac{\\theta }{ \\mu \\varepsilon}$, $c_2:=\\tfrac{L\\theta^2}{2 \\varepsilon^2}$.",
+        "tag": "lemma:M:sum:m"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Align the constants by either redefining $C_o$ in the statement with the proof's constants or adjusting the proof to use the descent lemma's constants; the rate is unaffected.",
+      "overall_effect": "The stated constant $C_o$ in Lemma lemma:M:sum:m is not justified by the proof; Theorem the:it:EMA:M, which uses this lemma, inherits the mismatch, though the big-O rate is unchanged.",
+      "primary_affected_tag": "lemma:M:sum:m",
+      "target_type": "formal_result",
+      "title": "Constant mismatch between Lemma lemma:M:sum:m statement and proof",
+      "why_classification": "A constant-definition mismatch repairable by a local edit; no mathematical content or rate is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "~\\leq~ \\left( \\frac{\\tau_t}{\\mu} \\right)^2.",
+          "tag": "lemma:bound:v"
+        },
+        {
+          "quote": "For all $t\\geq 1$, we have: $\\|\\v_t\\| \\le \\tau_t^2$.",
+          "tag": "lemma:bound:v"
+        },
+        {
+          "quote": "$\\tau_t = \\max_{1\\le i\\le t} \\|\\g_i\\|$",
+          "tag": "sect:rate"
+        }
+      ],
+      "failure_explanation": "In the proof, $\\tau_t$ is redefined as $1+\\mu\\max_i\\|\\g_i\\|$, so the proved bound $\\|\\v_t\\| \\le (\\tau_t/\\mu)^2$ is not the stated bound $\\|\\v_t\\| \\le \\tau_t^2$ with $\\tau_t = \\max_i\\|\\g_i\\|$. The proof does not establish the lemma as stated, although the statement itself is true and follows by the same recursion used in Lemma lemma:bound:EMA:M:v.",
+      "failure_location": {
+        "quote": "Define $\\tau_t := 1 + \\mu \\max_{i=1}^t \\lVert \\mathbf{g}_i \\rVert$.",
+        "tag": "lemma:bound:v"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "In the proof, define $\\tau_t = \\max_{i\\le t}\\|\\g_i\\|$ and repeat the recursion argument from Lemma lemma:bound:EMA:M:v.",
+      "overall_effect": "Lemma lemma:bound:v is unproven as written; its use in Lemma lemma:OptEMA:V:suff:dec to bound $\\sqrt{\\max(\\v_t)}$ by $\\tau_t$ is unsupported until the proof is repaired.",
+      "primary_affected_tag": "lemma:bound:v",
+      "target_type": "formal_result",
+      "title": "Proof of Lemma lemma:bound:v uses a different and weaker $\\tau_t$",
+      "why_classification": "The statement is true and the repair is a direct correction of the proof's notation; no downstream content changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\overset{}{\\leq }& \\ts \\varpi_t \\|\\nabla f(\\x_t)\\|^2 + \\frac{\\theta^2}{ \\varpi_t } \\|\\m_t\\|^2 \\cdot \\rho_t^{-1/2} \\cdot \\tfrac{1}{ \\mu^2 \\varepsilon^6}",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        },
+        {
+          "quote": "&\\overset{\\step{}}{=}& \\ts ... + 2 \\theta \\cdot \\frac{ \\varepsilon + \\sqrt{ \\max(\\v_{t-1}) }}{ \\alpha_t } \\|\\m_t\\|^2 \\cdot \\rho_t^{-1/2} \\cdot \\tfrac{1}{\\mu^2 \\varepsilon^6} \\nn\\\\ &\\leq & \\ts ... + \\frac{2 \\theta}{ \\alpha_t } \\|\\m_t\\|^2 \\cdot\\rho_t^{-1/2} \\cdot \\tfrac{1}{\\varepsilon^6} \\cdot (1+\\tau_t)",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        }
+      ],
+      "failure_explanation": "The derivation yields the term $(2\\theta/\\alpha_t)\\|\\m_t\\|^2\\rho_t^{-1/2}(1+\\tau_t)/(\\mu^2\\varepsilon^6)$. The proof then replaces $(1+\\tau_t)/\\mu^2$ by $(1/\\mu)(1+\\mu\\tau_t)$. This is false: for $\\mu\\in(0,1)$ and large $\\tau_t$, $(1+\\tau_t)/\\mu^2 \\gg (1+\\mu\\tau_t)/\\mu$. Hence the stated $E_t$ with the factor $(1+\\mu\\tau_t)$ is not an upper bound for the derived term, and the descent inequality is not established.",
+      "failure_location": {
+        "quote": "&\\overset{}{\\leq }& \\ts - \\underbrace{\\ts \\tfrac{\\theta \\alpha_t}{2(\\varepsilon + \\tau_{t}) } \\|\\nabla f(\\x_t)\\|^2}_{:=D_t} + \\underbrace{\\ts \\tfrac{\\theta^2 L}{\\varepsilon^2} \\gamma_{t-1} \\|\\m_{t-1}\\|^2 +\\frac{2 \\theta}{ \\alpha_t } \\|\\m_t\\|^2 \\cdot\\rho_t^{-1/2} \\cdot \\tfrac{1}{\\varepsilon^6} \\cdot \\tfrac{1}{\\mu} (1+\\mu\\tau_t)}_{:=E_t}.",
+        "tag": "lemma:OptEMA:V:suff:dec"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Redefine $E_t$ to contain the correct factor $(1+\\tau_t)/\\mu^2$ (or find a valid sharper bound) and propagate the modified constant through the subsequent lemmas; the rate can be preserved with adjusted constants.",
+      "overall_effect": "The one-step descent inequality for OptEMA-V is unproven; downstream Lemma lemma:G:bound:2, Lemma lamma:bound:sum:nabla, and Theorem the:it:EMA:V are unreliable.",
+      "primary_affected_tag": "lemma:OptEMA:V:suff:dec",
+      "target_type": "formal_result",
+      "title": "False inequality in the OptEMA-V one-step descent proof",
+      "why_classification": "The proof of a central lemma uses a false inequality; the repair is contained and the rate survives, but the lemma statement and downstream constants must be adjusted."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2603.09923",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7b0dd08a3822424a13d5abe6787b30dbd3aaca288887f32f89d091821f7ea682",
+  "status": "ok"
+}

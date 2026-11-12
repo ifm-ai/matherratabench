@@ -1,0 +1,111 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{\\Psi}_{\\MSIP}(\\Y): = \\bm{W}(\\Y)^{-1} \\bm{\\bar{K}}(\\Y)^{-1} \\hvonem(\\Y)",
+          "tag": "eq:fixed_point_general_case"
+        },
+        {
+          "quote": "\\ytplus = \\bm{W}(\\yt)^{-1} \\bm{K}(\\yt)^{-1} \\vonem(\\yt)",
+          "tag": null
+        },
+        {
+          "quote": "When $\\kappa$ is the squared exponential kernel, there exists a scalar $\\lambda \\in \\mathbb{R}$ such that $\\bar{\\kappa} = \\lambda \\kappa$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The general MSIP map is Ψ_MSIP(Y) = W(Y)^{-1} κ̄(Y)^{-1} v̂1(Y) and the general gradient identity is ∇F_M = W(κ̄WY − v̂1). For the squared exponential kernel κ̄ = λκ (λ = 1/σ²), substitution gives Ψ_MSIP(Y) = λ^{-1} W(Y)^{-1} K(Y)^{-1} vonem(Y) and ∇F_M = λWKWY − Wvonem = λWKW(Y − Ψ_MSIP). The printed specializations drop the scalar: the Gaussian MSIP update in sec:msip is printed without λ^{-1}, and eq:gradien_opt_mmd_gaussian_kernel is printed without λ. As printed, the Gaussian map's fixed points are not critical points of F_M, and the Gaussian gradient formula is false by the factor λ.",
+      "failure_location": {
+        "quote": "$\\nabla F_{M}(y) =  \\bm{W}(y) \\bm{K}(y) \\bm{W}(y) \\Big( y - \\bm{\\Psi}_{\\MMS}(y) \\Big)$",
+        "tag": "eq:gradien_opt_mmd_gaussian_kernel"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Insert the factor λ^{-1} in the Gaussian MSIP map, ytplus = λ^{-1} W(yt)^{-1} K(yt)^{-1} vonem(yt), and the factor λ in eq:gradien_opt_mmd_gaussian_kernel, ∇F_M(y) = λ W(y) K(y) W(y) (y − Ψ_MSIP(y)); equivalently, retain the general κ̄-based forms, which are correct.",
+      "overall_effect": "The two Gaussian-kernel specializations — the MSIP update map (the kernel actually used in the numerics, with σ = 5) and the Gaussian form of the gradient identity inside thm:gradient_opt_mmd — are wrong by the constant factor λ = 1/σ² (equivalently its inverse in the map). The general theory is intact.",
+      "primary_affected_tag": "thm:gradient_opt_mmd",
+      "target_type": "formal_result",
+      "title": "Gaussian specializations drop the scalar factor λ",
+      "why_classification": "The repair is a one-line insertion of an explicit constant in two displays. The general identity ∇F_M = W(κ̄WY − v̂1), the preconditioned-gradient-descent interpretation with M = Wκ̄W, and the mean-shift corollary are all correct and unaffected, so no claim, guarantee, or regime is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:ms_as_MSIP"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "we recall that $\\nabla\\kappa$ is bounded on $\\X\\times\\X$ to find",
+          "tag": "proof:thm_gradient_opt_mmd"
+        },
+        {
+          "quote": "\\Dij \\vzero(\\yi)&= \\int_{\\X} \\Dij \\kappa( x,\\yi) \\dpix",
+          "tag": "proof:thm_gradient_opt_mmd"
+        },
+        {
+          "quote": "Under \\Cref{assumption:gradient_kappa} and assuming that the gradient of $\\kappa$ is bounded on $\\X$, the equations",
+          "tag": "prop:steady_state_equation_on_y"
+        }
+      ],
+      "failure_explanation": "The proof differentiates the kernel mean embedding under the integral sign, writing ∇_{ij}v0(yi) = ∫ ∇_{ij}κ(x,yi) dπ(x), and explicitly invokes boundedness of ∇κ, while the theorem statement assumes only assumption:gradient_kappa. Moreover, the statement's own quantities v̄0(y) = ∫ κ̄(x,y) dπ and v̄1(y) = ∫ x κ̄(x,y) dπ require the same integrability. The paper imposes this hypothesis in prop:steady_state_equation_on_y but not in the theorem, so as stated the theorem is not established (and its formula may be ill-defined) for kernels with unbounded gradient.",
+      "failure_location": {
+        "quote": "Under \\Cref{assumption:gradient_kappa}, the gradient of $F$, seen as an $M \\times d$ matrix, is given by",
+        "tag": "thm:gradient_opt_mmd"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis 'and the gradient of κ is bounded on X' (equivalently, that the kernel mean embedding v0 is differentiable on X) to the statement of thm:gradient_opt_mmd; the proof then goes through unchanged.",
+      "overall_effect": "As stated, thm:gradient_opt_mmd is unproved for kernels whose gradient is unbounded on X; cor:ms_as_MSIP inherits the gap because its proof is given as a direct consequence of the theorem.",
+      "primary_affected_tag": "thm:gradient_opt_mmd",
+      "target_type": "formal_result",
+      "title": "thm:gradient_opt_mmd omits the bounded-gradient hypothesis its proof needs",
+      "why_classification": "A one-line hypothesis addition repairs the gap; all kernels used in the paper (Gaussian, Matérn, IMQ) satisfy it, and every conclusion and downstream result is preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "F_{M}(\\Y) = \\frac{1}{2} \\bigg( C_\\pi + 2 \\langle \\what, \\vzerov(\\Y) \\rangle + \\langle \\what, \\Ky \\what \\rangle  \\bigg)",
+          "tag": null
+        },
+        {
+          "quote": "F_{M}(\\Y) & = \\frac{1}{2} \\bigg(C_\\pi - \\langle \\what, \\vzerov(\\Y) \\rangle \\bigg) = \\frac{1}{2} \\bigg( C_\\pi - \\langle \\what, \\bm{K}(\\Y) \\what \\rangle \\bigg)",
+          "tag": null
+        },
+        {
+          "quote": "2\\langle \\what,\\,\\Dij \\bm{v}_0(\\Y)\\rangle - \\langle\\what,\\,(\\Dij\\Ky)\\,\\what\\rangle",
+          "tag": "eq:grad_F_pi_first"
+        },
+        {
+          "quote": "2\\Dij F_{M}(\\Y) &= -2\\whati\\left([\\bvonev(\\yi)]_{j}  - y_{ij}\\bvzero(\\yi)- \\langle\\what,\\, \\Y_{j}\\odot\\Ki\\rangle + y_{ij}\\langle\\what,\\,\\Ki\\rangle",
+          "tag": "eq:2times_gradient_FM"
+        }
+      ],
+      "failure_explanation": "Differentiating the established expression F_M = ½(C_π − ⟨ŵ,Kŵ⟩) gives 2∇_{ij}F_M = −2⟨ŵ,K∇_{ij}ŵ⟩ − ⟨ŵ,(∇_{ij}K)ŵ⟩, the opposite of the printed eq:gradient_optimal_mmd_identity. The printed eq:grad_F_pi_first consequently has flipped signs, and the correctly signed eq:2times_gradient_FM does not follow from it; the proof also contains the earlier typo F_M = ½(C_π + 2⟨ŵ,v0⟩ + ⟨ŵ,Kŵ⟩) (the +2 should be −2, as the immediately following simplification confirms). Taken literally, the printed derivation yields ∇F_M = W(v̂1 − κ̄WY), the negative of the claimed identity. The two sign errors cancel, so the final assembly and the theorem statement are correct (verified independently, e.g., via the M=1 corollary), but the printed proof is internally inconsistent.",
+      "failure_location": {
+        "quote": "2\\Dij F_{M}(\\Y) = 2\\langle \\what,\\,\\Ky\\Dij\\what\\rangle + \\langle \\what,\\,\\Dij\\Ky\\,\\what \\rangle",
+        "tag": "eq:gradient_optimal_mmd_identity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Flip the signs in eq:gradient_optimal_mmd_identity and eq:grad_F_pi_first (and change +2⟨ŵ,v0⟩ to −2⟨ŵ,v0⟩ in the expansion of F_M); the remainder of the proof then follows as printed.",
+      "overall_effect": "The printed proof of the paper's central gradient identity contains a false displayed differentiation identity and a non-sequitur between consecutive displays; the theorem's statement and all downstream uses (preconditioned gradient descent, mean-shift corollary) remain valid because the final result is correct.",
+      "primary_affected_tag": "thm:gradient_opt_mmd",
+      "target_type": "formal_result",
+      "title": "Sign errors in the printed derivation of ∇F_M inside the proof of thm:gradient_opt_mmd",
+      "why_classification": "The corrections are forced sign flips localized to a few displays, with no new lemma or argument needed; the final statement is correct and independently verifiable, so no mathematical content, claim, or guarantee is lost."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2502.10600",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f1c59990d7e8e7d1c4127b865c8a6252d6e282b546fc6c81dbd5e352ececfc2f",
+  "status": "ok"
+}

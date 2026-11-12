@@ -1,0 +1,108 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemadd",
+        "lemcmulti",
+        "lemsq",
+        "lempp",
+        "lemrpower",
+        "lemdiv",
+        "repetatildei",
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\text{\\rm FFN}(h_t) = \n   \\begin{cases} \n    h_t & \\text{if}\\text{  } t\\in\\{1,\\cdots,k\\} \\\\\n      \\begin{bmatrix}\n          \\mathbf{0} \\\\\n          \\mathcal{I}_t^1 \\\\\n          \\mathcal{I}_t^2 \\\\\n          1\n      \\end{bmatrix} & \\text{otherwise}\\text{ }  \\\\\n   \\end{cases}",
+          "tag": "Gatinglemma"
+        },
+        {
+          "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $M$ only from columns $D+1$ to $2D$.",
+          "tag": "lemadd"
+        }
+      ],
+      "failure_explanation": "The Gating Lemma as stated only either keeps a token unchanged or zeros out its data rows; it does not provide a feed-forward network that subtracts a constant from a token. The proofs of the arithmetic lemmas invoke it to subtract constants (e.g., DM in lemsumD, M in lemadd, lemcmulti, lemsq, lempp, lemrpower, lemdiv). This is an invalid application of the lemma, so the arithmetic constructions are not established as written.",
+      "failure_location": {
+        "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $DM$ in the $D+1$-th column.",
+        "tag": "lemsumD"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Provide a new local lemma or construction showing that a two-layer feed-forward network can subtract a prescribed constant from specified tokens (using the constant row and interaction terms for gating), then replace the misapplications of the Gating Lemma with this construction.",
+      "overall_effect": "All basic arithmetic operation lemmas and their downstream approximation and generalization theorems rely on this step. Without a valid constant-subtraction FFN, the constructed transformers do not implement the claimed operations, so the main approximation and generalization results are unsupported.",
+      "primary_affected_tag": "lemsumD",
+      "target_type": "formal_result",
+      "title": "Gating Lemma cannot subtract constants",
+      "why_classification": "The defect is pervasive and blocks the main proof, but it can be repaired by a contained new FFN construction without changing the rates, architecture, or overall proof strategy. Hence more than minor but not serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{M}(q) := \\{x\\in\\mathbb{R}^D \\text{ } |& \\text{ } x=v+u, v\\in\\mathcal{M}, u\\in ker(P(v)^{\\top}),\\nonumber \\\\\n&\\|u\\|_2 < q\\tau_{\\mathcal{M}}(v) \\}, \\label{tube}",
+          "tag": "deftubularm"
+        },
+        {
+          "quote": "In the exact manifold case when $q=0$, Theorem \\ref{thmGeneralization} gives rise to the min-max regression error",
+          "tag": "thmGeneralization"
+        }
+      ],
+      "failure_explanation": "The definition of the tubular region uses the strict inequality \\|u\\|_2 < q\\tau_{\\mathcal{M}}(v). For q=0 this becomes \\|u\\|_2 < 0, which is impossible. Thus \\mathcal{M}(0) is empty, not the exact manifold \\mathcal{M}. The prose claim that q=0 recovers the exact manifold regression model is therefore false under the paper's own definition.",
+      "failure_location": {
+        "quote": "When $q=0$, one recovers the exact manifold regression model where functions are supported exactly on a low-dimensional manifold.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Change the strict inequality to \\|u\\|_2 \\le q\\tau_{\\mathcal{M}}(v), or explicitly define \\mathcal{M}(0)=\\mathcal{M}.",
+      "overall_effect": "The advertised boundary case q=0 is excluded by the definition, so the paper's claim about recovering the exact manifold setting is not supported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "q=0 tubular region is empty, contradicting exact manifold claim",
+      "why_classification": "A one-line change to the definition (or a separate definition for q=0) repairs the inconsistency and preserves all substantive claims."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "{\\rm B}(H) = {\\rm FFN}({\\rm MHA}(H) + H) + {\\rm MHA}(H) + H.",
+          "tag": null
+        },
+        {
+          "quote": "It is easy to see $B_{d+8}\\in\\mathcal{B}(1,1,d_{embed})$ and \n\\begin{align*}\nH_{d+8}:=B_{d+8}(H_{d+7})=\n\\begin{bmatrix}\n    \\begin{array}{c|cccc}\n     \\multirow{4}{*}{$(H_{d+7})_{:,I_{d+7}}$} & \\tilde\\eta_i(x)  & \\mathbf{0} \\\\\n    & 0 &  0 \\\\\n    & \\mathcal{I}_{(d+3)D+2d+7}   & \\mathcal{I}_{\\ell} \\\\\n    & 1  &  1\n    \\end{array}\n\\end{bmatrix}, \n\\end{align*}",
+          "tag": "repetatildei"
+        }
+      ],
+      "failure_explanation": "The transformer block is defined as B(H)=FFN(MHA(H)+H)+MHA(H)+H. If the FFN is the identity map, then B(H)=2(MHA(H)+H). In the final step of Proposition repetatildei, the attention head computes \\tilde\\eta_i(x) and adds it to the target column, so H1=MHA(H)+H already contains \\tilde\\eta_i(x). Setting FFN to identity doubles this value to 2\\tilde\\eta_i(x), not \\tilde\\eta_i(x). To pass the attention output through unchanged, the FFN must be the zero map (or otherwise cancel the residual addition).",
+      "failure_location": {
+        "quote": "For the feed-forward layer of $B_8$, we take the weight matrix equals to identity and bias equals to zero, so that it implements the identity operation.",
+        "tag": "repetatildei"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Set the feed-forward weight matrix to zero and bias to zero in the final block so that B(H)=MHA(H)+H, preserving the computed \\tilde\\eta_i(x).",
+      "overall_effect": "Proposition repetatildei constructs 2\\tilde\\eta_i instead of \\tilde\\eta_i, invalidating the proposition and all downstream results that use it.",
+      "primary_affected_tag": "repetatildei",
+      "target_type": "formal_result",
+      "title": "Identity FFN doubles the ReLU output in Proposition repetatildei",
+      "why_classification": "The error is a one-line correction (identity to zero) that preserves the intended construction and all subsequent results."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2505.03205",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n02a",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e251cd718a4c2fe4d9791d1e58d8251eec6a75089c28852e7c9426637e3b810a",
+  "status": "ok"
+}

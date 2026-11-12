@@ -1,0 +1,102 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "coro:UCS17",
+        "thm:correctedSaad",
+        "thm:ours",
+        "thm:ours_updated"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hspace*{0.02in} {\\bf Input:} Real symmetric matrix $A \\in \\mathbb{R}^{n\\times n}$, real vector $\\boldsymbol{v} \\in \\mathbb{R}^{n\\times 1}$, number of Lanczos iterations $m$.",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "\\hspace*{0.02in} {\\bf Input:} \n\tReal SPD matrix $A \\in \\mathbb{R}^{n\\times n}$, number of Lanczos iterations $m$, and number of random vectors $N$.",
+          "tag": "alg:SLQ"
+        }
+      ],
+      "failure_explanation": "No hypothesis prevents a Lanczos breakdown with \\(\\beta_{k-1}=0\\), and the algorithm supplies no termination branch. For example, if \\(A=I\\), then after the first step \\(\\tilde{\\boldsymbol v}_2=A\\boldsymbol v_1-\\alpha_1\\boldsymbol v_1=0\\), so the displayed normalization divides by zero and the promised \\(m+1\\) nodes and weights are not produced. More generally this occurs whenever the starting vector lies in a proper invariant Krylov subspace.",
+      "failure_location": {
+        "quote": "\\State Let $\\beta_{k-1} = \\| \\tilde{\\boldsymbol{v}}^{(k)} \\|_2$.\n\t\t\t\\State Obtain $\\boldsymbol{v}_k = \\tilde{\\boldsymbol{v}}_{k}/\\beta_{k-1}$.",
+        "tag": "alg:Lanc"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the standard lucky-breakdown branch: terminate when a Lanczos residual is zero, build the smaller tridiagonal matrix, and return its reduced quadrature rule, which is exact for the relevant bilinear form.",
+      "overall_effect": "The stated SLQ procedure, and hence its output \\([\\log\\det A]_L\\), is undefined on admissible SPD inputs and random-vector outcomes covered by the probabilistic guarantees.",
+      "primary_affected_tag": "alg:Lanc",
+      "target_type": "algorithm",
+      "title": "Lanczos algorithm does not handle exact breakdown",
+      "why_classification": "Exact breakdown has a standard local treatment that preserves the SLQ estimator and all stated error rates and scopes without a new argument."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $A\\in \\mathbb{R}^{n\\times n}$ be a real symmetric positive definite matrix with eigenvalues in $[\\lambda_{\\min},\\lambda_{\\max}]$, $\\lambda_{\\max}<1$",
+          "tag": "thm:ours"
+        },
+        {
+          "quote": "$$ \\mathbb{P}\\Big\\{ \\left| \\log \\det A -  \\left[\\log \\det A \\right]_L \\right| \\le \\epsilon  |\\log \\det A |\\Big\\} \\ge 1-\\eta. $$",
+          "tag": "thm:ours"
+        }
+      ],
+      "failure_explanation": "Although scaling by a positive scalar \\(c\\) gives \\(\\log\\det(cA)=\\log\\det A+n\\log c\\), the theorem controls error relative to \\(|\\log\\det(cA)|\\), not relative to \\(|\\log\\det A|\\). Subtracting the known shift preserves absolute error but not the relative-error denominator. For example, an SPD matrix with determinant one and \\(\\lambda_{\\max}>1\\) has zero original log determinant, while a scaling that puts its spectrum below one has nonzero scaled log determinant; the theorem then permits nonzero error and cannot imply the required zero relative error for the original matrix.",
+      "failure_location": {
+        "quote": "This assumption is mild since for any SPD matrix with $\\lambda_{\\max} > 1$, it can be simply scaled to have eigenvalues $\\lambda \\in (0,1)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either restrict the advertised scope to matrices already satisfying \\(\\lambda_{\\max}<1\\), or derive a new scaling-aware bound whose tolerance is tied to the original \\(|\\log\\det A|\\).",
+      "overall_effect": "The paper's suggestion that the restriction \\(\\lambda_{\\max}<1\\) is harmless does not extend the relative-error results to arbitrary SPD matrices; matrices whose log determinant is small relative to the scaling shift remain uncovered.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Scaling does not preserve the claimed relative-error guarantee",
+      "why_classification": "The source supplies no way to retain the claimed relative guarantee after scaling. The supported repair therefore withdraws the asserted extension to general SPD matrices or requires a new error analysis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\begin{equation}\n    \\label{optimization}\n    \\min_{\\alpha>1} \\, \\log\\left(C \\alpha\\right) \\left(\\alpha/(\\alpha-1) \\right)^2.\n\\end{equation}",
+          "tag": "optimization"
+        },
+        {
+          "quote": "By introducing a constant $C = 4 M_{\\rho_2} / (\\epsilon (\\rho_2^2 - \\rho_2) \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right))$",
+          "tag": null
+        },
+        {
+          "quote": "\\cref{thm:ours_updated} summarizes the bounds of $m$ and $N$ which product is minimized through a reallocation of error.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The formulas do not ensure \\(C\\geq1\\). When \\(C<1\\), the stated objective tends to \\(-\\infty\\) as \\(\\alpha\\downarrow1\\), because \\(\\log(C\\alpha)<0\\) while \\((\\alpha/(\\alpha-1))^2\\to\\infty\\); thus it has no minimizer. Such values occur within the stated parameter regime: taking \\(\\lambda_{\\max}=1/2\\), \\(\\lambda_{\\min}=(1-d)/2\\), and fixed \\(n,\\epsilon\\), gives \\(\\rho_2\\sim2/d\\) and hence \\(C\\to0\\) as \\(d\\to0\\). For sufficiently small \\(C\\), even equation \\eqref{alpha*} has no solution with \\(\\alpha>1\\). The derivation incorrectly optimizes a logarithmic lower bound for \\(m\\) after it has become negative, rather than enforcing the nonnegative/integer nature of the iteration count.",
+      "failure_location": {
+        "quote": "The minimizer $\\alpha^*$ of \\eqref{optimization} then satisfies\n\\begin{equation}\n    \\label{alpha*}\n    \\alpha^* = 2\\log \\alpha^* + 2 \\log C + 1, \n\\end{equation}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Reformulate the optimization using nonnegative integer iteration and query counts, including the clipping or ceiling of the lower bounds, analyze the resulting parameter regimes, and separately handle cases where the quadrature-step bound is already nonpositive.",
+      "overall_effect": "The proposed optimized allocation and the claimed MVM-minimizing parameter \\(\\alpha^*\\) are unavailable for admissible, well-conditioned matrices, so the advertised universal optimized prescription is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The error-allocation optimization need not have a minimizer",
+      "why_classification": "A contained but nontrivial reoptimization and case analysis can plausibly preserve an error-allocation method, but the stated continuous optimization and stationary equation cannot be repaired by a merely local condition while retaining their current scope."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2307.00847",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c42e539abecf88a44de72f2dedfec14703df372008f57b75de751f59b08fac16",
+  "status": "ok"
+}

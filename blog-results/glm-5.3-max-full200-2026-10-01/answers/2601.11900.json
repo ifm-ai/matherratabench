@@ -1,0 +1,182 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We impose periodic boundary condition in \\(x\\) and zero-flux boundary condition in \\(v\\).",
+          "tag": null
+        },
+        {
+          "quote": "We distinguish the predicted density $\\hat{\\rho}^n$ from the true density $\\rho^n$, defined through the moment of $f^n$, because the low-rank scheme introduced below does not strictly preserve mass.",
+          "tag": null
+        },
+        {
+          "quote": "E(x,t) = -\\nabla_x\\phi(x,t),\\qquad -\\Delta_x\\phi(x,t)=\\rho(x,t)-\\eta(x),",
+          "tag": "eq:Poisson"
+        }
+      ],
+      "failure_explanation": "On a periodic spatial domain the discrete Poisson equation $-\\Delta_x\\phi=\\hat\\rho^{n+1}-\\eta$ is solvable only if the right-hand side has zero spatial mean. The prediction $\\hat\\rho^{n+1}=\\rho^n+\\Delta t\\langle\\mathcal A_h(f^n),1\\rangle_v^h$ preserves the mean of $\\rho^n$, but the paper itself states that the low-rank K–S–L evolution does not strictly preserve mass, so the mean of $\\rho^n-\\eta$ drifts away from zero after the first step (the K- and S-step Fokker–Planck contributions involve $P_V1\\neq1$ and thus change the mass). The instruction 'Solve the Poisson equation using $\\hat\\rho^{n+1}$' then refers to a singular periodic Laplacian solve, and the same unmodified step appears in Algorithm 2.",
+      "failure_location": {
+        "quote": "Solve the Poisson equation using $\\hat{\\rho}^{n+1}$ for $E^{n+1}$.",
+        "tag": "alg:first_order"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "At each Poisson solve, replace $\\hat\\rho-\\eta$ by its spatially mean-zero projection (or explicitly remove the drifting mean), and state this compatibility step in Algorithms 1 and 2.",
+      "overall_effect": "Algorithm 1 (and the identical prediction steps of Algorithm 2) is not guaranteed to be executable: once mass drift makes $\\hat\\rho^{n+1}-\\eta$ non-neutral, $E^{n+1}$ and hence the whole time step are undefined as stated. Theorem 5.3 presupposes a well-defined $E^{n+1}$ but is not itself invalidated.",
+      "primary_affected_tag": "alg:first_order",
+      "target_type": "algorithm",
+      "title": "Periodic Poisson solve in the low-rank schemes is not guaranteed solvable (mass drift breaks discrete neutrality)",
+      "why_classification": "A standard local compatibility fix (mean projection at the periodic Poisson solve) makes both algorithms well defined; the method, convergence orders, AP property, and all other guarantees are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bar{u}^2 = |\\langle u - \\bar{u}, M \\rangle_v^h|^2 \\le \\|u - \\bar{u}\\|_{v}^{h,2} \\, \\|M\\|_{v}^{h,2} \\le L_v M_{\\max} \\|u - \\bar{u}\\|_{v}^{h,2}.",
+          "tag": "prop:coercivity"
+        },
+        {
+          "quote": "\\mathcal{D}(u) \\ge \\lambda_N \\| u - \\bar{u} \\|_{v}^{h,2}.",
+          "tag": "prop:coercivity"
+        },
+        {
+          "quote": "\\gamma_h:=\\frac{M_{\\min}\\,\\lambda_N}{\\Big(1+\\sqrt{{L_v\\,M_{\\max}}}\\Big)^2}",
+          "tag": "prop:coercivity"
+        }
+      ],
+      "failure_explanation": "Two written estimates fail. (a) From the Cauchy–Schwarz chain the proof only obtains $\\bar u^2\\le L_vM_{\\max}\\|u-\\bar u\\|^2$; since $\\|\\bar u\\cdot 1\\|_v^h=\\sqrt{L_v}|\\bar u|$, this supports $\\|u\\|^2\\le(1+L_v\\sqrt{M_{\\max}})^2\\|u-\\bar u\\|^2$, a factor $L_v$ weaker than the claimed $(1+\\sqrt{L_vM_{\\max}})^2$, so the displayed inference does not follow (the sharp bound $\\|M\\|_{v}^{h,2}\\le M_{\\max}$, from $\\langle M,1\\rangle_v^h=1$, is needed). (b) The pointwise Poincaré display $\\mathcal D(u)\\ge\\lambda_N\\|u-\\bar u\\|_{v}^{h,2}$ with $\\mathcal D(u)=\\Delta v^{-2}\\sum(u_{q+1}-u_q)^2$ is false whenever $\\Delta v>1$ (the sharp inequality is $\\Delta v\\,\\mathcal D(u)\\ge\\lambda_N\\|u-\\bar u\\|^2$), and the proof simultaneously drops this $\\Delta v$ when converting the dissipation into 'a pointwise lower bound proportional to $\\mathcal D(u)$', so the written chain is internally inconsistent. The final display and the stated $\\gamma_h$ are nevertheless correct and follow from the sharp versions of both estimates.",
+      "failure_location": {
+        "quote": "\\|u\\|_{v}^{h,2} \\le \\Big( \\|u-\\bar{u}\\|_v^h + \\|\\bar{u}\\|_v^h \\Big)^2 \\le \\Big(1 + \\sqrt{L_v M_{\\max}}\\Big)^2 \\|u-\\bar{u}\\|_{v}^{h,2}",
+        "tag": "prop:coercivity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the two intermediate estimates by the sharp ones ($\\|M\\|_{v}^{h,2}\\le M_{\\max}$ via the normalization, and $\\Delta v\\,\\mathcal D(u)\\ge\\lambda_N\\|u-\\bar u\\|_{v}^{h,2}$ via the path-graph Poincaré constant), after which the stated $\\gamma_h$ follows line by line.",
+      "overall_effect": "Only the written proof of Proposition 5.1 is unreliable; the stated $\\gamma_h$ (used in Assumption 5.2 and Theorem 5.3) is in fact correct, so no downstream result is invalidated.",
+      "primary_affected_tag": "prop:coercivity",
+      "target_type": "formal_result",
+      "title": "Proof of Proposition 5.1 does not establish the stated coercivity constant (faulty intermediate estimates)",
+      "why_classification": "The statement and constant are correct and are recovered by one-line sharper local bounds; no lemma, constant, or downstream result changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(\\mathcal{T}^{(\\alpha)} w)_q = \\frac{1}{\\Delta v^2} \\big( \\alpha_{q+1/2}(w_{q+1}-w_q) - \\alpha_{q-1/2}(w_q-w_{q-1}) \\big)",
+          "tag": "prop:fluctuation_bound"
+        },
+        {
+          "quote": "[\\mathcal{L}_{h}(f)]_{p,q}\\;=\\;\\frac{1}{\\Delta v^2} \\left[ \\alpha_{q+1/2}\\beta_p\\,f_{p,q+1} -\\Big(\\frac{1}{\\alpha_{q+1/2}\\beta_p}+\\alpha_{q-1/2}\\beta_p\\Big)\\,f_{p,q} +\\frac{1}{\\alpha_{q-1/2} \\beta_p} \\,f_{p,q-1} \\right]",
+          "tag": "eq:fp_discrete_separable"
+        }
+      ],
+      "failure_explanation": "With $\\mathcal T^{(\\alpha)}$ and $\\mathcal T^{(1/\\alpha)}$ defined as centered difference stencils, the operator $\\beta\\otimes\\mathcal T^{(\\alpha)}+\\beta^{-1}\\otimes\\mathcal T^{(1/\\alpha)}$ has, e.g., coefficient $\\beta_p\\alpha_{q-1/2}+(\\beta_p\\alpha_{q-1/2})^{-1}$ on $f_{p,q-1}$, whereas the actual stencil has $(\\alpha_{q-1/2}\\beta_p)^{-1}$ there; the claimed identity is false for the operator actually used. The correct decomposition of $\\mathcal L_h$ uses the one-sided shift operators $(\\tilde T w)_q=\\Delta v^{-2}(\\alpha_{q+1/2}w_{q+1}-\\alpha_{q-1/2}w_q)$ and $\\Delta v^{-2}(\\alpha_{q-1/2}^{-1}w_{q-1}-\\alpha_{q+1/2}^{-1}w_q)$, for which the rest of the proof (the spatial-fluctuation estimate and the norm bounds $2\\alpha_{\\max}/\\Delta v^2$, $2/(\\alpha_{\\min}\\Delta v^2)$) goes through unchanged, so the stated $\\kappa_h$ bound is true but is not proved by the written decomposition.",
+      "failure_location": {
+        "quote": "\\mathcal{L}_{h} \\;=\\; \\beta \\otimes \\mathcal{T}^{(\\alpha)} \\;+\\; \\beta^{-1} \\otimes \\mathcal{T}^{(1/\\alpha)}",
+        "tag": "prop:fluctuation_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Redefine the two velocity operators as the one-sided shifts that exactly reproduce the stencil (eq. fp_discrete_separable); the spatial-fluctuation argument and the same operator-norm bounds then yield the stated $\\kappa_h$ unchanged.",
+      "overall_effect": "The proof of Proposition 5.2, which supplies the fluctuation constant $\\kappa_h$ used in Assumption 5.2 and Theorem 5.3, is invalid as written; the stated bound and $\\kappa_h$ remain correct via the shift-operator decomposition, so Theorem 5.3's conclusions are not lost.",
+      "primary_affected_tag": "prop:fluctuation_bound",
+      "target_type": "formal_result",
+      "title": "False velocity-operator decomposition in the proof of Proposition 5.2",
+      "why_classification": "A purely local replacement of the two misidentified operators re-establishes the identical statement and constant; no new argument, lemma, or weakening is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{L_{i}^{n+1} - L_{i}^{(2)}}{\\Delta t} = \\langle \\mathcal{A}_h(f^{(2)}), X_{i}^{n+1}\\rangle_x^h + \\frac{1}{\\varepsilon}\\langle \\mathcal{L}_h^{n+1}(f^{n+1}), X_{i}^{n+1}\\rangle_x^h",
+          "tag": "eq:L_fd_imex"
+        },
+        {
+          "quote": "P_X^{n+1}\\mathcal{L}_{h}^{n+1}(f^{n+1}) = \\varepsilon \\underbrace{\\left[ \\frac{f^{n+1} - f^{(2)}}{\\Delta t} + P_X^{n+1}\\mathcal{A}_h(f^{(2)}) \\right]}_{:= G^{n+1}}",
+          "tag": "eq:G_derivation"
+        }
+      ],
+      "failure_explanation": "The proof recalls the L-step update with a minus sign on the advection term, contradicting the actual scheme (eq. L_fd_imex), whose advection term enters with a plus sign (as dictated by the projector-splitting L-subproblem). Consequently the identity (eq. G_derivation), which the theorem invokes as the definition of $G^{n+1}$, is false for the actual scheme: multiplying the true L-step by $X_i^{n+1}$ and summing over $i$ gives $P_X^{n+1}\\mathcal L_h^{n+1}(f^{n+1}) = \\varepsilon[(f^{n+1}-f^{(2)})/\\Delta t - P_X^{n+1}\\mathcal A_h(f^{(2)})]$, with the opposite sign on the advection contribution. Since only $\\|G^{n+1}\\|$ enters the subsequent estimates, the bounds hold with the corrected $G$, but as written the key identity and the theorem's referenced definition of $G^{n+1}$ are wrong.",
+      "failure_location": {
+        "quote": "\\frac{L_i^{n+1} - L_i^{(2)}}{\\Delta t} = - \\langle \\mathcal{A}_h(f^{(2)}), {X}_i^{n+1} \\rangle_x^h + \\frac{1}{\\varepsilon} \\langle \\mathcal{L}_{h}^{n+1}(f^{n+1}), {X}_i^{n+1} \\rangle_x^h",
+        "tag": "thm:main_AP"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Flip the sign of the advection term in the recalled L-step and in eq. G_derivation, i.e., define $G^{n+1}=(f^{n+1}-f^{(2)})/\\Delta t - P_X^{n+1}\\mathcal A_h(f^{(2)})$; all estimates then proceed unchanged.",
+      "overall_effect": "Only the definition of $G^{n+1}$ in Theorem 5.3 (via eq. G_derivation) is affected; the residual and distance bounds hold verbatim for the correctly-signed residual, and no other result uses this identity.",
+      "primary_affected_tag": "thm:main_AP",
+      "target_type": "formal_result",
+      "title": "Theorem 5.3's proof mis-signs the L-step advection term, making the definition of $G^{n+1}$ false for the scheme",
+      "why_classification": "A single forced sign correction, matching the scheme's own L-step, repairs the false identity; the argument is otherwise sign-agnostic (only $\\|G\\|$ is used), so no conclusion, constant, or guarantee changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\varepsilon(x)= \\begin{cases} \\varepsilon_0+\\tfrac12\\big(\\tanh(5-10x)+\\tanh(5+10x)\\big), & x\\le 0.3,\\\\[2pt] \\varepsilon_0, & x>0.3, \\end{cases} \\qquad \\varepsilon_0=10^{-3},\\quad x\\in[-1,1]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Evaluating the prescribed profile on the stated domain $[-1,1]$: at $x=-1$, $\\tfrac12(\\tanh 15+\\tanh(-5))\\approx4.5\\times10^{-5}$, so $\\varepsilon(-1)\\approx\\varepsilon_0=10^{-3}$; $\\varepsilon$ stays within about $1\\%$ of $\\varepsilon_0$ for $x\\lesssim-0.6$, reaches $O(1)$ only on the middle band $x\\approx[-0.4,0.3]$, and jumps discontinuously from $\\approx0.98$ down to $\\varepsilon_0$ at $x=0.3$. The actual profile is thus 'fluid–kinetic–fluid' with an unmentioned discontinuity, not the claimed 'left part of order one, right part small'; the formula does not realize its stated purpose on the left part of the domain.",
+      "failure_location": {
+        "quote": "so that the left part of the domain has $\\varepsilon(x)$ of order one, while the right part has a smaller, nearly constant value $\\varepsilon(x)\\approx \\varepsilon_0$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the description to match the formula ($\\varepsilon=O(1)$ only on a middle band, $\\approx\\varepsilon_0$ elsewhere, with a jump at $x=0.3$), or replace the formula with one that actually transitions from $O(1)$ on the left to $\\varepsilon_0$ on the right of $[-1,1]$.",
+      "overall_effect": "The description of the mixed-regime test (Section 6.2) misrepresents the profile actually computed. Both $O(1)$- and $\\approx\\varepsilon_0$-Knudsen regions still occur, so the qualitative low-rank conclusions are not invalidated, but the stated test design is not the one exercised.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Mixed-regime Knudsen profile contradicts its stated design",
+      "why_classification": "Only the test-setup description (or formula) needs a local correction; both regimes remain exercised and no guarantee, rate, or theorem is affected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "a given background charge satisfying the global neutrality condition \\(\\int_{\\Omega_x}(\\rho(x,0)-\\eta(x))\\,\\dx=0\\)",
+          "tag": null
+        },
+        {
+          "quote": "\\rho^0(x)=0.3+\\exp\\!\\Big(-\\frac{(x-0.3)^2}{0.01}\\Big),\\qquad \\eta(x)=0.3+\\exp\\!\\Big(-\\frac{(x-0.6)^2}{0.01}\\Big),",
+          "tag": null
+        },
+        {
+          "quote": "All numerical tests are performed in a 1D1V phase space with periodic boundary condition in $x$ and zero flux boundary condition in the truncated velocity domain $[-6,6]$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The actual initial charge density is $\\rho(x,0)=\\int f^0\\,dv=\\rho^0(x)(1+\\sqrt{T_{\\rm cold}})\\approx1.0707\\,\\rho^0(x)$, because the cold beam Gaussian carries mass $\\sqrt{2\\pi T_{\\rm cold}}$ against $\\sqrt{2\\pi}$ for the background. Since $\\int\\rho^0=\\int\\eta$ by construction (equal constants and equal Gaussian bumps), the neutrality condition fails: $\\int(\\rho(\\cdot,0)-\\eta)\\,dx=\\sqrt{T_{\\rm cold}}\\int\\rho^0\\,dx\\approx0.0707\\,(0.3L+0.1\\sqrt\\pi)\\neq0$ on any domain of length $L$ containing both bumps (about $7\\%$ of the total charge). With periodic boundary conditions in $x$, the Poisson equation $-\\Delta_x\\phi=\\rho-\\eta$ has no solution at $t=0$, so the described benchmark is ill-posed within the paper's own framework (unlike the other two test setups, whose neutrality is explicitly verified).",
+      "failure_location": {
+        "quote": "f^0(x,v)=\\frac{\\rho^0(x)}{\\sqrt{2\\pi}} \\left(e^{-\\tfrac{v^2}{2}}+e^{-\\tfrac{(v-1.5)^2}{2T_{\\rm cold}}}\\right), \\qquad T_{\\rm cold}=5\\times10^{-3}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Make the data neutral, e.g., rescale $\\eta$ so that $\\int(\\rho(\\cdot,0)-\\eta)\\,dx=0$ with $\\rho(x,0)=\\rho^0(x)(1+\\sqrt{T_{\\rm cold}})$, or renormalize $f^0$ so that its velocity integral equals $\\rho^0$; the benchmark's character and conclusions are unchanged.",
+      "overall_effect": "The bump-on-tail experiment of Section 6.3 cannot be executed as described (the initial periodic Poisson solve is incompatible); the reported density, field, phase-space, and AP-error results for this benchmark are not reproducible from the stated data without an unstated neutralization step.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Bump-on-tail initial data violates the neutrality condition required by the periodic Poisson solve",
+      "why_classification": "A local rescaling of the test data (or an explicit neutralization step) restores well-posedness without touching the scheme, the analysis, or the qualitative benchmark conclusions."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2601.11900",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n03-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0a3cd4bfe32954879edc6b7c61b5ec215bbd2b3813d7c0aaa4b12d7a1620d81d",
+  "status": "ok"
+}

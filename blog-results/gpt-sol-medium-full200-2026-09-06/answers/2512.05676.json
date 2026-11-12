@@ -1,0 +1,185 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$f\\in L^2(0,\\tend;V^\\star)$",
+          "tag": "eq:parabolic_problem"
+        },
+        {
+          "quote": "\\dual{\\partial_t u_\\TT(t_{T+1})}{v}+\\dual{Au_\\TT(t_{T+1})}{v}&= \\dual{f(t_{T+1})}{v} \\quad\\text{for all }T\\in\\TT\\text{ and all }v\\in V.",
+          "tag": "eq:cnscheme"
+        },
+        {
+          "quote": "\\eta_{\\TT}(T)^2&=|T|^2 \\norm{\\partial_t f-\\partial_t^2u_{\\TT} -\\partial_t Au_{\\TT}}{L^2(T,V^\\star)}^2,",
+          "tag": null
+        },
+        {
+          "quote": "Assume that $f\\in \\SS^2(\\TT;V^\\star)$.",
+          "tag": "lem:reliability"
+        }
+      ],
+      "failure_explanation": "An L2 equivalence class has neither well-defined endpoint values nor necessarily a time derivative, so both the endpoint equation in the solver and the estimator used by the algorithm are undefined for the model's stated data. The only estimator theorem assumes the substantially stronger condition that f is a time spline, but that condition is absent from the algorithm and the main optimality theorem.",
+      "failure_location": {
+        "quote": "\\State Solve~\\eqref{eq:cnscheme} to obtain $u_\\ell:=u_{\\TT_\\ell}$\n    \\State Compute $\\eta_\\ell(T):= \\eta_{\\TT_\\ell}(T)$ for all $T\\in\\TT_\\ell$",
+        "tag": "alg:timeadapt"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Either restrict the data, compatibly across all meshes, so that endpoint values, time derivatives, and the polynomial-data estimator theory are valid, or redesign the scheme and estimator to include a representative-independent treatment of general L2 data and data oscillation.",
+      "overall_effect": "The adaptive algorithm and its rate-optimality guarantee do not apply as written to the paper's advertised forcing class, and all subsequent reduced-order guarantees invoking that algorithm inherit the gap.",
+      "primary_affected_tag": "alg:timeadapt",
+      "target_type": "algorithm",
+      "title": "Adaptive method is undefined for the stated L2 forcing class",
+      "why_classification": "The local restriction supported by the existing proof excludes the general L2 forcing regime stated in the model; retaining that regime requires a new discretization or estimator analysis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, an equivalent form of the method reads as\n\\begin{align*}\n    u_\\TT(t_{T+1}) &= u_\\TT(t_T) + |T|\\big(\\frac34 k_1 + \\frac14 k_2\\big),",
+          "tag": null
+        },
+        {
+          "quote": "We define the continuous spline space",
+          "tag": "eq:cnscheme"
+        }
+      ],
+      "failure_explanation": "The stages of a Runge--Kutta discretization of u'=f-Au must evaluate A at stage states containing the current value u_T. In the displayed equations, k1 and k2 are independent of u_T. For example, with f=0 and nonzero u_T, the equations admit k1=k2=0 and therefore return u_{T+1}=u_T, whereas the collocation conditions in eq:cnscheme depend on Au and do not leave a nonzero solution constant. Hence this is not an equivalent executable form of the proposed method.",
+      "failure_location": {
+        "quote": "&\\begin{cases}\n    k_1 := f(t_T+\\frac13|T|)-|T| A\\big(\\frac5{12}k_1-\\frac1{12}k_2\\big),\\\\\n    k_2 :=f(t_{T+1})-|T| A\\big(\\frac34 k_1{+}\\frac14 k_2\\big).\n    \\end{cases}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the two stage equations by equations evaluating A on the full stage states, including u_\\TT(t_T), and verify their algebraic equivalence to eq:cnscheme.",
+      "overall_effect": "An implementation based on the displayed Radau equations computes a different and generally inconsistent evolution, although the later analysis formulated directly through eq:cnscheme is not thereby invalidated.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Displayed Radau IIA stage equations omit the current solution",
+      "why_classification": "The defect is confined to the alternative implementation formula and has a short standard correction; the theoretical formulation and its subsequent analysis use eq:cnscheme directly."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:nondegen",
+        "cor:added-1",
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "lem:reliability",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "for an elliptic operator $A\\colon V\\to V^\\star$",
+          "tag": "eq:parabolic_problem"
+        },
+        {
+          "quote": "Let $e_1,e_2,\\ldots$ denote the $H$-normalized Eigenfunctions of $A\\colon V\\to V^\\star$ with corresponding Eigenvalues $\\lambda_1\\leq \\lambda_2\\leq \\ldots$.",
+          "tag": null
+        },
+        {
+          "quote": "Let $u\\in S^2(\\TT,V)$ and consider its eigen decomposition $u=\\sum_i e_i {u}_i$",
+          "tag": "thm:infsup"
+        },
+        {
+          "quote": "To that end let $\\{e_1,\\ldots,\\}$ be {the} eigenbasis induced by $A$, orthogonal in $V$ and orthonormal in $H$.",
+          "tag": "lem:nondegen"
+        }
+      ],
+      "failure_explanation": "The model assumes only that A is elliptic. That does not supply a real positive eigenbasis simultaneously orthogonal in H, V, and V-star, and in infinite dimension it also does not supply a discrete complete eigenbasis without additional compactness assumptions. The proof of thm:infsup reduces the problem eigenvalue by eigenvalue and therefore cannot be applied under the theorem's stated hypotheses.",
+      "failure_location": {
+        "quote": "Let $V$ be defined as above (infinite dimensional $V$ is allowed)",
+        "tag": "thm:infsup"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add hypotheses making A positive self-adjoint with the asserted spectral basis, and add the needed compactness/discrete-spectrum condition for infinite-dimensional V, or replace the eigenmode proof by an operator argument covering the stated elliptic class.",
+      "overall_effect": "Uniform inf-sup stability, well-posedness, quasi-optimality, estimator reliability, and the ensuing adaptive and reduced-order guarantees are unsupported for general elliptic or nonsymmetric operators; the infinite-dimensional assertion additionally lacks compact spectral hypotheses.",
+      "primary_affected_tag": "thm:infsup",
+      "target_type": "formal_result",
+      "title": "Inf-sup proof assumes an unstated self-adjoint spectral decomposition",
+      "why_classification": "Restricting to symmetric positive operators gives a comparable heat-equation result but materially narrows the abstract operator scope; preserving the full stated scope would require a new inf-sup argument."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "u^{\\text{(rb)}}_R \\in \\XX^{\\text{(rb)}}_R\n\\coloneqq L^2(0,\\tend;{V}^{\\text{(rb)}}_R)\\cap H^1(0,\\tend;{V}^{\\text{(rb)}\\star}_R)",
+          "tag": null
+        },
+        {
+          "quote": "\\norm{\n        u_h - \\mathsf{P}^{\\normalfont\\text{(rb)}}_R u_h\n    }{\\XX^{\\normalfont\\text{(rb)}}_R}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The space X_R^(rb) consists of functions valued in V_R^(rb), but neither u_h-u_{R,T}^(rb) nor u_h-P_Ru_h is generally V_R-valued. Thus the two norms in the theorem are undefined under the paper's own definition. Replacing them by the ambient X_h norm is not immediate from the proof because the reduced evolution is controlled using the restricted dual norm on V_R-star, which need not coincide uniformly with the ambient V_h-star norm.",
+      "failure_location": {
+        "quote": "\\norm{\n        u_h\n        -\n        u^{\\normalfont\\text{(rb)}}_{R,\\TT_\\ell}\n    }{\\mathcal{X}^{\\normalfont\\text{(rb)}}_R}",
+        "tag": "eq:convergence_time_approx_V_rb_R"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Define an explicit ambient or restriction-based norm applicable to V_h-valued differences and prove the required comparison with the reduced inf-sup norm; alternatively weaken the conclusions to a precisely defined restricted residual/error norm.",
+      "overall_effect": "The principal reduced-basis error estimate and both exponential-convergence conclusions lack a well-defined error metric as stated.",
+      "primary_affected_tag": "eq:convergence_time_approx_V_rb_R",
+      "target_type": "formal_result",
+      "title": "Reduced-order error is measured in a space that does not contain it",
+      "why_classification": "A comparable reduced-order estimate may survive after a contained norm-comparison argument or a limited weakening, but simply changing notation to the ambient norm is not justified by the present proof."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "g_{\\pm,2}(\\tau)\n    =\n\t\\widehat{\\partial_t u}_h(\\alpha \\pm \\imath \\tau)\n\t- \n\t\\mathsf{P}_{V_R}\n\t\\widehat{\\partial_t u}_h(\\alpha \\pm \\imath \\tau),",
+          "tag": "lmm:quadrature_error"
+        },
+        {
+          "quote": "where $\\mathsf{P}_{V_R}:V_h \\rightarrow V_R$ \ndenotes the $V_h$-orthogonal projection onto $V_R$.",
+          "tag": "lmm:quadrature_error"
+        },
+        {
+          "quote": "Another application of Lemmas \\ref{lmm:regularity_solution} and \\ref{lem:add_reg_derivative} concludes the proof.",
+          "tag": "lmm:quadrature_error"
+        }
+      ],
+      "failure_explanation": "The proof bounds the projected derivative residual in V_h-star using estimates for the unprojected derivative, but P_{V_R} is orthogonal in the V_h norm, not in V_h-star. For an arbitrary subspace V_R, I-P_{V_R} need not have an R- and h-uniform operator norm on V_h-star; subspaces mixing eigenvectors associated with widely separated eigenvalues give arbitrarily poor dual-norm stability. Consequently the asserted uniform N1 bound for the quadrature integrand, and hence the R- and h-independent quadrature error, do not follow.",
+      "failure_location": {
+        "quote": "where the implicit constant is independent of $R$\nand the discretization parameter $h>0$.",
+        "tag": "lmm:quadrature_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must prove uniform V_h-star stability for the particular reduced spaces, introduce the corresponding projection-stability factor into the estimates, or redesign the projection/objective so that it is contractive in the derivative norm.",
+      "overall_effect": "The fully discrete reduced-basis theorem does not have the claimed sampling-error constant independent of the reduced space and spatial discretization, so its uniform exponential M-rate and subsequent cost interpretation are unreliable.",
+      "primary_affected_tag": "lmm:quadrature_error",
+      "target_type": "formal_result",
+      "title": "Quadrature estimate assumes false uniform stability of the V-orthogonal projection in the dual norm",
+      "why_classification": "Without a new stability result or redesigned construction, the key h- and R-uniform fully discrete guarantee is lost; merely inserting the uncontrolled projection norm materially weakens the theorem and can destroy its uniform complexity claim."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2512.05676",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "70525655112dd5e6a4b9e036ce5bd3048782cdaa98dd74861d388a6c2188eeea",
+  "status": "ok"
+}

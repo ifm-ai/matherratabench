@@ -1,0 +1,234 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "c_{\\bk}(\\tilde f)\n    = \\frac{1}{V}\\int_{\\Omega} \n        \\tilde f(\\bx)\\, e^{-\\frac{2\\pi}{L}\\, \\i\\, \\bk \\cdot \\bx}\\, d\\bx\n    \\;=\\; \\frac{1}{V}\\, \\hat f\\!\\left(\\tfrac{2\\pi}{L}\\bk\\right).",
+          "tag": "eq:fcoeffs"
+        },
+        {
+          "quote": "\\hat{\\aii}_{\\bm{k}}\n    :=\n    \\frac{1}{V}\\,\n    \\frac{\\hat{M}(\\bm{k})}{\\hat\\varphi(\\bm{k})^2}\\,\n    \\hat{\\ai}_{\\bm{k}},",
+          "tag": "eq:diag_scale"
+        },
+        {
+          "quote": "\\phi_i^{\\text{far}}\n    \\approx\n    \\sum_{\\bm{l}\\in\\mathcal{I}_{\\bm{m}}}\n    \\aii_{\\bm{l}}\\,\\tilde\\varphi(\\bm{x}_i-h\\bm{l}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With a_l = sum_j rho_j phi~(x_j - h l) and phi~ = sum_k c_k e^{2 pi i k.x/L}, c_k = phi^(k)/V, the unnormalized DFT gives a^_k = m^3 sum_r c_{k+mr} rho^(k+mr) ≈ (m^3/V) phi^(k) rho^(k) = h^{-3} phi^ rho^, not phi^ rho^ as claimed. Likewise the interpolation sum sum_l b_l phi~(x_i - h l) approximates h^{-3} times the convolution. With the unnormalized inverse FFT of step 4, the algorithm as written returns h^{-6} (1/V) M^ rho^ instead of the target (1/V) M^ rho^ of eq:Fsum; the matrix form eq:matform inherits the same missing constants.",
+      "failure_location": {
+        "quote": "which approximates $\\hat{\\rho}(\\bm{k})\\,\\hat\\varphi(\\bm{k})$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Insert the quadrature weights h^3 in the forward FFT step (or spreading) and in the interpolation step (equivalently multiply the diagonal scaling by h^6), and correct the statement that a^_k approximates rho^ phi^ to h^{-3} rho^ phi^.",
+      "overall_effect": "Algorithm SE_Fourier and eq:matform do not deliver phi^far as specified; the output is scaled by a constant h^{-6}. The error analysis (which works with Fourier coefficients c_k directly) is unaffected.",
+      "primary_affected_tag": "alg:SE_Fourier",
+      "target_type": "algorithm",
+      "title": "Fast Fourier-space algorithm is missing quadrature normalization (off by a factor h^6)",
+      "why_classification": "A local constant-factor correction restores the input-output contract; no result or rate changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:PSWF_split_errors"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $f:[0,\\infty)\\to[0,\\infty)$ be nonincreasing.",
+          "tag": "lem:cubecover"
+        },
+        {
+          "quote": "Outside this interval, the Fourier transform must be evaluated directly from its defining integral,",
+          "tag": null
+        },
+        {
+          "quote": "slowly decaying\n$\\mathrm{sinc}$-type oscillations in the PSWF spectrum dominate the total error",
+          "tag": null
+        },
+        {
+          "quote": "By Lemma~\\ref{lemma:dirsumerr_L2},",
+          "tag": "prop:PSWF_split_errors"
+        }
+      ],
+      "failure_explanation": "The lemma is stated for a general mollifier with no monotonicity hypothesis, yet its proof invokes Lemma cubecover, which needs |M^|^2 = 16 pi^2 |gamma^_sigma(omega)|^2/omega^4 to be nonincreasing. For the PSWF mollifier gamma_{r_c}^{c_s} (compactly supported with a jump at ±r_c), gamma^ is oscillatory with sign changes for |omega| > c_s/r_c (sinc-type tail, as the paper itself notes), so |M^|^2 is not monotone on the tail region [omega_*,∞). The hypothesis of Lemma cubecover is therefore violated exactly in the case (Proposition PSWF_split_errors) where the lemma is applied, and the Proposition's tail term, which is evaluated exactly via Theorem bandlimited, relies on this unjustified lattice-to-integral step.",
+      "failure_location": {
+        "quote": "Since $|\\hat M(\\bk)|^2$ is radial and nonincreasing in $|\\bk|$, the\nlattice-to-continuum estimate of Lemma~\\ref{lem:cubecover}",
+        "tag": "lemma:dirsumerr_L2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add a monotonicity hypothesis to Lemma dirsumerr_L2 and, for the PSWF case, bound the out-of-band lattice sum separately using a nonincreasing majorant of |gamma^_{r_c}^{c_s}|^2 (e.g. via integration by parts giving |psi^_0(u)| ≤ C/|u| for |u| ≥ c_s), leading to a modified bound in Proposition PSWF_split_errors.",
+      "overall_effect": "The rigorous split-error bound of Proposition PSWF_split_errors (and the claim of a 'rigorous' bound in Section 5.1) is not established for the PSWF mollifier; the heuristic model eq:PSWF_model is only empirically supported.",
+      "primary_affected_tag": "lemma:dirsumerr_L2",
+      "target_type": "formal_result",
+      "title": "Lattice-to-continuum step requires monotonicity of |M^|^2, which fails for the PSWF mollifier outside the band",
+      "why_classification": "A contained new estimate for the out-of-band lattice sum is needed and the explicit form of the Proposition's constant changes, but a comparable exponentially decaying bound survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For $\\omega\\in[-c,c]$,",
+          "tag": "lem:PSWFrelation"
+        },
+        {
+          "quote": "\\text{no closed form}, & \\text{otherwise}",
+          "tag": null
+        },
+        {
+          "quote": "\\left|\\tfrac{2}{m}(k_i + m r_i)\\right| \\in [1,3],",
+          "tag": "eq:shifted-range"
+        },
+        {
+          "quote": "the integral representation\n\\eqref{eq:gammahatintegral} is never used in practice, since only Fourier modes within the band\n$[-c_s/r_c,\\, c_s/r_c]$ are required.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The aliased coefficients c_{k+mr}(phi~_t^{c_w}) have per-coordinate arguments |2(k_i+m r_i)/m| in [1,3], i.e. frequencies outside [-c_w/alpha, c_w/alpha] where Lemma PSWFrelation is stated and where the paper (Tables 1-2, Section 4.2) asserts the transform has 'no closed form'. The proof nevertheless substitutes psi_0^{c_w}(2(k_i+m r_i)/m), so the bound rests on an identity the paper has not established (it holds only if psi_0 is understood as its bandlimited extension to R, and then the 'no closed form'/'never used' statements are wrong). The same inconsistency affects the mollifier: the cubic index set I_m contains corner modes with |omega| up to sqrt(3) omega_max > c_s/r_c, so out-of-band values of gamma^ are in fact required by Algorithms 1-2.",
+      "failure_location": {
+        "quote": "\\frac{c_{\\bk+m\\bm{r}}^2(\\tilde{\\varphi}_t^{c_w})}\n     {c_{\\bk}^2(\\tilde{\\varphi}_t^{c_w})}\n= \\frac{\\displaystyle\\prod_{i=1}^3\n       \\psi_0^{c_w}\\!\\Big(\\tfrac{2}{m}(k_i+m r_i)\\Big)^2}\n       {\\displaystyle\\prod_{i=1}^3\n       \\psi_0^{c_w}\\!\\Big(\\tfrac{2}{m}k_i\\Big)^2},",
+        "tag": "prop:interpol_est"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "State Lemma PSWFrelation for all omega in R with psi_0^c defined on R via the eigen-integral (as the paper's window definition already assumes), and correct the 'no closed form'/'never used' statements to note that corner modes and aliased frequencies use this extension.",
+      "overall_effect": "As written, Proposition interpol_est relies on unestablished values of the window transform, and the paper's statements about the band restriction of the mollifier/window transforms are inconsistent with the algorithm and analysis.",
+      "primary_affected_tag": "prop:interpol_est",
+      "target_type": "formal_result",
+      "title": "Aliasing bound uses the PSWF Fourier identity outside the band where the paper says it does not hold",
+      "why_classification": "The needed identity follows immediately from the defining integral equation; fixing the lemma's domain and the prose repairs everything without changing any result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Using $\\omega_i/\\omega_{\\max}=2k_i/m$, this ratio can be written as",
+          "tag": "prop:interpol_est"
+        },
+        {
+          "quote": "\\frac{c_s}{r_c} = \\frac{c_w}{\\alpha}.",
+          "tag": "eq:bandwidth"
+        },
+        {
+          "quote": "using the PSWF mollifier\n$\\gamma_{r_c}^{c_s}$, with the Fourier series representation",
+          "tag": "prop:interpol_est"
+        }
+      ],
+      "failure_explanation": "The statement is given for arbitrary PSWF mollifier parameters (r_c, c_s) and window parameters (alpha, c_w), but the proof uses r_c = c_s L/(pi m) (i.e. omega_max = c_s/r_c) to write the mollifier argument as 2|k|/m, and alpha omega_i/c_w = 2k_i/m, which requires alpha = c_w L/(pi m). Neither coupling is a hypothesis of the proposition, so the displayed bound eq:interpol_est is not valid as stated for uncoupled parameters.",
+      "failure_location": {
+        "quote": "With $\\omega = 2\\pi|\\bk|/L$ and $r_c = c_s L/(\\pi m)$ we have",
+        "tag": "prop:interpol_est"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the hypotheses omega_max = pi m/L = c_s/r_c = c_w/alpha to the statement of Proposition interpol_est.",
+      "overall_effect": "eq:interpol_est holds only under the parameter relations of Section 6 (eq:csrc, eq:bandwidth), which are not part of the proposition's hypotheses.",
+      "primary_affected_tag": "prop:interpol_est",
+      "target_type": "formal_result",
+      "title": "Proposition interpol_est omits the parameter couplings its proof requires",
+      "why_classification": "Adding the standing parameter relations as hypotheses fully repairs the statement without changing the argument or conclusion."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sqrt{L}\\,A_w\\,c_w^{1/2}\\, e^{-c_w} = \\sqrt{r_c}\\,A_{s}\\,c_s^{-1/2}e^{-c_s}.",
+          "tag": "eq:cwcs_model_dimless"
+        },
+        {
+          "quote": "where $W$ is the Lambert $W$ function.",
+          "tag": null
+        },
+        {
+          "quote": "Solve $c_w = -\\frac{1}{2}W\\big(-2 B_w^2 \\frac{e^{-2c_s}}{c_s}\\big)$ for $c_w$",
+          "tag": "alg:parameter"
+        }
+      ],
+      "failure_explanation": "The argument -2 B_w^2 e^{-2c_s}/c_s is negative and tiny, so the real Lambert W has two branches there. The principal branch W_0 takes values in (-1,0), yielding c_w = -W_0/2 in (0, 1/2), a meaningless window bandlimit; the intended large root of c_w^{1/2} e^{-c_w} = B_w c_s^{-1/2} e^{-c_s} (c_w ≈ c_s + O(log c_s)) is given by the W_{-1} branch. The source introduces W as 'the Lambert W function' (the principal branch used in eq:cs_dimless) and never specifies the branch, so eq:cwW and step 2 of Algorithm parameter as written return the spurious small root.",
+      "failure_location": {
+        "quote": "c_w \\approx -\\frac{1}{2} W \\bigg(\\!-2 B_w^2  \\frac{e^{-2c_s}}{c_s}\\bigg),\\qquad B_w := \\frac{A_s}{A_w}\\sqrt{\\frac{r_c}{L}}.",
+        "tag": "eq:cwW"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Specify the branch W_{-1} in eq:cwW and in Algorithm parameter step 2 (or state that the larger of the two roots of eq:cwcs_model_dimless is taken).",
+      "overall_effect": "Steps 2, 3 and 5 of Algorithm parameter (c_w, alpha, P) are not well defined/return nonsensical values unless the reader supplies the W_{-1} branch.",
+      "primary_affected_tag": "eq:cwW",
+      "target_type": "algorithm",
+      "title": "Lambert-W formula for c_w uses the wrong (unspecified) branch",
+      "why_classification": "A one-line specification of the branch restores the procedure; nothing else changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$10^{-2}$ & \\hphantom{1}31, \\hphantom{1}25, 24\\hphantom{1} & \\hphantom{1}18, \\hphantom{1}15, 14 & 5.11, 4.63, 5.04",
+          "tag": null
+        },
+        {
+          "quote": "$10^{-6}$ & 455, 156, 106 & 308, 100, 66 & 3.22, 3.80, 4.14",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The text claims the reduction factor (m_P^G/m_P^P)^3 grows as the tolerance is tightened. Table resolution2 shows the opposite: for every P the ratio is largest at epsilon = 10^{-2} (5.11, 4.63, 5.04) and decreases to 3.22, 3.80, 4.14 at epsilon = 10^{-6}. The stated trend is contradicted by the paper's own data.",
+      "failure_location": {
+        "quote": "with larger improvements observed for smaller tolerances",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the claim by the observed trend (the ratio decreases mildly as epsilon decreases, remaining in the 3-5 range).",
+      "overall_effect": "The qualitative conclusion about how the PSWF-split advantage with B-spline windows depends on tolerance is misstated; the 3-5 factor itself is correct.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed trend of the Gaussian/PSWF B-spline mode ratio contradicts the reported table",
+      "why_classification": "A local correction of the prose to match the table; no result depends on it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:dirsumerr_L2",
+        "prop:PSWF_split_errors"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $f:[0,\\infty)\\to[0,\\infty)$ be nonincreasing. For $K>\\sqrt{3}/2$,",
+          "tag": "lem:cubecover"
+        },
+        {
+          "quote": "\\sum_{|\\bm{k}|>K} f(|\\bm{k}|)\n\\;\\le\\;\n\\int_{|\\bx|>K-\\sqrt{3}/2}\nf(|\\bx|)\\,d\\bx.",
+          "tag": "lem:cubecover"
+        }
+      ],
+      "failure_explanation": "Monotonicity gives f(|k|) ≤ f(|x|) only for x in Q_k with |x| ≤ |k|, roughly half the cube, so the argument does not yield f(|k|) ≤ ∫_{Q_k} f(|x|)dx. The statement itself fails at admissible K: take K = 0.9 > sqrt(3)/2 and f = 1_{[0,1.1)}; the left side counts the six lattice points with |k| = 1, giving 6, while the right side is (4/3)pi(1.1^3 - 0.034^3) ≈ 5.58 < 6. The inequality does hold for large K, but no such restriction or proof is given.",
+      "failure_location": {
+        "quote": "For any $\\bx\\in Q_{\\bm{k}}$ one has\n$||\\bx|-|\\bm{k}||\\le\\sqrt{3}/2$.\nMonotonicity of $f$ then yields the stated bound.",
+        "tag": "lem:cubecover"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the lemma by a correctly proved version, e.g. sum_{|k|>K} f(|k|) ≤ ∫_{|x|>K-sqrt(3)/2} f(|x| - sqrt(3)/2) dx (which monotonicity does give), or restrict to K ≥ K_0 with a proper covering/shell-count argument, and propagate the slightly modified shift/constant into Lemma dirsumerr_L2 and Proposition PSWF_split_errors.",
+      "overall_effect": "The lattice-to-continuum step in Lemma dirsumerr_L2, and hence the explicit constants (prefactor 8, definition of omega_*) in Proposition PSWF_split_errors, rest on an unproved and, for small K, false lemma; the asymptotic content for large K_max is unaffected.",
+      "primary_affected_tag": "lem:cubecover",
+      "target_type": "formal_result",
+      "title": "Lattice covering lemma is false as stated and its proof is inadequate",
+      "why_classification": "A standard corrected covering estimate is available and only mildly alters constants; all substantive conclusions and rates survive."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2602.16591",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "5a7eb2381d02244a14f856ec8d079a82235af947f81b4666b55d9a1bda2341cf",
+  "status": "ok"
+}

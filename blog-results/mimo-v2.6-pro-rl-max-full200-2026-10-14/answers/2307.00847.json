@@ -1,0 +1,111 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$ \\mathbb{P}\\Big\\{ \\left| \\log \\det A -  \\left[\\log \\det A \\right]_L \\right| \\le \\epsilon  |\\log \\det A |\\Big\\} \\ge 1-\\eta. $$",
+          "tag": "thm:ours"
+        },
+        {
+          "quote": "|\\tr_{N}(f(A))-\\left[\\log \\det A \\right]_L|\\leq  \\frac{\\epsilon}{2}|\\tr(f(A))|",
+          "tag": "eq3"
+        },
+        {
+          "quote": "\\log \\left( \\kappa/ \\lambda_{\\max}^n \\right) = |(n-1)\\log (\\lambda_{\\max}) + \\log (\\lambda_{\\min})| \\le |\\tr(f(A))|.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The guarantee of thm:ours is relative to |log det A| of the matrix the method is applied to. For c>0, log(cA)=log A+(log c)I is integrated exactly by every Lanczos/Gauss rule (the quadrature weights sum to one), so the SLQ error is unchanged by scaling, while log det(cA)=log det A+n log c. Applying thm:ours to cA therefore yields only |log det A-[log det A]_L| <= epsilon |log det A + n log c|, which is not a relative bound in |log det A|; e.g. A=diag(10,0.1) has log det A=0 and would require zero error. Hence scaling does not remove the hypothesis for the stated guarantee type, and the claim that lambda_max<1 is a mild, WLOG assumption is false.",
+      "failure_location": {
+        "quote": "This assumption is mild since for any SPD matrix with $\\lambda_{\\max} > 1$, it can be simply scaled to have eigenvalues $\\lambda \\in (0,1)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Withdraw the mildness claim and state explicitly that scaling A -> cA gives a guarantee relative to |log det(cA)| (equivalently the absolute bound epsilon|log det(cA)|), not to |log det A|; a genuinely relative bound for general SPD matrices would require a different target quantity.",
+      "overall_effect": "The advertised applicability of thm:ours (and of thm:ours_updated, which shares the hypothesis) to arbitrary SPD matrices is unsupported: the stated relative-error guarantee covers only matrices that already satisfy lambda_max<1, or general matrices only with the relative measure changed to |log det(cA)|.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Scaling does not make the lambda_max<1 hypothesis mild for a relative error guarantee",
+      "why_classification": "thm:ours and its rates survive unchanged, but the advertised scope (general SPD matrices with error relative to |log det A|) cannot survive together with the guarantee type, so a limited weakening of the claim is required; no new global proof architecture is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:ours_updated"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{\\alpha>1} \\, \\log\\left(C \\alpha\\right) \\left(\\alpha/(\\alpha-1) \\right)^2.",
+          "tag": "optimization"
+        },
+        {
+          "quote": "\\alpha^* = 2\\log \\alpha^* + 2 \\log C + 1, ",
+          "tag": "alpha*"
+        },
+        {
+          "quote": "By introducing a constant $C = 4 M_{\\rho_2} / (\\epsilon (\\rho_2^2 - \\rho_2) \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right))$, the problem is simplified to",
+          "tag": null
+        },
+        {
+          "quote": "If $\\alpha^* = 2\\log \\alpha^* + 2 \\log C + 1$, the Lanczos iteration step $m$ and the query number $N$ satisfy",
+          "tag": "thm:ours_updated"
+        }
+      ],
+      "failure_explanation": "For F(alpha)=log(C alpha)(alpha/(alpha-1))^2 one gets F'(alpha)=alpha/(alpha-1)^3 * [(alpha-1)-2 log(C alpha)], so the stationarity condition is indeed alpha*=2 log alpha*+2 log C+1; but this is only a necessary condition and no existence, uniqueness or global-optimality step is supplied. As alpha->1+, F(alpha)->-infinity whenever C<1 (there the lower bound log(C alpha)/(2 log rho_2) on m is negative, i.e. vacuous, so the true cost must be floored at m>=1), hence the minimization problem on alpha>1 has no minimizer; correspondingly (alpha*) has no solution whenever min_{alpha>1}[(alpha-1)-2 log(C alpha)]=1-2 log(2C)>0, i.e. C<=sqrt(e)/2. Example: lambda_max=0.5, lambda_min=0.49, n=100, epsilon=0.1 give rho_2 about 100, M_{rho_2} about 3.44, log(nthroot(kappa)/lambda_max) about 0.693, hence C about 0.02 and no alpha* exists. If sqrt(e)/2<C<1 the equation has two roots and the smaller one is a local maximum of F, so 'numerical methods applied to solve (alpha*)' can return a locally worst allocation.",
+      "failure_location": {
+        "quote": "The minimizer $\\alpha^*$ of \\eqref{optimization} then satisfies",
+        "tag": "alpha*"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Re-formulate the allocation with the true cost max{1, log(C alpha)/(2 log rho_2)}*(alpha/(alpha-1))^2 (or restrict to log(C alpha) >= 2 log rho_2) and show that the resulting one-variable problem has a minimizer, selecting the larger root of (alpha*) when it applies; alternatively restrict the result to C>1 and state the root-selection rule.",
+      "overall_effect": "On the regime C<1 (e.g. well-conditioned matrices with kappa close to 1 at moderate epsilon, and the degenerate case kappa=1 where C=0) the error-allocation recipe produces no parameters at all, so thm:ours_updated is vacuous there and the advertised minimization of the MVM count is not delivered; where two roots exist the selected alpha* may maximize rather than minimize the MVM product.",
+      "primary_affected_tag": "alpha*",
+      "target_type": "formal_result",
+      "title": "Optimized error allocation: the minimizer alpha* need not exist and (alpha*) can return a local maximum",
+      "why_classification": "A contained one-variable re-optimization with the corrected (floored) cost restores a valid, still MVM-minimizing allocation over the whole regime with no change to the error analysis or rates; but the defect cannot be fixed by a purely local edit, since either the objective's domain must be corrected or the claimed regime restricted."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\geq \\frac{1}{2\\log(\\rho_2)}\\log\\left(\\frac{K_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right)}\\right)",
+          "tag": "eq_optimized_m"
+        },
+        {
+          "quote": "K_{\\rho_2} = \\frac{4 \\alpha M_{\\rho_2}}{\\rho_2^2 - \\rho_2}, M_{\\rho_2} = \\sqrt{\\log\\left(\\frac{\\lambda_{\\min}}{2} \\right)^2 + \\pi^2}",
+          "tag": "thm:ours_updated"
+        },
+        {
+          "quote": "\\cref{thm:ours_updated} summarizes the bounds of $m$ and $N$ which product is minimized through a reallocation of error.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The error-allocation derivation needs 4 n M_{rho_2}/((rho_2^2-rho_2) rho_2^{2m}) <= (epsilon/alpha) log(kappa/lambda_max^n) = (epsilon n/alpha) log(nthroot(kappa)/lambda_max), in which n cancels; this gives exactly (eq_optimized_m) with K_{rho_2}=4 alpha M_{rho_2}/(rho_2^2-rho_2), and it is the same bound that produces C=4M_{rho_2}/(epsilon(rho_2^2-rho_2)log(nthroot(kappa)/lambda_max)) in (alpha*). thm:ours_updated instead inserts an extra factor n inside the logarithm and defines K_{rho_2} with alpha, a symbol never defined in the theorem (only alpha* is). The stated pair (m,N) therefore corresponds to log(nC alpha)(alpha/(alpha-1))^2, whose minimizer satisfies alpha=2 log alpha+2 log(nC)+1 rather than (alpha*): the bounds advertised as MVM-minimal are not the ones that were optimized, and the statement is ill-defined as written.",
+      "failure_location": {
+        "quote": "$$m \\geq \\frac{1}{2\\log(\\rho_2)}\\log\\left(\\frac{nK_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right)}\\right), $$",
+        "tag": "thm:ours_updated"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Delete the factor n in the m bound and use K_{rho_2}=4 alpha* M_{rho_2}/(rho_2^2-rho_2), as in (eq_optimized_m); the alternative repair is to keep the n and redo the allocation with C replaced by nC.",
+      "overall_effect": "The probabilistic conclusion of thm:ours_updated still holds (its m requirement is merely conservative), but the claimed minimality of the m and N bounds fails, and the MVM counts compared in the Experiments for thm:ours_updated do not correspond to the optimization carried out in the text.",
+      "primary_affected_tag": "thm:ours_updated",
+      "target_type": "formal_result",
+      "title": "thm:ours_updated states a non-minimal m bound (spurious factor n) and an undefined alpha",
+      "why_classification": "Dropping the spurious factor n and writing alpha* for alpha is a short local correction consistent with (eq_optimized_m) and with the derivation of (alpha*); it preserves the guarantee and restores the claimed optimality without any new lemma or argument."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2307.00847",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n01",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c42e539abecf88a44de72f2dedfec14703df372008f57b75de751f59b08fac16",
+  "status": "ok"
+}

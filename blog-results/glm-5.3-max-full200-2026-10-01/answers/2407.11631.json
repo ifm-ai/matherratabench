@@ -1,0 +1,166 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\cF\\subseteq X$ be compact",
+          "tag": null
+        },
+        {
+          "quote": "Choose $f_n \\in \\cF$ such that $\\sigma_n(f_n) \\geq \\gamma\\, \\sigma_n(\\cF)$",
+          "tag": "line:wg_select"
+        }
+      ],
+      "failure_explanation": "The framework of Section 2 assumes a compact set $\\cF$ and Algorithm alg:wbg is stated in this generality. Removing the finitely many already chosen elements from a compact set need not leave a set on which the continuous surrogate $r_{\\undertilde n}$ attains its maximum, so the argmax defining $f_n$ (line 6) may not exist and the batch cannot be formed. Example: $X=\\ell_2$, $\\cF=\\{e_1\\}\\cup\\{(1-1/k)e_1:k\\ge1\\}\\cup\\{0\\}$ (compact, in the unit ball), exact surrogate $r_n=\\sigma_n$, $\\gamma=1$, $b\\ge2$: line 4 selects $f_0=e_1$ (the unique norm maximizer); then $\\sup_{\\cF\\setminus\\{f_0\\}}\\|f\\|=1$ is not attained, so $f_1$ is undefined and the algorithm halts. The classical weak greedy (alg:wg) is unaffected because it selects via an inequality over all of the compact $\\cF$.",
+      "failure_location": {
+        "quote": "f_{{n}} := \\argmax_{f \\in \\cF \\setminus \\{f_{\\undertilde{n}}, \\ldots, f_{n-1} \\}} r_{\\undertilde{n}}(f)",
+        "tag": "line:restofbatch"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the argmax by an attainable rule (e.g. pick $f_n$ in the punctured set with $r_{\\undertilde n}(f_n)\\ge(1-\\varepsilon)\\sup$) or add the hypothesis that the supremum is attained (automatic for finite training sets); a local change with no effect on any claim.",
+      "overall_effect": "Algorithm alg:wbg is not well defined on part of its advertised scope (compact $\\cF$); execution can fail inside the first batch. No labelled formal result is invalidated by this defect alone, since Remark (c) states the analysis does not use this line and the numerical training sets are finite.",
+      "primary_affected_tag": "alg:wbg",
+      "target_type": "algorithm",
+      "title": "Argmax over punctured compact set in the batch selection may not exist",
+      "why_classification": "A routine local patch restores well-definedness on the full scope; method, rates and guarantees are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $V_n\\subset X$ be some subspace of dimension $n\\in\\N$.",
+          "tag": null
+        },
+        {
+          "quote": "Set $\\undertilde{n} := b \\, \\ell$ and $\\widetilde{n} := b \\, (\\ell + 1)-1$.",
+          "tag": "alg:wbg"
+        },
+        {
+          "quote": "we have by line \\ref{line:eq:batchfirst} in Algorithm \\ref{alg:wbg} that $\\sigma_{\\undertilde{n}}(f_{\\undertilde{n}}) \\geq \\gamma\\, \\sigma_{\\undertilde{n}}$ and $\\sigma_{\\widetilde{n}+1}(f_{\\widetilde{n}+1}) \\geq \\gamma\\, \\sigma_{\\widetilde{n}+1}$",
+          "tag": "La:Psbg"
+        }
+      ],
+      "failure_explanation": "The batch $f_{\\undertilde n},\\dots,f_{\\widetilde n}$ contains $b=\\widetilde n-\\undertilde n+1$ elements, so $\\spann(V_{\\undertilde n}\\oplus\\{f_{\\undertilde n},\\dots,f_{\\widetilde n}\\})$ has dimension $\\undertilde n+b=\\widetilde n+1$ (when the selections are independent), not $\\widetilde n$. Labelling this space $V_{\\widetilde n}$ contradicts the convention $\\dim V_n=n$ used to define $\\sigma_n$ and used throughout the analysis; moreover, at every iteration $\\ell\\ge1$ the selection lines refer to $\\sigma_{\\undertilde n}=\\sigma_{b\\ell}$, i.e. to the space $V_{b\\ell}$, which the algorithm never defines (iteration $\\ell-1$ produced only the mislabelled $V_{b\\ell-1}$). As literally written the algorithm invokes an undefined space from the second iteration on, and the analysis's derivation of $\\sigma_{\\widetilde n+1}(f_{\\widetilde n+1})\\ge\\gamma\\sigma_{\\widetilde n+1}$ from line 4 is consistent only with a corrected labelling.",
+      "failure_location": {
+        "quote": "$V_{\\widetilde{n}} := \\spann (V_{\\undertilde{n}}\\oplus \\{ f_{\\undertilde{n}}, \\ldots, f_{\\widetilde{n}}\\} )$",
+        "tag": "alg:wbg"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Re-label the update as $V_{\\widetilde n+1}:=\\spann(V_{\\undertilde n}\\oplus\\{f_{\\undertilde n},\\dots,f_{\\widetilde n}\\})$, so that the space produced by iteration $\\ell$ is $V_{b(\\ell+1)}$, matching $\\dim V_n=n$ and the $\\sigma_{\\undertilde n}$ used at the start of iteration $\\ell+1$.",
+      "overall_effect": "Algorithm alg:wbg is internally inconsistent as written (undefined $V_{b\\ell}$ for $\\ell\\ge1$; the dimension convention behind $\\sigma_n$ is violated at batch ends). No formal result fails solely because of this slip, since the analysis implicitly works with the corrected indexing.",
+      "primary_affected_tag": "alg:wbg",
+      "target_type": "algorithm",
+      "title": "Off-by-one labelling of the batch update space $V_{\\widetilde n}$",
+      "why_classification": "Forced, purely local re-indexing; after the correction every inference, claim and guarantee is unchanged."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:wbg_hilbert",
+        "col:wbg_hilbert",
+        "Cor:expDecay",
+        "La:Psbg_B",
+        "th:wbg_banach",
+        "theo:Banach"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\abs{a_{n,n}} = \\sigma_n(f_n) \\geq \\sigma_{\\widetilde{n}}(f_n) \\geq \\sigma_{\\widetilde{n}+1}(f_{\\widetilde{n}+1}) = \\abs{a_{\\widetilde{n}+1,\\widetilde{n}+1}} \\geq \\gamma \\sigma_{\\widetilde{n}+1} \\geq \\gamma \\sigma_{n\\hue{+b-1}}$",
+          "tag": "La:Psbg"
+        },
+        {
+          "quote": "For our analysis in Section \\ref{Sec:Analysis} below, we actually do not need to fix how the remaining $b-1$ elements are chosen as long as the first one is chosen according to line \\ref{line:eq:batchfirst}.",
+          "tag": null
+        },
+        {
+          "quote": "\\prod_{i=1}^K \\abs{a_{n+i,n+i}} = \\prod_{i=1}^K \\sigma_{n+i}(f_{n+i}) \\geq \\gamma^K \\prod_{i=1}^K \\sigma_{N\\hue{+b-1}+i}",
+          "tag": "th:wbg_hilbert"
+        },
+        {
+          "quote": "the diagonal elements satisfy $\\gamma \\sigma_{n\\hue{+b-1}} \\leq \\abs{a_{n,n}} \\,\\hue{\\leq}\\, \\sigma_n$",
+          "tag": "La:Psbg_B"
+        }
+      ],
+      "failure_explanation": "(P1) claims $\\gamma\\sigma_{n+b-1}\\le|a_{n,n}|=\\sigma_n(f_n)=\\dist(f_n,\\spann\\{f_0,\\dots,f_{n-1}\\})$ for ALL $n$, in particular for the $b-1$ non-first elements of each batch, which Algorithm alg:wbg selects with the stale surrogate $r_{\\undertilde n}$ of the batch-start level. The proof's chain $\\sigma_n(f_n)\\ge\\sigma_{\\widetilde n}(f_n)\\ge\\sigma_{\\widetilde n+1}(f_{\\widetilde n+1})$ is invalid: for $n<\\widetilde n$ one has $f_n\\in V_{\\widetilde n}=\\spann\\{f_0,\\dots,f_{\\widetilde n-1}\\}$, hence $\\sigma_{\\widetilde n}(f_n)=0$, while $\\sigma_{\\widetilde n+1}(f_{\\widetilde n+1})\\ge\\gamma\\sigma_{\\widetilde n+1}>0$ before termination; and for $n=\\widetilde n$ the comparison of distances to the different spaces $V_{\\widetilde n}$ and $V_{\\widetilde n+1}$ follows from no selection rule (even a charitable comparison at the batch-start level does not bound $\\sigma_n(f_n)$, which can be arbitrarily smaller than $\\sigma_{\\undertilde n}(f_n)$). Counterexample ($b=2$, exact surrogate $r_n=\\sigma_n$, any $\\gamma>1.1\\cdot10^{-4}$, $X=\\mathbb R^3$): $\\cF=\\{e_1,\\,0.999(\\cos\\theta\\,e_1+\\sin\\theta\\,e_2),\\,0.99e_3\\}$ with $\\theta=10^{-4}$; the algorithm selects $f_0=e_1$ (largest norm), $f_1=0.999(\\cos\\theta e_1+\\sin\\theta e_2)$ (second largest norm), then $f_2=0.99e_3$ with $\\sigma_2(f_2)=0.99$. Hence $|a_{1,1}|=0.999\\sin\\theta\\approx10^{-4}$, whereas (P1) requires $|a_{1,1}|\\ge\\gamma\\sigma_2=0.99\\gamma$. Per Remark (c) the claim even covers arbitrary choices of the remaining batch elements, under which $f_n\\in V_n$ and $|a_{n,n}|=0$ is possible. All subsequent results apply (P1) (eq:prod_p2 in the proof of th:wbg_hilbert; the identical claim in La:Psbg_B), so their proofs collapse. Moreover the downstream statements are false, not merely unproven: for $\\cF$ a union of finite point clusters on pairwise orthogonal lines with heights $h_j=e^{-\\kappa j}$ (so $d_m\\le e^{-\\kappa m}$), the batch greedy with exact surrogate spends all $b$ selections of each batch on one (collinear) cluster and achieves only $\\sigma_{b\\ell}=h_{\\ell+1}$, i.e. $\\sigma_n\\approx e^{-\\kappa n/b}$; this violates th:wbg_hilbert and col:wbg_hilbert(i) already for $b\\ge5$, and col:wbg_hilbert(iii) (hence Cor:expDecay, th:wbg_banach, theo:Banach(i),(iii)) for $b\\ge25$ with suitable $\\kappa,C_0,\\gamma$, whereas these results assert essentially the classical rates up to the index shift $b-1$.",
+      "failure_location": {
+        "quote": "the diagonal elements satisfy $\\gamma \\sigma_{n\\hue{+b-1}} \\leq \\abs{a_{n,n}} \\leq \\sigma_n$",
+        "tag": "La:Psbg"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace (P1) by a property that actually follows from the batch selection (e.g. lower bounds only at the batch-start level $\\sigma_{\\undertilde n}(f_n)$, or a block-wise product argument over batches) and re-derive all rates; the resulting guarantees must, in the worst case, lose a factor up to $b$ in the effective dimension (quality $d_{n/b}$ instead of $d_n$), or the algorithm must be modified to guarantee that batch elements add new directions.",
+      "overall_effect": "The paper's entire convergence theory for the batch greedy is unproven, and the advertised scope (near-classical rates for all batch sizes $b$, Hilbert and Banach) is false in general: th:wbg_hilbert, col:wbg_hilbert, Cor:expDecay, La:Psbg_B, th:wbg_banach and theo:Banach are invalidated, and the prose built on them (e.g. that the proofs of weakgreedy/weakgreedy2 'only need to be modified in a minor manner', and that the numerics 'confirm our theoretical findings' on preservation of the asymptotic rate) is unsupported.",
+      "primary_affected_tag": "La:Psbg",
+      "target_type": "formal_result",
+      "title": "Property (P1) of Lemma La:Psbg is false, invalidating all batch-greedy convergence rates",
+      "why_classification": "(P1) is the cornerstone of every convergence statement in the paper; it is refuted by an elementary three-point counterexample and by the proof's own inconsistency ($\\sigma_{\\widetilde n}(f_n)=0$ for $n<\\widetilde n$), and the main rate statements are false for moderately large $b$, so no repair preserves the advertised near-loss-free guarantees without essentially new proof architecture or major weakening."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We have $c_1(n,1) = \\frac{c_0}{2} 4^{-\\alpha}$ and for $c_1(n,\\hue{b}) = \\frac{c_0}{2} 6^{-\\alpha}$.",
+          "tag": "Cor:expDecay"
+        },
+        {
+          "quote": "c_1(n,\\hue{b}):= \\min \\left\\lbrace c_0\\, 2^{- (\\alpha+1)} \\left\\lceil 2 + \\frac{\\hue{b-1}}{n}\\right\\rceil^{-\\alpha},\\, \\ln(C_1)\\,\\hue{b}^{-\\alpha} \\right\\rbrace",
+          "tag": "col:wbg_hilbert"
+        }
+      ],
+      "failure_explanation": "Theorem col:wbg_hilbert(iii) defines $c_1(n,b)=\\min\\{c_02^{-(\\alpha+1)}\\lceil2+(b-1)/n\\rceil^{-\\alpha},\\ln(C_1)b^{-\\alpha}\\}$ and $c_1(n,1)=\\min\\{c_02^{-2\\alpha-1},\\ln(C_1)\\}$. The proof of Cor:expDecay computes only the two first terms ($\\frac{c_0}{2}4^{-\\alpha}$ and $\\frac{c_0}{2}6^{-\\alpha}$, the latter valid for $n\\ge b$) and their ratio $(2/3)^\\alpha$, ignoring the second terms of both minima. In regimes where $\\ln(C_1)b^{-\\alpha}<c_02^{-(\\alpha+1)}3^{-\\alpha}$ (or $\\ln(C_1)<c_02^{-2\\alpha-1}$), the guaranteed constant is strictly smaller than $(2/3)^\\alpha c_1(n,1)$, so the asserted identity, and the rate the corollary claims, is not established. Example ($\\alpha=1$, $b=16$, $c_0=1$, $\\ln(C_1)=0.1$): the theorem guarantees only $c_1(n,16)=\\min\\{1/24,0.1/16\\}=0.00625$, while the corollary claims $c_1=(2/3)\\cdot0.1\\approx0.067$, an order of magnitude larger. The subsequent unlabelled reformulation remark performs the same illegitimate simplification (dropping the maximum in $C_1$ for the algebraic case and the minimum in $c_1$).",
+      "failure_location": {
+        "quote": "c_1(n,\\hue{b}) = \\left[\\frac{2}{3}\\right]^\\alpha c_1(n,1)",
+        "tag": "Cor:expDecay"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the hypothesis that the first terms attain the minima (e.g. $\\ln(C_1)\\ge c_02^{-2\\alpha-1}$ and $\\ln(C_1)b^{-\\alpha}\\ge c_02^{-(\\alpha+1)}3^{-\\alpha}$), or restate the claim with the correct minimum; purely local.",
+      "overall_effect": "The corollary's precise quantification of the asymptotic batch loss (the factor $(2/3)^\\alpha$, also used to fit the upper bound $\\widetilde\\sigma(n)$ in the numerical section) is unproven in the regime where the $\\ln(C_1)b^{-\\alpha}$ term of the minimum dominates.",
+      "primary_affected_tag": "Cor:expDecay",
+      "target_type": "formal_result",
+      "title": "Cor:expDecay ignores the minimum in the definition of $c_1(n,b)$",
+      "why_classification": "A local hypothesis or restatement repairs it; the qualitative $(2/3)^\\alpha$ loss statement survives in the regime where the first terms dominate, and no other result depends on the identity."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$M = \\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil s + q$ with $q \\in \\left\\lbrace 1, 2, \\ldots, \\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil - 1 \\right\\rbrace$ for $s \\geq 1$",
+          "tag": "theo:Banach"
+        },
+        {
+          "quote": "Note that $\\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil s+q < 2 \\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil s$",
+          "tag": "col:wbg_hilbert"
+        }
+      ],
+      "failure_explanation": "In Case 2, $M=\\lceil2+(b-1)/s\\rceil s+q$ with $1\\le q\\le\\lceil2+(b-1)/s\\rceil-1$ and $s\\ge1$, so $M\\le\\lceil\\cdot\\rceil(s+1)-1\\le2\\lceil\\cdot\\rceil s-1<2\\lceil\\cdot\\rceil s$: the asserted inequality is the reverse of the truth (the Hilbert-space proof of col:wbg_hilbert(iii) correctly states the strict upper bound). The first step of the subsequent display, $C_1\\sqrt{2\\lceil\\cdot\\rceil s}\\,e^{-c_1(2\\lceil\\cdot\\rceil s)^\\alpha}\\le C_1\\sqrt{M}\\,e^{-c_1M^\\alpha}$, relies on this false claim (it would require $M\\ge2\\lceil\\cdot\\rceil s$, or monotonicity of $x\\mapsto\\sqrt x\\,e^{-c_1x^\\alpha}$, neither of which holds in general), so the Case 2 argument is unjustified as printed. The conclusion of the case is recoverable by a corrected comparison using $2s+b-1\\le M<2\\lceil\\cdot\\rceil s$ (giving $\\sqrt M\\ge\\sqrt{2s}$ and $M^\\alpha\\le(2\\lceil\\cdot\\rceil s)^\\alpha$, which still yields $c_1>\\frac{c_0}{2}(2\\lceil\\cdot\\rceil)^{-\\alpha}$), but this restructuring is not in the source.",
+      "failure_location": {
+        "quote": "Note, that $\\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil s + q\\geq 2\\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil s$",
+        "tag": "theo:Banach"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the inequality direction and restructure the comparison using $2s+b-1\\le M<2\\lceil2+(b-1)/s\\rceil s$ as indicated; a short local repair of this case.",
+      "overall_effect": "The Case 2 branch of the proof of Theorem theo:Banach(iii) is invalid as written, in addition to the theorem's dependence on the false Lemma La:Psbg_B (ISSUE-003).",
+      "primary_affected_tag": "theo:Banach",
+      "target_type": "formal_result",
+      "title": "Reversed inequality in Case 2 of the proof of Theorem theo:Banach(iii)",
+      "why_classification": "The case's conclusion survives via a short local restructuring of the estimate; no new proof architecture and no loss beyond this proof step (the theorem's separate, deeper defect is tracked as its own issue)."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2407.11631",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n01-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d942da78b6d3f0bc052d9ae20b8d6e239b06f446de6c697976c8f7fe512a4ec",
+  "status": "ok"
+}

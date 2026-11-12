@@ -1,0 +1,360 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Comparing the two distributions~\\eqref{eqn:true-reverse} and~\\eqref{eqn:approx-reverse} in KL divergence and empirically ignoring the pre-factor lead to",
+          "tag": null
+        },
+        {
+          "quote": "The sequential sampling of the reverse Markov chain is represented by a UNet backbone whose parameters are shared across all time steps $t = 1, \\ldots, T$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The implemented loss uniformly averages unweighted noise-prediction errors. The Gaussian KL terms have timestep-dependent weights, so dropping them can change the optimizer of the shared finite network. Moreover, maximizing a variational lower bound does not itself maximize evidence unless the variational gap is controlled. Neither equivalence is established.",
+      "failure_location": {
+        "quote": "Since our method maximizes the evidence likelihood and it learns a class of distributions $u|a$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Describe the actual objective as an empirically motivated noise-prediction surrogate, and qualify the likelihood/VLB claims accordingly. Preserving exact evidence maximization would require a different optimization argument or objective.",
+      "overall_effect": "The evidence-maximization interpretation of the implemented training procedure is unsupported; the source establishes a denoising surrogate objective instead.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The implemented denoising objective is not evidence maximization",
+      "why_classification": "A supported repair preserves the generative method and experiments but withdraws a substantive optimization guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Dirac distributions $\\delta_u(\\cdot|a)$;",
+          "tag": null
+        },
+        {
+          "quote": "In practice, we validate the learned model $\\delta_u(\\cdot|a)$ with a diagnostic run on the test data set to check whether the estimated standard deviation is approximately zero.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A learned conditional distribution can concentrate at an incorrect value v(a), giving zero standard deviation while its prediction error is arbitrarily large. The noise-free reverse model permits precisely such deterministic collapse. Thus conditional spread measures modeled output variability, not bias, generalization error, or uncertainty caused by under-/over-fitting. No calibration argument bridges this gap.",
+      "failure_location": {
+        "quote": "Moreover, the learned standard deviation (std) of $u|a$ provides an informative quantification of the uncertainty and hence the predictive quality of the laerned model.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Limit the interpretation to modeled conditional data/noise variability and predictive summaries. Claims about solution error or calibrated confidence require a separate error or calibration analysis.",
+      "overall_effect": "The claimed inference from learned standard deviation to predictive quality, and the corresponding interpretation of uncertainty bands as confidence about the PDE prediction, are unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Conditional sample spread does not certify predictive accuracy",
+      "why_classification": "The conditional-distribution method survives, but the advertised interpretation of its uncertainty requires a substantive narrowing."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "L_0(\\theta; a) &= \\mathbb{E}_{p(u_1 | a)}\\left[-\\log q_{\\theta}(u_0|u_1, a) \\right]",
+          "tag": null
+        },
+        {
+          "quote": "\\log q_{\\theta}(u_0 | a) &= \\mathbb{E}_{p(u_0|a)}[\\log q_{\\theta}(u_0 | a)]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For noisy data, u_0 is nondegenerate conditional on a. Its log likelihood is not equal to its expectation. The defined VLB and the other decomposition terms average over u_0, but the stated L_0 leaves u_0 free and averages only over the marginal u_1, losing their dependence. Consequently the displayed decomposition is inconsistent, and the averaged right-hand side is not the asserted pointwise likelihood bound.",
+      "failure_location": {
+        "quote": "-\\text{VLB} = L_T\n    + \\sum_{t=2}^TL_{t-1}\n    + L_0\\,,",
+        "tag": "eqn:split-VLB"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Use a consistent data-averaged convention: put the expectation over u_0 on the likelihood side and define L_0 using the joint law p(u_0,u_1|a). Alternatively condition every term on a fixed observed u_0 before averaging over data.",
+      "overall_effect": "The noisy-data VLB and reconstruction-term derivation are incorrect as written.",
+      "primary_affected_tag": "eqn:split-VLB",
+      "target_type": "other",
+      "title": "The VLB mixes pointwise and data-averaged expectations",
+      "why_classification": "Consistent conditioning and averaging repair the argument locally without changing the intended training construction or its scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "obtained from corrupting the output $u$ by an additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$, i.e., $u_{\\eta} = u + \\eta$.",
+          "tag": null
+        },
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a (nonzero mean) Gaussian distribution with the identity covariance, i.e., $u_0 \\sim \\mathcal{N}(m, \\mathbf{I})$",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "Hence, the parameterization~\\eqref{eqn:cov} for $\\Sigma_{\\theta}$ in the Gaussian noise setting is optimal in the sense that $H_p(u_{t-1}|u_t) = H_{q_{\\theta}}(u_{t-1}|u_t)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For Gaussian initial covariance Sigma(a), put C_t=bar_alpha_t Sigma(a)+(1-bar_alpha_t)I. The true reverse covariance is beta_t C_{t-1} C_t^{-1}, which generally differs from beta_t I. Proposition prop:added-2 establishes only the identity-covariance special case. More strongly, the prescribed final transition forces Cov_q(u_0|a) to be at least beta_1 I, so it cannot recover allowed positive noise covariances smaller than this floor, regardless of the learned mean.",
+      "failure_location": {
+        "quote": "\\beta_t \\mathbf{I} & \\mbox{Observations with additive Gaussian noise.}",
+        "tag": "eqn:cov"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restore a trainable reverse covariance, as allowed by the earlier general Gaussian parameterization, and optimize its full Gaussian KL terms. For Gaussian targets, an alternative is to learn Sigma(a) and use beta_t C_{t-1} C_t^{-1}.",
+      "overall_effect": "The general Gaussian-noise optimality argument and unrestricted recovery of unknown noise covariance fail. Proposition prop:added-2 itself remains valid under its stated hypothesis.",
+      "primary_affected_tag": "eqn:cov",
+      "target_type": "algorithm",
+      "title": "The Gaussian-noise covariance choice excludes allowed target covariances",
+      "why_classification": "A contained covariance-model and loss modification can preserve the noisy-data regime, but the fixed-covariance sampler cannot be repaired by a routine algebraic correction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dfrac{1 - \\bar{\\alpha}_{t-1}}{1 - \\bar{\\alpha}_t}\\beta_t \\mathbf{I}",
+          "tag": "eqn:cov"
+        },
+        {
+          "quote": "L_0(\\theta; a) &= \\mathbb{E}_{p(u_1 | a)}\\left[-\\log q_{\\theta}(u_0|u_1, a) \\right]",
+          "tag": null
+        },
+        {
+          "quote": "Similarly, we can calculate $L_0$ and ignore the pre-factor which gives",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the noise-free branch, bar_alpha_0=1 makes the t=1 reverse covariance zero. Hence q_theta(u_0|u_1,a) is a Dirac kernel, not a Gaussian Lebesgue density with a finite quadratic negative log likelihood. The displayed finite squared-error objective cannot be obtained from the defined reconstruction likelihood by dropping a prefactor; that prefactor would involve division by zero.",
+      "failure_location": {
+        "quote": "L_0(\\theta) = \\mathbb{E}_{p(\\epsilon_1)p(u_0|a)}\\left[\\|\\epsilon_1 - \\epsilon_{\\theta}(1, \\sqrt{\\bar{\\alpha}_1}u_0 + \\sqrt{1 - \\bar{\\alpha}_1} \\epsilon_1, a)\\|^2\\right].",
+        "tag": "eqn:L_0"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Treat the t=1 squared loss explicitly as a separate regression surrogate for a deterministic decoder, rather than a reconstruction likelihood. Alternatively use a positive decoder variance and reformulate the exact-Dirac claims as a limiting approximation.",
+      "overall_effect": "The claimed likelihood/VLB derivation of the final denoising loss fails in the paper's principal noise-free setting, although the deterministic sampling step itself is meaningful.",
+      "primary_affected_tag": "eqn:L_0",
+      "target_type": "other",
+      "title": "The noise-free reconstruction likelihood has zero covariance",
+      "why_classification": "Repair requires changing the endpoint's probabilistic interpretation or its distribution, not merely correcting a finite coefficient."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "u_0 = \\IND{\\{\\tilde{a} \\geq 0\\}}\\,,",
+          "tag": null
+        },
+        {
+          "quote": "$u(0,t) = 0$ \\qquad $t\\geq 0$",
+          "tag": null
+        },
+        {
+          "quote": "The output field of the data set is the solution $u(x,t_f)$ at $t_f=0.5$ and $x\\in(0,1)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The advection data generator permits an identically zero initial field: on the stated finite meshes, the nondegenerate Gaussian field has positive probability of being negative at every sampled point. Zero initial data and zero inflow give u=0 at the final time. The MRLE then divides by zero, including 0/0 for a perfect prediction.",
+      "failure_location": {
+        "quote": "\\frac{\\|\\mbox{mean}(\\{\\SOPA^{(n)}(a)\\}_{n=1}^{N_s}) - u \\|_2}{\\|u\\|_2}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Specify a zero-output branch, such as reporting absolute error separately, and apply relative error only when the reference norm is nonzero.",
+      "overall_effect": "MRLE is not a well-defined estimator on all test sets allowed by the stated advection experiment.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The relative-error estimator is undefined for allowed zero solutions",
+      "why_classification": "A routine local treatment of the degenerate denominator preserves the learning method and benchmark regime."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For a given test input $a$, $N_s$ approximated samples of $u|a$, denoted by $\\{\\SOPA^{(n)}(a)\\}_{n=1}^{N_s}$, are required",
+          "tag": null
+        },
+        {
+          "quote": "by the mean relative $L_2$-error (MRLE) and the mean standard deviation (MSTD) that are defined by",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The pointwise empirical standard deviation already estimates conditional spread. For K output coordinates with true standard deviation sigma, its norm converges to sigma sqrt(K), whereas the stated MSTD converges to zero because of the additional division by N_s. Merely drawing more samples therefore makes an unchanged conditional distribution appear less uncertain.",
+      "failure_location": {
+        "quote": "\\frac{\\|\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s}) \\|_2}{N_s}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Use an N_s-independent spatial summary, such as the standard-deviation norm divided by sqrt(M^d) for an RMS summary, and rescale the reported MSTD values accordingly.",
+      "overall_effect": "The reported statistic is not a consistent summary of conditional standard deviation and cannot support sample-count-independent uncertainty comparisons.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "MSTD incorrectly shrinks with the Monte Carlo sample count",
+      "why_classification": "Correcting the normalization is a local estimator repair requiring no new learning method or argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\# of samples $N_s$   &  $1$ if noise-free; $100$ if noisy",
+          "tag": "tab:params-test2"
+        },
+        {
+          "quote": "\\# of samples $N_s$   &  $1$",
+          "tag": "tab:params-test3"
+        },
+        {
+          "quote": "PDNO &  35, 707, 841 & 0.0046 & $5.08$e$-07$",
+          "tag": "tab:darcy_error"
+        }
+      ],
+      "failure_explanation": "With N_s=1, the usual population-normalized empirical standard deviation is identically zero, while the sample-standard-deviation formula with denominator N_s-1 is undefined. Neither convention yields the positive noise-free MSTD values reported in the tables. A separate multisample diagnostic could do so, but its sample count is not specified as part of the stated estimator/setup.",
+      "failure_location": {
+        "quote": "\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s})",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Specify and use a separate diagnostic sample count of at least two for MSTD, while retaining one-sample inference for solution prediction; otherwise omit empirical MSTD from single-sample tests.",
+      "overall_effect": "The noise-free MSTD values and validation by estimated conditional spread are not reproducible from the prescribed testing procedure.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The stated single-sample tests cannot produce the reported MSTD",
+      "why_classification": "An explicit multisample diagnostic is a routine local bypass and does not change the one-sample prediction method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a Dirac distribution at a point $u_0$, i.e., $u_0 \\sim \\delta_{u_0}$",
+          "tag": "prop:added-1"
+        },
+        {
+          "quote": "t = 1, \\ldots, T\\,.",
+          "tag": "prop:added-1"
+        },
+        {
+          "quote": "We denote $H_p(X)=-\\int_\\mathcal{X} p_X(x)\\log p_X(x)\\,dx$ the entropy of $X\\sim p_X(x)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At t=1 the statement uses H_p(u_0|u_1) and H_p(u_0|u_0), but the stipulated Dirac variable has no Lebesgue density under the paper's entropy definition. Even assigning differential entropy -infinity does not validate the proof's mutual-information expansion, which then subtracts -infinity from itself. The positive-time Gaussian calculation is valid for t at least 2.",
+      "failure_location": {
+        "quote": "H_p(u_{t-1}|u_t) = H_p(u_t|u_{t-1}) + H_p(u_{t-1} | u_0) - H_p(u_t | u_0)",
+        "tag": "prop:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Restrict the finite differential-entropy identity to t=2,...,T and treat the deterministic endpoint separately as a Dirac kernel, without applying density-based entropy identities to it.",
+      "overall_effect": "The proposition's endpoint case and the use of ordinary differential entropy for the noise-free t=1 transition are unsupported, including that summand in the final entropy argument.",
+      "primary_affected_tag": "prop:added-1",
+      "target_type": "formal_result",
+      "title": "The Dirac entropy proposition is undefined at t=1",
+      "why_classification": "This is a local singular-endpoint correction; the positive-time result and noise-free sampling construction remain intact."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\beta_t \\mathbf{I} & \\mbox{Observations with additive Gaussian noise.}",
+          "tag": "eqn:cov"
+        },
+        {
+          "quote": "\\State $u_{t-1}^{(n)} \\sim q_{\\theta}(u_{t-1}|u_t, a)$ in~\\eqref{eqn:approx-reverse}",
+          "tag": "alg:PDNO"
+        }
+      ],
+      "failure_explanation": "The prescribed reverse kernels inject fresh Gaussian noise with positive covariance. In particular, the output remains random conditional on its starting sample, so the sampler does not define a transport map between the two stated Gaussian spaces. For equal identity covariances, the quadratic optimal map is a deterministic translation; matching Gaussian marginals or their entropies does not make this stochastic coupling that map.",
+      "failure_location": {
+        "quote": "The result suggests that the DDPM learns a transformation between $\\mathcal{N}(m, \\mathbf{I})$ and $\\mathcal{N}(0, \\mathbf{I})$, which indeed corresponds to the optimal transport map between the two Gaussians~\\cite{khrulkov2022understanding}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Withdraw the optimal-map assertion for the stochastic sampler. Retaining an optimal-map conclusion requires a separate deterministic transport construction and an optimality proof.",
+      "overall_effect": "The claimed optimal-transport interpretation of the actual DDPM sampling procedure is false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The stochastic DDPM sampler is not an optimal transport map",
+      "why_classification": "No comparable optimal-map guarantee survives for the stated procedure; preserving it requires replacing the relevant sampling construction rather than repairing its proof locally."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}_{q_{\\theta}}\\left[-\\log q_{\\theta}(u_{0:T}) \\right]",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbb{E}_{p}\\left[-\\log p(u_{0:T}) \\right].",
+          "tag": null
+        },
+        {
+          "quote": "Note that $\\Sigma_{\\theta}(t, u_t, a)$ in~\\eqref{eqn:cov} is indeed not parameterized by $\\theta$ and is independent of $u_t$ and $a$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The display compares self-entropies H(q_theta) and H(p), not the model's expected negative log likelihood under p. The latter is H(p)+KL(p||q_theta). Equal self-entropies do not force this KL divergence to vanish: Gaussians with equal covariance and different means have equal entropy but different likelihoods. Here the conditional entropies are independent of the learned means, so even incorrect reverse means can satisfy the proposed entropy comparison.",
+      "failure_location": {
+        "quote": "In both cases, the noise-free and Gaussian noise, the learned parametric model $q_{\\theta}$ achieves the exact likelihood under the true model $p$, i.e.,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Withdraw the exact-likelihood conclusion and retain only entropy identities under their valid hypotheses. Restoring exact likelihood requires a separate proof that the learned law equals p, including correctness of the learned reverse means.",
+      "overall_effect": "The argument does not establish exact likelihood, equality of learned and true distributions, or successful learning, even in the nonsingular identity-covariance Gaussian case.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Equal self-entropies do not establish exact likelihood",
+      "why_classification": "The substantive exact-recovery guarantee is lost; the source supplies no comparable likelihood guarantee from the information-theoretic calculation."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $q_{\\theta}(u_T)$ is assumed to be a standard Gaussian, $L_T$ is independent of the parameter $\\theta$.",
+          "tag": null
+        },
+        {
+          "quote": "p(u_t | u_0) = \\mathcal{N}(u_t; \\sqrt{\\bar{\\alpha}_t}u_0, (1 - \\bar{\\alpha}_t)\\mathbf{I}),",
+          "tag": "eqn:ut_given_u0"
+        }
+      ],
+      "failure_explanation": "For a fixed noise-free initial state and finite T with 0<bar_alpha_T<1, the true terminal covariance is (1-bar_alpha_T)I, not I. In K dimensions, H_p(u_T)-H_q(u_T)=(K/2)log(1-bar_alpha_T), so replacing the terminal entropies by one another is false independently of the singular t=1 issue. For the identity-covariance Gaussian case, the true terminal mean is sqrt(bar_alpha_T)m, which also prevents exact equality of the forward and reverse joint laws with the prescribed standard prior.",
+      "failure_location": {
+        "quote": "H_{q_{\\theta}}(u_T) + \\sum_{t=1}^T H_{q_{\\theta}}(u_{t-1} | u_t) \n=\nH_p(u_T) + \\sum_{t=1}^T H_p(u_{t-1} | u_t)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Retain the explicitly computable Gaussian terminal discrepancy and state a finite-T approximation. Exact finite-T reversal instead requires a fitted conditional terminal Gaussian and retaining the corresponding L_T fitting term rather than fixing the prior to standard normal.",
+      "overall_effect": "The claimed finite-T entropy equality and exact time-reversal argument incorrectly discard terminal mismatch. This does not by itself rule out approximate sampling or exact deterministic output collapse.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The final entropy equality treats an approximate terminal prior as exact",
+      "why_classification": "The forward Gaussian formula supports a contained endpoint correction or a quantified approximation, without changing the reverse-chain architecture."
+    }
+  ],
+  "issues_found": 12,
+  "paper_id": "2305.14703",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e417f6e97606e57c1bddcad5ccc77b48f42186a7406fb76629c7aa30c1d3514b",
+  "status": "ok"
+}

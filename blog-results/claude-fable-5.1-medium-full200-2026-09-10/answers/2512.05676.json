@@ -1,0 +1,100 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$f\\in L^2(0,\\tend;V^\\star)$",
+          "tag": null
+        },
+        {
+          "quote": "It turns out that, if $f$ is element wise quadratic in time, this scheme is equivalent to a third order Radau IIA method",
+          "tag": null
+        },
+        {
+          "quote": "Assume that $f\\in \\SS^2(\\TT;V^\\star)$. Then,",
+          "tag": "lem:reliability"
+        },
+        {
+          "quote": "However, due to Lemma~\\ref{lem:reliability}, both quantities are equivalent.",
+          "tag": "thm:optimal_timestepping"
+        },
+        {
+          "quote": "we use that $f$ is element wise polynomial together with a standard inverse inequality",
+          "tag": "lem:reliability"
+        }
+      ],
+      "failure_explanation": "The theorem is stated in the setting of Section 2 with only $f\\in L^2(0,\\tend;V^\\star)$, yet its proof (i) replaces the error-based approximation class by the estimator via the efficiency bound of Lemma reliability, which is proved only under $f\\in\\SS^2(\\TT;V^\\star)$; (ii) uses the Petrov–Galerkin reformulation, which is equivalent to the time-stepping scheme (\\eqref{eq:cnscheme}, whose second line even requires point values $f(t_{T+1})$) only when $f|_T$ is quadratic, since $\\int_T\\langle f,v\\Phi_T\\rangle=|T|\\langle f(t_{T+1}),v\\rangle$ fails otherwise; (iii) the estimator needs $\\partial_t f\\in L^2$. None of these hypotheses appears in the theorem, so the claimed rate for general $f$ is unsupported (for general $f$ data-oscillation terms would have to enter the analysis).",
+      "failure_location": {
+        "quote": "Let $V$ be finite dimensional and let the initial mesh $\\TT_0$ be uniform.",
+        "tag": "thm:optimal_timestepping"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the hypothesis $f\\in\\SS^2(\\TT_0;V^\\star)$ (or $f$ piecewise quadratic w.r.t. every mesh used) to Theorem optimal_timestepping and to the downstream Section 4 theorems, or extend the analysis with data-oscillation/data-approximation terms.",
+      "overall_effect": "The optimality guarantee (and its later uses in Section 4, where only $f\\in L^2(0,\\tend;V_h^\\star)$ is assumed) is only justified for right-hand sides that are piecewise quadratic in time on $\\TT_0$; the advertised scope $f\\in L^2(0,\\tend;V^\\star)$ is not covered.",
+      "primary_affected_tag": "thm:optimal_timestepping",
+      "target_type": "formal_result",
+      "title": "Optimality theorem omits the piecewise-quadratic (in time) hypothesis on f needed by the scheme, its Petrov-Galerkin equivalence and the estimator efficiency",
+      "why_classification": "The result survives for piecewise quadratic data by adding a hypothesis, but this restricts the advertised scope; covering general $f$ needs an additional data-oscillation argument beyond a local fix."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:infsup_lambda",
+        "thm:infsup",
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:reliability",
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "q_{T}(t_{T+1}) = 2\\,\\frac{3-|T|\\lambda}{|T|^2\\lambda^2 + 4|T|\\lambda + 6}",
+          "tag": "eq:qeval"
+        },
+        {
+          "quote": "\\norm{u}{\\XX(\\II_i)_\\lambda}^2  \\leq C_1 \\Big( |u(\\II_i^-)|^2",
+          "tag": "eq:high_esti1"
+        },
+        {
+          "quote": "\\lambda^{-1}\\norm{\\partial_t u_{\\rm F}}{L^2(\\II_i)}^2\\simeq\\sum_{T\\in\\II_i}|T|\\lambda^{-1}|\\partial_t {u_F}(t_{T+1})|^2 =\n\\sum_{T\\in\\TT}|T|\\lambda|{u_{F}}(t_{T+1})|^2\\simeq \\lambda \\norm{u_{\\rm F}}{L^2(\\II_i)}^2",
+          "tag": "lem:infsup0_lambda"
+        },
+        {
+          "quote": "The constant $c_0$ is independent of $\\TT$.",
+          "tag": "thm:infsup"
+        },
+        {
+          "quote": "Note that the constant $C_{\\rm opt}$ is independent of the dimension of $V$.",
+          "tag": "thm:optimal_timestepping"
+        }
+      ],
+      "failure_explanation": "On an element $T$ with $\\gamma=\\lambda|T|$, the invisible function $q_T$ (normalized $q_T(t_T)=1$) tends, in the scaled variable $x\\in[0,1]$, to $3x^2-4x+1$ as $\\gamma\\to\\infty$ (from \\eqref{eq:qeval}: $a|T|^2\\to3$, $b|T|\\to-4$), so $\\lambda\\|q_T\\|_{L^2(T)}^2\\to\\tfrac{2}{15}\\gamma\\to\\infty$ while the right endpoint value $q_T(t_{T+1})=O(1/\\gamma)$. Hence the L^2 norm of $u_F$ is not equivalent to right-endpoint values (it even vanishes at $\\gamma=3$ where $q_T(t_{T+1})=0$ but $q_T=(1-x)^2\\neq0$), and the displayed sum moreover omits the $k=0$ element, whose contribution $\\lambda|T_0|\\,\\|q_{T_0}\\|^2|u(\\II_i^-)|^2\\sim\\gamma|u(\\II_i^-)|^2$ is exactly what destroys \\eqref{eq:high_esti1}. The lemma is false: for $u=q_{T_0}$ on a first large element (continued linearly to zero on $T_1$), the bilinear form vanishes against all of $\\YY$ except an $O(1)$ contribution from $T_1$, while $c_0\\|u\\|_{\\XX_\\lambda}^2-c_1|u(\\II_i^-)|^2\\sim\\gamma\\to\\infty$. Theorem infsup itself is false: for $u=q_T e_N$ (single element, $f=0$), the numerator reduces to $\\langle u(0),w\\rangle$, so the inf-sup quotient is $\\le 1/\\|u\\|_{\\XX}\\sim(15/(2\\gamma))^{1/2}\\to0$; with infinite-dimensional $V$ the inf-sup constant is exactly $0$. Equivalently, the discrete solution for $u_0=e_N$, $f=0$ is $q_Te_N$ with $\\|u_\\TT\\|_{\\XX}\\sim\\sqrt{\\gamma}$ whereas $\\|u\\|_{\\XX}\\sim1$, so Céa's lemma and the bound $\\|u-u_0\\|_{\\XX}\\le C_{\\rm opt}(\\#\\TT_0)^{-s}$ with $C_{\\rm opt}$ independent of $\\dim V$ fail.",
+      "failure_location": {
+        "quote": "\\lambda \\norm{u_{\\rm F}}{L^2(\\II_i)}^2&\\simeq \\lambda \\sum_{k=1}^{\\#\\II_i-1} |T_k| |f_{T_{k}}(t_{k+1})|^2",
+        "tag": "lem:infsup1_lambda"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the $\\XX$-norm by mesh-dependent/discrete norms (or a different reconstruction of the discrete solution) in which stability uniform in $\\lambda|T|$ can actually hold, re-prove Lemma infsup1_lambda controlling $\\lambda\\|u_F\\|_{L^2}^2$ (including the first element of each region) in that norm, and re-derive reliability, discrete reliability, Céa and the optimality theorem in the new framework, or else restate all results under a step-size restriction $\\lambda_{\\max}|T|\\lesssim1$.",
+      "overall_effect": "Uniform inf-sup stability in the $\\XX$-norm (the paper's central tool) does not hold for the continuous quadratic ansatz; the quasi-orthogonality imported from [infsup], discrete reliability, Céa's lemma, the rate-optimality Theorem (in particular independence of $\\dim V$), the cost comparison \\eqref{eq:bound_cost}, and all Section 4 error bounds built on Theorem optimal_timestepping become unsupported; the inf-sup constant degrades like $(\\lambda_{\\max}|T|_{\\max})^{-1/2}$, i.e. a CFL-type restriction reappears.",
+      "primary_affected_tag": "lem:infsup1_lambda",
+      "target_type": "formal_result",
+      "title": "Uniform inf-sup stability fails: L^2 mass of the invisible collocation functions on large steps is not controlled by endpoint values",
+      "why_classification": "The primary lemma and the main inf-sup theorem admit explicit counterexamples in the stated norms, so no comparable version survives without changing the norm/guarantee type or reintroducing a CFL-type restriction the paper claims to remove; every substantive result of the paper depends on it and would need new proof architecture."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2512.05676",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "70525655112dd5e6a4b9e036ce5bd3048782cdaa98dd74861d388a6c2188eeea",
+  "status": "ok"
+}

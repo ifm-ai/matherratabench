@@ -1,0 +1,105 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "By stationarity, there exist $\\lambda_i, \\mu_i \\ge 0$ with $\\lambda_i u_i = 0$ and $\\mu_i(u_i - C_{k(i)}) = 0$ such that",
+          "tag": null
+        },
+        {
+          "quote": "$\\alpha_k = 0$     & $\\Iup$ only          & $\\tau_k \\le -\\rho$",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "Applying complementary slackness yields the characterization in Table~\\ref{tab:kkt}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the stated conventions (lambda_i >= 0 with lambda_i u_i = 0 for the lower bound; mu_i >= 0 with mu_i(u_i - C_{k(i)}) = 0 for the upper bound), the Lagrangian stationarity condition is G_i - s_i*rho = lambda_i - mu_i, not mu_i - lambda_i. Taken at face value, complementary slackness yields the reverse of Table tab:kkt (e.g., alpha_k = 0 would force tau_k >= -rho, and alpha_k = C_k would force tau_k <= -rho). The written system is even inconsistent: for N = 1, Omega = [1], y_1 = 100, epsilon = 10, C = 1 with the optimum alpha_1 = alpha_1* = 0, it demands rho >= -90 and rho <= -110 simultaneously, so no valid multiplier exists (the correct system gives rho in [-110, -90], i.e., -rho in [90, 110]).",
+      "failure_location": {
+        "quote": "G_i - s_i\\rho = \\mu_i - \\lambda_i, \\qquad i = 1,\\ldots,2N,",
+        "tag": "eq:kkt-stationarity"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Swap lambda_i and mu_i in eq:kkt-stationarity (write G_i - s_i*rho = lambda_i - mu_i with the stated complementary-slackness conditions), which makes the derivation of Table tab:kkt valid; no other change is needed.",
+      "overall_effect": "The presented derivation of the KKT characterization (Table tab:kkt) is invalid as written; a reader using eq:kkt-stationarity literally obtains optimality conditions opposite to those the rest of the paper relies on for working-set selection, shrinking, and bias recovery. Since the table itself is correct and everything downstream uses the table, no downstream result is invalidated once the equation is corrected.",
+      "primary_affected_tag": "eq:kkt-stationarity",
+      "target_type": "other",
+      "title": "KKT stationarity equation swaps the bound multipliers, contradicting Table 1",
+      "why_classification": "A forced one-symbol correction restores the derivation; the table, the MVP rule, the shrinking criteria, the bias recovery, and Algorithm 1 are unaffected, so no substantive claim or guarantee is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\mathcal{S}_{\\mathrm{free}} = \\emptyset$ at convergence (all support vectors lie exactly on a bound), \\eqref{eq:bias-avg} is undefined.",
+          "tag": "rem:bias-degenerate"
+        },
+        {
+          "quote": "$\\alpha_k = 0$     & $\\Iup$ only          & $\\tau_k \\le -\\rho$",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "$\\alpha_k^* = 0$     & $\\Idown$ only        & $\\tau_{N+k} \\ge -\\rho$",
+          "tag": "tab:kkt"
+        }
+      ],
+      "failure_explanation": "At an optimal solution the KKT conditions give tau_i <= -rho for every i in Iup and tau_j >= -rho for every j in Idown, so the correct bracketing is tau_{i*} = max_{Iup} tau <= -rho <= min_{Idown} tau = tau_{j*}. Equation eq:bias-bounds asserts the opposite chain, which at convergence forces tau_{i*} >= tau_{j*} and fails whenever the bracketing interval is non-degenerate. Concrete instance: N = 1, Omega = [1], y_1 = 100, epsilon = 10 with the optimum alpha_1 = alpha_1* = 0 (so S_free is empty, Iup = {1}, Idown = {N+1}); there tau_1 = 90, tau_{N+1} = 110 and -rho lies in [90, 110], so the asserted chain 90 >= -rho >= 110 is impossible. The midpoint formula eq:bias-midpoint is symmetric in the two endpoints and remains valid.",
+      "failure_location": {
+        "quote": "\\max_{i \\in \\Iup} \\tau_i = \\tau_{i^*} \\;\\geq\\; -\\rho \\;\\geq\\; \\min_{j \\in \\Idown} \\tau_j = \\tau_{j^*},",
+        "tag": "eq:bias-bounds"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Reverse the inequality chain in eq:bias-bounds to tau_{i*} <= -rho <= tau_{j*} (equivalently, state that -rho lies between tau_{i*} and tau_{j*}), leaving the midpoint formula unchanged.",
+      "overall_effect": "Only the stated direction of the bound on -rho in the no-free-support-vector fallback is wrong; the midpoint convention, the bias-recovery line of Algorithm alg:smo, and all other guarantees are unaffected.",
+      "primary_affected_tag": "eq:bias-bounds",
+      "target_type": "other",
+      "title": "Degenerate-bias remark reverses the KKT bracketing of -rho at convergence",
+      "why_classification": "A forced local reversal of two inequality signs; the correction withdraws no substantive promise, and no downstream claim, rate, or guarantee changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "or equivalently $\\Omega_s = \\tfrac{1}{2}(\\Omega + a\\Omega^*)$ where $\\Omega^*_{k\\ell} = K(\\mathbf{x}_k, -\\mathbf{x}_\\ell)$.",
+          "tag": null
+        },
+        {
+          "quote": "For the symmetric-kernel variant (m2) with $a = +1$, $P \\succeq 0$ is preserved and the same guarantees apply.",
+          "tag": null
+        },
+        {
+          "quote": "The same solver applies to the symmetric-kernel variant (m2) by replacing $\\Omega$ with $\\Omega_s = \\tfrac{1}{2}(\\Omega + a\\Omega^*)$~\\cite{Espinoza2005}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The premise is false: Omega* = [K(x_k, -x_l)] is not positive semi-definite in general. For the RBF kernel with antipodal training points x_1 = a, x_2 = -a (a != 0), Omega* = [[exp(-4*gamma*|a|^2), 1], [1, exp(-4*gamma*|a|^2)]] has determinant exp(-8*gamma*|a|^2) - 1 < 0, so it is indefinite. The conclusion also fails for general kernels: for a non-even PSD kernel, Omega_s = (1/2)(Omega + Omega*) can be symmetric yet indefinite (e.g., a feature-map construction with phi(1) = e_1, phi(-1) = 2*e_2, phi(2) = 2*e_1, phi(-2) = e_2 and training points {1, -2} yields Omega_s = (1/2)[[1, 2], [2, 1]], which has a negative eigenvalue), and for non-even kernels Omega_s need not even be symmetric, so the m2 dual is not a convex QP as claimed. Convexity of the m2 dual for a = +1 is therefore unestablished as written (it does hold for even kernels such as RBF, but only via a different argument, e.g., v^T Omega_s v = (1/2)(|s|^2 + <s, s'>) >= 0).",
+      "failure_location": {
+        "quote": "For $a = +1$ (even symmetry), $\\Omega_s \\succeq 0$ follows from the fact that $\\Omega$ and $\\Omega^*$ are individually PSD.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict the a = +1 claim to even kernels (K(x, y) = K(-x, -y), e.g., RBF) or explicitly assume Omega_s PSD, and replace the false justification with a valid proof on that scope; the Section 10 guarantee claims then hold for the restricted class.",
+      "overall_effect": "The claims that m2 with a = +1 preserves P >= 0 and inherits the same SMO convergence and epsilon_tol-optimality guarantees (Section 10), and the abstract/conclusion statements that the same solver applies to m2, are unsupported for general kernels; in that regime Algorithm alg:smo loses its convexity-based guarantee for m2 inputs with a = +1.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "m2 (a = +1) PSD claim rests on a false premise and fails for general kernels",
+      "why_classification": "The repair requires a contained but nontrivial new PSD argument plus a scope restriction (even kernels or an explicit PSD hypothesis); the m2 a = +1 extension survives for the canonical kernels such as RBF, but the general-kernel claim is withdrawn and the stated proof must be replaced, which is more than minor yet avoids abandoning a substantive result."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n03-reserve",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

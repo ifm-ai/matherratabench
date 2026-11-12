@@ -1,0 +1,70 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma: quantum affine sum",
+        "prop: CPWA component circuit",
+        "prop: loading payoff circuit"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "This, the hypothesis that $n_1+m_1 \\geq n_2 +m_2$, and Lemma \\ref{lemma: quantum addition} (with $n_1 \\leftarrow n_1 + m_1$, $n_2 \\leftarrow n_2+m_2$ in the notation of Lemma \\ref{lemma: quantum addition})imply that there exists a quantum circuit $\\mathcal{Q}_{(+)}$ such that for any $a \\in \\mathbb{F}_{n_1,m_1}$, $b \\in \\mathbb{F}_{n_2,m_2}$ that",
+          "tag": "corollary: add circuit"
+        },
+        {
+          "quote": "and we apply the quantum circuit $\\mathcal{Q}_{(+)}^{(b)}  := \\mathcal{Q}_{(+)}$ (with $n_1 \\leftarrow n+d-1$, $n_2 \\leftarrow n_2$, $m_1 \\leftarrow m$, $m_2 \\leftarrow m_2$, $a \\leftarrow \\displaystyle \\bigboxplus_{l=1}^{d} (a_l \\boxdot i_l)$, $b \\leftarrow b$ in the notation of Corollary \\ref{corollary: add circuit})",
+          "tag": "lemma: quantum affine sum"
+        }
+      ],
+      "failure_explanation": "Corollary 3.6 asserts that the circuit computes the two's complement addition $a \\boxplus b$ of fixed-point dyadics $a \\in \\mathbb{F}_{n_1,m_1}$ and $b \\in \\mathbb{F}_{n_2,m_2}$. However, the proof simply passes the unshifted bit registers of $a$ and $b$ directly to the integer adder $\\mathcal{Q}_{(+)}$ of Lemma 3.5. When $m_1 \\neq m_2$, the least significant bits of the registers have different scales ($2^{-m_1}$ versus $2^{-m_2}$). Aligning the registers without shifting scales $b$ by $2^{m_2-m_1}$, computing $a + 2^{m_2-m_1}b$ instead of $a + b$. Moreover, the true sum $a \\boxplus b \\in \\mathbb{F}_{\\max\\{n_1,n_2\\}+1, \\max\\{m_1,m_2\\}}$ can require more than $n_1+m_1+1$ qubits when $m_2 > m_1$ or $n_2 > n_1$. In Lemma 3.7 (step 5), this faulty adder is directly used with $m = m_1+m_2 > m_2$ to add $b \\in \\mathbb{F}_{n_2,m_2}$ to the partial affine sum, scaling the bias $b$ by $2^{-m_1}$ and corrupting the affine payoff evaluation.",
+      "failure_location": {
+        "quote": "\\widetilde{\\mathcal{Q}}_{(+)}:\\ket{a}_{n_1+m_1}\\ket{b}_{n_2+m_2}\\ket{0} \\mapsto \\ket{b}_{n_2+m_2}\\ket{a \\boxplus b}_{n_1+m_1+1}.",
+        "tag": "corollary: add circuit"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict Corollary 3.6 to the case of equal fractional lengths $m_1 = m_2$ (and $n_1 \\geq n_2$), and in Lemma 3.7 pad the input bias $b$ with $m_1$ zero bits so that it is loaded in $\\mathbb{F}_{n_2, m_1+m_2}$, matching the fractional precision of the accumulated affine product sum before addition.",
+      "overall_effect": "The affine sums computed in Lemma 3.7 and subsequent component evaluations in Proposition 3.8 and Proposition 3.10 compute incorrect affine values where the intercept $b$ is scaled by $2^{-m_1}$ instead of being added as $b$.",
+      "primary_affected_tag": "corollary: add circuit",
+      "target_type": "formal_result",
+      "title": "Fixed-point addition circuit fails for operands with unequal fractional lengths",
+      "why_classification": "Padding the bias register and restricting the adder to equal fractional lengths is a contained, local modification of the circuit registers and complexity bookkeeping that avoids changing the overall architecture and preserves all convergence and complexity rates."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathfrak{s}^{-1} &= \\left(6\\eps^{-1}(C_2^2d^22^{n_1+1})^3\\right)^{\\tfrac{1}{2}}\\\\\n            &\\leq \\sqrt{6}\\eps^{-\\tfrac{1}{2}}C_2d(2^{3+\\log_2(6\\mathfrak{c}d^{\\tfrac{5}{2}}\\eps^{-1})})^{3/2}",
+          "tag": "main theorem"
+        },
+        {
+          "quote": "\\mathfrak{C} d^{\\max\\{12,5+C_3\\}}\\eps^{-3}(1+\\log_2(d\\eps^{-1}))^{\\max\\{4,2C_3\\}},",
+          "tag": "main theorem"
+        }
+      ],
+      "failure_explanation": "In equation (1057)-(1060) of the proof of Theorem 2.7, bounding $\\mathfrak{s}^{-1} = \\left(6\\eps^{-1}(C_2^2d^22^{n_1+1})^3\\right)^{1/2}$, the calculation incorrectly takes $\\sqrt{(C_2^2 d^2)^3} = C_2 d$ rather than $C_2^3 d^3$. Consequently, $d$ instead of $d^3$ multiplies $(d^{5/2})^{3/2} = d^{15/4}$, yielding an erroneous bound $\\mathfrak{s}^{-1} = O(d^{19/4}\\eps^{-2}) = O(d^{4.75}\\eps^{-2})$ instead of the correct $O(d^{27/4}\\eps^{-2}) = O(d^{6.75}\\eps^{-2})$. Because of this algebraic error, the query complexity in (48) is claimed to be $O(d^5 \\eps^{-3} \\ln(1/\\alpha))$, whereas the method actually yields $O(d^{6.75} \\eps^{-3} \\ln(1/\\alpha)) = O(d^7 \\eps^{-3} \\ln(1/\\alpha))$, which cannot be bounded by $O(d^5)$. Similarly, the gate complexity in (47) is claimed to be $O(d^{\\max\\{12, 5+C_3\\}})$, whereas $27/4 + 7 = 13.75$ requires an exponent of at least 14.",
+      "failure_location": {
+        "quote": "\\mathfrak{C} d^{5}\\eps^{-3}\\ln(\\tfrac{21}{\\alpha}).",
+        "tag": "main theorem"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the calculation of $\\sqrt{(C_2^2 d^2)^3}$ to $C_2^3 d^3$ in (1057)-(1060), yielding $\\mathfrak{s}^{-1} = O(d^{27/4}\\eps^{-2})$, and update the theorem bounds to $O(d^7 \\eps^{-3} \\ln(21/\\alpha))$ applications of $\\mathcal{A}$ and $O(d^{\\max\\{14, 7+C_3\\}} \\eps^{-3} (1+\\log_2(d\\eps^{-1}))^{\\max\\{4, 2C_3\\}})$ elementary gates.",
+      "overall_effect": "The dimension exponents in the main complexity guarantees of Theorem 2.7 (the gate complexity bound (47) and query complexity bound (48)) are incorrect and unestablished as stated.",
+      "primary_affected_tag": "main theorem",
+      "target_type": "formal_result",
+      "title": "Underestimated scaling parameter exponent leads to invalid query and gate complexity bounds",
+      "why_classification": "While the stated exponents of $d$ in the main theorem are invalidated and must be worsened from $d^5$ to $d^7$ (queries) and from 12 to 14 (gates), the central qualitative promise—that the algorithm breaks the curse of dimensionality by maintaining polynomial complexity in $d$ and $\\eps^{-1}$—survives intact under standard re-derivation."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2301.09241",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "344935100857784fc02cca177913ce39f8661d45576f2c1e3fc3afb04f3ff8b6",
+  "status": "ok"
+}

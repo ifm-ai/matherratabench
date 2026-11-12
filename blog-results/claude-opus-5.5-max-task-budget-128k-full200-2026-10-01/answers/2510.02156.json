@@ -1,0 +1,291 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "updating the solution $x_t$ with respect to a block containing $\\left\\lfloor\\frac{m}{k}\\right\\rfloor$ rows that contribute the most to the residual, reduces the upper and lower bounds of the error thus improving convergence in general",
+          "tag": "thm:convergence_boost"
+        },
+        {
+          "quote": "While SOBK samples pairs of mutually orthogonal blocks of contiguous rows, we propose to use the cumulative effective orthogonality of a block with \\emph{all} other blocks in its random sampling",
+          "tag": null
+        },
+        {
+          "quote": "we show that it can further decrease the residual encountered in SOBK, thereby accelerating convergence",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose says the theorem shows that ROR-BK improves SOBK's convergence and decreases SOBK's residual. The theorem only treats one approximate update (in the limit of small regularization) with a residue block, and compares error bounds among row subsets of equal size. It contains no statement about SOBK's iterates, residuals or rate. ROR-BK is also not SOBK plus an extra step, because its fixed-block sampling differs. So even a correct one-step bound would not imply faster convergence than SOBK.",
+      "failure_location": {
+        "quote": "We show through \\cref{thm:convergence_boost} that this addition enhances the convergence of the earlier proposed SOBK method.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restate the comparison with SOBK as an empirical observation only, or add a genuine comparative analysis of the expected error decay of both algorithms.",
+      "overall_effect": "The asserted theoretical superiority over SOBK is unsupported; only the empirical tables bear on it.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed theoretical improvement over SOBK is not established by the cited theorem",
+      "why_classification": "A stated theoretical guarantee must be withdrawn or replaced by new comparative analysis. The algorithm and the empirical comparisons remain."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where the \\((i,j)^{th}\\) entry of $C$ is defined as $\\frac{|\\langle\\bar{A_i}, \\bar{A_j}\\rangle|}{\\|\\bar{A_i}\\|\\|\\bar{A_j}\\|}$",
+          "tag": null
+        },
+        {
+          "quote": "Centroid vectors are just a sum of row vectors in the given block.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "C(i,j) divides by the product of the centroid norms. Nothing excludes a zero centroid, e.g. a block containing rows a and -a, or only zero rows. Then C(i,j)=0/0, and the weights P-bar_t and the distribution P in steps 3-4 are undefined.",
+      "failure_location": {
+        "quote": "Compute the cosine value $C(i,j)$ of the effective angle between blocks $A_i$ and $A_j$ by the centroid coordinates",
+        "tag": "algo:roar-bk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Adopt an explicit convention, e.g. C(i,j)=0 when a centroid vanishes, or perturb the block summary so it is nonzero.",
+      "overall_effect": "Algorithm 1 (and Algorithm 2, which reuses it) is ill-defined for such inputs.",
+      "primary_affected_tag": "algo:roar-bk",
+      "target_type": "algorithm",
+      "title": "Centroid cosine matrix C (and hence the sampling distribution) undefined when a block centroid vanishes",
+      "why_classification": "This is a degenerate-case fix by a local convention. The method and its claims are otherwise unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Using Woodberry Identity \\cite{woodberryidentity} we can simplify",
+          "tag": "thm:woodberry_identity"
+        },
+        {
+          "quote": "&=\\frac{1}{\\tilde{\\lambda}}M^T-\\frac{1}{\\tilde{\\lambda}^3}M^T\\{MM^T+\\tilde{\\lambda}I_r\\}MM^T",
+          "tag": "eq:wi4"
+        }
+      ],
+      "failure_explanation": "The Woodbury formula inverts the middle factor. Correctly, (λI+MM^T)^{-1} = λ^{-1}I - λ^{-1}M(M^TM+λI)^{-1}M^T. Eqs. (wi1)-(wi2) omit the inverse and carry the wrong power of λ. For scalar M=1 and λ=1 the left side is 1/2, but eq:wi1 gives 1-2=-1. If the inverses are restored, the final step of eq:wi4 moves (MM^T+λI)^{-1} past M, which is exactly the identity being proved. The argument is therefore false or circular, although the lemma itself is true.",
+      "failure_location": {
+        "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T",
+        "tag": "eq:wi1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the proof with the direct argument: (M^TM+λI_n)M^T = M^T(MM^T+λI_r); multiply on the left by (M^TM+λI_n)^{-1} and on the right by (MM^T+λI_r)^{-1}, both invertible for λ>0.",
+      "overall_effect": "The lemma's proof is invalid; the statement and its later uses remain correct.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Proof of the push-through identity uses a misstated Woodbury formula and is circular once corrected",
+      "why_classification": "A two-line standard proof replaces the faulty one. Nothing is lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=I-\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}",
+          "tag": "eq:errbound2"
+        },
+        {
+          "quote": "Here, $\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau)$ is the smallest non-zero eigenvalue of $A_\\tau^T A_\\tau$.",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "For the proposed ROR-BK method we use $\\tilde{\\lambda}=1e-06 \\times$(number of rows in a block).",
+          "tag": null
+        },
+        {
+          "quote": "IT &108.40 & 143.30&2429.7",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "I-M = λ(A_τ^TA_τ+λI)^{-1} has eigenvalue 1 on N(A_τ). That null space is nontrivial whenever a block has fewer independent rows than n, which always holds for square or underdetermined systems with several blocks. So only ||I-M||_2 = 1 is valid. The λ⁺_min factor requires x_t - x_⋆ ∈ R(A_τ^T), which is not ensured even if x_0 ∈ R(A^T). Counterexample: if x_t - x_⋆ ≠ 0 is orthogonal to the rows of A_τ, then x_{t+1} = x_t, violating the bound. The expectation bound inherits the error. It would imply deterministic geometric convergence on every sample path, even when one block is sampled repeatedly. With the paper's tiny λ it would imply near one-step convergence, contradicting the hundreds to thousands of iterations reported.",
+      "failure_location": {
+        "quote": "&\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2",
+        "tag": "ew:errbound3"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must derive an expected contraction using the sampling distribution (e.g. the smallest nonzero eigenvalue of the averaged operator E[M] on R(A^T)) and account for the iterate-dependent residue block.",
+      "overall_effect": "The paper's only convergence-rate guarantee for ROR-BK, and the conclusion's claim to provide a convergence analysis, are unsupported.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "Per-step contraction bound ignores the null space of A_tau^T A_tau; the main convergence theorem is false",
+      "why_classification": "The stated rate is false. A valid result needs a different, expectation-based proof architecture and yields a materially weaker rate."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\min}^{+}(A_\\tau^{T}A_\\tau)}\\lesssim \\|x_{t+1}-x_\\star\\|_2^2",
+          "tag": "eq:errbound5"
+        },
+        {
+          "quote": "But, these dynamic blocks can yield more ill-conditioned least-square problems.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Both bounds have the form ||e_t||^2 - ||r_S||^2/λ(A_S^TA_S), with λ = λ⁺_min or λ⁺_max of the chosen subset S. Minimizing them requires maximizing ||r_S||^2/λ(S), not ||r_S||^2 alone; global boundedness of the eigenvalues does not remove the dependence on S. Counterexample (m=2, k=2, one-row blocks, λ→0): a_1=(100,0), a_2=(0,1), e_t=(0.02,1). The residues are 2 and 1, so the greedy rule picks row 1 and reduces ||e||^2 by 4e-4; row 2 would reduce it by 1. Lowering a lower bound also does not imply faster convergence. The analysis is valid only for λ ≪ λ⁺_min(A_S^TA_S), which the paper says can be tiny for dynamic blocks.",
+      "failure_location": {
+        "quote": "we minimize the above upper and lower bounds of the error $\\|x_{t+1}-x_\\star\\|_2^2$ in \\cref{eq:errbound5}, as $\\lambda_{\\min}^{+}, \\lambda_{\\min}^{-}$ are bounded for a given system",
+        "tag": "thm:convergence_boost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the block-dependent eigenvalues by uniform constants over all subsets of size floor(m/k). Then claim only that the greedy choice minimizes this uniform worst-case upper bound in the limit λ→0, dropping 'improving convergence in general'. Alternatively, select rows by row-norm-normalized residues.",
+      "overall_effect": "The theoretical justification for the residue-based block, and the claim that it improves convergence, is unsupported.",
+      "primary_affected_tag": "thm:convergence_boost",
+      "target_type": "formal_result",
+      "title": "Greedy largest-residue block does not minimize the block-dependent error bounds",
+      "why_classification": "A limited weakening to a uniform worst-case bound statement survives. The claimed general convergence improvement is lost, but no new architecture is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "it is the minimum residual-norm solution, since $x_k \\in \\mathcal{R}(A^T) \\perp \\mathcal{N}(A)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "x_k ∈ R(A^T) implies only that, if x_k is a solution (or least-squares solution), it is the minimum-norm one. It does not imply that x_k minimizes ||b-Ax||. Flexible GMRES minimizes the residual only over x_0 + span{z_1,...,z_k}. Reaching a global minimizer needs convergence and no-breakdown conditions, e.g. on the range of A[z_1,...,z_k], and none is established. The unlabelled Remark's conclusion therefore does not follow.",
+      "failure_location": {
+        "quote": "gives a solution $x_k \\in \\mathcal{R}(A^T)$ minimizing $\\norm{b-Ax_k}_2$.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restate the Remark: x_k ∈ R(A^T) for all k, so if the iterates reach or converge to a solution, it is A^†b. Separately prove convergence, or cite conditions under which FAB-GMRES determines a solution.",
+      "overall_effect": "The stated guarantee that Algorithm 2 outputs a residual-minimizing (minimum-norm) solution is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "formal_result",
+      "title": "Range-space membership wrongly taken to imply residual minimization for FAB-GMRES iterates",
+      "why_classification": "The residual-minimization guarantee must be weakened to a conditional statement. The range property survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "& CPU &\\textbf{2.82}&\\textbf{1.48}& \\textbf{1.54}& \\textbf{4.72}",
+          "tag": null
+        },
+        {
+          "quote": "& CPU &\\textbf{58.78} & \\textbf{42.004}& \\textbf{1.20}",
+          "tag": null
+        },
+        {
+          "quote": "IT &\\textbf{4.98}  &\\textbf{5.55} &\\textbf{5.92}",
+          "tag": null
+        },
+        {
+          "quote": "IT &\\textbf{2.46} & \\textbf{3.81}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Across the tables, CPU speed-ups over SOBK range from 1.48 to 4.72 and over TA-ReBlocK-U from 1.20 to 58.78. The stated ranges 1.44-4.53 and 1.42-59.38 match no entries. Several tabulated speed-ups also disagree with the raw values: 16707.55/2429.7≈6.88 (listed 5.92), 859.80/215.15≈4.00 (listed 3.81), and 2053.15/215.15≈9.54 (listed 9.11).",
+      "failure_location": {
+        "quote": "ROR-BK is between \\textbf{1.44} and \\textbf{4.53} times faster than SOBK, and \\textbf{1.42} to \\textbf{59.38} times faster than the TA-ReBlocK-U method",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Recompute the speed-ups from the raw IT/CPU data and correct the table entries and the summary ranges.",
+      "overall_effect": "The quantitative performance claims are internally inconsistent; the qualitative ranking is unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Summarized speed-up ranges and some tabulated speed-ups contradict the reported raw data",
+      "why_classification": "This is a local numeric correction. The qualitative conclusions survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We compare the proposed Regularized Orthogonality and Residue based Block-Kaczmarz method (ROR-BK) with",
+          "tag": null
+        },
+        {
+          "quote": "This strategy is particularly advantageous for solving large-scale linear systems that are ill-conditioned.",
+          "tag": null
+        },
+        {
+          "quote": "and as an inner iteration in certain types of GMRES solvers for linear systems",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims FAB-GMRES is significantly improved, especially for ill-conditioned systems. No experiment runs Algorithm 2: all tables compare standalone ROR-BK with SOBK and TA-ReBlocK-U. The only formal statement about Algorithm 2 is the range-space Remark, which says nothing about convergence speed or improvement.",
+      "failure_location": {
+        "quote": "Furthermore, by employing this approach as a preconditioner in the inner iteration, the FABGMRES method for solving consistent linear systems can be significantly improved.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Withdraw or soften the claims, or add FAB-GMRES experiments or analysis supporting them.",
+      "overall_effect": "The advertised benefit of ROR-BK as a GMRES preconditioner has no support in the paper.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed significant improvement of FAB-GMRES with ROR-BK inner iterations is unsupported",
+      "why_classification": "An advertised application claim must be withdrawn absent new experiments or analysis. The core standalone solver results remain."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top",
+          "tag": "algo:roar-bk"
+        },
+        {
+          "quote": "Let us denote the sampling procedure of \\cref{algo:roar-bk} as $\\mu$.",
+          "tag": null
+        },
+        {
+          "quote": "This limitation can be overcome through a randomized block-Kacmarz method with uniform sampling",
+          "tag": null
+        },
+        {
+          "quote": "the iterate variance may grow unbounded in the absence of a stable solver like ROR-BK",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The cited ReBlocK result, described in the paper as using uniform sampling, at best covers blocks drawn i.i.d. from a fixed distribution μ. That assumption is what makes E[x_{t+1}] = (I - P̄)E[x_t] + const a linear recursion. ROR-BK inserts, after every three sampled updates, a deterministic block chosen from the largest entries of the current residual b - Ax_j. This block is not drawn from any fixed μ, so W̄ and P̄ (expectations over S~μ) are undefined for it. The expectation of this iterate-dependent nonlinear step does not obey the recursion. The accompanying claim that ROR-BK keeps the iterate variance bounded has no supporting analysis.",
+      "failure_location": {
+        "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Restrict the theorem to the variant using only the i.i.d. orthogonality-based block sampling, where the cited result applies with μ = P. Otherwise, supply a new analysis of the greedy residue step, and drop the variance claim.",
+      "overall_effect": "The claimed weighted least-squares convergence of ROR-BK, cited in the introduction, is unsupported for the algorithm as defined.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "Weighted least-squares convergence theorem invoked outside the cited result's i.i.d. sampling hypothesis",
+      "why_classification": "A comparable statement survives for the randomized component via the citation, but it no longer covers ROR-BK with its residue block."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

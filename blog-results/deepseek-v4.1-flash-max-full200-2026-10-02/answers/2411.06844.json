@@ -1,0 +1,153 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:fullydiscreteCFL",
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that from now on we assume periodic boundary conditions. For this reason we set \nD_{1,2}^{x}= D_{1,N_x}^{x} &= 0\\;,\\qquad D_{N_x,N_x-1}^{x} = D_{N_x,1}^{x} = 0\\;,\\\\\nD_{1,1}^{xx}= 0\\;, D_{1,2}^{xx} &=0\\;,\\qquad D_{N_x,N_x-1}^{xx} = 0\\;, D_{N_x,N_x}^{xx} = 0.",
+          "tag": null
+        },
+        {
+          "quote": "D_{j,j\\pm 1}^{x}= \\frac{\\pm 1}{2\\Delta x}\\;,\\qquad D_{j,j}^{xx}= - \\frac{2}{\\left(\\Delta x\\right)^2}\\;, \\quad D_{j,j\\pm 1}^{xx}= \\frac{1}{\\left(\\Delta x\\right)^2}\\;,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The boundary entries are set to zero instead of using periodic wrap-around values. With these zero rows, D^x is not skew-symmetric and D^xx is not symmetric. For example, with N_x=3, D^x has row 1 and row 3 equal to zero, so for y=(0,1,0), z=(1,0,0), the left side of the first identity is -1/(2\\Delta x) while the right side is 0. Thus the summation-by-parts properties stated in Lemma \\ref{lemma:stencilmatrices} are false as written.",
+      "failure_location": {
+        "quote": "\\sum_{i,j=1}^{N_x} y_j D_{ji}^x z_i = - \\sum_{i,j=1}^{N_x} z_j D_{ji}^{x} y_i\\;, \\qquad \\sum_{i,j=1}^{N_x} z_j D_{ji}^{x} z_i = 0 \\;, \\qquad \\sum_{i,j=1}^{N_x} y_j D_{ji}^{xx} z_i = \\sum_{i,j=1}^{N_x} z_j D_{ji}^{xx} y_i.",
+        "tag": "lemma:stencilmatrices"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the zero boundary entries by proper periodic wrap-around entries (including corner entries for D^xx and D^+) so that the matrices become skew-symmetric/symmetric and satisfy the stated identities.",
+      "overall_effect": "The false summation-by-parts lemma invalidates Lemma \\ref{lemma:fullydiscreteCFL} and the stability proofs that rely on it, including the stability of the full scheme and the DLRA scheme.",
+      "primary_affected_tag": "lemma:stencilmatrices",
+      "target_type": "formal_result",
+      "title": "Stencil matrices violate claimed summation-by-parts properties",
+      "why_classification": "The repair is a short, local correction of boundary entries; the method, CFL condition, and stability claims survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "f_{jk}^{n+1} = f_{jk}^n - \\Delta t  \\sum_{i=1}^{N_x} D_{ji}^x f_{ik}^n v_k.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The scheme is explicit Euler with centered spatial differences for advection. Its amplification factor is G = 1 - i (v \\Delta t/\\Delta x) \\sin(k \\Delta x), so |G|^2 = 1 + (v \\Delta t/\\Delta x)^2 \\sin^2(k \\Delta x) > 1 for every \\Delta t>0 and nonzero modes. Hence it is unconditionally unstable, not stable for small time steps.",
+      "failure_location": {
+        "quote": "Indeed, one can show that the discretization given in \\eqref{eq:EH-Counterexample} is not von Neumann stable, but stable for relatively small time step sizes \\cite{leveque2002}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the sentence to state that the scheme is unconditionally unstable, or remove the claim that it is stable for small time step sizes.",
+      "overall_effect": "The sentence incorrectly describes the stability property of the naive scheme. It is a local false statement used only for motivation and does not affect the main stable scheme.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False prose claim about stability of the naive centered scheme",
+      "why_classification": "The error is a short prose correction with no impact on the paper's main results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let us assume that the initial condition for $g$ satisfies $\\frac{1}{\\sqrt{2\\pi}} \\sum_{k=1}^{N_v} g_{jk}^0 \\omega_k e^{v_k^2/2} = 1$.",
+          "tag": "lemma:fullydiscrete-rho"
+        },
+        {
+          "quote": "From Lemma \\ref{lemma:fullydiscrete-rho} we have that $\\sum_{k=1}^{N_v} f_{jk}^{n+1} \\omega_k e^{v_k^2} = \\rho_j^{n+1}$.",
+          "tag": "theorem:stabilityMg"
+        }
+      ],
+      "failure_explanation": "The proof of Theorem \\ref{theorem:stabilityMg} uses Lemma \\ref{lemma:fullydiscrete-rho}, which requires the discrete moment condition on the initial g. The theorem statement does not include this assumption. Without it, the relation \\sum f^n \\omega e^{v^2} = \\rho^n may fail, and the collision term in the stability proof is not guaranteed to be dissipative.",
+      "failure_location": {
+        "quote": "Under the time step restriction $\\max_k(|v_k|) \\Delta t \\leq \\Delta x$, the fully discrete system \\eqref{eqs:KB-both} is numerically stable in the $\\mathscr{H}$-norm, i.e.\n\\begin{align*}\n\\Vert \\mathbf{f}^{n+1}\\Vert_{\\mathscr{H}}^2 \\leq \\Vert \\mathbf{f}^n\\Vert_{\\mathscr{H}}^2.\n\\end{align*}",
+        "tag": "theorem:stabilityMg"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the initial moment-condition assumption to the theorem statements (and ensure it is preserved by the scheme).",
+      "overall_effect": "The stability guarantee is only established for initial data satisfying the discrete moment condition; the stated theorem overclaims stability for arbitrary initial data.",
+      "primary_affected_tag": "theorem:stabilityMg",
+      "target_type": "formal_result",
+      "title": "Missing initial moment-condition hypothesis in stability theorem",
+      "why_classification": "The fix is a standard consistency assumption that is already used in the proof; it preserves the stability result under the intended setup."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "g_{jk}^{n+1} \\left(1+\\sigma \\Delta t \\right) =& \\ \\frac{\\rho_j^n}{\\rho_j^{n+1}} g_{jk}^n -\\Delta t \\sum_{i=1}^{N_x} \\frac{1}{\\rho_j^{n+1}} D_{ji}^x \\left(\\rho_i^n g_{ik}^n \\right) v_k + \\Delta t \\frac{\\Delta x}{2} \\sum_{i=1}^{N_x} \\frac{1}{\\rho_j^{n+1}} D_{ji}^{xx} \\left(\\rho_i^n g_{ik}^n \\right) |v_k| + \\sigma \\Delta t,",
+          "tag": "eqs:KBrefDLRA-g"
+        },
+        {
+          "quote": "\\doublehat S_{qp}^{n+1} =\\ \\frac{1}{ 1+\\sigma \\Delta t} \\Bigg(",
+          "tag": "alg:Sstep"
+        },
+        {
+          "quote": "Note that the scattering term $\\left(1+\\sigma \\Delta t \\right)$ is only applied in the $S$-step as it does not affect the span of the basis functions derived in the $K$- and $L$-step.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The full update equation has the factor (1+\\sigma\\Delta t) multiplying g^{n+1}. The S-step correctly divides by this factor. However, the K-step (and similarly the L-step) includes the source term +\\sigma\\Delta t \\sum V but does not have (1+\\sigma\\Delta t) on the left. This is inconsistent: either the collision term should be omitted from K/L (as the text says scattering is only applied in the S-step), or the left side must be (1+\\sigma\\Delta t)K^{n+1}. As written, the basis update solves a different equation from the intended split.",
+      "failure_location": {
+        "quote": "K_{jp}^{n+1} =& \\ \\frac{\\rho_j^n}{\\rho_j^{n+1}} K_{jp}^n -\\Delta t \\frac{1}{\\rho_j^{n+1}} \\sum_{i=1}^{N_x} D_{ji}^x \\rho_i^n \\sum_{\\ell=1}^r K_{i\\ell}^n \\sum_{k=1}^{N_v} V_{k\\ell}^n v_k V_{kp}^n\\nonumber\\\\\n&+ \\Delta t \\frac{\\Delta x}{2} \\frac{1}{\\rho_j^{n+1}} \\sum_{i=1}^{N_x} D_{ji}^{xx} \\rho_i^n \\sum_{\\ell=1}^r K_{i\\ell}^n \\sum_{k=1}^{N_v} V_{k\\ell}^n |v_k| V_{kp}^n+ \\sigma \\Delta t \\sum_{k=1}^{N_v} V_{kp}^n.",
+        "tag": "alg:Kstep"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Remove the +\\sigma\\Delta t terms from the K- and L-steps, or add the missing (1+\\sigma\\Delta t) factor to their left-hand sides consistently with the S-step.",
+      "overall_effect": "The DLRA algorithm as written is not the algorithm whose stability is proved; its K- and L-steps produce incorrect basis updates.",
+      "primary_affected_tag": "alg:Kstep",
+      "target_type": "algorithm",
+      "title": "Inconsistent collision treatment in DLRA K- and L-steps",
+      "why_classification": "The error is a concrete defect in the algorithm construction. The repair is local but changes the basis-update equations, so it is more than a pure typo."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\doublehat{\\mathbf{X}}^{n+1}  = \\text{qr} \\left( [\\widehat{\\mathbf{X}}^{n+1}, \\left(\\boldsymbol{\\rho}^{n+1}\\right)^2 \\widehat{\\mathbf{X}}^{n+1}] \\right)",
+          "tag": "alg:KbasisAug"
+        },
+        {
+          "quote": "\\doublehat{\\mathbf{V}}^{n+1}  = \\text{qr} \\left([\\widehat{\\mathbf{V}}^{n+1}, \\mathbf{\\omega} e^{\\mathbf{v}^2/2} \\widehat{\\mathbf{V}}^{n+1}]\\right)",
+          "tag": "alg:LbasisAug"
+        }
+      ],
+      "failure_explanation": "The identity \\sum P^X_{\\alpha j} g_{\\alpha\\beta}(\\rho_\\alpha)^2 = g_{j\\beta}(\\rho_j)^2 holds only if diag(\\rho^2) g_{\\cdot\\beta} lies in the span of \\doublehat X. The augmentation \\doublehat X = qr([\\hat X, (\\rho^2)\\hat X]) ensures this for vectors in span(\\hat X), but g^{n+1} lies in span(\\doublehat X), which contains additional directions. Multiplication by \\rho^2 can take such a vector out of the span. A similar failure occurs for the velocity identity with weight \\omega e^{v^2/2}. Thus the claimed identities are not guaranteed by the stated augmentation, and the proof of Theorem \\ref{thm:added-1} is invalid.",
+      "failure_location": {
+        "quote": "\\sum_{\\alpha=1}^{N_x} P_{\\alpha j}^{X} g_{\\alpha \\beta}^{n+1} (\\rho_\\alpha^{n+1})^2 = g_{j \\beta}^{n+1} (\\rho_j^{n+1})^2 \\quad \\text{ and } \\quad \\sum_{\\beta=1}^{N_v} P_{k\\beta}^{V} g_{j\\beta}^{n+1} \\omega_\\beta e^{v_\\beta^2/2} = g_{jk}^{n+1} \\omega_k e^{v_k^2/2}",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Strengthen the basis augmentation so that the relevant spans are invariant under multiplication by the weights, or supply a different proof that the required weighted projection identities hold for the computed solution.",
+      "overall_effect": "The rigorous stability proof for the DLRA scheme fails. The claim that the rank-4r augmentation ensures the needed projection identities and preserves the moment condition is unsupported.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "DLRA stability proof relies on invalid projection identities from insufficient basis augmentation",
+      "why_classification": "The main DLRA stability theorem is unsupported. Repairing the proof requires a new argument or a more substantial augmentation strategy, not a local correction."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2411.06844",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n01b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "780b2cf3024e12cfc6d72a0fde531262cd22e612e80f614014249f83b60d5be5",
+  "status": "ok"
+}

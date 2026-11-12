@@ -1,0 +1,119 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\polar(\\mM) - \\bm{X}_T\\|_2 \\leq |1-\\ell^2|^{(q+1)^T}.",
+          "tag": "theorem:convergence"
+        },
+        {
+          "quote": "& \\leq |1-\\ell^2|^{(d+1)^T},",
+          "tag": "theorem:convergence"
+        }
+      ],
+      "failure_explanation": "The proof's intermediate inequality bounds |1-f(x)| by |1-x^2|^((d+1)^T)/(1+f(x)), but the correct Padé composition error bound carries exponent (q+1)^T where d = 2q+1. For d = 3 (q = 1), T = 1, x = 0.5: |1-p(0.5)| = 0.3125 exceeds 0.75^4/1.6875 ≈ 0.1875, so the inequality with (d+1)^T = 4 is false. With exponent (q+1)^T = 2 the bound holds and yields exactly the theorem's stated |1-ℓ^2|^((q+1)^T).",
+      "failure_location": {
+        "quote": "& \\leq \\max\\limits_{x \\in [\\ell,1]} \\left[\\frac{|1-x^2|^{(d+1)^T}}{1+f(x)}\\right]",
+        "tag": "theorem:convergence"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace (d+1)^T with (q+1)^T in the two exponent occurrences of the proof's inequality chain so that the intermediate bound matches the known Padé error rate and the theorem statement.",
+      "overall_effect": "The proof of theorem:convergence is invalid as written. The super-exponential rate and the claimed quadratic/cubic orders for d = 3 and d = 5 are not established by the given argument, though the theorem statement itself is correct.",
+      "primary_affected_tag": "theorem:convergence",
+      "target_type": "formal_result",
+      "title": "Convergence proof uses wrong exponent in Padé error bound",
+      "why_classification": "A single substitution of the exponent makes the proof match the already-correct theorem statement. No new lemma, construction, or argument is needed; every claim and guarantee survives unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:computableerror",
+        "theorem:greedy"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exists a unique polynomial $p^{\\star} \\in \\mathbb{P}_d^{\\odd}$ solving \\eqref{eq:oneiteration}.",
+          "tag": "theorem:approxtheorystuff"
+        },
+        {
+          "quote": "there exist $q+2$ distinct points $\\{x_0,\\ldots,x_{q+1}\\} \\subset [\\ell,u]$ such that",
+          "tag": "theorem:approxtheorystuff"
+        }
+      ],
+      "failure_explanation": "When ℓ = u the interval [ℓ,u] is a single point. For d ≥ 3 the minimax problem has infinitely many minimizers (any odd p with p(ℓ) = 1 gives zero error), so the uniqueness claim is false. The equioscillation characterization requires q+2 ≥ 3 distinct points in a one-point set, which is impossible. Chebyshev's theorem is invoked outside its hypotheses because the approximation set lacks enough points.",
+      "failure_location": {
+        "quote": "Let $d = 2q+1$ and $u, \\ell > 0$.",
+        "tag": "theorem:approxtheorystuff"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis ℓ < u to theorem:approxtheorystuff, and handle the degenerate case ℓ = u with a one-line argument in the proofs of lemma:computableerror and theorem:greedy.",
+      "overall_effect": "The uniqueness and equioscillation claims of theorem:approxtheorystuff are false for ℓ = u. The proofs of lemma:computableerror and theorem:greedy have a gap at ℓ = u because they invoke the equioscillation property, although both results remain true there by trivial arguments.",
+      "primary_affected_tag": "theorem:approxtheorystuff",
+      "target_type": "formal_result",
+      "title": "Equioscillation lemma omits hypothesis ℓ < u",
+      "why_classification": "Adding a standard local condition (ℓ < u) and a trivial degenerate-case remark preserves every substantive claim, rate, and scope with no new lemma or replacement argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\While{$||E_k| - |E_{k-1}|| > \\epsilon_{\\text{double}}$ }",
+          "tag": "alg:remezdeg5"
+        }
+      ],
+      "failure_explanation": "With E₀ = ∞ and E₋₁ = −∞, the while-loop guard evaluates ||E₀| − |E₋₁|| = |∞ − ∞|, which is undefined (NaN in IEEE 754). Since NaN > ε is false, the loop body never executes and the algorithm returns coefficients a_k, b_k, c_k that were never computed.",
+      "failure_location": {
+        "quote": "\\State $E_0 = \\infty$, $E_{-1} = -\\infty$",
+        "tag": "alg:remezdeg5"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change the initialization so the loop-guard is well-defined on entry, e.g. set E₋₁ = 0 instead of −∞, or use a Boolean flag for the first iteration.",
+      "overall_effect": "Algorithm alg:remezdeg5 is non-functional as written: it returns undefined polynomial coefficients whenever ℓ/u < 1 − ε^(1/3). The Python implementation in app:code handles the initialization correctly and is unaffected.",
+      "primary_affected_tag": "alg:remezdeg5",
+      "target_type": "algorithm",
+      "title": "Remez algorithm initialization prevents main loop from executing",
+      "why_classification": "A one-line change to the initialization values makes the algorithm well-defined and fully operational; no algorithmic logic, convergence property, or output guarantee changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then we construct the unique odd cubic polynomial $p(x) = ax + bx^3$ that satisfies $p(\\sqrt{1-z^2})=1$ and $p(z) = 1$ by setting",
+          "tag": null
+        },
+        {
+          "quote": "By minimizing $p(1)$ over all valid $z$s (that is, over the interval $[1/\\sqrt{2}, 1]$), one can further show that $p(1) > 1/\\sqrt{2}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The denominator z √(1−z²)(2z²−1) vanishes at z = 1/√2 (where 2z²−1 = 0) and at z = 1 (where √(1−z²) = 0). At z = 1 the condition p(√(1−z²)) = p(0) = 1 is incompatible with p(0) = 0 for odd polynomials, so no solution exists. At z = 1/√2 the two interpolation conditions coincide (since √(1−z²) = z), so the solution is not unique. The claims of a unique odd cubic and of minimization over the closed interval [1/√2, 1] fail at the endpoints.",
+      "failure_location": {
+        "quote": "a = \\frac{z^2 (z + \\sqrt{1-z^2}) - \\sqrt{1-z^2}}{z \\sqrt{1-z^2} (2 z^2 - 1)}",
+        "tag": "eq:init_poly"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restrict the construction to z ∈ (1/√2, 1) (open interval) and replace the minimization claim with an infimum or limit statement at the endpoints; alternatively add hypotheses excluding the boundary values.",
+      "overall_effect": "The spectrum-aware initialization construction is ill-defined at z = 1/√2 and z = 1. The uniqueness claim and the minimization over [1/√2, 1] are unsupported at these boundary values. The main Polar Express method does not use this construction.",
+      "primary_affected_tag": "eq:init_poly",
+      "target_type": "algorithm",
+      "title": "Spectrum-aware initialization polynomial undefined at boundary parameter values",
+      "why_classification": "Restricting the parameter range to the open interval and restating the minimization as an infimum preserves the construction and the claim p(1) > 1/√2 for all valid z; this is a routine degenerate-case fix with no loss of substance."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2505.16932",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n01",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6ebe06e0c9bfee0447ce016e9a368b86685f1c6c273b02b7e00083cf71c1cb99",
+  "status": "ok"
+}

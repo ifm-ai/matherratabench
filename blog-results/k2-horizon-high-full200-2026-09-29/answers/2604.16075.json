@@ -1,0 +1,176 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE",
+        "thm:minberrcost",
+        "c:minberr"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\begin{bmatrix} \\|\\b\\|_2^2& \\b^\\top \\A\\Q_k \\\\ (\\A\\Q_k)^\\top \\b& (\\A\\Q_k)^\\top \\A\\Q_k \\end{bmatrix} \\begin{bmatrix} -1 \\\\\\y \\end{bmatrix} =\\lambda\\begin{bmatrix} 0 & \\\\ & \\I_k \\end{bmatrix} \\begin{bmatrix} -1 \\\\\\y \\end{bmatrix}.",
+          "tag": null
+        },
+        {
+          "quote": "\\W^\\top \\left( (\\M^\\top \\M), \\begin{bmatrix} 0 & \\\\ & \\I_k \\end{bmatrix}\\right)\\W = \\left(\\begin{bmatrix} 1& 0\\\\ & \\tilde \\T_k \\end{bmatrix}^\\top \\begin{bmatrix} 1& 0\\\\ & \\tilde \\T_k \\end{bmatrix}, \\begin{bmatrix} 0 & \\\\ & \\I_k \\end{bmatrix}\\right).",
+          "tag": "l:quotient"
+        },
+        {
+          "quote": "defining $\\alpha = -\\frac{1}{\\|\\b\\|_2}(\\B_k)_{1,1}(\\v_{\\min})_1 $, the MINBERR-NE solution after $k$ iterations satisfies \\x_k :=\\!\\argmin_{\\x\\in \\mathrm{Span}(\\Q_k)}\\!\\!\\berr_{\\A,\\b}(\\x) \\ = \\ \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+          "tag": "prop:minberrNE"
+        },
+        {
+          "quote": "Moreover, for any $\\widehat\\v\\in\\mathbb{R}^{k}$, defining $\\widehat\\alpha=-\\frac{1}{\\|\\b\\|_2}\\left((\\T_k)_{1,1}(\\widehat\\v)_1 +(\\T_k)_{1,2}(\\widehat\\v)_2\\right)$ and $\\widehat\\x = \\frac1\\alpha\\Q_k\\widehat\\v,$ we have $\\berr_{\\A,\\b}(\\widehat\\x) = \\|\\tilde \\T_k\\widehat\\v\\|_2/\\|\\widehat \\v\\|_2$.",
+          "tag": "l:quotient"
+        }
+      ],
+      "failure_explanation": "The first row of the GEP (eq:minberrGEP) reads ||b||_2^2 - b^T A Q_k y = 0, i.e. (T_k)_{1,1} y_1 + (T_k)_{1,2} y_2 = ||b||_2; substituting y = v_min/alpha therefore forces alpha = +((T_k)_{1,1}(v_min)_1 + (T_k)_{1,2}(v_min)_2)/||b||_2, the opposite of the stated sign (equivalently, W[0; v_min] = [alpha; v_min] is parallel to [-1; y] only with y = -v_min/alpha). With the stated sign the returned iterate is the negative of the true MINBERR solution: e.g. A = diag(2,1), b = (1,1)^T, k = 1 gives alpha_1 = 3/2, beta_2 = 1/2, T~_1 = [1/2], v_min = [1], alpha = -(3/2)/sqrt(2), x_k = (1/alpha) q_1 = (-2/3,-2/3) with berr = ||A x_k - b||_2/(2||x_k||_2) = sqrt(74)/(4 sqrt(2)) ~ 1.52, while the true minimizer (2/3,2/3) has berr = 1/4. The same wrong sign appears in Proposition prop:minberrNE and in the final steps of Algorithms alg:MINBERR and alg:MINBERRnonsym. The supporting deflation is also false as stated: with w_1 = (1/||b||)[1,-(T_k)_{1,1},-(T_k)_{1,2},0,...,0], the first row of W^T M is [1,(T_k)_{1,1}/||b||,(T_k)_{1,2}/||b||,0,...,0], not [1,0,...,0], so eq:pairs does not hold; the correct W has the full first row of M^{-1} (all entries generally nonzero).",
+      "failure_location": {
+        "quote": "the smallest eigenpair of the generalized eigenvalue problem~\\eqref{eq:MM} is given by $(\\sigma_{\\min}^2,\\frac1\\alpha\\v_{\\min})$, where $\\alpha =-\\frac{1}{\\|\\b\\|_2}\\left((\\T_k)_{1,1}(\\v_{\\min})_1 +(\\T_k)_{1,2}(\\v_{\\min})_2\\right)$.",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Flip the sign of alpha in Lemma l:quotient and Proposition prop:minberrNE (equivalently define the eigenvector component as y = -v_min/alpha), propagate the correction to the final steps of Algorithms alg:MINBERR and alg:MINBERRnonsym, and repair the deflation by taking W's first row to be the full first row of M^{-1}, or by directly verifying that [-1; v_min/alpha] with alpha = ((T_k)_{1,1}(v_min)_1+(T_k)_{1,2}(v_min)_2)/||b||_2 solves the GEP via its first-row constraint. All rates and guarantees then stand.",
+      "overall_effect": "Lemma l:quotient's eigenpair and solution formula are false as stated, and its proof's congruence (eq:pairs) does not hold for the given W. Algorithms alg:MINBERR and alg:MINBERRnonsym consequently return the negative of the true (near-)minimizer, so their Ensure contracts (berr < epsilon) and the guarantees of thm:minberrcost (berr(x_k) <= 1.5 min) and c:minberr fail for the procedures as written; prop:minberrNE carries the same sign error. The convergence rates of t:minberr itself are unaffected (they concern the exact minimizer).",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Sign error in the MINBERR/MINBERR-NE eigenvector formula (alpha) and false deflation congruence",
+      "why_classification": "The procedures return the negative of the true minimizer, so their output contracts and the dependent guarantees fail as written; the repair (sign flip plus a replacement of the false deflation congruence, a contained new argument) preserves every rate and guarantee, but it is more than a typo fix because the stated congruence is false and a replacement argument is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE",
+        "c:minberr"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The smallest eigenvalue $\\lambda_{\\min}$, which is nonnegative, is equal to the square of the backward error of the MINBERR solution, that is, $\\lambda_{\\min} = (\\berr_{\\A,\\b}(\\x_k))^2$.",
+          "tag": null
+        },
+        {
+          "quote": "Attempt Cholesky factorization of $\\tilde \\G-\\epsilon^2 \\I_k = \\bf{R}^\\top \\bf{R}$ (by computing the three nonzero entries in $\\bf{R}$'s last column); if this breaks down (i.e., $\\sigma_{\\min}(\\tilde\\T_k)=\\berr_{\\A,\\b}(x_k)<\\epsilon$), proceed to step 7.",
+          "tag": "alg:MINBERR"
+        },
+        {
+          "quote": "If $d>0$, return to step 2. Else, $\\sigma_{\\min}(\\tilde \\B_k)=\\berr_{\\A,\\b}(x_k)<\\epsilon,$ so go to step 7.",
+          "tag": "alg:MINBERRnonsym"
+        },
+        {
+          "quote": "\\berr_{\\A,\\b}(\\widehat\\x) = \\|\\tilde \\B_k\\widehat\\v\\|_2/\\|\\widehat \\v\\|_2$.",
+          "tag": "prop:minberrNE"
+        }
+      ],
+      "failure_explanation": "The GEP value is lambda_min = min_y ||A Q_k y - b||_2^2/||y||_2^2 = ||A||_2^2 (min berr)^2, because berr(x) = ||Ax-b||_2/(||A||_2 ||x||_2) while the quotient in eq:GRQ has no ||A||_2 normalization; hence the correct identities are lambda_min = ||A||_2^2 berr(x_k)^2 and berr(x_k) = sigma_min(T~_k)/||A||_2 (similarly berr(x_hat) = ||T~_k v_hat||_2/(||A||_2||v_hat||_2), and the MINBERR-NE analogs with B~_k). Counterexample: A = diag(2,1), b = (1,1)^T, k = 1 has sigma_min(T~_1) = 1/2 but berr(x_k) = 1/4 = sigma_min/||A||_2. Consequently the stopping tests in the algorithms (Cholesky of G~ - epsilon^2 I in alg:MINBERR; dqds shift epsilon in alg:MINBERRnonsym) trigger only when berr < epsilon/||A||_2, so the procedures need O(sqrt(||A||_2/epsilon)) iterations rather than the advertised O(1/sqrt(epsilon)), and the complexity in c:minberr is not achieved as written (the Ensure contracts still hold since epsilon/||A||_2 < epsilon).",
+      "failure_location": {
+        "quote": "\\x_k = \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the identities to berr(x_k) = sigma_min(T~_k)/||A||_2 and lambda_min = ||A||_2^2 (berr(x_k))^2 (and the analogous statements in prop:minberrNE), and rescale the stopping tests: Cholesky of G~ - epsilon^2 ||A||_2^2 I in alg:MINBERR and dqds shift epsilon ||A||_2 in alg:MINBERRnonsym. These are one-line changes that restore every claim.",
+      "overall_effect": "The identities berr(x_k) = sigma_min(T~_k), lambda_min = (berr(x_k))^2 and berr(x_hat) = ||T~_k v_hat||_2/||v_hat||_2 (and the MINBERR-NE analogs) are false by a factor ||A||_2; the convergence tests in both algorithms are conservative by the same factor, inflating the iteration count by sqrt(||A||_2), so the stated O((1/sqrt(epsilon))(T_A+n+log(1/delta))) complexity of c:minberr is not achieved by the procedures as written. thm:minberrcost's relative guarantee survives because the factor cancels between sigma_min and the true minimum.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Missing 1/||A||_2 factor in the berr = sigma_min identities; stopping tests miscalibrated by ||A||_2",
+      "why_classification": "The false identities and miscalibrated tests are repaired by a one-line rescaling that preserves every substantive claim and guarantee; the procedures are conservative (the Ensure contracts still hold) and no mathematical content is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\|\\hat\\x - \\tilde\\x_*\\|_{\\M}}{\\|\\tilde\\x_*\\|_{\\M}} \\leq 2\\bigg(\\frac{\\sqrt{1+1/\\epsilon} -1}{\\sqrt{1+1/\\epsilon}+1}\\bigg)^k",
+          "tag": "t:perturbed-minres"
+        },
+        {
+          "quote": "\\frac{\\|\\x-\\x_*\\|_{\\M}}{\\|\\x_*\\|_{\\M}}\\leq \\epsilon,\\quad\\text{where }\\M=(\\A^\\top\\A)^\\alpha\\text{ for some }\\alpha\\in[0,1].",
+          "tag": "l:forward"
+        }
+      ],
+      "failure_explanation": "The bound cited from trefbau is the standard MINRES estimate in the 2-norm, i.e. it certifies Lemma l:forward with M = I (alpha = 0); it does not provide an M = Ã^2-norm (alpha = 1) error bound, so the hypothesis of Lemma l:forward is not established for MINRES as written. Using M = I gives berr <= epsilon/(1-epsilon) and the same final bound 5(log k/k)^2, so the theorem's conclusion is unaffected.",
+      "failure_location": {
+        "quote": "where we use $\\M=\\tilde\\A^2$ for MINRES and $\\M=\\tilde\\A$ for CG.",
+        "tag": "t:perturbed-minres"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace 'M = Ã^2 for MINRES' with the 2-norm guarantee (M = I, i.e. alpha = 0 in Lemma l:forward); the rest of the proof is unchanged.",
+      "overall_effect": "Only the proof of t:perturbed-minres is affected: as written it invokes Lemma l:forward with a norm that the MINRES guarantee does not certify. The theorem's statement and conclusion remain correct once M = I is used for MINRES.",
+      "primary_affected_tag": "t:perturbed-minres",
+      "target_type": "formal_result",
+      "title": "MINRES error norm misidentified as M = Ã^2 in the regularized CG/MINRES proof",
+      "why_classification": "The theorem's conclusion is correct; only the proof misidentifies the norm. The one-line correction leaves the argument and all guarantees intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "c:minberr"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\ell\\geq \\frac{1}{2} \\Big[ 1 + \\frac{\\ln\\left( \\frac{32n \\ln(2/\\delta)}{\\pi \\delta^2 \\Delta} \\right)}{\\ln(1 + \\Delta/2)} \\Big]$ for $\\Delta\\in(0,1)$, then with probability $1-\\delta$ we have ${\\bf v}_{\\ell}^\\top \\M {\\bf v}_{\\ell}/\\|{\\bf v}_{\\ell}\\|_2^2\\leq (1+\\Delta)\\lambda_{\\min}$.",
+          "tag": "lemma:invit"
+        },
+        {
+          "quote": "In particular, for a $1/2$-relative error ($\\Delta = 0.5$), we require $\\ell \\geq 2.23 \\ln(n/\\delta^2)$.",
+          "tag": null
+        },
+        {
+          "quote": "$\\sum c_j^2$ follows $\\chi^2_{|S_{\\mathrm{high}}|}$, so by~\\cite[Eqn.~(4.3)]{laurent2000adaptive} we see that with probability $1-\\delta/2$, we have $\\sum c_j^2 \\leq n \\ln(2/\\delta)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At n = k and Delta = 1/2 the hypothesis of Lemma lemma:invit is ell >= (1/2)[1 + ln(64 k ln(2/delta)/(pi delta^2))/ln(5/4)] ~= 2.2406 ln(k/delta^2) + O(ln ln(2/delta)), which exceeds the 2.23 ln(k/delta^2) used in the algorithms and in the proof of thm:minberrcost; the appendix's summary 'ell >= 2.23 ln(n/delta^2)' is inconsistent with its own derived formula. Moreover the chi^2 tail bound 'sum c_j^2 <= n ln(2/delta) with probability 1-delta/2' does not hold for all n, delta (it fails, e.g., for small n when delta = 1/2). Hence the claimed 1.5-relative-error Rayleigh-quotient guarantee with probability 1-delta does not follow as stated.",
+      "failure_location": {
+        "quote": "Applying Lemma \\ref{lemma:invit} to $\\tilde \\T^\\top\\tilde \\T$ shows that $\\ell \\geq 2.23 \\ln(k / \\delta^2)$ steps of inverse iteration suffice to get $\\Delta=1/2$ relative accuracy with probability at least $1-\\delta$.",
+        "tag": "thm:minberrcost"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Increase the inverse-iteration count in Algorithms alg:MINBERR and alg:MINBERRnonsym and in thm:minberrcost (e.g. ell = 3 ln(k/delta^2), absorbed in log(1/delta)) and repair the chi^2 tail-bound application (restrict to the regime where it holds or use a bound valid for all n, delta).",
+      "overall_effect": "thm:minberrcost's assertion that 2.23 ln(k/delta^2) inverse iterations suffice for a (1+1/2)-relative-error Rayleigh quotient with probability 1-delta is unsupported by its own cited lemma, and c:minberr's 'with probability at least 1-delta' inherits the gap. Rates and complexity are otherwise unaffected.",
+      "primary_affected_tag": "thm:minberrcost",
+      "target_type": "formal_result",
+      "title": "Inverse-iteration count 2.23 ln(k/delta^2) violates Lemma lemma:invit's hypothesis",
+      "why_classification": "Only a quantitative constant in a subroutine guarantee is affected; bumping the iteration count and fixing the tail bound restores the claim with no change to rates or complexity."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Specifically, our experiments suggest that for any sufficiently large $k$ and $\\kappa$, we can find a problem instance for which the backward error of \\algne\\ after $k$ iterations is at least $\\min\\{1, \\log_{10}(\\kappa)/k\\}$.",
+          "tag": null
+        },
+        {
+          "quote": "We extend this approach via normal equations to solving general linear systems, for which we empirically observe $O(1/k)$ convergence.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The introduction asserts as an established construction that MINBERR-NE incurs backward error at least log(kappa(A))/k after k iterations on a family of hard instances, but the paper contains no theorem proving this; the experiments section states only that experiments suggest the bound (min{1, log10(kappa)/k}), and the abstract carefully says 'we empirically observe O(1/k) convergence'. The intro thus presents an empirical observation as a proven result.",
+      "failure_location": {
+        "quote": "However, we are able to construct a family of hard problem instances for which the \\algne\\ backward error is at least $\\log(\\kappa(\\A))/k$ after $k$ iterations, suggesting that no deterministic Krylov method can attain truly universal convergence for general systems.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Hedge the sentence as an empirical observation (matching the abstract and the experiments section) or supply a theorem with proof.",
+      "overall_effect": "A prose overclaim about what the paper establishes: readers of the introduction may mistake an empirically suggested lower bound for a theorem. No formal result is invalidated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Introduction overclaims the MINBERR-NE hard-instance lower bound as a construction; it is only empirical",
+      "why_classification": "The discrepancy is in the presentation of the evidence only; the body of the paper is appropriately hedged, and no formal claim needs to be withdrawn."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2604.16075",
+  "question_id": "Q1",
+  "run_name": "k2-horizon-high-2026-09-29-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e8809ffebe5951ca04910fb6d942792c2e647636a18f4a3772a38aab1b066ff9",
+  "status": "ok"
+}

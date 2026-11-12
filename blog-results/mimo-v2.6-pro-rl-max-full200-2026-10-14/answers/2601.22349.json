@@ -1,0 +1,160 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&= -\\int q_t \\left|\\nabla \\log\\frac{q_t}{p_{\\tau(t)}}\\right|^2 - q_t \\partial_t \\log p_{\\tau(t)}\\dd \\lambda\\\\",
+          "tag": "proof:lemma_time_deriv_KL"
+        }
+      ],
+      "failure_explanation": "In the displayed formula for d/dt KL(mu_t|pi_{tau(t)}), the minus before the integral distributes to both integrand terms, giving +∫ q_t ∂_t log p_{tau(t)} dλ instead of the correct −∫ q_t ∂_t log p_{tau(t)} dλ. The derivation in the proof has the corresponding error when integration-by-parts terms and time-derivative terms are combined under a single minus sign: the minus from integration by parts applies only to the Fisher-information term, not to the time-derivative terms.",
+      "failure_location": {
+        "quote": "- q_t\\partial_t\\log p_{\\tau(t)}\\,\\dd\\lambda.",
+        "tag": "lemma_time_deriv_KL"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Change the sign of the second integrand term in eq:time derviative KL from minus to plus so the formula reads −∫(q_t|∇log(q_t/p_{tau(t)})|^2 + q_t ∂_t log p_{tau(t)}) dλ, and correspondingly fix the sign in the proof's combination step.",
+      "overall_effect": "The stated formula for the time derivative of the forward-KL is incorrect as written. Downstream results (e.g., the bound in the proof of lem:KL between dynamic and moving target) bound the absolute value of the affected term and are unaffected.",
+      "primary_affected_tag": "lemma_time_deriv_KL",
+      "target_type": "formal_result",
+      "title": "Sign error in time derivative of forward-KL formula",
+      "why_classification": "The correction is a single sign change in the formula and one intermediate step of the proof. All downstream results bound the absolute value of the affected term and survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\hat \\mu_{1}|\\pi_{\\tau(t_0)})\\exp\\biggl( -\\sum_{i=1}^k\\frac{2\\step_i}{\\Clsi(t_i)} \\biggr)",
+          "tag": "proof:thm discrete final bound"
+        }
+      ],
+      "failure_explanation": "The statement bounds KL(mu_hat_k|pi) with initial term KL(mu_hat_0|pi_{tau(t_0)}), while the proof establishes a bound for KL(mu_hat_{k+1}|pi) with initial term KL(mu_hat_1|pi_{tau(t_0)}). At k=1, the statement's bound involves exp(−2h_1/C_LSI(t_1)) and h_1^2 where the correct bound involves exp(−2h_0/C_LSI(t_0)) and h_0^2. The proof establishes a materially different conclusion than the statement claims.",
+      "failure_location": {
+        "quote": "\\KL(\\hat \\mu_{0}|\\pi_{\\tau(t_0)})\\exp\\biggl(-\\sum\\limits_{i=1}^k\\frac{2\\step_i}{\\Clsi(t_i)}\\biggr)",
+        "tag": "thm discrete final bound"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Change the left-hand side of eq:discrete error term from KL(mu_hat_k|pi) to KL(mu_hat_{k+1}|pi) and the initial term from KL(mu_hat_0|pi_{tau(t_0)}) to KL(mu_hat_1|pi_{tau(t_0)}) to match the proof's established bound.",
+      "overall_effect": "The bound in eq:discrete error term is incorrect as stated. The convergence conclusion of corr discrete convergence is unaffected because its proof uses the correctly-indexed bound from the proof of thm discrete final bound rather than the misstated version.",
+      "primary_affected_tag": "thm discrete final bound",
+      "target_type": "formal_result",
+      "title": "Wrong indices in discrete convergence bound",
+      "why_classification": "The repair is a two-term change in the statement to align with the proof. The bound structure, decay rates, error sums, and convergence guarantee are fully preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:convolution_ass"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "As shown in~\\citep[Lemma 3.2]{cordero2025non}, the Eigenvalues of $\\nabla^2 \\log p_\\tau(x)$ are bounded uniformly in $\\tau$ and $x$ and, thus, the result follows.",
+          "tag": "proof:lemma:convolutional path growth"
+        }
+      ],
+      "failure_explanation": "The expression for ∂_τ log p_τ derived in the proof carries a factor 1/(2(1−τ)) multiplying a bracket [d + x·∇log p_τ + Δ log p_τ + |∇log p_τ|^2]. While bounded Hessian eigenvalues bound the bracket by c(|x|^2+1), the factor 1/(1−τ) is unbounded as τ→1. For targets with nonzero mean, the bracket vanishes only at rate O(√(1−τ)), so ∂_τ U_τ(x) diverges like O((1−τ)^{−1/2}) and no uniform constant c satisfies the claimed bound on [0,1]. The proof's inference from bounded eigenvalues to the growth bound ignores this divergent factor.",
+      "failure_location": {
+        "quote": "There exists $c>0$ such that the density \\cref{eq convolution path} satisfies for $\\tau\\in[0,1]$, $|\\partial_\\tau  U_\\tau(x)| \\leq c(|x|^2+1)$.",
+        "tag": "lemma:convolutional path growth"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict the interval to τ∈[0,τ̄] for any τ̄<1 (as done for the dilation path in prop:dilation_ass). The growth bound then holds with constant c/(2(1−τ̄)), and the convergence results apply to truncated schedules.",
+      "overall_effect": "The claimed growth bound on ∂_τ U_τ for τ∈[0,1] is false for targets with nonzero mean. Consequently prop:convolution_ass does not establish Assumption Ass_drift on [0,1], and the convergence results do not apply to the convolutional path with the full parameter range used in the experiments.",
+      "primary_affected_tag": "lemma:convolutional path growth",
+      "target_type": "formal_result",
+      "title": "Growth bound on time derivative fails near τ=1 for convolutional path",
+      "why_classification": "The repair restricts the advertised regime from τ∈[0,1] to τ∈[0,τ̄], losing the easy-to-sample end of the path at τ=1. The convergence results survive for truncated schedules but the scope is substantively limited."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:discretization descent",
+        "thm discrete final bound",
+        "corr discrete convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=\\sum_{i=0}^{k}\\step_i\\exp\\biggl( \\sum_{j=i+1}^{k}\\log (1 - 2 \\step_j \\dissi_{\\tau(t_j)} + 2\\lip_{\\tau(t_j)}^2\\step_j^2)\\biggr)\\\\",
+          "tag": "lemma:added-1"
+        },
+        {
+          "quote": "Using that for any $x>0$, $\\log(x)\\leq x-1$ we find",
+          "tag": "lemma:added-1"
+        }
+      ],
+      "failure_explanation": "The proof rewrites products of the factors (1−2h_j a_j+2L_j^2 h_j^2) as exponentials of sums of logarithms. When the factor is negative (e.g., a_j=3, L_j=1, h_j=1 gives factor −3), the logarithm is undefined and the products oscillate with growing amplitude. A concrete counterexample with those constants satisfies h_k < a_k/L_k^2 but makes the claimed limsup infinite, since Σ(−3)^m diverges. The statement is therefore false, and the proof's use of log on a possibly negative quantity is an invalid inference.",
+      "failure_location": {
+        "quote": "\\limsup_{k\\rightarrow\\infty}\\sum_{i=0}^{k-1}\\step_i\\prod_{j=i+1}^{k-1}\\left(1 - 2 \\step_j \\dissi_{\\tau(t_j)} + 2\\lip_{\\tau(t_j)}^2\\step_j^2\\right)<\\infty.",
+        "tag": "lemma:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the invocation of lem_second moments of discretization remain bounded in the proof of lemma:discretization descent with a direct Lyapunov argument: the one-step recursion E[|X_{k+1}|^2] ≤ (1−ρ_k)E[|X_k|^2] + ch_k with ρ_k=2h_k(a_k−L_k^2 h_k)>0 gives sup_k E[|X_k|^2]<∞ regardless of the sign of 1−ρ_k, since negative factors yield E[|X_{k+1}|^2] ≤ ch_k directly.",
+      "overall_effect": "The step-size condition eq step size condition is not automatically satisfied, so the bounded second moments invoked in the proof of lemma:discretization descent (via lem_second moments of discretization remain bounded) are not established. This proof gap propagates transitively to thm discrete final bound and corr discrete convergence.",
+      "primary_affected_tag": "lemma:added-1",
+      "target_type": "formal_result",
+      "title": "False step-size condition lemma and gap in discretization analysis",
+      "why_classification": "The false lemma and resulting proof gap require a nontrivial but contained replacement argument (direct Lyapunov bound). The statements of lemma:discretization descent, thm discrete final bound, and corr discrete convergence survive unchanged once the gap is filled."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "by choosing $\\chi_R$ appropriately, for every $x$, $h_R(x)$ is monotonically increasing with respect to $R$, implying that also the sequence $\\overline{h_R^2}$ is increasing and so is $h_R^2\\log \\overline{h_R^2}$",
+          "tag": "lemma:lsi_weak"
+        }
+      ],
+      "failure_explanation": "The displayed equation claims ∫ f^2 log f^2 dν = lim_R ∫ h_R^2 log(overline{h_R^2}) dν. The right side equals overline{f^2} log overline{f^2} while the left side is ∫ f^2 log f^2 dν ≠ overline{f^2} log overline{f^2} in general. The correct left-hand side is ∫ f^2 log(overline{f^2}) dν. Additionally, the proof claims h_R^2 log(overline{h_R^2}) is monotonically increasing in R and has a uniform lower bound from h_{R_min}^2 log(overline{h_{R_min}^2}), which fails when overline{h_R^2} < 1 since the function t↦t log t is decreasing on (0,1/e).",
+      "failure_location": {
+        "quote": "\\int f^2\\log f^2\\d \\nu = \\lim_R\\int h_R^2\\log \\overline{h_R^2}\\d \\nu.",
+        "tag": "lemma:lsi_weak"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the left-hand side of the equation with ∫ f^2 log(overline{f^2}) dν and replace the monotone-convergence argument with the one-line identity lim_R overline{h_R^2} log overline{h_R^2} = overline{f^2} log overline{f^2}.",
+      "overall_effect": "The proof of the LSI extension to W^{2,1}_loc test functions contains a mislabeled equation and a flawed monotone-convergence argument. The conclusion of the lemma is nonetheless correct: the corrected equation ∫ f^2 log(overline{f^2}) dν = lim_R ∫ h_R^2 log(overline{h_R^2}) dν follows trivially from overline{h_R^2}→overline{f^2}, and the rest of the proof carries through.",
+      "primary_affected_tag": "lemma:lsi_weak",
+      "target_type": "formal_result",
+      "title": "Mislabeled equation and flawed monotone convergence in LSI extension",
+      "why_classification": "The fix is a single-character correction to the equation and replacing a short wrong argument with a trivial one-liner. The lemma's conclusion and all downstream results are preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq Z_{\\tau_1} \\int \\left| \\exp\\bigl( -(U_{\\tau_2}(x)-U_{\\tau_1}(x)) \\bigr) - 1\\right|p_{\\tau_1}(x)\\dd x\\\\",
+          "tag": "lem:potential and partition are Lipschitz in time"
+        }
+      ],
+      "failure_explanation": "The proof bounds |exp(−x)−1| by |x| where x = U_{tau_2}(x)−U_{tau_1}(x). This inequality |exp(−x)−1| ≤ |x| is false for x < 0 (e.g., x = −0.1 gives |exp(0.1)−1| ≈ 0.105 > 0.1). Since U_{tau_2}−U_{tau_1} can take either sign depending on x and the annealing path, the bound is invalid. The conclusion |Z_{tau_1}−Z_{tau_2}| ≤ c|tau_1−tau_2| is true but unproved by the given argument.",
+      "failure_location": {
+        "quote": "\\leq Z_{\\tau_1} \\int \\left| U_{\\tau_2}(x)-U_{\\tau_1}(x)\\right|p_{\\tau_1}(x)\\dd x\\\\",
+        "tag": "lem:potential and partition are Lipschitz in time"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the invalid inequality step with a mean-value-theorem argument: |Z_{tau_2}−Z_{tau_1}| = |∫_{tau_1}^{tau_2} ∂_τ Z_τ dτ| ≤ |tau_2−tau_1| sup_τ Z_τ sup_τ ∫|∂_τ U_τ| p_τ dλ ≤ c|tau_2−tau_1|, using the quadratic growth bound on ∂_τ U_τ and uniform second moments.",
+      "overall_effect": "The proof of part (2) of the lemma is invalid. The conclusion (Lipschitz continuity of τ↦Z_τ) is correct but unproved by the given argument. Downstream results (thm:continuous diffusion final convergence, thm discrete final bound) use the conclusion and remain correct once a valid proof replaces the flawed one.",
+      "primary_affected_tag": "lem:potential and partition are Lipschitz in time",
+      "target_type": "formal_result",
+      "title": "Invalid exponential inequality in partition function Lipschitz bound",
+      "why_classification": "The proof requires a different argument (mean value theorem with dominated convergence), which is a contained nontrivial step replacing the flawed inequality. The conclusion and all downstream results survive unchanged."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2601.22349",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0eab2e6cc55b92ab67363667326c9b28e88ecb2a12f43253d86fdb08b6888b7c",
+  "status": "ok"
+}

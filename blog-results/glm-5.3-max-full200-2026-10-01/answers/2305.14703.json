@@ -1,0 +1,171 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\log q_{\\theta}(u_0 | a) \\leq -\\text{VLB}(\\theta; a) \\triangleq \\mathbb{E}_{p(u_{0:T}|a)}\\left[\\log \\frac{p(u_{1:T} | u_0)}{q_{\\theta}(u_{0:T}|a)}    \\right]",
+          "tag": null
+        },
+        {
+          "quote": "-\\log q_{\\theta}(u_0) \\leq -\\mathrm{VLB}(\\theta) \\triangleq \\mathbb{E}_{p(u_{0:T})}\\left[ \\log \\frac{p(u_{1:T}|u_0)}{q_{\\theta}(u_{0:T})}\\right]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The opening step of the Appendix B.1 derivation equates the random variable log q_theta(u_0|a), a function of u_0, with its expectation under p(u_0|a); this identity is false unless log q_theta(u_0|a) is p(.|a)-almost surely constant. Consequently the variational bounds of Sections 3.1 and 3.2, whose right-hand sides E_{p(u_{0:T})}[.] and E_{p(u_{0:T}|a)}[.] also average over u_0, do not hold pointwise in u_0 as written. Only the expected log-likelihood E_{p(u_0|a)}[-log q_theta(u_0|a)] obeys such a bound; a per-sample bound would require the expectation E_{p(u_{1:T}|u_0)} over the latents only.",
+      "failure_location": {
+        "quote": "\\log q_{\\theta}(u_0 | a) &= \\mathbb{E}_{p(u_0|a)}[\\log q_{\\theta}(u_0 | a)]",
+        "tag": "app:split-VLB"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "State the bound for the expected log-likelihood (wrap the left-hand sides in E_{p(u_0)}[.] or E_{p(u_0|a)}[.]), or re-derive the per-sample ELBO with E_{p(u_{1:T}|u_0)} and average afterwards; remove the false identity.",
+      "overall_effect": "The VLB inequalities of Sections 3.1-3.2 and the Appendix B.1 derivation are incorrect as stated. Once expectations are restored, the decomposition into L_T, L_{t-1}, L_0 and the training losses remain valid, so no labelled result is invalidated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Variational bound stated pointwise but valid only in expectation; derivation opens with a false identity",
+      "why_classification": "Routine local repair (restoring expectation signs, with two equivalent standard formulations); the decomposition, the losses, both propositions, and the algorithm are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Similarly, we can calculate $L_0$ and ignore the pre-factor which gives",
+          "tag": null
+        },
+        {
+          "quote": "L_0(\\theta; a) &= \\mathbb{E}_{p(u_1 | a)}\\left[-\\log q_{\\theta}(u_0|u_1, a) \\right]",
+          "tag": null
+        },
+        {
+          "quote": "\\dfrac{1 - \\bar{\\alpha}_{t-1}}{1 - \\bar{\\alpha}_t}\\beta_t \\mathbf{I} & \\mbox{Noise free observation,}",
+          "tag": "eqn:cov"
+        },
+        {
+          "quote": "where $\\bar{\\alpha}_t = \\prod_{n=1}^t \\alpha_n$ with $\\alpha_t = 1 - \\beta_t$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the noise-free case the prescribed reverse covariance at the final step is Sigma_theta(1) = ((1-\bar\\alpha_0)/(1-\bar\\alpha_1)) beta_1 I with \bar\\alpha_0 = 1 (empty product), i.e. exactly 0. Then q_theta(u_0|u_1,a) is a Dirac measure, so the VLB term L_0 = E[-log q_theta(u_0|u_1,a)], a Gaussian negative log-likelihood with zero variance, is ill-defined (it diverges unless m_theta(1,u_1,a) = u_0 exactly). The claimed calculation of L_0 by ignoring the pre-factor is therefore invalid in the noise-free setting, since the implied weight 1/(2 Sigma_theta(1)) is infinite, and the derivation of the unified training loss from the VLB fails at t=1 for the paper's primary noise-free regime (the entropy-matching claim at t=1 is likewise degenerate). For Gaussian-noise data Sigma_theta(1) = beta_1 > 0 and the reduction is valid up to constants.",
+      "failure_location": {
+        "quote": "L_0(\\theta) = \\mathbb{E}_{p(\\epsilon_1)p(u_0|a)}\\left[\\|\\epsilon_1 - \\epsilon_{\\theta}(1, \\sqrt{\\bar{\\alpha}_1}u_0 + \\sqrt{1 - \\bar{\\alpha}_1} \\epsilon_1, a)\\|^2\\right]",
+        "tag": "eqn:L_0"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Treat the t=1 step separately, e.g. replace the degenerate L_0 with a non-degenerate decoder (a positive variance floor on the last reverse step), or restrict the VLB-to-epsilon-loss equivalence to t >= 2 and justify the t=1 term directly as mean matching.",
+      "overall_effect": "The VLB-based justification of the PDNO training objective is incomplete at the final diffusion step for noise-free data. The loss actually optimized (eqn:unified_L) and Algorithm alg:PDNO remain well defined and unaffected.",
+      "primary_affected_tag": "eqn:L_0",
+      "target_type": "other",
+      "title": "Noise-free reverse covariance at t=1 is exactly zero, so the L_0 term of the VLB is ill-defined and its reduction to the epsilon loss is unsupported",
+      "why_classification": "A degenerate boundary case with a standard local fix; the method, the optimized loss, and all reported results survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the mean relative $L_2$-error (MRLE) and the mean standard deviation (MSTD) that are defined by",
+          "tag": null
+        },
+        {
+          "quote": "\\# of samples $N_s$   &  $1$ if noise-free; $100$ if noisy",
+          "tag": "tab:params-test2"
+        },
+        {
+          "quote": "PDNO &  35, 707, 841 & 0.0046 & $5.08$e$-07$ & 0.0022 & $3.52$e$-07$ & 0.0037 & $1.21$e$-05$",
+          "tag": "tab:darcy_error"
+        }
+      ],
+      "failure_explanation": "A sample standard deviation is already normalized by the sample count, so dividing its L_2 norm by N_s makes the defined quantity scale like 1/N_s; it is not a mean standard deviation (a relative variant would divide by ||u||_2, as the MRLE does), and no mathematical justification for the 1/N_s factor is given. In addition, the noise-free runs are specified with N_s = 1 (Tables A1-A4), for which the sample standard deviation is undefined or identically zero, so the nonzero noise-free MSTD values reported in Tables 1-3 cannot be produced by the stated procedure.",
+      "failure_location": {
+        "quote": "\\frac{1}{|\\mathcal{\\widetilde{D}}|} \\sum_{(a, u) \\in \\mathcal{\\widetilde{D}}} \\frac{\\|\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s}) \\|_2}{N_s}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the definition (delete the spurious 1/N_s, or divide by ||u||_2 for a relative metric) and specify the sample count actually used to compute the reported MSTD values.",
+      "overall_effect": "The MSTD columns of Tables 1-3, the paper's reported uncertainty metrics, are not defined by the stated formula; the scale and provenance of the reported uncertainty numbers are unreliable.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "MSTD metric divides the sample standard deviation by the number of samples and is degenerate at the stated N_s = 1",
+      "why_classification": "Local correction of a metric definition with more than one plausible repair; no method, result, or guarantee depends on it, though the interpretation of the reported numbers changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a (nonzero mean) Gaussian distribution with the identity covariance, i.e., $u_0 \\sim \\mathcal{N}(m, \\mathbf{I})$",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "corrupting the output $u$ by an additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$, i.e., $u_{\\eta} = u + \\eta$",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathcal{D}_{\\eta}$   & Noisy training data set whose outputs are corrupted by $\\eta \\sim \\mathcal{N}(0, \\sigma^2 \\mathrm{I})$",
+          "tag": "tab:notations"
+        },
+        {
+          "quote": "The model is trained on the noisy data set with $\\sigma=0.0005$",
+          "tag": "fig:DF_noisy"
+        }
+      ],
+      "failure_explanation": "Proposition 2, and the subsequent claim that integrating out u_0 yields a reverse conditional with covariance beta_t I, hold only when u_0 given a has identity covariance. The paper's Gaussian-noise setting instead has u_0|a distributed as N(u(a), sigma^2 I) with sigma^2 != 1 (sigma = 1% or 5% in Test 1 with unnormalized data; sigma = 0.0005 and 0.001 in Test 2). For conditional variance s^2, integrating out u_0 gives Cov(u_{t-1}|u_t,a) = ((\bar\\alpha_{t-1} s^2 + 1 - \bar\\alpha_{t-1}) beta_t)/(\bar\\alpha_t s^2 + 1 - \bar\\alpha_t) I, which equals beta_t I only at s^2 = 1; for s^2 much smaller than 1 it approaches the noise-free value ((1-\bar\\alpha_{t-1})/(1-\bar\\alpha_t)) beta_t. The asserted entropy-matching optimality of Sigma_theta = beta_t I for Gaussian-noise data is therefore not established, and is false, in the regime the paper actually uses.",
+      "failure_location": {
+        "quote": "Hence, the parameterization~\\eqref{eqn:cov} for $\\Sigma_{\\theta}$ in the Gaussian noise setting is optimal in the sense that $H_p(u_{t-1}|u_t) = H_{q_{\\theta}}(u_{t-1}|u_t)$.",
+        "tag": "app:cov-choice"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Either restrict the optimality claim to data whose conditional distribution given a has unit covariance (e.g. after variance normalization), or derive and use the correct sigma-dependent reverse covariance ((\bar\\alpha_{t-1} sigma^2 + 1 - \bar\\alpha_{t-1}) beta_t)/(\bar\\alpha_t sigma^2 + 1 - \bar\\alpha_t) I.",
+      "overall_effect": "The theoretical justification of the noisy-data branch of the covariance prescription (eqn:cov), and of entropy matching in the noisy experiments, is unreliable for non-unit-variance noise. Proposition 2 itself remains valid and the prescription remains a usable heuristic.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Optimality of the beta_t I reverse covariance for Gaussian-noise data asserted outside Proposition 2's identity-covariance hypothesis",
+      "why_classification": "The stated guarantee fails in the advertised noisy-data regime; repairing it requires either a limited weakening of the claim's scope or a contained new covariance derivation, while the method, the experiments, and Proposition 2 survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}_{q_{\\theta}}\\left[-\\log q_{\\theta}(u_{0:T}) \\right] = H_{q_{\\theta}}(u_T) + \\sum_{t=1}^T H_{q_{\\theta}}(u_{t-1} | u_t) = H_p(u_T) + \\sum_{t=1}^T H_p(u_{t-1} | u_t) = \\mathbb{E}_{p}\\left[-\\log p(u_{0:T}) \\right]",
+          "tag": null
+        },
+        {
+          "quote": "where $\\beta_t$ is the variance schedule such that the final state $u_T$ is approximately standard normal for $T$ sufficiently large",
+          "tag": null
+        },
+        {
+          "quote": "Since $q_{\\theta}(u_T)$ is assumed to be a standard Gaussian, $L_T$ is independent of the parameter $\\theta$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed chain only compares trajectory entropies under each model's own law, and even that fails. First, equality of (conditional) entropies does not establish exact likelihood: the relevant cross-entropy E_p[-log q_theta(u_{0:T})] equals E_p[-log p(u_{0:T})] only if q_theta = p, which is not shown. Second, the middle equality H_{q_theta}(u_T) = H_p(u_T) fails in the noise-free case, where conditioned on a (the setting of Proposition 1) p(u_T|a) = N(sqrt(\bar\\alpha_T) u(a), (1-\bar\\alpha_T) I) has entropy (n/2) log(2 pi e (1-\bar\\alpha_T)), different from (n/2) log(2 pi e) = H_{q_theta}(u_T). Third, in the Gaussian case the entropies match but q_theta(u_T) = N(0, I) differs from p(u_T|a) = N(sqrt(\bar\\alpha_T) m, I), so the induced q_theta(u_0|a) differs from p(u_0|a) in mean; the paper itself concedes the terminal law is only approximately standard normal. Hence the model does not achieve the exact likelihood in either case.",
+      "failure_location": {
+        "quote": "In both cases, the noise-free and Gaussian noise, the learned parametric model $q_{\\theta}$ achieves the exact likelihood under the true model $p$",
+        "tag": "app:cov-choice"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the claim with the correct weaker statement: with a perfect noise predictor the reverse conditionals match the true ones per step, and the data-level law, hence the likelihood, is matched only up to the terminal mismatch between p(u_T|.) and the standard-Gaussian prior.",
+      "overall_effect": "The concluding theoretical claim of the covariance-choice appendix is false; the covariance prescriptions of eqn:cov are left with only per-step, assumption-laden justifications.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Closing claim that the model achieves the exact likelihood does not follow: entropy matching is not likelihood matching and the terminal laws differ",
+      "why_classification": "The exactness claim must be withdrawn and replaced by an approximate statement (a limited weakening with a contained reformulation); no other result depends on it and the method is unaffected."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2305.14703",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n01-reserve",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e417f6e97606e57c1bddcad5ccc77b48f42186a7406fb76629c7aa30c1d3514b",
+  "status": "ok"
+}

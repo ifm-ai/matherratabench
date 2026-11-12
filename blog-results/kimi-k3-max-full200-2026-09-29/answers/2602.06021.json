@@ -1,0 +1,373 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We first present a case where the target distribution is supported at $(\\pm 1, \\pm 1)$.",
+          "tag": null
+        },
+        {
+          "quote": "E(x)E(x)^\\intercal \\nabla\\log p(x)=0 , \\lambda_{d^*+1}(x)\\le -\\beta",
+          "tag": "def:ridge"
+        }
+      ],
+      "failure_explanation": "The definition assumes a strict spectral gap lambda_{d*}(x) > lambda_{d*+1}(x) of the log-density Hessian for every x in R^d, so that the eigen-frame E(x) is globally defined. For the paper's own four-point dataset (centers (+-1,+-1), analyzed in Figure fig:4pointsquare), at x=0 the posterior is uniform by symmetry, so Sigma(t,0)=a_t^2 I and Hess log p_t(0)=(-1/h_t + a_t^2/h_t^2) I is exactly isotropic: lambda_1=lambda_2 at all noise levels. The center saddle is precisely where the displayed ridges connect. Hence for this showcased density the standing hypothesis is false, E(x) and the ridge set are ill-defined at the center, and the eigen-projection fields used for the directional losses MM^perp, MM^parallel in Section subsec:general transfer are undefined at such gapless points.",
+      "failure_location": {
+        "quote": "\\lambda_1(x)\\ge \\lambda_2(x)\\cdots\\ge \\lambda_{d^*}(x)>\\lambda_{d^*+1}(x)\\ge \\cdots\\ge \\lambda_d(x) for all $x\\in \\mb{R}^d$",
+        "tag": "def:ridge"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the strict-gap requirement to (a neighborhood of) the ridge, as in standard ridge theory, and define the projectors via the eigenspaces wherever the gap holds; this suffices almost everywhere for the losses.",
+      "overall_effect": "The ridge set and the normal/tangent frames are not well-defined for symmetric datasets that the paper itself uses as examples; the directional losses are then defined only almost everywhere.",
+      "primary_affected_tag": "def:ridge",
+      "target_type": "other",
+      "title": "Global strict eigengap required by the ridge definition fails in the paper's own symmetric examples",
+      "why_classification": "Standard local definitional repair; the dynamical results use the manifold structure, which is unaffected where the gap holds; no theorem statement, rate, or advertised regime changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:constant estimation",
+        "lem:key estimation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$x\\in \\cup_{i=1}^n \\mc{B}_{t}^{(i)}(\\theta_{t})$ with probability 1 and $ \\overline{\\cup_{i=1}^n \\mc{B}_{t}^{(i)}(\\theta_{t}))}\\to \\mb{R}^d$",
+          "tag": "prop:constant estimation"
+        },
+        {
+          "quote": "r_t \\gtrsim \\beta_t (\\sup_{z\\in \\mc{R}_t} \\| \\nabla^3 \\log p_t(z) \\|)^{-1} \\gtrsim \\beta_t (\\sup_{x\\in \\overline{\\cup_{i=1}^n \\mc{B}_{t}^{(i)}(\\theta_{t})}} \\| \\nabla^3 \\log p_t(x) \\|)^{-1} = \\Omega( \\frac{\\beta_t h_t^{3}}{\\theta_t R^3} )",
+          "tag": "prop:constant estimation"
+        },
+        {
+          "quote": "\\sup_{x\\in \\cup_{i=1}^n \\mc{B}_{t}^{(i)}(\\theta_{t})} \\| \\nabla m(t,x) \\|\\le \\frac{20a_t^2 \\theta_t R^2}{h_t}",
+          "tag": "lem:important estimate"
+        },
+        {
+          "quote": "Since reach is at least the reciprocal of maximal curvature, we derive that",
+          "tag": "prop:constant estimation"
+        }
+      ],
+      "failure_explanation": "Lemma lem:important estimate bounds ||nabla^3 log p_t|| by O(theta_t a_t^3 R^3 / h_t^3) only on center-dominant regions. The reach proof replaces sup_{z in R_t} ||nabla^3 log p_t(z)|| by the sup over (the closure of) those regions, but the ridge is not contained in them: for the two-point dataset R_t is the whole x_1-axis, and at x_1 = Theta(h_t/(a_t mu)) (where the softmax weights are bounded away from 1-theta_t, so the point is in no B_t^{(i)}(theta_t)) one has |partial_1^3 log p_t| = 2 a_t^3 mu^3 sech^2(a_t mu x_1/h_t)|tanh(a_t mu x_1/h_t)|/h_t^3 = Theta(a_t^3 R^3/h_t^3), larger than the dominant-region bound by a factor theta_t^{-1} -> infty. So the stated rate r_t = Omega(beta_t h_t^3 theta_t^{-1} R^{-3}) is unsupported and false in general: with admissible theta_t = exp(-h_t^{-1/2}) it asserts a diverging reach as t->0, whereas a bent ridge (e.g., the paper's three-point example) has curvature Theta(R^3/h_t^2) near bisectors. The same proof also asserts that reach is at least the reciprocal of maximal curvature, which ignores the medial-axis constraint and is not valid as stated. The identical off-domain use of Lemma lem:important estimate invalidates lem:key estimation's bound ||E_t(z)^T partial_t m(t,z)|| <=~ (1+dot h_t) a_t R, which drops h_t E_t(z)^T cont_{23} nabla^3 log p_t(z), a term of size O(sqrt(d) a_t^3 R^3/h_t^2) at ridge points between modes.",
+      "failure_location": {
+        "quote": "with $r_t = \\Omega(h_t^{2} \\theta_t^{-1} R^{-3})$ and arbitrary $\\theta_t=\\exp(- o(h_{t}^{-1}) )$ as $t\\to \\delta^+\\ll 1$",
+        "tag": "prop:projection-regularity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the dominant-region sup by the global third-cumulant bound ||nabla^3 log p_t(x)|| <= E||U-m||^3/h_t^3 = O(a_t^3 R^3/h_t^3), yielding r_t = Omega(beta_t h_t^3 R^{-3}) (the rate actually used later, e.g., r_t = beta_t h_t^3 R^{-3}/80 in Stage 2); restore the nabla^3-contraction term in lem:key estimation; and justify the reach lower bound including the medial-axis constraint.",
+      "overall_effect": "The quantitative reach rate in prop:projection-regularity, the rates r_t, V_t, W_t in prop:constant estimation, the motion bound prop:projection-regularity (3) (||partial_t Pi_t|| = O(R)), and the bound of lem:key estimation lose their justification; the valid rates are weaker (r_t = Omega(h_t^2 R^{-3}), ||E_t(z)^T partial_t m|| = O(a_t R + sqrt(d) a_t^3 R^3 / h_t^2)).",
+      "primary_affected_tag": "prop:projection-regularity",
+      "target_type": "formal_result",
+      "title": "Reach rate inherits an unjustified theta_t^{-1} factor from applying center-dominant derivative bounds to ridge points",
+      "why_classification": "The repair is contained in the appendix estimates and the Stage-2/3 final bounds survive with the weaker correct rates (Stage 2 already uses r_t = beta_t h_t^3 R^{-3}/80), but the advertised data-dependent reach/velocity rates are weakened and several intermediate estimates must be recomputed."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:formal stage 1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "According to the order estimation of $r_t$ in Proposition \\ref{prop:constant estimation}, we can pick $\\delta$ small such that $\\rho_\\delta^2/h_\\delta\\le d+2\\sqrt{d \\zeta \\log (1/h_\\delta)}+2\\zeta\\log(1/h_\\delta)$ for any $\\zeta>0$. Then according to the LMI inequality~\u0007citep{moshksar2024refining}, we have\n\\begin{align*}\n    \\mb{P}(X_{T-\\delta}^\\leftarrow\\in \\mc{T}_\\delta(\\rho_\\delta)) \\ge \\mb{P}(\\|z\\|^2\\le d+2\\sqrt{d \\zeta \\log (1/h_\\delta)}+2\\zeta\\log(1/h_\\delta))\\ge 1- h_\\delta^\\zeta.\n\\end{align*}",
+          "tag": "thm:formal stage 1"
+        },
+        {
+          "quote": "picking $\\theta_t$ such that $r_t= \\beta_t h_t^3R^{-3}/80$ and $\\rho_t=r_t/2$",
+          "tag": "them:normal contraciton"
+        }
+      ],
+      "failure_explanation": "The proof lower-bounds P(X_delta in T_delta(rho_delta)) >= P(||z||^2 <= rho_delta^2/h_delta) and then ensures rho_delta^2/h_delta <= d + 2 sqrt(d zeta log(1/h_delta)) + 2 zeta log(1/h_delta), after which it applies the Laurent-Massart upper-tail bound to get P(||z||^2 <= d+...) >= 1 - h_delta^zeta. Since rho_delta^2/h_delta is smaller than d+..., one has P(||z||^2 <= rho_delta^2/h_delta) <= P(||z||^2 <= d+...), so the inference P(||z||^2 <= rho_delta^2/h_delta) >= 1-h_delta^zeta is backwards. The correct direction would require rho_delta >~ sqrt(h_delta d), but the tube radius is forced to be Theta(r_delta) = O(h_delta^2): Stage 2's absorption condition rho_t sup||nabla^3 log p_t|| <=~ beta_t and the valid reach rate both force rho_delta = O(h_delta^2), and sqrt(h_delta d) >> h_delta^2 as delta -> 0. Hence under the paper's own rates P(||z||^2 <= rho_delta^2/h_delta) = O((rho_delta^2/h_delta)^{d/2}) -> 0, i.e., the endpoint-capture event used in the proof has vanishing probability; entry at intermediate times is never analyzed.",
+      "failure_location": {
+        "quote": "\\mb{P}(\\Tilde{t}_{\\mathrm{in}}\\le T-\\delta)\\ge 1-e_\\delta -\\varepsilon(T)-\\sqrt{\\varepsilon_A(T,\\delta)/8}",
+        "tag": "thm:informal stage 1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must analyze entry at intermediate noise levels where the typical distance to the ridge (Theta(sqrt(h_{T-t}))) matches a tube radius compatible with Stage 2, or enlarge the tubes and re-derive the normal contraction without the absorption condition rho_t <=~ beta_t / sup||nabla^3 log p_t||.",
+      "overall_effect": "The 'Reach' stage guarantee is unproven, and the entry time tilde t_in that parametrizes the intervals [tilde t_in, T-delta] in Theorems them:normal contraciton and them:tangent contraciton is not established to be finite with high probability.",
+      "primary_affected_tag": "thm:informal stage 1",
+      "target_type": "formal_result",
+      "title": "Stage-1 entry proof chains a backwards Gaussian tail inequality; high-probability entry into the Theta(h_delta^2) tube is unsupported",
+      "why_classification": "This is the first pillar of the central reach-align-slide characterization; the key probabilistic step is invalid and the required tube size is incompatible with the paper's own Stage-2 requirements, so any repair changes the quantified guarantee or the Stage-2 setup materially."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "them:tangent contraciton",
+        "thm:informal inference to training",
+        "thm:inference to training",
+        "thm:directional decomposition"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Once the processes enter $\\mc{T}_{T-t}(\\rho_t)$, we can track the evolution of $D_{T-t}$ via It\\^o's formula.",
+          "tag": "them:normal contraciton"
+        },
+        {
+          "quote": "\\mb{E}[D_{\\delta}(\\Tilde{Y}_{T-\\delta})] = \\mc{O}(d\\delta^c+ \\delta^c\\int_{\\Tilde{t}_{\\mathrm{in}}}^{T-\\delta}  h_{T-u}^{-1-c}\\,{\\mb{E}[\\| e_A^\\perp(T-u,\\Tilde{Y}_u)\\|^2]} \\dee u  ).",
+          "tag": "them:normal contraciton"
+        },
+        {
+          "quote": "The last identity follows from Proposition \\ref{prop:constant estimation} by picking $\\theta_t$ such that $r_t= \\beta_t h_t^3R^{-3}/80$ and $\\rho_t=r_t/2$.",
+          "tag": "them:normal contraciton"
+        }
+      ],
+      "failure_explanation": "The Ito expansions and the curvature absorption <n, nabla^2 log p_{T-t}(z) n> <= -beta_{T-t} ||n||^2 with z = Pi_{T-t}(Y_t) require tilde Y_u in T_{T-u}(rho_{T-u}) for every u in [tilde t_in, t]; entry at tilde t_in gives this only at a single time, and no exit-time or stopping argument is provided. Staying is in fact false: the normal-distance process has martingale part 2 sqrt(2) <n, dB> and a positive Ito correction of order d, so even with contraction rate beta_t = Theta(1/h_t) its stationary normal distance is Theta(sqrt(h_t)), while the tube radius is Theta(h_t^2); the process exits the tube within time O(h_t) after entry and typically stays outside. Consistently, the theorem's own final bound E[D_delta] = O(d delta^c) exceeds rho_delta^2 = Theta(delta^4) by a factor delta^{c-4}, i.e., typical endpoints lie outside the tube, where Pi_delta (and hence D_delta) is not uniquely defined. Stage 3 has the same defect: the ODE for ||tilde u_t^{(i)}||^2 is derived assuming tilde Y_u in T_{T-u}(rho_{T-u}) cap B_{T-u}^{(i)}(theta_{T-u}) with a fixed center i throughout [tilde t_in, T-delta].",
+      "failure_location": {
+        "quote": "Then for any $t\\in [\\Tilde{t}_{\\mathrm{in}},T-\\delta]$,",
+        "tag": "them:normal contraciton"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must redefine the tracked quantities globally (e.g., distance to the ridge without a unique nearest-point projection, with a stopping or localization argument) and provide a global contraction argument, or restate the results for a properly stopped process and quantify the staying probability.",
+      "overall_effect": "The normal-alignment and tangent-sliding bounds (the paper's core quantitative results) are not established as stated; the tracked objects are ill-defined along typical paths, and the downstream training-to-inference interface bounds that estimate these floors inherit the problem.",
+      "primary_affected_tag": "them:normal contraciton",
+      "target_type": "formal_result",
+      "title": "Stage-2/3 contraction proofs assume trajectories remain in the shrinking ridge tube for the whole interval, which is unproven and false",
+      "why_classification": "These are the paper's central results; the missing step cannot be patched locally because the required tube radius (Theta(h^2)) is asymptotically smaller than the process's diffusive fluctuation scale (Theta(sqrt(h))), so a genuinely different proof architecture is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [],
+      "failure_explanation": "Direct evaluation of the displayed scalings gives, for the tangent mean-error: delta^{1/2} int_delta^T h_t^{1/2}/w(t) dt = Theta(delta^{1/2}) for w=1 and Theta(delta^{1/2}) (up to a log(1/delta) factor) for w=h_t, since the integrals converge as delta -> 0; and for the normal mean-error: delta^c int h_t^{1-c}/w dt = Theta(delta^c) for both w=1 and w=h_t. Only w = h_t^2 yields Theta(1). Hence the claimed O(delta) for w=h_t and O(delta^2) for w=1 are wrong in both directions, and the stated bounds do not separate the schedules w=h_t from w=1 at all.",
+      "failure_location": {
+        "quote": "if the per-time error $w(t)h_t^{-2}\\mb{E}[ \\| e_A(T-t,\\Tilde{Y}_t) \\|^2 ] =\\mc{O}(1)$, the normal and tangential mean-errors scale like $\\delta^c \\int_\\delta^{T-\\tilde{t}_{\\mathrm{in}}} h_t^{1-c}/{w(t)} \\dee t$ and $\\delta^{1/2} \\int_\\delta^{T-\\tilde{t}_{\\mathrm{in}}} h_t^{1/2}/{w(t)} \\dee t$ respectively. In particular, under weights $w(t)=h_t^2,h_t,1$, the mean-errors along both directions yield $\\mc{O}(1),\\mc{O}(\\delta),\\mc{O}(\\delta^2)$ respectively, hence inducing different inductive biases in generation.",
+        "tag": "rem:effect of weight"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace O(1), O(delta), O(delta^2) by the correct orders Theta(1), Theta(delta^{1/2}) (up to log for w=h_t), Theta(delta^{1/2}) for the tangent direction and Theta(1), Theta(delta^c), Theta(delta^c) for the normal direction; discuss the schedule ordering through the constants C_delta^perp, C_delta^parallel instead.",
+      "overall_effect": "The advertised hierarchy of inductive biases across the three weight schedules is quantitatively wrong; the experiments prose citing this remark ('empirical results align with our predictions in Remark rem:effect of weight') inherits the incorrect rates.",
+      "primary_affected_tag": "rem:effect of weight",
+      "target_type": "formal_result",
+      "title": "Remark's weight-schedule rates O(1), O(delta), O(delta^2) contradict its own displayed scaling formulas",
+      "why_classification": "The fix is local computation, but it withdraws the claimed polynomial separation between two of the three advertised schedules, a quantitative loss in the paper's weight-schedule guidance that goes beyond a typo."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\text{tangent-error floor} &\\lesssim C_\\delta^\\parallel\\int_{\\delta}^T \\frac{\\mb{E}[w(t)\\| e_A^\\parallel(t,X_t)\\|^2]}{h_{t}^2}\\dee t + C_\\delta^\\parallel(\\sqrt{d}+R) e^{-T}+d\\delta^{\\frac{1}{2}}. \\label{eq:tangent error from training}",
+          "tag": "thm:inference to training"
+        },
+        {
+          "quote": "\\mb{E}[\\| \\Tilde{u}_{T-\\delta}^{(i)} \\|^2]= \\mc{O}( d\\sqrt{\\delta} + \\sqrt{\\delta} \\int_{\\Tilde{t}_{\\mathrm{in}}}^{T-\\delta}  h_{T-u}^{-\\frac{3}{2}}{\\mb{E}[\\|e_A^{\\parallel,i}(T-u,\\Tilde{Y}_{u}) \\|^2]} \\dee u  ).",
+          "tag": "them:tangent contraciton"
+        }
+      ],
+      "failure_explanation": "The Stage-3 theorem and the formal transfer theorem both give the training-independent tangent term d delta^{1/2} (the Gronwall kernel has mass Theta(sqrt(delta))); the main-text Theorem thm:informal inference to training states the stronger d delta, which the paper's own proof and formal version do not support.",
+      "failure_location": {
+        "quote": "\\textnormal{tangent-error bound} &\\lesssim C_\\delta^\\parallel\\MM^\\parallel(A) + d\\delta + C_\\delta^\\parallel(\\sqrt{d}+R)e^{-T}. \\label{eq:full tangent error from training}",
+        "tag": "thm:informal inference to training"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace d delta by d delta^{1/2} in eq:full tangent error from training to match Theorem thm:inference to training and Theorem them:tangent contraciton.",
+      "overall_effect": "The advertised tangent concentration in the main training-to-inference interface theorem is overstated by a factor delta^{1/2}.",
+      "primary_affected_tag": "thm:informal inference to training",
+      "target_type": "formal_result",
+      "title": "Main-text transfer theorem states the tangent dimension term as d delta instead of d sqrt(delta)",
+      "why_classification": "A single forced correction that is directly visible from the paper's own formal version; no inference, construction, or other claim needs repair."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:MM decomposition"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "A_{k+1} = A_k(I_p - 2\\eta \\Tilde{U}) + 2\\eta \\Tilde{V}",
+          "tag": null
+        },
+        {
+          "quote": "If $2\\eta{\\|\\Tilde{U}\\|}\\le 1$, the gradient descent is stable.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The iterates contract only when |1 - 2 eta lambda_j| < 1 for every eigenvalue lambda_j of tilde U, i.e., eta < 1/lambda_1. For eta in [1/lambda_1, 2/lambda_1) the factor 1 - 2 eta lambda_1 has modulus >= 1, so (1 - 2 eta lambda_1)^k does not decay: the claimed geometric reduction of the optimization terms, the convergence A_k -> A_infty = A_0(I_p - tilde U tilde U^+) + tilde V tilde U^+, and the decay of Err_train^dagger(k) all fail. The appendix itself states the correct sufficient condition (2 eta ||tilde U|| <= 1).",
+      "failure_location": {
+        "quote": "Let $\\{A_k\\}_{k\\ge 0}$ be the GD iterates in \\eqref{eq:gd} with learning rate $\\eta<\\tfrac{2}{\\lambda_1}$, then",
+        "tag": "thm:directional decomposition"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace eta < 2/lambda_1 by eta < 1/lambda_1 in both statements.",
+      "overall_effect": "Theorem thm:directional decomposition and Proposition prop:MM decomposition are false as stated for learning rates in [1/lambda_1, 2/lambda_1).",
+      "primary_affected_tag": "thm:directional decomposition",
+      "target_type": "formal_result",
+      "title": "Learning-rate condition eta < 2/lambda_1 does not imply convergence of the gradient descent iterates",
+      "why_classification": "Forced one-constant correction already present in the paper's appendix; every conclusion survives under the corrected hypothesis and no inference needs rework."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:motion speed tangent component"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "(I-S_{t,z,n_t(x)} )\\tau_t = P^\\parallel(z(t))(\\nabla v_t(z(t)))^\\intercal n_t(x).",
+          "tag": "lem:motion speed tangent component"
+        },
+        {
+          "quote": "\\| \\tau_t \\| \\le \\| L_{t,z,n_t(x)}^{-1} \\| \\| \\nabla v_t(z(t)) \\| \\| n_t(x) \\| \\le \\frac{\\rho_t}{1-\\rho_t/r_t} W_t.",
+          "tag": "lem:motion speed tangent component"
+        }
+      ],
+      "failure_explanation": "The forcing term in the equation for the tangent correction tau_t is P^parallel (nabla v_t)^T n_t(x), whose norm is the (normal-output, tangent-input) block of nabla v_t (the normal covariant derivative nabla^perp v_t), while W_t controls only the (tangent-output, tangent-input) block. The two blocks are independent. Counterexample: the family of flat lines {(u, t psi(u))} in R^2 (reach = infinity, satisfying Assumption assump:ridge set) has intrinsic normal velocity v_t = psi nu, so W_t = sup||P^parallel nabla v_t u|| = 0, but for x = (u_0, y) one computes partial_t Pi_t(x) = (-y psi'(u_0), psi(u_0)), hence ||partial_t Pi_t(x)|| = sqrt(psi^2 + y^2 psi'^2) > V_t = sup|psi| whenever psi'(u_0) != 0, contradicting item (4). The final inequality of lem:motion speed tangent component (bounding ||nabla v_t|| ||n_t(x)|| by rho_t W_t) is exactly this block mismatch.",
+      "failure_location": {
+        "quote": "\\sup_{x\\in \\mc{T}_t(\\rho_t)} \\| \\partial_t \\Pi_t\\| \\le V_t + \\frac{\\rho_t}{1-\\rho_t/r_t} W_t$ where $$V_t=\\sup_{z\\in \\mc{R}_t} \\| v_t(z) \\|,\\quad W_t= \\sup_{z\\in \\mc{R}_t, \\| u \\|=1} \\| P^\\parallel(z)(\\nabla v_t(z)u) \\|$",
+        "tag": "prop:tube well-defined"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Redefine W_t to also include the normal-derivative block, e.g., W_t = sup_z (||P^parallel nabla v_t|_{T_z}|| + ||nabla^perp_{T_z} v_t||), and re-estimate this quantity for the ridge family.",
+      "overall_effect": "The estimate sup ||partial_t Pi_t|| <= V_t + rho_t(1-rho_t/r_t)^{-1} W_t is false as stated; its downstream uses (Remark rem:ridge motion bound, Proposition prop:projection-regularity (3), and Stage-2's S_{T-t} = O(R)) lose their justification from this proposition.",
+      "primary_affected_tag": "prop:tube well-defined",
+      "target_type": "formal_result",
+      "title": "Motion bound for the nearest-point projection uses the wrong block of nabla v_t; prop:tube well-defined (4) is false as stated",
+      "why_classification": "The statement is false with an explicit counterexample, but the repair is a contained redefinition plus re-estimation, and the Stage-2 final bound survives with worse constants because the extra term enters multiplied by rho_t^2 = O(h_t^4)."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:normal velocity field",
+        "prop:constant estimation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $E(x)=(v_{d^*+1}(x),\\cdots, v_d(x))\\in \\mb{R}^{d\\times(d-d^*)}$ with $\\{(\\lambda_i(x),v_i(x))\\}_{i=1}^d$ being the eigenvalues/eigenvectors of $\\nabla^2 \\log p(x)$",
+          "tag": "def:ridge"
+        },
+        {
+          "quote": "Therefore, a local parametrization of the manifold is\n\\begin{align*}\n    \\gamma(u) = z + Tu + N\\phi(u).\n\\end{align*}",
+          "tag": "lem:second fundamental form bound"
+        },
+        {
+          "quote": "we define $F(t,x)\\coloneqq E_{t_0}(z_0)^\\intercal \\nabla \\log p_t(x)\\in \\mb{R}^{d-d^*}$ ... We have $F(z, z(t))=0$.",
+          "tag": "lem:normal velocity field"
+        }
+      ],
+      "failure_explanation": "The ridge is defined with the moving eigen-frame E(x) of nabla^2 log p_t(x) (def:ridge). Lemma lem:second fundamental form bound instead parametrizes, via the implicit function theorem, the zero set of the frozen-frame equation N_z^T nabla log p_t(x) = 0, which is a different manifold through z (it only shares the tangent space at z). The ridge's actual second fundamental form is determined by differentiating E(gamma(u))^T nabla log p_t(gamma(u)) = 0 twice, which produces the additional terms 2 (nabla_{T xi} E)^T nabla^2 log p_t T xi and (nabla^2_{T xi,T xi} E)^T nabla log p_t that the lemma omits. These terms are generically nonzero, and near ridge maxima, where the Hessian is almost scalar (eigengap ~ theta_t a_t^2/h_t^2), ||nabla E|| = O(R/h_t), so the omitted terms exceed the retained nabla^3 term by a factor blowing up like theta_t^{-1}; the bound ||II_{t,z}|| <= ||nabla^3 log p_t(z)||/beta_t is therefore unsupported. The same frozen-frame error invalidates lem:normal velocity field: a ridge curve z(t) satisfies E_t(z(t))^T nabla log p_t(z(t)) = 0, not the frozen constraint E_{t_0}(z_0)^T nabla log p_t(z(t)) = 0 that the proof differentiates, and the resulting explicit formula for v_t omits (d/dt E_t)^T nabla log p_t, which is generically of the same order as the retained terms.",
+      "failure_location": {
+        "quote": "F(u,v) \\coloneqq N^\\intercal \\nabla \\log p_t( x(u,v) ) \\in \\mb{R}^{d-d^*}.$",
+        "tag": "lem:second fundamental form bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Redo the implicit-function analysis with the moving-frame defining map G(t,x) = E_t(x)^T nabla log p_t(x), including the frame-derivative terms, and quantify the eigengap along the ridge.",
+      "overall_effect": "The second-fundamental-form bound (hence the reach estimate derived from it) and the explicit normal-velocity formula used to bound V_t are unsupported; with them, the verification that R_t satisfies Assumption assump:ridge set and the O(R) ridge-motion bound prop:projection-regularity (3) are not established as stated.",
+      "primary_affected_tag": "lem:second fundamental form bound",
+      "target_type": "formal_result",
+      "title": "Ridge curvature and normal-velocity computations differentiate a frozen eigen-frame constraint, omitting generically nonzero frame-derivative terms",
+      "why_classification": "The geometric formulas are wrong as proven, but the defective computations are confined to one appendix subsection; near bisectors (where the gap is of eigenvalue scale) the corrected terms are of the same order, so the final Stage-2 rates plausibly survive after a contained but nontrivial rework."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:informal stage 1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\varepsilon_A(T,\\delta)\\coloneqq \\int_\\delta^T h_t^{-2}\\mb{E}[ \\| m(t,X_t)-m_A(t,X_t) \\|^2 ]\\dee t",
+          "tag": "thm:informal stage 1"
+        }
+      ],
+      "failure_explanation": "With diffusion coefficient sqrt(2) and drift difference b - b_A = (2/h_{T-t}) e_A(T-t,.), Girsanov's theorem gives KL(P^leftarrow | tilde P) = (1/4) E int ||b - b_A||^2 dt = int_delta^T h_t^{-2} E||e_A||^2 dt = varepsilon_A(T,delta), and Pinsker yields TV <= sqrt(varepsilon_A/2) (similarly for the sum with the initialization KL). The stated sqrt(varepsilon_A/8) is too strong by a factor of 2, so the displayed inequality and the theorem's constant are incorrect.",
+      "failure_location": {
+        "quote": "&\\le \\sqrt{\\frac{\\KL(p_T|\\mc{N}(0,I_d))}{2} + \\frac{1}{8}\\int_\\delta^T h_t^{-2}\\mb{E}[\\| m(t,X_t)-m_A(t,X_t) \\|^2] \\dee t }",
+        "tag": "thm:formal stage 1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Replace 1/8 by 1/2 in the display and in the theorem statements.",
+      "overall_effect": "The entry-probability bounds in Theorems thm:informal stage 1 and thm:formal stage 1 (3) carry an over-optimistic constant in the training-error term.",
+      "primary_affected_tag": "thm:formal stage 1",
+      "target_type": "formal_result",
+      "title": "Girsanov-Pinsker step uses an incorrect factor 1/8 in the training-error term",
+      "why_classification": "Forced constant correction from a standard Girsanov/Pinsker computation; no structural change to any claim."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [],
+      "failure_explanation": "For x in B(a_delta x_0^{(i)}, a_delta Delta/4), the minimum of ||x - a_delta x_0^{(j)}||^2 - ||x - a_delta x_0^{(i)}||^2 is attained at x = a_delta x_0^{(i)} + (a_delta Delta/4) (x_0^{(j)} - x_0^{(i)})/||...|| and equals (9/16 - 1/16) a_delta^2 Delta^2 = a_delta^2 Delta^2/2. Hence the softmax ratio is only bounded by exp(-a_delta^2 Delta^2/(4 h_delta)), not exp(-a_delta^2 Delta^2/(2 h_delta)) (the display also omits the squares in the softmax logits). Consequently, the three 'delta small enough' conditions should read h_delta^{-1} > (4/(a_delta^2 Delta^2)) ln(...), and the lemma's conclusion ||z_i - a_delta x_0^{(i)}|| <= 2 a_delta R (n-1) exp(-a_delta^2 Delta^2/(2 h_delta)) inherits the same factor-of-two exponent error.",
+      "failure_location": {
+        "quote": "\\exp ( - \\frac{\\|x-a_\\delta x_0^{(j)}\\|}{2h_\\delta}+\\frac{\\|x-a_\\delta x_0^{(i)}\\|}{2h_\\delta})\\le \\exp(-\\frac{a_\\delta^2\\Delta^2}{2h_\\delta})",
+        "tag": "lem:existence of ridge points"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Replace the exponent a_delta^2 Delta^2/(2 h_delta) by a_delta^2 Delta^2/(4 h_delta) throughout the lemma, its conditions, and its conclusion.",
+      "overall_effect": "Constants in the smallness conditions and in the exponential distance bound of Lemma lem:existence of ridge points (used in the Stage-1 proof) are off by a factor of two in the exponent.",
+      "primary_affected_tag": "lem:existence of ridge points",
+      "target_type": "formal_result",
+      "title": "Worst-case softmax gap over the ball is miscalculated, inflating the exponent by a factor of two",
+      "why_classification": "Forced constant corrections; the qualitative exponential-closeness conclusion used downstream is unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:informal inference to training"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$\\sup_{t\\in [0,T-\\delta]}\\sup_{x\\in \\mc{T}_{T-t}(\\rho_{T-t})}\\tfrac{w(T-t)\\| e_A(T-t,x) \\|^2}{h_{T-t}^2}\\le \\tfrac{C_u}{T-\\delta}$$",
+          "tag": "assump:transfer"
+        }
+      ],
+      "failure_explanation": "Bounding |E g(tilde Y_t) - E g(hat Y_t)| by 2 (sup |g|) TV requires a global sup of g(x) = w(T-t)||e_A(T-t,x)||^2/h_{T-t}^2, but Assumption (3) bounds g only on the tube T_{T-t}(rho_{T-t}), and neither tilde Y_t nor hat Y_t is confined to the tube. Since e_A is generically O(1) away from the data, the global weighted sup is not O(1/(T-delta)), so the assumption as stated does not justify the inequality, and simply restating it globally would typically be false.",
+      "failure_location": {
+        "quote": "\\int_0^{T-\\delta} \\frac{w(T-t)\\mb{E}[\\| e_A^\\perp(T-t,\\Tilde{Y}_t)\\|^2]-\\| e_A^\\perp(T-t,\\hat{Y}_t)\\|^2] }{h_{T-t}^2} \\dee t \\le C_u \\TV(\\mc{N}(0,I_d),p_T)\\lesssim (\\sqrt{d}+R)e^{-T}.",
+        "tag": "thm:inference to training"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Bound the difference by a Holder/chi-square argument (e.g., |E g(tilde Y_t) - E g(hat Y_t)| <= ||g||_{L^2} sqrt(chi^2) with chi^2 of the marginals controlled by that of the initial laws via data processing), replacing the uniform Assumption (3) by an L^2-moment condition.",
+      "overall_effect": "The (sqrt(d)+R) e^{-T} remainder terms in Theorem thm:inference to training (and hence in Theorem thm:informal inference to training) are not justified from the stated assumptions.",
+      "primary_affected_tag": "thm:inference to training",
+      "target_type": "formal_result",
+      "title": "Initialization-TV step applies the tube-restricted uniform bound of Assumption assump:transfer (3) to unrestricted path expectations",
+      "why_classification": "The assumption genuinely cannot be used as stated and the naive repair (a global sup bound) is typically false; a contained but nontrivial change-of-measure/moment argument is required, though the theorem's form survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:informal inference to training",
+        "thm:directional decomposition"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mb{E}[\\| \\Tilde{u}_{T-\\delta}^{(i)} \\|^2]= \\mc{O}( d\\sqrt{\\delta} + \\sqrt{\\delta} \\int_{\\Tilde{t}_{\\mathrm{in}}}^{T-\\delta}  h_{T-u}^{-\\frac{3}{2}}{\\mb{E}[\\|e_A^{\\parallel,i}(T-u,\\Tilde{Y}_{u}) \\|^2]} \\dee u  ).",
+          "tag": "them:tangent contraciton"
+        }
+      ],
+      "failure_explanation": "The Stage-3 tangent floor (Theorem them:tangent contraciton) involves ||(U_{T-u}^{(i)})^T e_A(T-u, tilde Y_u)||^2, but the theorem's conclusion (eq:tangent error from training) bounds ||P^parallel_{T-u}(tilde Y_u) e_A||^2. The identification rests on an explicit '≈' with no estimate of ||(U^{(i)} U^{(i)T} - P^parallel_{T-t}) e_A||^2; the two frames differ both by location (tilde Y_t vs m_{T-t}^{(i)}, typical distance Theta(sqrt(h_{T-t}))) and by the center-versus-ridge frame discrepancy, and the paper's own frame-variation estimates show these differences need not be small. Thus the tangent half of the training-to-inference interface is not proved as stated.",
+      "failure_location": {
+        "quote": "we have $U_{T-t}^{(i)}(U_{T-t}^{(i)})^\\intercal\\approx P^\\parallel_{T-t}(m_{T-t}^{(i)})\\approx P^\\parallel_{T-t}(\\Tilde{Y}_t) $. Hence we can use the following tangent error to reflect the tangent-floor of the sliding phase:",
+        "tag": "thm:inference to training"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Add an explicit bound for ||(U_{T-t}^{(i)} (U_{T-t}^{(i)})^T - P^parallel_{T-t}(tilde Y_t)) e_A(T-t, tilde Y_t)|| on T_{T-t}(rho_{T-t}) cap B_{T-t}^{(i)}(theta_{T-t}) and absorb it into the floor estimates.",
+      "overall_effect": "The tangent-direction bounds in Theorems thm:inference to training and thm:informal inference to training, and the plug-in decomposition thm:directional decomposition, rest on an unquantified approximation step.",
+      "primary_affected_tag": "thm:inference to training",
+      "target_type": "formal_result",
+      "title": "Tangent-floor transfer replaces (U^{(i)})^T e_A by P^parallel e_A through an uncontrolled approximation",
+      "why_classification": "A missing nontrivial estimate in a single proof step; the repair is contained but the step currently does not connect the Stage-3 tangent floor to MM^parallel."
+    }
+  ],
+  "issues_found": 13,
+  "paper_id": "2602.06021",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p2-retry",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4d0bb223050d46a8b94915cecc9d8ff63545dedc2a501f2c7503417e779534fe",
+  "status": "ok"
+}

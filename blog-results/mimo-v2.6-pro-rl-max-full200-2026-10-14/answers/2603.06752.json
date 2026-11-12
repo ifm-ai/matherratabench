@@ -1,0 +1,316 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\widetilde{\\boldsymbol{\\eta}}_k \\sim \\mathcal{N}(\\mathbf{0}, \\widetilde{\\Gamma}_k).",
+          "tag": "latent_obs"
+        },
+        {
+          "quote": "\\|\\mathscr{E}_{\\mathrm{obs}}(\\mathbf{y}_k^{(i)}) - \\mathbf{H}\\mathscr{E}(\\mathbf{x}_k^{(i)})\\|_2^{2}",
+          "tag": "loss2"
+        },
+        {
+          "quote": "\\mathbf{z}_k = \\mathbf{A}\\mathbf{z}_{k-1}",
+          "tag": "latent_linear"
+        },
+        {
+          "quote": "\\mathbf{w}_k \\sim \\mathcal{N}(\\mathbf{0}, \\mathbf{Q}_k)",
+          "tag": "forward"
+        },
+        {
+          "quote": "The result is a closed linear state-space model in the latent variables, in which the assumptions underlying Kalman filtering are approximately satisfied.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The analysis step needs the latent observation-noise covariance and draws from its law, but nothing in the paper defines, estimates or identifies either one. Equation (latent_obs) only postulates a zero-mean Gaussian noise with covariance Gamma-tilde, whereas the Stage-II loss enforces only an L2 mean match E_obs(y) ~ H E(x); the induced perturbation E_obs(H(x_k)+eta_k) - H E(x_k) is therefore generically biased and state dependent (with the time-delay embedding of Section 5 it is also correlated across time). Likewise the model error w_k of (forward) and the residual error of the learned latent dynamics have no counterpart in the noise-free model (latent_linear), so no latent process-noise covariance is available either.",
+      "failure_location": {
+        "quote": "\\widehat{\\mathbf{z}}_k^{(j)} = \\widehat{\\mathbf{z}}_{k|k-1}^{(j)} + \\mathbf{P}_{zy}\\big(\\mathbf{P}_{yy} + \\widetilde{\\Gamma}\\big)^{-1} \\big( \\widetilde{\\mathbf{y}}_k + \\widetilde{\\boldsymbol{\\eta}}_k^{(j)} - \\widehat{\\mathbf{y}}_k^{(j)}  \\big)",
+        "tag": "alg1"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a noise-identification stage that estimates Gamma-tilde and a latent process-noise covariance from training/validation residuals, specify the law of the perturbations in the analysis step, and state conditions under which the induced latent noise is approximately zero-mean, Gaussian and independent of the latent state.",
+      "overall_effect": "Algorithm alg1 is not executable as specified (undefined Gamma-tilde and undefined perturbation law), and even after inserting some covariance the linear-Gaussian latent state-space premise used to justify the Kalman update is unestablished; the claimed structural consistency of the forecast/analysis cycle and the reliability of the resulting estimates are unsupported.",
+      "primary_affected_tag": "alg1",
+      "target_type": "algorithm",
+      "title": "Latent noise covariances used by the analysis step are never identified",
+      "why_classification": "The repair adds a contained residual-covariance estimation step and a supporting argument but no new global proof architecture, and the method, its scope and its qualitative guarantees survive; it is more than a local edit but causes no major loss."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\mathbf{A}\\mathscr{E}(\\mathbf{x})-\\mathscr{E}(\\mathbf{F}(\\mathbf{x}))\\|_2^2",
+          "tag": "loss_pop"
+        },
+        {
+          "quote": "T_3 := \\mathbb{E}_{\\mathcal{S}}\\mathbb{E}_{(x,x^+)\\sim \\mathbb{P}_{X,X^+}} \\bigl\\|\\widehat{\\mathscr H}(\\mathbf x)-\\widehat{\\mathscr E}(\\mathbf x)\\bigr\\|_2^2",
+          "tag": null
+        },
+        {
+          "quote": "\\| \\widehat{\\mathscr{H}}(\\mathbf{x}) - \\widehat{\\mathscr{E}}(\\mathbf{x})\\|_2^2 \\Bigr]",
+          "tag": "term1"
+        }
+      ],
+      "failure_explanation": "The population loss (loss_pop) contains the term ||A E(x) - E(F(x))||^2, i.e. the distance between H-hat(x) = A E(x) and E(F(x)). In the decomposition the population part of the third contribution is written with E(x) in place of E(F(x)) while the empirical part of the same display still uses E(F(x_i)); the definition of T_3 then uses E(x) on both sides. Hence chi_1 + chi_2 is not the claimed risk, chi_2 is not T_1+T_2+T_3 as defined, and (term1) bounds a different functional from (loss_pop).",
+      "failure_location": {
+        "quote": "\\| \\widehat{\\mathscr{H}}(\\mathbf{x}) - \\widehat{\\mathscr{E}}(\\mathbf{x})\\|_2^2  - 2\\mathbb{E}_{\\mathcal{S}}\\left[ \\frac{1}{N}\\sum_{i=1}^N \\| \\widehat{\\mathscr{H}}(\\mathbf{x}_i) - \\widehat{\\mathscr{E}}(\\mathbf{F}(\\mathbf{x}_i)\\|_2^2\\right]",
+        "tag": "T2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Rebuild the error decomposition with the correct quantity ||H-hat(x) - E-hat(F(x))||^2 throughout and redo the estimation bound for it; the covering of the class {A o E - E o F} follows from the same telescoping used for the composite class since F(M) is contained in M.",
+      "overall_effect": "Theorem thm1's bound on the population loss (loss_pop) is not established: what is (partially) bounded is a modified criterion whose minimizer and value differ from those in the statement.",
+      "primary_affected_tag": "thm1",
+      "target_type": "formal_result",
+      "title": "Proof of Theorem 1 bounds a different latent-consistency term than the loss",
+      "why_classification": "The repair needs a re-derived decomposition and a uniform bound for a new composite class, which is a contained nontrivial argument rather than a routine edit, but it keeps the theorem's statement, constant and rate, so no major loss occurs."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\le&  2\\inf_{\\mathscr{H}\\in\\mathcal{F}_{AE}^{\\mathscr{H}}} \\mathbb{E}_{(x,x^+)\\sim \\mathbb{P}_{X,X^+}} \\left[\\| \\mathscr{H}(\\mathbf{x}) -{\\mathscr{E}}(\\mathbf{F}(\\mathbf{x}))\\|_2^2 \\right]",
+          "tag": null
+        },
+        {
+          "quote": "As for the last term, simply note that $R(\\widehat{\\mathbf{A}})=0$ since $\\mathbf{A}\\in \\mathcal{F}^A_{Lin}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The tuple minimizes the sum of the three empirical terms plus R(A), so no single empirical term of the minimizer is bounded by the infimum of that term alone over the class; the displayed step compares the empirical risk of the first term with the infimum of the first term, and the third comparison even replaces an empirical average by a population expectation, takes an infimum over H only, and leaves E unquantified. In addition R(A-hat)=0 is asserted from A belonging to the norm ball, a restriction the theorem never imposes on the minimizer. The bounds (chi_1) therefore do not follow.",
+      "failure_location": {
+        "quote": "\\le2\\mathbb{E}_{\\mathcal{S}}\\inf_{\\mathscr{G}\\in\\mathcal{F}_{NN}^{\\mathscr{G}}} \\left[\\frac{1}{N}\\sum_{i=1}^N\\| \\mathscr{G}(\\mathbf{x}_i) - \\mathbf{F}(\\mathbf{x}_i)\\|_2^2 \\right]",
+        "tag": "chi1_1_result"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Bound each empirical term of the minimizer by the total empirical loss of the minimizer, compare that with the total empirical loss at the single candidate (E-tilde, A-star, D-tilde) of Lemma lem_EAD_approx which makes all three terms small simultaneously, and either constrain A-hat to ||A||_2 <= rho or carry R(A-hat) through the bound.",
+      "overall_effect": "The approximation (optimistic) half of Theorem thm1's proof is invalid, so the empirical-risk part of the claimed population bound, and hence the bound itself, is unsupported as written.",
+      "primary_affected_tag": "thm1",
+      "target_type": "formal_result",
+      "title": "Empirical-risk comparisons misuse the optimality of the joint minimizer",
+      "why_classification": "The fix is a local reordering of the same ERM comparison using a candidate the proof already constructs; the statement, constant and rate are unchanged and no new lemma is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "C_\\phi\\sup_{x\\in\\mathcal M} \\Big\\|\\mathbf A_1\\circ\\mathscr E_1(x)-\\mathbf A_2\\circ\\mathscr E_2(x)\\Big\\|_2",
+          "tag": null
+        },
+        {
+          "quote": "Since $\\|A\\|_{\\infty,\\infty}\\le \\|A\\|_2$, we have $\\mathcal{F}_{\\mathrm{Lin}}^{A}\\subset\\{A:\\|A\\|_{\\infty,\\infty}\\le \\rho\\}$.",
+          "tag": null
+        },
+        {
+          "quote": "T_3 \\le \\frac{35 n \\Lambda^2}{N}\\log \\mathcal{Q}\\!\\left(\\frac{\\delta}{2n\\Lambda}, \\mathcal{F}_{\\mathrm{AE}}^{\\mathscr{H}},\\|\\cdot\\|_{L^{\\infty,\\infty}}\\right)+6\\delta",
+          "tag": "T2_3"
+        }
+      ],
+      "failure_explanation": "The telescoping estimate treats the decoder network D_2 as if it were phi and hence C_phi-Lipschitz, and bounds ||E_2(x)||_2 by sqrt(n) Lambda although the network class guarantees only ||E_2(x)||_2 <= R_E; neither modulus belongs to the class definition, so the radii delta_E and delta_A are unjustified. Also ||A||_{inf,inf} <= ||A||_2 is false (and the sup of a linear map over R^n is infinite), and the deviation bound for T_3 covers only the class of A o E although the subtracted E-hat (or E-hat o F) is trained on the same sample and must be covered jointly. The entropy bounds feeding (T2_11)-(T2_3) are therefore not established.",
+      "failure_location": {
+        "quote": "C_\\phi n^{3/2}\\Lambda\\,\\|\\mathbf A_1-\\mathbf A_2\\|_{\\infty,\\infty}",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Redo the entropy bookkeeping with the network Lipschitz constant (from the weight bounds) in place of C_phi, with R_E in place of Lambda, with the induced operator norm of A on the bounded latent domain, and with a joint cover of the class {A o E - E o F}; the extra factors are lower-order logarithms absorbed by the stated log powers.",
+      "overall_effect": "The estimation-error bounds T_1, T_2, T_3 and therefore the generalization bound of Theorem thm1 are unsupported by the covering-number calculation given.",
+      "primary_affected_tag": "thm1",
+      "target_type": "formal_result",
+      "title": "Composite covering bound uses uncontrolled moduli and an incomplete class",
+      "why_classification": "The repair requires a contained but nontrivial re-derivation of the composite covering and deviation bounds (a reoptimization of the entropy radii), yet it preserves the statement, the rate and the logarithmic factors, so it exceeds minor but causes no major loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "T_1 \\le \\frac{35 D B^2}{N} \\log \\mathcal{Q}\\!\\left( \\frac{\\delta}{2 D B}, \\mathcal{F}_{\\mathrm{NN}}^{\\mathscr{G}},\\|\\cdot\\|_{L^{\\infty,\\infty}}\\right) + 6\\delta ,",
+          "tag": "T2_1"
+        },
+        {
+          "quote": "T_1 \\le\\mathcal{O}\\!\\left(D^2(\\log^2 D)\\,N^{-\\frac{2}{n+2}}\\log^4 N\\right)",
+          "tag": "T2_11"
+        }
+      ],
+      "failure_explanation": "With the stated choice delta = epsilon = N^{-1/(n+2)} the term 6 delta in (T2_1) is of order N^{-1/(n+2)}, which cannot be bounded by the claimed O(N^{-2/(n+2)}); delta enters the covering term only through log(1/delta), so this choice yields only O(N^{-1/(n+2)}). The identical balancing is used for (T2_2), (T2_3) and (term1).",
+      "failure_location": {
+        "quote": "Setting $\\delta=\\varepsilon=N^{-\\frac{1}{n+2}}$, we obtain",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Choose delta at the order of the target rate, e.g. delta = epsilon^2 = N^{-2/(n+2)}, which makes 6 delta absorbable and leaves the covering term and the claimed rate unchanged.",
+      "overall_effect": "The convergence rate O(D^2 log^2 D N^{-2/(n+2)} log^4 N) claimed in (loss1_sge) does not follow from the displayed deviation bounds as evaluated.",
+      "primary_affected_tag": "thm1",
+      "target_type": "formal_result",
+      "title": "Rate extraction ignores the 6 delta deviation term",
+      "why_classification": "A one-parameter change in the balancing restores the stated rate for every deviation bound in the proof, with no change to any statement, lemma or construction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\boldsymbol{\\eta}_k \\sim \\mathcal{N}(\\mathbf{0}, \\mathbf{\\Gamma}_k)",
+          "tag": "obs"
+        },
+        {
+          "quote": "\\le C\\, D_y^{2}\\log^{2} D_y\\, N^{-\\frac{2}{n+2}}\\log^{4} N,",
+          "tag": "thm2"
+        },
+        {
+          "quote": "\\|\\mathscr{E}_{\\mathrm{obs}}(\\mathbf{y}_k^{(i)}) - \\mathbf{H}\\mathscr{E}(\\mathbf{x}_k^{(i)})\\|_2^{2}",
+          "tag": "loss2"
+        }
+      ],
+      "failure_explanation": "Under (obs) the measurement is noisy and partial (two selected components in the toy example, half the variables for Lorenz 96), so the state x and hence E(x) is not a function of y and no map y -> E(x) exists; the ERM of (loss2) converges to the conditional mean E[E(x) | y] with strictly positive residual variance. The asserted bound tends to zero with N, which would force E(x) to be measurable with respect to y. Moreover the rate N^{-2/(n+2)} presumes that the network input y lies on an n-dimensional set, whereas Gaussian observation noise spreads the y-marginal over the whole of R^{D_y}.",
+      "failure_location": {
+        "quote": "Assume that the observation encoder class has sufficient approximation capacity to represent the mapping $\\mathbf{y} \\mapsto \\mathscr{E}(\\mathbf{x})$ of the data distribution induced by the observation process.",
+        "tag": "thm2"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restate the result with an irreducible best-in-class term, E||E_obs-hat(y)-E(x)||^2 <= inf_g E||g(y)-E(x)||^2 + estimation term, with the rate expressed through the dimension and regularity of the y-marginal, or restrict the theorem to noiseless observations that determine x on M.",
+      "overall_effect": "Theorem thm2 provides no valid guarantee for the observation encoder in the noisy, partially observed settings that the paper formulates and tests; the advertised vanishing error bound is unattainable there and the rate's dimension dependence is wrong.",
+      "primary_affected_tag": "thm2",
+      "target_type": "formal_result",
+      "title": "Observation-encoder bound is incompatible with noisy partial observations",
+      "why_classification": "The statement needs a limited weakening (an irreducible approximation term and a corrected input dimension) or a narrowed regime; a recognizably comparable generalization bound survives, so the issue is not serious, but no local edit suffices."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We assume that these pairs are sampled i.i.d. according to the stationary transition distribution:",
+          "tag": "iid_sampling"
+        },
+        {
+          "quote": "The proof follows similar arguments as in Theorem \\ref{thm1} and is therefore omitted for brevity.",
+          "tag": "thm2"
+        }
+      ],
+      "failure_explanation": "The conclusion is an expected finite-sample bound in N over a training sample, but unlike Theorem thm1 the statement invokes no i.i.d. or quantitative mixing hypothesis on the pairs (x,y) and never defines the sample. The omitted proof cannot follow Theorem thm1's argument without such a hypothesis, and without a sampling model no N-rate generalization bound of this form can hold.",
+      "failure_location": {
+        "quote": "Suppose that Assumption~\\ref{assum1} holds, and that the pre-trained components $\\mathscr{E}$, $\\mathscr{D}$, and $\\mathbf{A}$ are fixed.",
+        "tag": "thm2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Add the missing sampling hypothesis (e.g. Assumption iid_sampling for the pairs (x,y), or a stated mixing condition) and define the sample in the statement.",
+      "overall_effect": "The finite-sample rate of Theorem thm2 is unsupported for any specified data model, so the theorem does not deliver the advertised learning guarantee.",
+      "primary_affected_tag": "thm2",
+      "target_type": "formal_result",
+      "title": "Theorem 2 states no sampling assumption for its finite-sample bound",
+      "why_classification": "Adding the omitted standard hypothesis is a short local repair that preserves the statement and its rate unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-- &1.9757E-01 &--&--&--",
+          "tag": null
+        },
+        {
+          "quote": "$n=2$ &-- & 1.6412E-01 & 2.3312E-01 & \\textbf{3.8947E-02}",
+          "tag": null
+        },
+        {
+          "quote": "$n=4$ & -- & 1.9632E-01 & 4.0424E-01 & \\textbf{1.5682E-02}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The text asserts that every learned-model-based method beats the standard EnKF in the toy experiment (which the same paragraph restricts to n=2), but the paper's own table reports DAE-EnKF relative errors 2.3312E-01 (n=2), 2.1106E-01 (n=3) and 4.0424E-01 (n=4), all larger than the standard EnKF error 1.9757E-01. The DAE-EnKF baseline is worse than the EnKF in every reported configuration.",
+      "failure_location": {
+        "quote": "While all learned-model-based methods outperform the standard EnKF, AE-EnKF and DAE-EnKF exhibit noticeable temporal fluctuations.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Restrict the sentence to the methods that actually beat the EnKF (AE-EnKF and LAE-EnKF) and state that DAE-EnKF underperforms the standard EnKF in this example.",
+      "overall_effect": "The benchmark comparison is misreported: the claim that only temporal smoothness distinguishes the baselines from the proposal is unreliable, and the reader is told that all baselines improve on EnKF when one of them never does.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that all learned baselines beat the standard EnKF contradicts the paper's table",
+      "why_classification": "A one-sentence correction of the comparison preserves every claim and guarantee about the proposed method and needs no new analysis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The system is governed by a single angular variable $\\theta_t$, while the physical state is defined as",
+          "tag": null
+        },
+        {
+          "quote": "W \\in \\mathbb{R}^{100\\times 2},",
+          "tag": null
+        },
+        {
+          "quote": "When the latent dimension exceeds the intrinsic dimension ($n=3,4$), we project the latent variables onto their first two principal components for visualization.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The state is the image under the rank-two linear map W of the unit vector (cos theta, sin theta), so the attainable set is a one-dimensional closed curve (an ellipse) and the dynamics is governed by the single scalar theta; the intrinsic manifold dimension is one, not two. Consequently n=2 already exceeds the intrinsic dimension, contrary to the parenthetical confining the excess to n=3,4, and the dimension-efficiency reading of the experiment rests on a wrong dimension.",
+      "failure_location": {
+        "quote": "Although the underlying system is intrinsically two-dimensional, slightly higher-dimensional latent spaces do not degrade the prediction performance.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Replace the intrinsic-dimension statements by the correct one-dimensional manifold dimension (or state explicitly that the motion rotates within a two-dimensional plane while the attainable set is a one-dimensional ellipse) and adjust the parenthetical \"(n=3,4)\" accordingly.",
+      "overall_effect": "The interpretation of the toy experiment (which latent dimensions are over-parameterized, the claim of dimension efficiency) and its connection to the intrinsic-dimension rate of the theory become unreliable.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Toy system misdescribed as intrinsically two-dimensional",
+      "why_classification": "The correction is local to the discussion of the toy example and leaves every method, guarantee and experiment intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sup_{\\mathbf{z}\\in[-\\Lambda,\\Lambda]^n}\\|\\widetilde{\\mathscr{D}}(\\mathbf{z})-\\phi(\\mathbf{z})\\|_\\infty \\le \\varepsilon_1",
+          "tag": null
+        },
+        {
+          "quote": "letting $u=\\mathbf A^\\star\\widetilde{\\mathscr E}(\\mathbf{x})$ and $v=\\mathbf A^\\star \\varphi(\\mathbf{x})$, we have",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The decoder approximation is asserted only on the box [-Lambda,Lambda]^n, but u = A-star E-tilde(x) need not lie in that box: E-tilde(x) is only epsilon_1-close to phi(x) in that box and A-star can push it up to rho sqrt(n) epsilon_1 outside. The term ||D-tilde(u) - phi(u)||_inf is therefore not controlled by the stated approximation, and the uniform conclusion (eq:LAE_uniform_approx) is not established by the argument.",
+      "failure_location": {
+        "quote": "\\|\\widetilde{\\mathscr{D}}(u)-\\phi(u)\\|_\\infty + \\|\\phi(u)-\\phi(v)\\|_\\infty",
+        "tag": "lem_EAD_approx"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Approximate the Lipschitz extension of phi uniformly on a slightly enlarged box (for example [-Lambda-1,Lambda+1]^n), or clip the encoder output to [-Lambda,Lambda]^n before applying A-star, and adjust epsilon_1 accordingly.",
+      "overall_effect": "The approximation lemma supplying the comparison candidates for the empirical-risk bounds is unproved as written, and the approximation-error step of Theorem thm1 inherits the gap.",
+      "primary_affected_tag": "lem_EAD_approx",
+      "target_type": "formal_result",
+      "title": "Approximation lemma applies the decoder approximation outside its domain",
+      "why_classification": "A local change of the approximation domain (or a clipping step) restores the argument without altering the statement, the rate or the scope of the lemma."
+    }
+  ],
+  "issues_found": 10,
+  "paper_id": "2603.06752",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "61ff47e30bd6be828cc33b9d45bb1cf5e344b91cf40fc08817a3a760bc8f9e7b",
+  "status": "ok"
+}

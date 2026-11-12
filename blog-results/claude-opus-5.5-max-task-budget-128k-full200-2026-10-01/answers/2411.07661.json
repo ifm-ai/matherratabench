@@ -1,0 +1,226 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "ensuring convergence within a finite number of preconditioned iterations",
+          "tag": null
+        },
+        {
+          "quote": "which is one time classical preconditioned iteration for solving \\eqref{eq:bdf2:adam:orig}",
+          "tag": "prop:proximal_to_pre"
+        },
+        {
+          "quote": "which only uses 50 parallel preconditioned Jacobi iterations",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The analysis identifies the proximal subproblem with exactly one preconditioned step y^n = û^n + 𝕄^{-1}(b^n - Tû^n), with M = 𝕄 - T ⪰ 0. Several inner sweeps give a different effective weight. The paper never shows that this weight exists, is positive semidefinite, and fits Propositions prop:descent/prop:til:1. The claim covering 'any finite' number of iterations, and the 50-Jacobi-sweep experiments, is therefore not established.",
+      "failure_location": {
+        "quote": "It is important to note that we will prove that any finite and feasible preconditioned iterations can ensure the global convergence of the whole nonlinear second-order convex splitting method.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Show that k sweeps of a symmetric preconditioned iteration with 𝕄 ⪰ T equal one proximal step with M_k = (I-(I-𝕄^{-1}T)^k)^{-1}T - T ⪰ 0, and check the tilde case. Otherwise restrict the claims to one iteration.",
+      "overall_effect": "The advertised guarantee for finitely many inner iterations without error control, and its application to the Ginzburg-Landau experiments, is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Convergence claimed for finitely many preconditioned iterations, but only a single iteration is analysed",
+      "why_classification": "Repair needs a contained new lemma on the composed preconditioner, or a limited weakening of the advertised scope; the core analysis is unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Choose $u^0$, $0<dt<2/(3L)$, $\\alpha>0$, $0<\\beta<1$, $\\lambda_{\\max}>0$.",
+          "tag": "alg:cap"
+        },
+        {
+          "quote": "\\|\\nabla E^n(z) - \\nabla E^n(y^n)\\|\\leq(\\beta - \\alpha)\\|d^n\\|",
+          "tag": "lem:LSbase"
+        },
+        {
+          "quote": "There exist a small positive parameter $\\alpha$ and a positive line search step $\\lambda_n $ such that",
+          "tag": "lem:LSbase"
+        }
+      ],
+      "failure_explanation": "Feasibility of the Armijo test (Lemma lem:LSbase) needs α < 2/(3δt) - L, or more precisely α below the smallest eigenvalue of N_2. Algorithm 1 allows any α>0 and, for û^n=u^n, has no fallback. If ⟨∇E^n(y^n),d^n⟩ > -α‖d^n‖², no λ>0 passes the test and the WHILE loop shrinks λ forever. The procedure is then not well defined, and the convergence results for it do not apply.",
+      "failure_location": {
+        "quote": "WHILE $E^n(y_n + \\lambda_nd^n)>E^n(y^n) - \\alpha\\lambda_n\\|d^n\\|^2$ DO $\\lambda_n:=\\beta\\lambda_n$",
+        "tag": "alg:cap"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Require 0<α<2/(3δt)-L in Step 1, or add the fallback λ_n=0 used in eq:line:search:til.",
+      "overall_effect": "Well-posedness of Algorithm 1 and the applicability of Lemma lem:square:summable and Theorem thm:globalconverg are only guaranteed for an unstated range of α.",
+      "primary_affected_tag": "alg:cap",
+      "target_type": "algorithm",
+      "title": "Line search in Algorithm 1 may not terminate for arbitrary α>0",
+      "why_classification": "A one-line parameter restriction or fallback restores well-posedness without changing any result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:globalconverg",
+        "them:local:rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the coefficient $c(\\lambda_n, \\delta t, L) := \\frac{4}{3\\delta t} - \\frac{L}{2} - L(1+\\lambda_n)^2$ satisfies $c(\\lambda_n, \\delta t, L) > 0$",
+          "tag": "lem:square:summable"
+        },
+        {
+          "quote": "where $0 \\leq \\lambda_{\\min} : =\\min\\{ \\lambda_n, \\ n \\geq 1\\}$",
+          "tag": "lem:square:summable"
+        }
+      ],
+      "failure_explanation": "By definition (1+λ_max)² = 4/(3δtL) - 1/2, so c(λ_max,δt,L)=0 exactly. The lemma allows λ_n=0, so λ_min can be 0, and the infimum of λ_n may be 0 anyway. The uniform constant in ineq:quad_A can therefore be 0. The final bound then divides by zero and square summability is not proved. The hypothesis λ_n<λ_max for each n gives no uniform positive lower bound on c(λ_n).",
+      "failure_location": {
+        "quote": "\\frac{\\alpha\\lambda_{\\min} + c(\\lambda_{\\max},\\delta t, L)}{(1+\\lambda_{\\max})^2} \\|u^{n+1} - u^n\\|^2\\leq A(u^n,u^{n-1}) - A(u^{n+1},u^n)",
+        "tag": "lem:square:summable"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Assume sup_n λ_n ≤ λ̄ < λ_max (e.g. initial trial step λ̄ < λ_max) and use the constant c(λ̄,δt,L)/(1+λ̄)² > 0.",
+      "overall_effect": "Square summability, and hence finite length and convergence in Theorem thm:globalconverg and the rates in Theorem them:local:rate, are not established as stated.",
+      "primary_affected_tag": "lem:square:summable",
+      "target_type": "formal_result",
+      "title": "Sufficient-decrease constant can vanish: c(λ_max)=0 and λ_min may be 0",
+      "why_classification": "A local strengthening to a uniform bound, which the backtracking procedure provides, restores all conclusions unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:globalconverg:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\frac{1 + \\lambda_n}{3\\delta t}||u^n - u^{n-1}||^2_M",
+          "tag": "thm:square:sum:til"
+        },
+        {
+          "quote": "where $\\tilde A(x,y) = A_0(x,y) + \\frac{1 + \\lambda_{\\max}}{3\\delta t}\\|x- y\\|^2_M$",
+          "tag": "thm:square:sum:til"
+        },
+        {
+          "quote": "$\\lambda_{\\max} < \\min\\{\\sqrt{\\frac{8-3\\deltat L}{6\\deltat L}}-1, \\sqrt{5}-1\\}$",
+          "tag": "thm:square:sum:til"
+        }
+      ],
+      "failure_explanation": "Since d^n=(u^{n+1}-u^n)/(1+λ_n), the term (5/(3δt))‖d^n‖²_M equals 5‖u^{n+1}-u^n‖²_M/(3δt(1+λ_n)²), not /(1+λ_n). The term -(1/(3δt))‖u^n-u^{n-1}‖²_M carries no factor (1+λ_n). With the correct terms, telescoping with Ã's coefficient (1+λ_max)/(3δt) needs (1+λ_max)³ ≤ 5. The stated λ_max < √5-1 allows, e.g., 1+λ_max = 2.2, where this fails. The claimed decrease of Ã is therefore not proved.",
+      "failure_location": {
+        "quote": "\\frac{5}{3\\delta t(1+\\lambda_n)}||u^{n+1} - u^n||^2_M",
+        "tag": "thm:square:sum:til"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Redo the scaling. Define Ã = A_0 + (1/(3δt))‖x-y‖²_M, which works exactly under (1+λ_max)² ≤ 5, and state Theorem thm:globalconverg:M for this Ã.",
+      "overall_effect": "Monotonicity of Ã(u^{n+1},u^n), which Theorem thm:globalconverg:M uses (KL hypothesis on this Ã), is unproven under the stated conditions.",
+      "primary_affected_tag": "thm:square:sum:til",
+      "target_type": "formal_result",
+      "title": "Wrong M-norm scaling in eq:minmax:control; stated λ_max condition insufficient for the chosen Ã",
+      "why_classification": "A local recomputation with a modified merit function keeps the stated conditions and all conclusions."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{E}_n(\\lambda) = \\frac{e_n(\\bar{\\lambda}) - e_n(0) - \\bar{\\lambda}e_n'(0)}{\\bar{\\lambda}^2}\\lambda^2 + e_n'(0)\\lambda + e_n(0).",
+          "tag": null
+        },
+        {
+          "quote": "replacing the setting $\\lambda_n:=\\bar \\lambda_{\\max}$ in Step 6 with $\\lambda_n:=\\max\\{\\bar \\lambda_{\\max},\\lambda^*_n\\}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The minimiser of aλ²+bλ+c is -b/(2a), so a minus sign is missing. For a descent direction (e'_n(0)<0, a>0) the stated λ*_n is negative, and max{λ̄_max,λ*_n} always equals λ̄_max, so the modification does nothing. With the sign corrected, the initial step max{λ̄_max,λ*_n} is unbounded. This breaks the hypothesis λ_n<λ_max needed by Lemma lem:square:summable and Theorems thm:globalconverg/thm:square:sum:til, so the modified algorithm has no convergence guarantee.",
+      "failure_location": {
+        "quote": "\\lambda^*_n = \\frac{e_n'(0)\\bar{\\lambda}^2}{2(e_n(\\bar{\\lambda}) - e_n(0) - e_n'(0)\\bar{\\lambda})}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the sign and cap the trial step, e.g. λ_n := min{max{λ̄_max, λ*_n}, λ̄} with λ̄ < λ_max.",
+      "overall_effect": "The proposed efficiency modification is either vacuous or outside the convergence theory.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Quadratic-interpolation initial step: sign error and incompatibility with the λ bound",
+      "why_classification": "A local formula fix plus a cap keeps the heuristic inside the existing theory."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(e.g., $\\delta t= 6-10^{-15}$)",
+          "tag": null
+        },
+        {
+          "quote": "the global convergence of these two models thus follows",
+          "tag": "rem:KL:conver:two:models"
+        },
+        {
+          "quote": "the coefficient $c(\\lambda_n, \\delta t, L) := \\frac{4}{3\\delta t} - \\frac{L}{2} - L(1+\\lambda_n)^2$ satisfies $c(\\lambda_n, \\delta t, L) > 0$",
+          "tag": "lem:square:summable"
+        }
+      ],
+      "failure_explanation": "With L=1/9 and δt≈6, δtL=2/3. For both variants the theory then needs λ_n < √1.5-1 ≈ 0.22 (Lemma lem:square:summable, Theorem thm:square:sum:til), yet trial steps up to 5 are used. Line-search feasibility needs α below λ_min(N_2) = 2/(3δt)-L+λ_min(M) ≈ 0, since M=λ_{A^TA}I-A^TA is singular; yet α=0.2. The reported accelerated runs are therefore not covered by the claimed global convergence.",
+      "failure_location": {
+        "quote": "$\\bar \\lambda_{\\text{max}} = 5$, $\\Bar{\\lambda} = 0.618\\bar \\lambda_{\\text{max}}$, $\\alpha = 0.2$, $\\beta = 0.8$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Rerun with admissible parameters (λ̄<λ_max, α<λ_min(N_2), or δt reduced), or state that the experiments use heuristic parameters outside the theory.",
+      "overall_effect": "The claim that the tested line-search algorithms are provably convergent, and that the observed acceleration comes from a convergent method, is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "SCAD experiments use parameters outside the convergence theory",
+      "why_classification": "The acceleration advertised relies on steps far beyond the proven range; reconciling them needs new experiments or a limited weakening of the claims."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Moreover, the parameter $\\delta t$ must satisfy $\\delta t<\\frac{2}{3L}$, where $L$ is the Lipschitz constant of $F(u)$.",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathbb{W}(u) = \\frac14\\sum_{i=1}^{n}(u(i)^2 - 1)^2$",
+          "tag": null
+        },
+        {
+          "quote": "$\\nabla F(u)$ is a Lipschitz continuous function with constant $L$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Here F = (1/ε)W, so ∇F(u)_i = (u_i³-u_i)/ε, which is not globally Lipschitz. Every result (Lemma lem:con:L, Propositions prop:descent/prop:til:1, Theorems thm:globalconverg/thm:globalconverg:M) uses a global L, and δt<2/(3L) is undefined. No a priori bound on the iterates is proved that would allow a local constant. Showing the model has the KL property does not supply the missing hypothesis.",
+      "failure_location": {
+        "quote": "the global convergence of these two models thus follows",
+        "tag": "rem:KL:conver:two:models"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace W by a standard truncated double well with globally Lipschitz gradient, or prove invariance of a bounded set and use the local Lipschitz constant there; otherwise withdraw the claim for this model.",
+      "overall_effect": "The claimed global convergence for the graphic Ginzburg-Landau experiments is unsupported.",
+      "primary_affected_tag": "rem:KL:conver:two:models",
+      "target_type": "prose_claim",
+      "title": "Ginzburg-Landau model violates the global Lipschitz-gradient assumption",
+      "why_classification": "A contained modification of the model or a new a priori bound is needed, but the general theory is unaffected."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2411.07661",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "82023cb4a713f803031fb66ea375960c872e0ef9830eb307112b4b7b18610917",
+  "status": "ok"
+}

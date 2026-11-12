@@ -1,0 +1,88 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Applying the FFT to $\\{\\ai_{\\bm{l}}\\}_{\\bm{l}\\in\\mathcal{I}_{\\bm{m}}}$ yields\n\\begin{align}\n    \\hat{\\ai}_{\\bm{k}}\n    =\n    \\sum_{\\bm{l}\\in\\mathcal{I}_{\\bm{m}}}\n        \\ai_{\\bm{l}}\\,\n        e^{\\frac{2\\pi}{L}\\i\\,\\bm{k}\\cdot(h\\bm{l})},\n    \\qquad\n    \\bm{k}\\in\\mathcal{I}_{\\bm{m}},\n\\end{align}\nwhich approximates $\\hat{\\rho}(\\bm{k})\\,\\hat\\varphi(\\bm{k})$.",
+          "tag": null
+        },
+        {
+          "quote": "\\STATE[$\\bm{\\aii}=\\mathbf{F}^{-1}\\hat{\\bm{\\aii}}$] Inverse FFT:\n\\begin{align*}\n    \\aii_{\\bm l}\n    =\n    \\sum_{\\bm k\\in\\mathcal I_{\\bm m}}\n    \\hat \\aii_{\\bm k}\\,e^{-\\frac{2\\pi}{L}\\i\\,\\bm k\\cdot(h\\bm l)},\n    \\qquad \\bm l\\in \\mathcal{I}_{\\bm{m}}.\n\\end{align*}",
+          "tag": "alg:SE_Fourier"
+        }
+      ],
+      "failure_explanation": "Algorithm 2 defines spreading, 3D FFT, inverse FFT, and interpolation as unweighted sums without the required grid volume factors $h^3 = V/m^3$ or discrete Fourier transform normalizations. Spreading via $\\ai_{\\bm l} = \\sum_j \\rho_j \\tilde\\varphi(\\bx_j - h\\bm l)$ followed by $\\sum_{\\bm l} \\ai_{\\bm l} e^{\\frac{2\\pi i}{L}\\bk\\cdot(h\\bm l)}$ produces $\\frac{m^3}{V} \\hat\\rho(\\bk)\\hat\\varphi(\\bk)$ rather than $\\hat\\rho(\\bk)\\hat\\varphi(\\bk)$. Together with an unscaled inverse transform and unweighted interpolation sum, the potential computed by the algorithm is scaled by $(m^3/V)^2 = h^{-6}$ relative to the actual far-field potential, failing to deliver the correct values.",
+      "failure_location": {
+        "quote": "\\STATE[$\\hat{\\bm{\\aii}}:=\\mathbf{C}\\,\\mathbf{D}\\,\\hat{\\bm{\\ai}}$] Diagonal scaling (omit $\\bm k=\\bm 0$):\n\\begin{align*}\n    \\hat \\aii_{\\bm k}:=\n    \\begin{cases}\n        \\dfrac{1}{V}\\,\\dfrac{\\hat M(\\bm k)}{\\hat\\varphi(\\bm k)^2}\\,\\hat \\ai_{\\bm k},\n        & \\bm k\\in\\mathcal{I}_{\\bm{m}}\\setminus\\{\\bm{0}\\},\\[2pt]\n        0, & \\bm k=\\bm 0.\n    \\end{cases}\n\\end{align*}",
+        "tag": "alg:SE_Fourier"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Insert the required grid volume element $h^3 = V/m^3$ into the spreading and interpolation steps, or incorporate the compensating factor $(V/m^3)^2$ into the diagonal scaling step 3.",
+      "overall_effect": "Direct execution of Algorithm 2 produces values of the far-field potential that are off by a factor of $h^{-6}$, rendering the numerical outputs incorrect in scale and dimension.",
+      "primary_affected_tag": "alg:SE_Fourier",
+      "target_type": "algorithm",
+      "title": "Missing grid quadrature and FFT normalization factors in Algorithm 2",
+      "why_classification": "The error is fixed by routinely inserting standard quadrature and FFT normalization factors into the steps of Algorithm 2 without altering the methodology or guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We then solve \\eqref{eq:cwcs_model_dimless} for $c_w$ using the Lambert $W$ function and obtain\n\\begin{align}\\label{eq:cwW}\n    c_w \\approx -\\frac{1}{2} W \\bigg(\\!-2 B_w^2  \\frac{e^{-2c_s}}{c_s}\\bigg),\\qquad B_w := \\frac{A_s}{A_w}\\sqrt{\\frac{r_c}{L}}.\n\\end{align}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The argument of the Lambert $W$ function in Step 2 is negative: $-2 B_w^2 \\frac{e^{-2c_s}}{c_s} \\in (-1/e, 0)$. Without specifying a branch, the standard mathematical convention evaluates the principal branch $W_0$, which satisfies $W_0(x) \\in (-1, 0)$ for negative $x$. This yields $c_w = -\\frac{1}{2}W_0(\\dots) \\in (0, 0.5)$, which leads in Step 5 to $P = 1$ and completely breaks the accuracy of the method. The derivation $-2 c_w = W(\\dots)$ with $c_w \\gg 1$ requires $-2c_w < -1$, which lies strictly on the $-1$ branch $W_{-1}$.",
+      "failure_location": {
+        "quote": "\\STATE Solve $c_w = -\\frac{1}{2}W\\big(-2 B_w^2 \\frac{e^{-2c_s}}{c_s}\\big)$ for $c_w$, where $B_w := \\frac{A_s}{A_w}\\sqrt{\\frac{r_c}{L}}$.",
+        "tag": "alg:parameter"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Specify the $W_{-1}$ branch of the Lambert $W$ function in equation (81) and Step 2 of Algorithm 3.",
+      "overall_effect": "Any standard implementation evaluating the principal branch $W_0$ in Algorithm 3 obtains $c_w < 0.5$ and $P = 1$, failing to achieve the requested error tolerance $\\varepsilon$.",
+      "primary_affected_tag": "alg:parameter",
+      "target_type": "algorithm",
+      "title": "Unspecified Lambert W branch in parameter selection produces invalid window parameters",
+      "why_classification": "Specifying the $-1$ branch $W_{-1}$ is a local fix in the formula that completely restores the intended parameter selection without changing any proofs or results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:dirsumerr_L2",
+        "prop:PSWF_split_errors"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Partition $\\R^3$ into cubes $Q_{\\bm{k}}=\\bm{k}+[-\\tfrac12,\\tfrac12)^3$. For any $\bx\\in Q_{\\bm{k}}$ one has $||\\bx|-|\\bm{k}||\\le\\sqrt{3}/2$. Monotonicity of $f$ then yields the stated bound.",
+          "tag": "lem:cubecover"
+        }
+      ],
+      "failure_explanation": "The proof asserts that monotonicity of $f$ gives $f(|\\bk|) \\le \\int_{Q_{\\bk}} f(|\\bx|) d\\bx$, which is false because points in the centered cube $Q_{\\bk} = \\bk + [-1/2, 1/2)^3$ can satisfy $|\\bx| > |\\bk|$, where $f(|\\bx|) \\le f(|\\bk|)$ by monotonicity. A counterexample is $K=1$ and $f(r) = \\mathbf{1}_{[0, \\sqrt{2}]}(r)$. The LHS counts the 12 lattice points with $|\\bk|=\\sqrt{2}$, giving $\\sum = 12$. The RHS integral is the volume of the spherical shell $1-\\sqrt{3}/2 < |\\bx| \\le \\sqrt{2}$, which is $\\frac{4}{3}\\pi((\\sqrt{2})^3 - (1-\\sqrt{3}/2)^3) \\approx 11.838 < 12$, violating the stated inequality.",
+      "failure_location": {
+        "quote": "\\begin{lemma}[Lattice covering lemma in $\\R^3$]\n\\label{lem:cubecover}\nLet $f:[0,\\infty)\\to[0,\\infty)$ be nonincreasing. For $K>\\sqrt{3}/2$,\n\\begin{align}\n\\sum_{|\\bm{k}|>K} f(|\\bm{k}|)\n\\;\\le\\;\n\\int_{|\\bx|>K-\\sqrt{3}/2}\nf(|\\bx|)\\,d\\bx.\n\\end{align}\n\\end{lemma}",
+        "tag": "lem:cubecover"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the integration domain with $|\\bx| > K - \\sqrt{3}$ or introduce an appropriate dimensional covering prefactor $C > 1$, adjusting the constants in Lemma 3 and Proposition 1 accordingly.",
+      "overall_effect": "Lemma 7 is false as stated. The bounds in Lemma 3 and Proposition 1 rely on Lemma 7 to convert the lattice tail sum to a continuous integral and are therefore unestablished as stated with the current constants.",
+      "primary_affected_tag": "lem:cubecover",
+      "target_type": "formal_result",
+      "title": "Lattice covering lemma for nonincreasing radial functions is mathematically false",
+      "why_classification": "Standard lattice-to-continuum estimates can be established by routine geometric covering adjustments, leaving all asymptotic rates, conclusions, and parameter selections unaffected."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2602.16591",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "5a7eb2381d02244a14f856ec8d079a82235af947f81b4666b55d9a1bda2341cf",
+  "status": "ok"
+}

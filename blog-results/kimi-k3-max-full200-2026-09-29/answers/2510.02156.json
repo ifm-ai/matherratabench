@@ -1,0 +1,178 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Centroid vectors are just a sum of row vectors in the given block.",
+          "tag": null
+        },
+        {
+          "quote": "Compute the cosine value $C(i,j)$ of the effective angle between blocks $A_i$ and $A_j$ by the centroid coordinates, and the corresponding symmetric matrix $C$.",
+          "tag": "algo:roar-bk"
+        }
+      ],
+      "failure_explanation": "The centroid is a sum of the block's row vectors, which can be the zero vector for legitimate inputs (e.g., a block of zero rows, or rows v and -v). Then the definition of C(i,j) divides by ||bar A_i|| ||bar A_j|| = 0, leaving C, and hence the sampling distribution P built from it, undefined. No convention or guard is supplied.",
+      "failure_location": {
+        "quote": "the \\((i,j)^{th}\\) entry of $C$ is defined as $\\frac{|\\langle\\bar{A_i}, \\bar{A_j}\\rangle|}{\\|\\bar{A_i}\\|\\|\\bar{A_j}\\|}$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a standard degenerate-case convention, e.g., set C(i,j)=0 whenever a centroid norm is zero (or reaggregate such blocks); the method and all stated results are otherwise unaffected.",
+      "overall_effect": "For inputs containing a zero-centroid block, the orthogonality-based sampling construction in Algorithm 1 (and the same construction in step 2 of Algorithm 2) is undefined.",
+      "primary_affected_tag": "algo:roar-bk",
+      "target_type": "algorithm",
+      "title": "Block-cosine matrix C is undefined when a block centroid is zero",
+      "why_classification": "A standard local condition fixes the degenerate case; the method, conclusions, and advertised scope all survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=(\\tilde{\\lambda}I_r)^{-1}-(\\tilde{\\lambda}I_r)^{-1}M\\{M^T (\\tilde{\\lambda}I_r)^{-1}M+(I_n)^{-1} \\}M^T(\\tilde{\\lambda}I_r)^{-1}",
+          "tag": "thm:woodberry_identity"
+        },
+        {
+          "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_n-\\frac{1}{\\tilde{\\lambda}^3}M^T\\{MM^T+\\tilde{\\lambda}I_r\\}M\\label{eq:wi2}",
+          "tag": "thm:woodberry_identity"
+        }
+      ],
+      "failure_explanation": "The Woodbury identity requires the inverse of the correction factor, (I_n + M^T(tilde-lambda I_r)^{-1}M)^{-1}, but the displayed expansion omits that inverse, and the propagated scalar factor is also wrong: the correct expansion is (MM^T+tilde-lambda I_r)^{-1} = (1/tilde-lambda)I_r - (1/tilde-lambda) M (M^TM + tilde-lambda I_n)^{-1} M^T, not (1/tilde-lambda)I_r - (1/tilde-lambda^3) M(M^TM+tilde-lambda I_n)M^T. As written the equalities are false, e.g., M=I, tilde-lambda=1 would give (2I)^{-1} = -I. The same error occurs in eq:wi2, so the intermediate claims eq:wi1-eq:wi4 are false even though the lemma's conclusion is correct and the final comparison happens to hold (both sides coincide once the expansions are corrected).",
+      "failure_location": {
+        "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T\\label{eq:wi1}",
+        "tag": "thm:woodberry_identity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the two Woodbury expansions (insert the missing inverse and replace 1/tilde-lambda^3 by 1/tilde-lambda), or prove the identity directly by multiplying both sides by (M^TM+tilde-lambda I_n) on the left and (MM^T+tilde-lambda I_r) on the right.",
+      "overall_effect": "Only the proof of Lemma thm:woodberry_identity is defective; the identity itself is true, so its uses in Theorem thm:err_bound and in the implementation section remain valid.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Woodbury expansions in the proof of the push-through identity are false as written",
+      "why_classification": "The conclusion is true and the repair is a short, local, routine algebraic correction of a standard identity; no claim or downstream result is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_{t+1} - x_\\star\\|_2 &= \\|\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}(x_t - x_\\star)\\|_2 [\\text{Using \\eqref{eq:errbound2}}]\\notag",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "&\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2\\label{ew:errbound3}",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "\\mathbb{E}[\\|x_{t}-x_\\star\\|_2]\\le \\left( \\frac{\\tilde{\\lambda}}{\\lambda_{\\text{min}}^{\\text{block}}+\\tilde{\\lambda}} \\right)^t\\mathbb{E}[\\|x_0-x_\\star\\|_2] \\notag",
+          "tag": "thm:err_bound"
+        }
+      ],
+      "failure_explanation": "From the correct identity x_{t+1}-x_star = tilde-lambda (A_tau^T A_tau + tilde-lambda I)^{-1}(x_t - x_star), the proof bounds the norm by tilde-lambda/(lambda_min^+(A_tau^T A_tau)+tilde-lambda) ||x_t-x_star||. But that operator acts as the identity on ker(A_tau), so its operator norm is 1 whenever A_tau^T A_tau is singular, which is the generic case here since blocks have floor(m/k) << n rows. The bound is valid only if x_t - x_star lies in R(A_tau^T), which the algorithm does not ensure (x_t - x_star in R(A^T) can have a component in ker(A_tau)). Counterexample: A = I_2, one-row block A_tau = (1,0), x_star = b = (1,1)^T, x_t = 0 gives ||x_{t+1}-x_star|| = sqrt(1 + tilde-lambda^2/(1+tilde-lambda)^2) > (tilde-lambda/(1+tilde-lambda)) sqrt(2) = (tilde-lambda/(lambda_min^+ + tilde-lambda)) ||x_t - x_star||. The 'Equivalently' expectation bound with rate (tilde-lambda/(lambda_min^block + tilde-lambda))^t inherits the same defect; in the example the true expected error decays only like the probability of sampling the second coordinate, much slower than the claimed rate, so the stated rate is false, not merely unproven.",
+      "failure_location": {
+        "quote": "\\|x_{t+1} - x_\\star\\|_2 \\leq \n    \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau) + \\tilde{\\lambda}} \\|x_t - x_\\star\\|_2",
+        "tag": "thm:err_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Withdraw the per-update contraction and the stated rate; keep only nonexpansiveness ||x_{t+1}-x_star|| <= ||x_t - x_star|| per update and prove expected geometric convergence via a global spectral quantity of the sampling-averaged regularized projection (the analysis the paper itself invokes in Theorem thm:dobk_for_least_square_problems / Theorem 4.1 of the cited ReRBK reference), which changes the rate constant.",
+      "overall_effect": "The paper's main-text convergence theorem and its geometric rate are invalid; the prose claims of providing a theoretical convergence analysis of Algorithm 1 lose their basis. No other labelled result depends on it.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "Per-update contraction bound uses lambda_min^+ as an operator norm, ignoring the null space of the sampled block",
+      "why_classification": "A contained, standard re-analysis (already cited by the authors) yields a recognizably comparable geometric mean-convergence guarantee, but the advertised per-block deterministic contraction and its rate constant must be abandoned; this is more than a local fix yet requires no new proof architecture and loses no guarantee type."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\min}^{+}(A_\\tau^{T}A_\\tau)}\\lesssim \\|x_{t+1}-x_\\star\\|_2^2 & \\lesssim \\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\max}^{+}(A_\\tau^{T}A_\\tau)}\\label{eq:errbound5}",
+          "tag": "thm:convergence_boost"
+        }
+      ],
+      "failure_explanation": "The bounds in eq:errbound5 subtract ||r_S||^2 / lambda(A_S^T A_S), where both eigenvalues depend on the chosen block S. Maximizing the residual mass ||(Ax_t)_S - b_S||^2 over S therefore need not minimize either bound: a block with slightly smaller residual but much smaller lambda_max^+(A_S^T A_S) yields a strictly smaller upper bound. 'Bounded for a given system' does not imply constant across blocks, so the stated justification for the selection rule has a genuine gap.",
+      "failure_location": {
+        "quote": "we minimize the above upper and lower bounds of the error $\\|x_{t+1}-x_\\star\\|_2^2$ in \\cref{eq:errbound5}, as $\\lambda_{\\min}^{+}, \\lambda_{\\min}^{-}$ are bounded for a given system, and thus ensure faster convergence in general over many iterations.",
+        "tag": "thm:convergence_boost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the block-dependent eigenvalues in eq:errbound5 by uniform extrema over all index sets of size floor(m/k) (min over S of lambda_min^+(A_S^T A_S) and max over S of lambda_max^+(A_S^T A_S)); maximizing ||r_S||^2 then provably minimizes the uniform bounds, restoring the stated conclusion.",
+      "overall_effect": "The theorem's guarantee that the residual-based update minimizes the error bounds - the stated rationale for the dynamic block in Algorithm 1 - is unproven as written; the hedged claim of improved convergence 'in general' survives only heuristically.",
+      "primary_affected_tag": "thm:convergence_boost",
+      "target_type": "formal_result",
+      "title": "Top-residual block selection does not provably minimize the derived error bounds",
+      "why_classification": "A standard local modification (uniform eigenvalue bounds over finitely many subsets) repairs the argument; the theorem's qualitative conclusion and the algorithm are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& CPU &\\textbf{2.82}&\\textbf{1.48}& \\textbf{1.54}& \\textbf{4.72} \\\\",
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab2"
+        },
+        {
+          "quote": "& CPU &\\textbf{58.78} & \\textbf{42.004}& \\textbf{1.20}",
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab3"
+        }
+      ],
+      "failure_explanation": "The prose claims CPU speed-up ranges [1.44, 4.53] over SOBK and [1.42, 59.38] over TA-ReBlocK-U, but the tables report SOBK CPU speed-ups from 1.48 up to 4.72 (4.72 exceeds the claimed maximum) and TA-ReBlocK-U CPU speed-ups from 1.20 to 58.78 (1.20 violates the claimed minimum and 59.38 matches no entry). None of the four extrema in the sentence appears in the tables, and neither do the iteration speed-up columns produce them.",
+      "failure_location": {
+        "quote": "Our experiments demonstrate that with respect to time, ROR-BK is between \\textbf{1.44} and \\textbf{4.53} times faster than SOBK, and \\textbf{1.42} to \\textbf{59.38} times faster than the TA-ReBlocK-U method",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the sentence to the extrema in the tables (approximately 1.48-4.72 over SOBK and 1.20-58.78 over TA-ReBlocK-U) or reconcile the tables with the sentence.",
+      "overall_effect": "The quantitative summary of the experimental gains is unreliable; the qualitative conclusion that ROR-BK is faster in all reported instances remains supported by the tables.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Reported CPU speed-up ranges contradict the paper's own tables",
+      "why_classification": "A local numerical correction to one summary sentence; no method, guarantee, or qualitative conclusion changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\textit{Consider the ROR-BK algorithm, namely \\cref{algo:roar-bk} with $M(A_S) = (A_S A_S^\\top + \\tilde{\\lambda} I)^{-1}$ and $\\mu$ be the sampling rule defined earlier.",
+          "tag": "thm:dobk_for_least_square_problems"
+        },
+        {
+          "quote": "\\bar{W}=\\mathbb{E}_{S \\sim \\mu}[W(S)], \\text{and} \\quad \\bar{P}=  \\mathbb{E}_{S\\sim \\mu}[P(S)]",
+          "tag": "thm:dobk_for_least_square_problems"
+        },
+        {
+          "quote": "$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$ where $i=1,2,\\dots m$",
+          "tag": "algo:roar-bk"
+        }
+      ],
+      "failure_explanation": "The cited Theorem 4.1 of ReRBK, and the fixed matrices bar W = E_{S~mu}[W(S)], bar P = E_{S~mu}[P(S)] underlying the linear mean recursion E[x_{t+1}] - x^{(mu)} = (I - bar P)(E[x_t] - x^{(mu)}) that yields the (1-alpha)^T rate, require each block to be drawn independently from a fixed distribution mu. Algorithm 1 additionally builds a block from the current top-residual rows - a deterministic, state-dependent (nonlinear) selection - so the iterates of Algorithm 1 do not follow that recursion and the cited proof does not apply to the algorithm named in the statement. (Additionally, x^{(mu)} is defined as an unconstrained argmin, which is not unique when A is rank-deficient; the minimum-norm weighted least-squares solution must be intended.)",
+      "failure_location": {
+        "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restrict the theorem to the i.i.d.-sampled variant of the algorithm (blocks drawn from the fixed distribution P, with the residual-based update removed or analyzed separately), and specify x^{(mu)} as the minimum-norm weighted least-squares solution; covering the state-dependent residual block would require a genuinely new analysis.",
+      "overall_effect": "The advertised convergence of the mean ROR-BK iterates to the weighted least-squares solution at rate (1-alpha)^T, and the intro/appendix claims relying on it, are unsupported for the algorithm as presented; only the fixed-sampling variant without the residual-based dynamic block is covered by the cited result.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "Mean-convergence theorem rests on a fixed-distribution result that Algorithm 1's residual-based sampling violates",
+      "why_classification": "A limited weakening (restricting the sampling scheme) preserves a recognizably comparable mean-convergence result via the cited theorem, but the theorem no longer covers the method's residual-based update; extending it to the full algorithm needs a new, nontrivial argument."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s3",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

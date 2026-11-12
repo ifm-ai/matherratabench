@@ -1,0 +1,109 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State Let $\\beta_{k-1} = \\| \\tilde{\\boldsymbol{v}}^{(k)} \\|_2$.",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "\\State Obtain $\\tilde{\\boldsymbol{v}}_{2} = A\\boldsymbol{v}_{1} - \\alpha_1 \\boldsymbol{v}_{1}$.",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "{\\bf Input:} Real symmetric matrix $A \\in \\mathbb{R}^{n\\times n}$, real vector $\\boldsymbol{v} \\in \\mathbb{R}^{n\\times 1}$, number of Lanczos iterations $m$.",
+          "tag": "alg:Lanc"
+        }
+      ],
+      "failure_explanation": "For a permitted input such as A=lambda I with lambda<1, alpha_1=v_1^T A v_1=lambda and \\tilde v_2=A v_1-alpha_1 v_1=0, so beta_1=0 and the next line forms v_2=\\tilde v_2/beta_1=0/0. The algorithm has no lucky-breakdown test or early truncation, so the returned nodes and weights are undefined for such inputs.",
+      "failure_location": {
+        "quote": "\\State Obtain $\\boldsymbol{v}_k = \\tilde{\\boldsymbol{v}}_{k}/\\beta_{k-1}$.",
+        "tag": "alg:Lanc"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the standard lucky-breakdown termination: if beta_{k-1}=0, stop and build/return the smaller tridiagonal T_k of the converged Krylov subspace with the corresponding Gauss rule, instead of normalizing \\tilde v_k.",
+      "overall_effect": "alg:Lanc, and therefore alg:SLQ's construction of [log det A]_L, is not well-defined on matrices having an invariant subspace containing the start vector; the quadrature output contract fails in exactly those degenerate cases.",
+      "primary_affected_tag": "alg:Lanc",
+      "target_type": "algorithm",
+      "title": "Lanczos algorithm divides by a possibly zero beta_{k-1} with no breakdown handling",
+      "why_classification": "The repair is a standard local algorithmic termination and does not change the Lanczos quadrature method or the later error analysis; only a degenerate input case is made well-defined."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\geq \\frac{1}{2\\log(\\rho_2)}\\log\\left(\\frac{K_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right)}\\right),",
+          "tag": "eq_optimized_m"
+        },
+        {
+          "quote": "\\min_{\\alpha>1} \\, \\log\\left(C \\alpha\\right) \\left(\\alpha/(\\alpha-1) \\right)^2.",
+          "tag": "optimization"
+        },
+        {
+          "quote": "\\left|\\tr_{N}(f(A))-\\left[\\log \\det A \\right]_L\\right|\\leq \\frac{4nM_{\\rho_2}}{(\\rho_2^{2}-\\rho_2)\\rho_2^{2m}},",
+          "tag": "thm:ours"
+        },
+        {
+          "quote": "$$ K_{\\rho_2} = \\frac{4 \\alpha M_{\\rho_2}}{\\rho_2^2 - \\rho_2}, M_{\\rho_2} = \\sqrt{\\log\\left(\\frac{\\lambda_{\\min}}{2} \\right)^2 + \\pi^2},$$",
+          "tag": "thm:ours_updated"
+        }
+      ],
+      "failure_explanation": "The quadrature error bound is n*4M_rho2/(rho_2^2-rho_2)*rho_2^{-2m}. Imposing the allocated tolerance epsilon/alpha and using |tr(f(A))| >= n log(kappa^{1/n}/lambda_max) cancels n and gives eq_optimized_m with K_rho2=4 alpha M_rho2/(rho_2^2-rho_2) at alpha=alpha*. The updated theorem instead keeps nK_rho2 and defines K_rho2 with alpha while only alpha* is quantified, so the displayed optimized bound is not the one certified by the derivation and K_rho2 is ambiguous as stated.",
+      "failure_location": {
+        "quote": "$$m \\geq \\frac{1}{2\\log(\\rho_2)}\\log\\left(\\frac{nK_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right)}\\right), $$",
+        "tag": "thm:ours_updated"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Set alpha=alpha* in K_rho2 and remove the spurious factor n in thm:ours_updated so the m bound coincides with eq_optimized_m and with the objective whose minimizer is alpha*; if the larger n-dependent m is retained, the claim that the m-N product is minimized must be withdrawn.",
+      "overall_effect": "The relative-error probability conclusion can still be forced by the conservative choice alpha=alpha*, but thm:ours_updated no longer states the MVM-minimizing allocation derived in the optimization; the MVM comparison built on it inherits an unexplained extra n-dependent factor and an ambiguous K_rho2.",
+      "primary_affected_tag": "thm:ours_updated",
+      "target_type": "formal_result",
+      "title": "thm:ours_updated keeps a spurious factor n and leaves K_rho2 tied to alpha rather than alpha*",
+      "why_classification": "Resolving it requires reconciling the optimization display, eq_optimized_m, and the final theorem rather than fixing one obvious symbol; as written it undermines the advertised minimized-MVM allocation, though the main relative-error guarantee remains recoverable."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "To ensure the comparability of results, $\\epsilon$ in \\cref{thm:correctedSaad} should be replaced by",
+          "tag": "eq_eps"
+        },
+        {
+          "quote": "Given $\\epsilon, \\eta \\in (0,1)$, if the Lanczos iteration step $m$ and the query number $N$ satisfy",
+          "tag": "thm:correctedSaad"
+        },
+        {
+          "quote": "SPD matrix $A \\in \\mathbb{R}^{5000\\times 5000}$ with eigenvalues $\\lambda_i = 0.99/i^{0.5}, i = 1, \\ldots, 5000$;",
+          "tag": "eq_eps"
+        }
+      ],
+      "failure_explanation": "The synthetic matrices have all eigenvalues below 1, so log det A is negative. Then epsilon=epsilon^* log det A/n is negative for epsilon^*>0, violating the epsilon in (0,1) hypothesis used by thm:correctedSaad and making the absolute-error target epsilon n negative. The comparable absolute tolerance should be epsilon^* |log det A|, i.e. epsilon=epsilon^* |log det A|/n.",
+      "failure_location": {
+        "quote": "\\epsilon = \\epsilon^* \\log \\det A / n.",
+        "tag": "eq_eps"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace eq_eps by epsilon=epsilon^* |log det A|/n, while still noting that using the exact log determinant is idealistic, or restrict the comparison to matrices with log det A>0.",
+      "overall_effect": "The experimental MVM comparison for thm:correctedSaad is not meaningful as written for matrices with negative log determinant, including the stated synthetic examples; the benchmark substitution can fall outside the theorem's hypothesis.",
+      "primary_affected_tag": "eq_eps",
+      "target_type": "other",
+      "title": "eq_eps can make epsilon negative for negative log determinants",
+      "why_classification": "The repair is an absolute-value/sign correction and preserves the intended benchmark comparison; the defect is substantive only because a negative epsilon violates the theorem hypothesis and changes the absolute-error target."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2307.00847",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c42e539abecf88a44de72f2dedfec14703df372008f57b75de751f59b08fac16",
+  "status": "ok"
+}

@@ -1,0 +1,186 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\text{ with output }    \\|{\\rm T}(\\theta;\\cdot)\\|_{L^{\\infty}(\\mathbb{R}^D)}\\leq R",
+          "tag": "TNC"
+        },
+        {
+          "quote": "$1-q\\lesssim \\|\\tilde\\eta(x)\\|_1 \\lesssim d^{d/2}(1-q)^{-2d}$, where $\\lesssim$ hides the dependency of some uniform constants. Therefore we can find some $c$ such that $1-c\\|\\tilde\\eta(x)\\|_1\\in (-1,1)$.",
+          "tag": "approxetai"
+        },
+        {
+          "quote": "c\\tilde\\eta_i(x)\\sum_{k=0}^r(1-c\\|\\tilde\\eta(x)\\|_1)^k",
+          "tag": "approxetai"
+        }
+      ],
+      "failure_explanation": "The transformer class is defined with the constraint ||T||_{L^\\infty(R^D)} <= R, but the proof of Theorem thmApprox constructs T(x) = sum_i g(z_i) c \\tilde\\eta_i(x) sum_{k=0}^r (1-c s(x))^k with s(x)=||\\tilde\\eta(x)||_1 and analyzes it only on M(q). The bounds 1-q <= s <= U=d^{d/2}(1-q)^{-2d} are cited only on M(q), and c is any constant with 1-cs in (-1,1) on that range. Concretely: (i) the proof permits c with 1-cs<0, and then T(x) = (1-(1-cs)^{r+1}) \\hat f(x) overshoots |\\hat f| whenever r+1 is odd, so |T(x)| can exceed R even on M(q) at points where |\\hat f(x)|=R; (ii) off M(q) nothing controls s(x), and wherever |1-c s(x)|>1 the truncated geometric series grows like |1-c s(x)|^{r+1}, so ||T||_{L^\\infty(R^D)} can be far larger than R. No step in the proof enforces or verifies the required output bound, so the argument establishes an epsilon-approximating network but not one belonging to the stipulated class.",
+      "failure_location": {
+        "quote": "there exists a transformer network ${\\rm T}(\\theta;\\cdot)\\in\\mathcal{T}(L_{\\rm T}, m_{\\rm T},d_{embed},\\ell,L_{\\rm FFN},w_{\\rm FFN},R,\\kappa)$ with parameters",
+        "tag": "thmApprox"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Append one final transformer block whose feed-forward layer clips the output token to [-R,R] (clip(v) = sigma(v+R) - sigma(v-R) - R, O(1) heads/depth/width). Since |f(x)| <= R on M(q), clipping cannot increase the approximation error there; the clipped network belongs to the stipulated class and all stated depths, widths, token numbers, weight bounds, and both theorems' error guarantees are unchanged.",
+      "overall_effect": "Theorem thmApprox's existence claim inside the class T(...,R,\\kappa) is unsupported as proved; Theorem thmGeneralization's bias bound inf_{T in class} ||T-f||_\\infty^2 <= O(\\epsilon^2) requires an approximant inside the same R-bounded class, so its proof inherits the gap (its rate survives once repaired). The incidental membership claims in Propositions repetatildei and approxetai are likewise unverified.",
+      "primary_affected_tag": "thmApprox",
+      "target_type": "formal_result",
+      "title": "Constructed approximator is never shown to satisfy the class's sup-norm bound R",
+      "why_classification": "The repair is a single standard clipping block appended to the construction: local and routine, no new lemma or reoptimization, and every error bound, rate, and advertised parameter (depth O(d+ln ln(1/eps)), width/heads O(D eps^{-d/alpha})) is preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemadd",
+        "lemcmulti",
+        "lemsq",
+        "lempp"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[ \\text{\\rm FFN}(h_t) = \n   \\begin{cases} \n    h_t & \\text{if}\\text{  } t\\in\\{1,\\cdots,k\\}",
+          "tag": "Gatinglemma"
+        },
+        {
+          "quote": "${\\rm B}(H) = {\\rm FFN}({\\rm MHA}(H) + H) + {\\rm MHA}(H) + H.$",
+          "tag": "lemsumD"
+        },
+        {
+          "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $M$ only from columns $2D+1$ to $3D$.",
+          "tag": "lempp"
+        }
+      ],
+      "failure_explanation": "The Gating Lemma as stated only produces a tokenwise map that keeps h_t for t<=k and replaces h_t by (0,...,0,I_t,1) otherwise; it does not subtract a constant from selected columns. Moreover, inside the residual block B(H) = FFN(Y) + Y the FFN output is added to Y, so the needed object is the correction map (-DM e_1 on the target column(s), 0 elsewhere), not the target map stated in the lemma; applying the lemma's map literally would even double the kept tokens. No gated constant-subtraction FFN is constructed or cited anywhere, and this unsupported step is invoked identically in the proofs of lemsumD, lemadd, lemcmulti, lemsq, and lempp.",
+      "failure_location": {
+        "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $DM$ in the $D+1$-th column.",
+        "tag": "lemsumD"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Supply the standard correction map: a two-layer ReLU FFN can evaluate a hat-shaped gate of the interaction coordinate I_t^1 that equals 1 exactly on the target columns and 0 on all others (the cos(j pi/(2 ell)) values are Theta(1/ell)-separated), and output -M * gate * (fifth-row constant) e_1. This uses O(1) width/depth and weights O(ell ||H||), consistent with every stated parameter bound.",
+      "overall_effect": "The proofs of all five basic-arithmetic lemmas contain the same unsupported step. The needed operation is realizable, so the lemmas' statements and everything built on them (Propositions repetatildei and approxetai, Theorems thmApprox and thmGeneralization) survive once the step is properly supplied.",
+      "primary_affected_tag": "lemsumD",
+      "target_type": "formal_result",
+      "title": "Gating Lemma does not provide the constant-subtraction step used in every arithmetic-operation proof",
+      "why_classification": "A routine, standard ReLU gate construction fills the step with no change to any lemma statement, parameter bound, or downstream result; method, conclusions, rates, and advertised scope all survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "${\\rm B}(H) = {\\rm FFN}({\\rm MHA}(H) + H) + {\\rm MHA}(H) + H.$",
+          "tag": "repetatildei"
+        },
+        {
+          "quote": "We use ReLU function $\\sigma(x)=\\max(x,0)$ as the activation function in the feed-forward network.",
+          "tag": null
+        },
+        {
+          "quote": "\\multirow{4}{*}{$(H_{d+7})_{:,I_{d+7}}$} & \\tilde\\eta_i(x)  & \\mathbf{0} \\\\",
+          "tag": "repetatildei"
+        }
+      ],
+      "failure_explanation": "With ReLU activation, an identity-weight, zero-bias FFN computes sigma (not the identity: negative stored values occur, e.g. x^j-(z_i)^j and 1-(...)^2-(...)^2), and the block outputs FFN(Y)+Y = sigma(Y)+Y, so every positive stored value is doubled (a value v=1/2 becomes 1). This contradicts the displayed H_{d+8}, which carries (H_{d+7})_{:,I_{d+7}} forward unchanged and merely adds \\tilde\\eta_i(x) in a fresh column; the intended no-op requires the FFN to be the zero map, not the identity. As described, the step also corrupts the chunk content reused by the parallel construction in the proof of Proposition approxetai.",
+      "failure_location": {
+        "quote": "For the feed-forward layer of $B_8$, we take the weight matrix equals to identity and bias equals to zero, so that it implements the identity operation.",
+        "tag": "repetatildei"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Set the feed-forward weights and biases of B_{d+8} to zero, so that B_{d+8}(H) = MHA(H) + H; no parameter count changes.",
+      "overall_effect": "The final placement step of the repetatildei construction is misdescribed; as written the block does not produce the displayed H_{d+8}. The proposition's statement and all its parameters are unaffected once corrected.",
+      "primary_affected_tag": "repetatildei",
+      "target_type": "formal_result",
+      "title": "Identity-weight feed-forward layer does not implement the identity in the residual ReLU block of Proposition repetatildei",
+      "why_classification": "A single forced local correction (zero instead of identity weights) restores the construction; the statement, parameters, and all downstream results are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $\\|\\theta_B\\|_\\infty\\leq O(\\ell^2M^2\\|H\\|^2_{\\infty,\\infty})$",
+          "tag": "lemsumD"
+        },
+        {
+          "quote": "Then we can construct an attention head $A$ with $\\|\\theta_A\\|_{\\infty}=O(d_{embed}^4\\mu^2\\ell^2M^2)$ such that",
+          "tag": "IAlemma"
+        },
+        {
+          "quote": "-\\left(\\frac{\\|P(z_i)^{\\top}(x-z_i)\\|_2}{h\\delta}\\right)^2",
+          "tag": "repetatildei"
+        },
+        {
+          "quote": "$\\kappa=O(D^2\\delta^{-2d})$ such that $T_1(\\theta;\\cdot)$ can exactly represent $H$",
+          "tag": "approxetai"
+        },
+        {
+          "quote": "\\kappa=O(D^2\\epsilon^{-\\frac{2d+8}{\\alpha}})",
+          "tag": "thmApprox"
+        },
+        {
+          "quote": "\\kappa=O(D^2n^{\\frac{2d+8}{2\\alpha+d}})",
+          "tag": "thmGeneralization"
+        }
+      ],
+      "failure_explanation": "Every construction step is bounded via the Interaction Lemma's ||theta_A|| = O(d_embed^4 mu^2 ell^2 M^2), restated in the arithmetic lemmas as ||theta_B|| <= O(ell^2 M^2 ||H||^2), where the kernels embed shifts of magnitude M. In the repetatildei construction the later blocks store values - and therefore require kernel shifts and matrix norms - of order Theta(D delta^{-2}): the normalized tangential term ||P(z_i)^T(x-z_i)||^2/(h delta)^2 reaches order D delta^{-2} (e.g., when x-z_i, of squared norm Theta(D), lies in the tangent span), and ell = Theta(dD). Evaluating the paper's own bound gives O(ell^2 M^2 ||H||^2) = O(d^2 D^2 * D^2 delta^{-4} * D^2 delta^{-4}) = O(D^6 delta^{-8}) up to d-factors, not the claimed O(D^2 d^6 delta^{-8}) / O(D^2 delta^{-8}): the D-exponent of kappa is understated by 4. The same misaccounting propagates to approxetai (stated kappa = O(D^2 delta^{-2d-8}); its intermediate claim O(D^2 delta^{-2d}) even drops the delta^{-8} of repetatildei's own bound), thmApprox (kappa = O(D^2 eps^{-(2d+8)/alpha})), and thmGeneralization (kappa = O(D^2 n^{(2d+8)/(2 alpha+d)})).",
+      "failure_location": {
+        "quote": "By reexamining the proof, we get $L_T=O(d)$, $m_T=O(D)$, $d_{embed}=O(1)$, $\\ell\\geq O(Dd)$, $L_{FFN}=O(1)$, $w_{FFN}=O(1)$, $\\kappa=O(D^2d^6\\delta^{-8})$.",
+        "tag": "repetatildei"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Recompute the weight magnitude from the paper's own interaction bound at the actual value scales: kappa = O(D^6 delta^{-8}) in repetatildei, O(D^6 delta^{-2d-8}) in approxetai, O(D^6 eps^{-(2d+8)/alpha}) in thmApprox, and O(D^6 n^{(2d+8)/(2 alpha+d)}) in thmGeneralization; no other parameter and no error bound changes.",
+      "overall_effect": "The constructed networks require weights of order D^6 (hiding d), so they may fall outside the classes with the stated kappa = O(D^2 ...): the membership claims of repetatildei, approxetai and thmApprox, and the bias bound of thmGeneralization (which needs an epsilon-approximator inside its ERM class), are not established as stated. Both error bounds and every other parameter are unaffected, because kappa enters the covering-number analysis only inside a logarithm that the \\tilde O absorbs.",
+      "primary_affected_tag": "repetatildei",
+      "target_type": "formal_result",
+      "title": "Weight-magnitude bound kappa miscomputed: the D^2 factor should be D^6 throughout",
+      "why_classification": "The repair is contained bookkeeping with no new proof architecture and leaves recognizably comparable theorems (identical rates, depth, width, token counts, and identical generalization bound), but it withdraws the stated weight-magnitude guarantee in both main theorems, worsening a complexity parameter polynomially in D; this is a limited weakening of stated results, hence more than a local patch."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then there exist three transformer blocks $B_1,B_2,B_3\\in\\mathcal{B}(D,3,d_{embed})$ such that",
+          "tag": "lempp"
+        },
+        {
+          "quote": "x^1y^1+x^1+M",
+          "tag": "lempp"
+        }
+      ],
+      "failure_explanation": "Under the paper's own interaction mechanism, one attention head computes sigma((factor1)*(factor2)+M) and deposits it at the query token, so the query token must itself carry one of the two factors; a fresh, data-free query column cannot produce the product of two other tokens' values. The residual connection therefore leaves (product)+(carried factor)+M at the factor column, and the block's tokenwise FFN can subtract only the constant M, not the residual factor \\tilde\\eta_i (which is no longer separately stored in that token). Hence a single one-head block cannot output a column containing exactly c \\tilde\\eta_i(x) sum_k (1-c||\\tilde\\eta(x)||_1)^k as displayed in H^i_{3s+6}; this is exactly why Lemma lempp uses three blocks (copy, multiply-with-shift, subtract) for the same operation.",
+      "failure_location": {
+        "quote": "Then, by Lemma~\\ref{lempp}, for each fixed $i=1,\\cdots,K$, we can construct $B^i_{3s+6}\\in\\mathcal{B}(1,3,d_{embed})$ such that it implements the pairwise multiplication between $c\\sum_{k=0}^r(1-c\\|\\tilde\\eta(x)\\|_1)^k$ and $\\tilde\\eta_i(x)$",
+        "tag": "approxetai"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Implement each product with two blocks (multiply-with-shift, then subtract the residual factor, following lempp's own B_2/B_3 pattern) or with two heads in one block; the orders of L_T, m_T, ell, and kappa in approxetai and in everything downstream are unchanged.",
+      "overall_effect": "The displayed intermediate matrix H^i_{3s+6} is not attainable with the stated single block. The proposition's final error bounds and all its stated network parameters are unaffected once the step is implemented correctly.",
+      "primary_affected_tag": "approxetai",
+      "target_type": "formal_result",
+      "title": "A single one-head attention block cannot realize the displayed product step in the proof of Proposition approxetai",
+      "why_classification": "A routine local fix within the paper's own toolbox (the three-block pattern of lempp) restores the step; the proposition's statement, its parameters, and all downstream results survive verbatim."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2505.03205",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e251cd718a4c2fe4d9791d1e58d8251eec6a75089c28852e7c9426637e3b810a",
+  "status": "ok"
+}

@@ -1,0 +1,259 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:amb2D",
+        "thm:amb2D",
+        "cor:coeff_count"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "define $n_T = N\\sum_{t \\in T} \\frac{1}{p_t}$",
+          "tag": "lem:amb1D"
+        },
+        {
+          "quote": "Note that this construction is well defined.",
+          "tag": "lem:amb1D"
+        }
+      ],
+      "failure_explanation": "The indices $n_T=N\\sum_{t\\in T}1/p_t$ need not lie in $0\\le n<N$: e.g. for $N=30$ and $T=\\{2,3,5\\}$, $n_T=15+10+6=31\\ge N$, so $x_{n_T}$ is out of range for a length-$N$ signal. The stated well-definedness argument only shows the unreduced values are distinct (different lowest-terms denominators); after reducing indices mod $N$, distinctness requires a separate argument (which does hold: if $n_{T_1}\\equiv n_{T_2}\\pmod N$, multiplying $\\sum_{T_1}1/p-\\sum_{T_2}1/p\\in\\mathbb Z$ by the product of the primes in the symmetric difference and reducing mod a prime in $T_1\\setminus T_2$ gives a contradiction). The DFT computation in the proof survives once indices are read mod $N$.",
+      "failure_location": {
+        "quote": "For every possible value of $n_T$, let $x_{n_T} = (-1)^{\\abs{T}}$,",
+        "tag": "lem:amb1D"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Define the signal using indices reduced mod $N$ and add the short mod-$N$ distinctness argument; lem:amb2D, thm:amb2D and cor:coeff_count then go through unchanged.",
+      "overall_effect": "The witnessing signal construction in lem:amb1D, hence the constructed matrix in lem:amb2D and the distinguishing pairs in thm:amb2D, are ill-defined as written whenever a subset of the prime reciprocals of the signal length sums to at least 1 (e.g. lengths divisible by 30); the tightness of the minimal sampling count (cor:coeff_count) inherits this gap. All statements are true.",
+      "primary_affected_tag": "lem:amb1D",
+      "target_type": "formal_result",
+      "title": "Ill-defined index construction in the proof of the 1D ambiguity lemma",
+      "why_classification": "A local repair (mod-$N$ indexing plus a few-line distinctness argument) preserves the lemma, all its dependents, and every advertised result; no new architecture or weakening is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The proof of the following result is identical to \\Cref{lem:rep_in_time} and is omitted.",
+          "tag": "lem:rep_in_freq"
+        },
+        {
+          "quote": "x_n = \\frac{1}{N}\\sum_{k=0}^{N-1} \\tilde{x}_k \\e{-2\\pi i nk/N}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the paper's inverse DFT carrying the $1/N$ factor, direct computation gives $y_{dn}=\\frac{1}{dN}\\sum_{t,k}\\tilde x_k e^{\\pm 2\\pi i(tN+k)dn/(dN)}=\\frac1N\\sum_k\\tilde x_k e^{\\pm 2\\pi ikn/N}=x_n$, not $dx_n$ (counterexample: $N=1$, $d=2$, $x=[1]$ gives $y=[1,0]$, so $y_0=1\\ne 2$). Consistently, Parseval gives $\\|y\\|^2=\\frac1{dN}\\|\\tilde y\\|^2=\\|x\\|^2$, whereas $y_{dn}=dx_n$ with vanishing off multiples of $d$ would force $\\|y\\|^2=d^2\\|x\\|^2$. The duality with lem:rep_in_time fails because the forward transform is unnormalized while the inverse is not, so the omitted 'identical' proof is invalid.",
+      "failure_location": {
+        "quote": "Additionally, for all $0\\le n < N$,\n    $y_{dn} = dx_n$.",
+        "tag": "lem:rep_in_freq"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate the lemma as $y_{dn}=x_n$ (keeping the vanishing assertion) and account for the $1/N$ normalization in the proof.",
+      "overall_effect": "The scaling assertion of lem:rep_in_freq is false. Section 3.1 invokes only the (correct) vanishing part of the lemma, so the subsignal framework, thm:dep2D and subsequent results are unaffected.",
+      "primary_affected_tag": "lem:rep_in_freq",
+      "target_type": "formal_result",
+      "title": "False scaling constant in the frequency-repetition lemma",
+      "why_classification": "A one-line correction of the constant fixes the lemma; the only part used downstream (vanishing off multiples of $d$) is correct, so no claim or dependent result is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, set $m_j = j(k/d_1)^{-1}p \\bmod{N_1}$ for the row index,",
+          "tag": "lem:subsig"
+        }
+      ],
+      "failure_explanation": "From $d_1=\\gcd(k,N_1)$ one only gets $\\gcd(k/d_1,N_1/d_1)=1$; $\\gcd(k/d_1,N_1)$ can exceed 1 (e.g. $N_1=12$, $k=8$: $d_1=4$, $k/d_1=2$, $\\gcd(2,12)=2$), so $(k/d_1)^{-1}\\bmod N_1$ need not exist and $m_j$ is undefined (also $n_j=h(l/d_2)^{-1}q$ uses an unexplained $h$). The construction only needs the inverse modulo $D_1=N_1/d_1$: the congruence $m_j(k/d_1)\\equiv jp\\pmod{D_1}$ yields $m_jk\\equiv jpd_1\\pmod{N_1}$, and the rest of the chain goes through. The lemma's statement is true (the image of $(m,n)\\mapsto mkN_2'+nlN_1'\\bmod N$ is exactly the multiples of $d$).",
+      "failure_location": {
+        "quote": "Since $d_1 = \\gcd(k, N_1)$ and $d_2 = \\gcd(l, N_2)$, $k/d_1$ and $l/d_2$ must have multiplicative inverses modulo $N_1$ and $N_2$, respectively.",
+        "tag": "lem:subsig"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace 'modulo $N_1$' (and analogously $N_2$) by 'modulo $D_1=N_1/d_1$', targeting the congruence $m_j(k/d_1)\\equiv jp\\pmod{D_1}$ (fix $h\\to j$).",
+      "overall_effect": "The proof of lem:subsig is invalid as written; since its statement is true and locally repairable, lem:amb2D and other users of the coset count remain established after the repair.",
+      "primary_affected_tag": "lem:subsig",
+      "target_type": "formal_result",
+      "title": "Proof of the subsignal coset lemma uses a nonexistent modular inverse",
+      "why_classification": "The false invertibility claim and the undefined $m_j$ are repaired by a local change of modulus; the lemma, its uses, and all conclusions survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Require a representative DFT coefficient $\\tilde{X}_{k, l}$ for each coefficient class",
+          "tag": "alg:2D"
+        },
+        {
+          "quote": "\\ForAll{$(k, l) \\in \\Call{RepCoeffs}{N_1, N_2}$} \\label{ln:2D_loop}",
+          "tag": "alg:2D"
+        },
+        {
+          "quote": "\\State $\\tilde{X}_{\\lambda k, \\lambda l} \\gets \\tilde{x}_\\lambda^{(k, l)}$ \\label{ln:2D_fillin}",
+          "tag": "alg:2D"
+        }
+      ],
+      "failure_explanation": "For divisors $\\lambda>1$ of $D$, the frequency $(\\lambda k,\\lambda l)$ is in general not the representative of its own class, so $\\tilde X_{\\lambda k,\\lambda l}$ is not among the input coefficients: in $\\mathbb Z_4\\times\\mathbb Z_6$, inverting the $(1,1)$-class needs $\\tilde X_{2,2}$ while inverting the $(1,2)$-class needs $\\tilde X_{2,4}$, and both frequencies lie in the single class $\\{(2,2),(2,4)\\}$ whose input supplies only one coefficient (no representative choice can supply both). These values exist only as fill-ins produced by earlier loop iterations, but the ForAll enumeration order is unspecified, so the procedure can call Invert1D with unavailable data.",
+      "failure_location": {
+        "quote": "${\\bf x}^{(k, l)} \\gets \\Call{Invert1D}{\\set{\\tilde{X}_{\\lambda k, \\lambda l} : \\lambda \\divs D}}$",
+        "tag": "alg:2D"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Specify that RepCoeffs enumerates classes in increasing cyclic-subgroup order (bottom-up), under which each needed $\\tilde X_{\\lambda k,\\lambda l}$ ($\\lambda|D$, $\\lambda>1$) has already been written by the fill-in of the earlier-processed class of $(\\lambda k,\\lambda l)$.",
+      "overall_effect": "alg:2D's stated contract (invert from one representative coefficient per class) is not guaranteed as specified; the later memoized algorithm alg:memo_2D is structured differently and is not affected.",
+      "primary_affected_tag": "alg:2D",
+      "target_type": "algorithm",
+      "title": "High-level 2D inversion algorithm reads coefficients not guaranteed by its input",
+      "why_classification": "Adding the required enumeration-order specification is a short, local edit that makes the procedure well defined and preserves its guarantee; no result or scope is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "we will recover $\\big({\\bf x}^{(0, 1)}\\big)^{(3)}$, which is this signal decimated by 2.",
+          "tag": null
+        },
+        {
+          "quote": "However, \\Cref{alg:2D} also explicitly recovers the $(0, 3)$-subsignal at a different iteration of the loop in Line~\\ref{ln:2D_loop} when $(k,l)=(0,3)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "$(x^{(0,1)})^{(3)}$ has length 3 and DFT $(\\tilde X_{0,2j})_j$, so it equals the $(0,2)$-subsignal; the $(0,3)$-subsignal has length $\\lcm(4/\\gcd(0,4),6/\\gcd(3,6))=\\lcm(1,2)=2$ with DFT $(\\tilde X_{0,3j})_j$ and equals $(x^{(0,1)})^{(2)}$ (decimated by 3). The claimed identification equates signals of different lengths and is false, though the redundancy phenomenon it illustrates is real.",
+      "failure_location": {
+        "quote": "This decimated signal is exactly to the subsignal ${\\bf x}^{(0, 3)}$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the identification, e.g. '$({\\bf x}^{(0,1)})^{(2)}$, decimated by 3, is exactly the subsignal ${\\bf x}^{(0,3)}$', or identify $(x^{(0,1)})^{(3)}$ with ${\\bf x}^{(0,2)}$ and reference the $(0,2)$ iteration.",
+      "overall_effect": "The illustrative example misidentifies which subproblem is redundantly solved inside alg:2D; no algorithm guarantee or formal result depends on it.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Incorrect identification of a decimated subsignal in the redundancy discussion",
+      "why_classification": "A local correction of the example (choosing the consistent pairing) fixes the false claim; the redundancy argument and all algorithms are unaffected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $D_1/p < D_1$, the $(pk, pl)$-subsignal was recovered at a previous iteration of the for loop in Line~\\ref{ln:outer}.",
+          "tag": "alg:memo_2D"
+        },
+        {
+          "quote": "\\For{$D_1 \\in \\Call{Divisors}{N_1}$} \\label{ln:outer}",
+          "tag": "alg:memo_2D"
+        }
+      ],
+      "failure_explanation": "The identity fails whenever $p^{v_p(N_1)}\\mid k$ (e.g. $N_1=4$, $N_2=6$, $(k,l)=(0,1)$, prime $p=2\\mid D=6$: $\\gcd(0,4)=4\\ne 2\\gcd(0,4)=8$), in which case $p\\nmid D_1$ and $D_1/p$ is not an integer. The correct case split is on $p\\mid D_1$ versus $p\\nmid D_1$: when $p\\nmid D_1$ (so $p\\mid D_2$), $\\gcd(pk,N_1)=\\gcd(k,N_1)$ and the $(pk,pl)$-subsignal is found in the same outer iteration but an earlier inner iteration. The verification also presupposes increasing divisor iteration, which alg:memo_2D's loops do not state (unlike alg:memo_1D). The iteration order itself is correct.",
+      "failure_location": {
+        "quote": "If $p \\divs N_1$, then $\\gcd(pk, N_1) = p\\gcd(k, N_1) = N_1/(D_1/p)$.",
+        "tag": "alg:memo_2D"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Recase the argument on $p\\mid D_1$ versus $p\\nmid D_1$ (using $\\gcd(pk,N_1)=p\\gcd(k,N_1)$ only when $p\\mid D_1$) and annotate both divisor loops as iterating in increasing order.",
+      "overall_effect": "The correctness verification of alg:memo_2D's dynamic-programming iteration order fails as written; the algorithm's operation and guarantees remain valid once the argument is recased.",
+      "primary_affected_tag": "alg:memo_2D",
+      "target_type": "algorithm",
+      "title": "Invalid gcd identity in the verification of the 2D dynamic-programming order",
+      "why_classification": "A local recasing of the case split (plus an order annotation) repairs the verification completely; the algorithm, its order, and its guarantees are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Recovering ${\\bf x}^{(2)}$, ${\\bf x}^{(3)}$, and ${\\bf x}^{(6)}$ is trivial, since every DFT coefficient is required to ensure uniqueness of length 2, 3, and 6 signals.",
+          "tag": null
+        },
+        {
+          "quote": "If ${\\bf x}$ is a vector of length $N$ consisting of integer entries, then ${\\bf x}$ can be uniquely determined by measurements of the $\\tau(N)$ DFT coefficients,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "By the paper's own minimal-sampling results, uniqueness requires only $\\tau(N)$ coefficients, and $\\tau(4)=3<4$ and $\\tau(6)=4<6$; unique inversion does not require all coefficients for $N=4$ or $N=6$. The true property of $\\{1,2,3,4,6\\}$ is $\\phi(N)\\le 2$, i.e. the algorithm's assembled data (decimated signals plus one coprime coefficient and its conjugate) already covers every frequency, which is why the guess is exact and the subproblems trivial. Both passages conflate $\\phi(N)\\le 2$ with $\\tau(N)=N$ and contradict the paper's own uniqueness theory.",
+      "failure_location": {
+        "quote": "For certain values of $N$, including $N = 1, 2, 3, 4, 6$, unique inversion requires all DFT coefficients.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Reword both statements to the correct fact: for $N\\in\\{1,2,3,4,6\\}$, $\\phi(N)\\le 2$, so the algorithm's available data comprises all DFT coefficients.",
+      "overall_effect": "Two passages misstate the sampling requirements for small composite $N$; the algorithmic conclusions they support (trivial subproblems, immediately correct guess) remain correct.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that unique inversion requires all DFT coefficients for N in {1,2,3,4,6}",
+      "why_classification": "A local rewording replaces the false claim with the correct fact; no theorem, algorithm, or guarantee changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\beta_1 \\idmat{N/p_1} & \\cdots & \\beta_1 \\idmat{N/p_1} & -\\beta_1 {\\bf x}^{N/p_1}",
+          "tag": "eq:lattice_basis"
+        }
+      ],
+      "failure_explanation": "The basis of eq:lattice_basis has $N+1+\\sum_{p\\mid N}N/p+2M$ real rows ($N$ identity rows, one $\\beta_0$ row, $N/p_j$ rows per prime block of ${\\tt B}_1$, and $2M$ real rows for ${\\tt B}_2$). For $N=30$, $M=1$ this is $30+1+31+2=64$, not $N+\\phi(N)+2M=40$; moreover $\\sum_{p\\mid N}N/p=N\\sum_{p\\mid N}1/p$ is not $O(N)$ uniformly (e.g. primorial $N$), so the claimed $O(N^7\\log^2 MNL)$ per-iteration bound is not established for the basis as constructed (it omits a $\\log\\log N$ factor).",
+      "failure_location": {
+        "quote": "Since ${\\tt B}$ is an $(N+1)$-dimensional lattice in $\\R^{N + \\phi(N) + 2M}$,\nand $N + \\phi(N) + 2M = \\bigo{N}$,\nthe runtime bound becomes,\n$\\bigo{N^7\\log^2 MNL}$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Use the correct ambient dimension $n=N+1+\\sum_{p\\mid N}N/p+2M=O(N\\log\\log N)$ (or row-reduce the ${\\tt B}_1$ blocks to $N-\\phi(N)+1$ rows, giving $n=O(N)$) and restate the bound accordingly.",
+      "overall_effect": "The stated pseudo-polynomial per-iteration runtime bound for alg:memo_1D/alg:memo_2D rests on a false row count and is not established as written; the algorithms' correctness is unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Miscounted ambient dimension of the lattice basis undermines the stated LLL runtime bound",
+      "why_classification": "Correcting the dimension count changes the complexity bound by at most a $\\log\\log N$ factor (or not at all for a row-reduced basis); the algorithm, guarantees, and advertised scope survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": " &  & 5\\phantom{\\textsuperscript{*}} & 16 & 1.22e05 & 100 &  3.01 & {--}\\\\",
+          "tag": "tab:rect"
+        },
+        {
+          "quote": "However, if recovery of any test matrices failed, $M$ was increased for the longest subsignals of length $N=\\lcm(N_1, N_2)$.",
+          "tag": null
+        },
+        {
+          "quote": "The $90\\times90$ case when $M=2$ was the sole exception",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Per tab:rect, reliable (100%) inversion of 11x13 matrices occurred at $M=5$ with 16 supplied coefficients (16/143 = 11.2%), while the text claims 8/143 = 5.6% (the count 3+5 that results from raising $M$ only for the length-lcm=143 subsignal). The table's $M>1$ counts for 9x11 (10 vs 7), 11x13 (7,10,13,16 vs 5,6,7,8), 36x45 (193 vs 114), and 49x49 (129 vs 121) are all inconsistent with the stated protocol and with the claim that 90x90 was the sole exception receiving multiple coefficients at lower-order frequencies; they instead match supplying $M$ coefficients to a much larger set of classes. With the table's 16 coefficients, the comparative conclusion that 11x13 matrices were inverted from a relatively smaller spectrum fraction than 60x60 matrices is unsupported (16/143 = 11.2% > 350/3600 = 9.7%).",
+      "failure_location": {
+        "quote": "whereas the $11 \\times 13$ matrix required $8 / 143 \\approx 5.6\\%$ of DFT coefficients for reliable inversion.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Reconcile the text with tab:rect (correct the 11x13 count and the protocol/'sole exception' description) and adjust or withdraw the 'relatively smaller sampled spectrum' comparison.",
+      "overall_effect": "The reported sampling fractions, the description of the experimental protocol, and the comparative 11x13-versus-60x60 claim are mutually inconsistent and unreliable; no theoretical result is affected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Inconsistent reported sampling counts for the 11x13 (and other) matrix experiments",
+      "why_classification": "Reconciling the internally contradictory numbers is a local reporting fix; the experimental conclusions (successful recovery at double precision with $M$ up to 5) and all theory survive, with at most one discussion-level comparative sentence adjusted."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2510.11949",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n03-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "029d5f1f6eba9f20a58493649f3903cdd4294653c70bc63ac2e6f7768fdc7ef5",
+  "status": "ok"
+}

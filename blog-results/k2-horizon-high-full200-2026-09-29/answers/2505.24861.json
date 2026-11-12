@@ -1,0 +1,70 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Following, e.g., \\cite[Section 6.1]{sarkkaAppliedStochasticDifferential2019}, the SDE admits a Gaussian solution with mean and covariance that satisfy",
+          "tag": "lmm:lcbs:gauss:moments"
+        },
+        {
+          "quote": "\\mathbf C(\\rho_t; U_t) &= K, \\label{eq:lmm:lcbs:gauss:moments:C:K}\\\\",
+          "tag": "lmm:lcbs:gauss:moments"
+        },
+        {
+          "quote": "\\dot\\Sigma_t &= 2\\Bigl[\\mathbf C_{*,t} - \\frac\\gamma\\kappa\\Sigma_t + \\frac{\\gamma\\beta}{2\\kappa^2}\\left(P_t\\mathbf C_{*,t}^{-1}\\Sigma_t + \\Sigma_tP_t\\mathbf C_{*,t}^{-1}\\right)\\\\Bigr], \\label{eq:lmm:lcbs:gauss:moments:evol-C}",
+          "tag": "lmm:lcbs:gauss:moments"
+        }
+      ],
+      "failure_explanation": "The SDE is linear with drift matrix $M_t=-\\frac\\gamma\\kappa(I-\\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1})$, so the standard moment formula (the Särkkä reference the paper itself invokes) gives $\\dot\\Sigma_t=M_t\\Sigma_t+\\Sigma_tM_t^T+2\\mathbf C_{*,t}$, i.e. the second term must contain $M_t^T=-\\frac\\gamma\\kappa(I-\\frac\\beta\\kappa\\mathbf C_{*,t}^{-1}P_t)$. The proof writes $\\Sigma_tM_t$ instead, which differs by $\\frac{\\gamma\\beta}{\\kappa^2}\\Sigma_t(\\mathbf C_{*,t}^{-1}P_t-P_t\\mathbf C_{*,t}^{-1})$. This commutator vanishes for the covariance-type preconditioners (ii)-(iv), all of which are functions of $\\Sigma^{-1}$ and $\\Sigma_t^{-1}$, but not for the constant preconditioner $K$ (case (i)) in general: $P_t=(\\beta\\Sigma^{-1}+\\Sigma_t^{-1}+\\frac\\beta\\kappa K^{-1})^{-1}$ fails to commute with $K^{-1}$ whenever $K$ does not commute with $\\Sigma$ or $\\Sigma_0$. Hence the displayed covariance ODE \\eqref{eq:lmm:lcbs:gauss:moments:evol-C} is incorrect as stated for case (i).",
+      "failure_location": {
+        "quote": "\\dot \\Sigma_t = -\\frac\\gamma\\kappa(I - \\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1})\\Sigma_t -\\frac\\gamma\\kappa\\Sigma_t\\,(I - \\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1}) + 2\\mathbf C_{*,t},",
+        "tag": "lmm:lcbs:gauss:moments"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Write the Lyapunov equation as $\\dot\\Sigma_t=M_t\\Sigma_t+\\Sigma_tM_t^T+2\\mathbf C_{*,t}$ with $M_t=-\\frac\\gamma\\kappa(I-\\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1})$ (equivalently, add the hypothesis that $\\mathbf C_{*,t}$ commutes with $\\Sigma_t$); this one-line fix leaves the lemma's conclusion and every downstream result unchanged.",
+      "overall_effect": "The lemma's displayed covariance evolution is wrong for the constant-preconditioner case (i) with non-commuting $K$; the mean ODE, the Gaussian ansatz itself, and all downstream uses (cor:lcbs:gauss:gamma and lmm:compare:cbs:equiv only involve the commuting cases (ii)-(iv), and the text after the corollary explicitly notes no $K$-statement is possible) remain valid.",
+      "primary_affected_tag": "lmm:lcbs:gauss:moments",
+      "target_type": "formal_result",
+      "title": "Gaussian moment lemma: covariance ODE uses the drift matrix on both sides instead of its transpose",
+      "why_classification": "The repair is a single local correction (transpose the second factor, or add a commutation hypothesis); the Gaussian-solution claim, the mean ODE, and all results that consume this lemma survive intact, and no dependent result uses the affected case (i)."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "a weighted covariance $\\mathbf C_{U,t} = \\mathcal C_{\\alpha, \\lambda \\mathcal C(\\rho_t)}(\\rho_t; U_t)$ with scalars $\\alpha\\ge0$ and $\\lambda > 0$.",
+          "tag": null
+        },
+        {
+          "quote": "where we noted that $\\gamma=2\\frac{\\alpha'}{\\alpha'+1}$.",
+          "tag": "lmm:compare:cbs:equiv"
+        }
+      ],
+      "failure_explanation": "The localized covariance preconditioner is defined only for $\\lambda>0$, but the prescribed value $\\lambda=\\alpha'/(\\alpha-\\alpha')$ is negative whenever $\\alpha<\\alpha'$; in that regime the Gaussian 'kernel' weight grows with distance, the weighted covariance need not be positive definite, and the localized CBS SDE is not the well-defined diffusion the lemma analyzes. The valid range is $\\alpha\\ge\\alpha'$ ($\\lambda=\\infty$ at $\\alpha=\\alpha'$ reduces to the unweighted-weight case and is consistent). Moreover, the conclusion $m_t=m'_{ct}$, $\\Sigma_t=\\Sigma'_{ct}$ with $c=\\alpha'/(\\alpha(\\alpha'+1))$ holds only for $\\gamma=2\\alpha'/(\\alpha'+1)$ (the proof's first line uses $\\frac\\gamma\\kappa=\\frac{2\\alpha'}{\\alpha(\\alpha'+1)}$), yet the statement never specifies $\\gamma$ at all, so as written the claim is underdetermined and false for generic $\\gamma$.",
+      "failure_location": {
+        "quote": "For any choice of the CBS parameter\\footnote{We write $\\alpha'$ for the CBS parameter to distinguish it from the $\\alpha$ parameter of localized CBS.} $\\alpha' > 0$ and with localized CBS parameters \\begin{equation} \\label{eq:lmm:compare:cbs:equiv:params} \\alpha > 0, \\qquad \\kappa = \\alpha, \\qquad \\beta = \\alpha', \\qquad \\text{and} \\qquad \\lambda = \\frac{\\alpha'}{\\alpha - \\alpha'}, \\end{equation} it holds that $m_t = m'_{ct}$",
+        "tag": "lmm:compare:cbs:equiv"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the conditions $\\alpha\\ge\\alpha'$ and $\\gamma=2\\alpha'/(\\alpha'+1)$ to the lemma statement; the existing proof then applies unchanged and yields precisely the stated conclusion.",
+      "overall_effect": "The lemma's quantifier covers parameter regimes ($\\alpha<\\alpha'$) where the preconditioner is not a positive-definite diffusion matrix, and the missing $\\gamma$ makes the stated trajectory equality false for generic $\\gamma$; the surrounding prose ('mainly of theoretical interest') is unaffected since the proved content for $\\alpha\\ge\\alpha'$, $\\gamma=2\\alpha'/(\\alpha'+1)$ is exactly what is used.",
+      "primary_affected_tag": "lmm:compare:cbs:equiv",
+      "target_type": "formal_result",
+      "title": "Equivalence-with-CBS lemma statement omits the constraints $\\alpha\\ge\\alpha'$ and $\\gamma=2\\alpha'/(\\alpha'+1)$",
+      "why_classification": "Adding the two missing hypotheses is a short, local repair that preserves the claim, the proof, and all downstream discussion with no mathematical loss; only the statement's quantifier needs tightening."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2505.24861",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "21ce5f33da8200f8f8cc6d533722a99bf0425119ca5ce41c491ee7b53c44cf4f",
+  "status": "ok"
+}

@@ -1,0 +1,97 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\jump{\\bB{w}}^{\\rm T} \\mbf{f}^{\\tt EC,SWE} - \\avg{\\bB{w}^{\\rm T} \\mbf{B}^{\\tt SWE}} \\jump{\\bB{u}} = 0.",
+          "tag": "thm:ec_flux"
+        },
+        {
+          "quote": "w_1 = -\\frac{u_m^2}{2}- \\frac{1}{2}\\sum\\limits_{i=1}^N\\frac{\\alpha_i^2}{2i+1}+g(h+b), \\qquad w_2 = u_m,\\qquad w_{i+2} = \\frac{\\alpha_i}{2i+1}",
+          "tag": "eq:SWME:Entropy:Variables"
+        },
+        {
+          "quote": "\\mbf{\\bar{f}}^{\\tt EC, SWE}(\\bB{u}^-,\\bB{u}^+) \\coloneqq \\begin{pmatrix} 0 \\\\ \\sum\\limits_{j=1}^N \\frac{\\avg{h\\alpha_j}\\avg{\\alpha_j}}{2j + 1} \\\\ \\avg{hu_m}\\avg{\\bB{\\alpha}} + \\avg{h\\bB{\\alpha}}\\avg{u_m}\\\\ 0 \\end{pmatrix}",
+          "tag": "eq:swme_ec_fluxes"
+        }
+      ],
+      "failure_explanation": "In the hierarchical block computation two intermediate identities are false as written. (i) Since w_1 contains the moment term -(1/2) sum_i alpha_i^2/(2i+1), the SWE block jump(w)^T f^EC,SWE - avg(w^T B^SWE) jump(u) equals -(1/2) avg(hu_m) sum_i jump(alpha_i^2)/(2i+1), not 0 as claimed in eq:entropy_conservation_condition_swe. (ii) Since the moment component of bar f^EC,SWE is avg(hu_m)avg(alpha_i) + avg(h alpha_i)avg(u_m), the quantity jump(w)^T bar f^EC,SWE - avg(w^T bar B^SWE) jump(u) contains the additional term sum_j jump(alpha_j) avg(hu_m) avg(alpha_j)/(2j+1), which eq:leftside:EC:P drops. Counterexample (N=1, g=1, b=0, (h,u_m,alpha_1)^-=(1,0.3,0.1), (h,u_m,alpha_1)^+=(2,0.7,0.4)): the SWE block equals -0.02125 (not 0) and the bar f^EC,SWE block equals 0.094917 while the claimed expression equals 0.073667; the difference 0.02125 is exactly the dropped term. Because jump(alpha_j^2) = 2 avg(alpha_j) jump(alpha_j), the two errors are equal and opposite, so the final entropy condition and the theorem's statement remain correct (verified numerically: both sides of the full condition equal jump(u_m Psi) = 0.073667 in this example).",
+      "failure_location": {
+        "quote": "\\jump{\\bB{w}}^{\\rm T} \\mbf{\\bar{f}}^{\\tt EC, SWE} - \\avg{\\bB{w}^{\\rm T} \\mbf{\\bar{B}}^{\\tt SWE}} \\jump{\\bB{u}} = \\sum_{j=1}^N \\frac{1}{2j+1}\\Big( \\jump{u_m}\\avg{h\\alpha_j}\\avg{\\alpha_j} + \\jump{\\alpha_j}\\avg{h\\alpha_j}\\avg{u_m} + \\avg{\\alpha_j u_m}\\jump{h\\alpha_j}\\Big) = \\sum_{j=1}^N \\frac{1}{2j+1} \\jump{hu_m\\alpha_j^2} = \\jump{\\mathcal{P}^{\\tt LM}}",
+        "tag": "thm:ec_flux"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Recompute the two block identities keeping the moment contributions: show the SWE block equals -(1/2) avg(hu_m) sum_i jump(alpha_i^2)/(2i+1) and the bar f^EC,SWE block equals jump(u_m Psi) + (1/2) avg(hu_m) sum_i jump(alpha_i^2)/(2i+1); adding them recovers jump(P^LM). This contained algebraic correction preserves the theorem and all downstream results.",
+      "overall_effect": "The proof of thm:ec_flux asserts two false intermediate identities, so the proof is invalid as written; the theorem's conclusion (the EC flux satisfies the entropy condition) is nonetheless correct, and the ES scheme (eq:es_dgsem) and the well-balancedness Lemma (lemma:well_balancedness) that build on the flux are unaffected once the proof is repaired.",
+      "primary_affected_tag": "thm:ec_flux",
+      "target_type": "formal_result",
+      "title": "Proof of the EC-flux theorem uses two incorrect block identities (the errors cancel, so the theorem survives)",
+      "why_classification": "The repair needs a contained but non-routine algebraic recomputation (tracking the moment terms of w_1 and of bar f^EC,SWE through both blocks and showing the two dropped terms cancel); the theorem and all guarantees survive, so there is no major loss, but the proof as written establishes its intermediate steps through invalid calculations."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}(\\bB{u}) \\coloneqq \\frac{h u_m^2}{2}+ \\frac{ h}{2}\\sum\\limits_{i=1}^N\\frac{\\alpha_i^2}{2i+1}+ g \\frac{h^2}{2}+g h b",
+          "tag": "eq:Total:Energy"
+        },
+        {
+          "quote": "that for constant bottom topography satisfies the relation $\\text{diag}(\\bar{\\mbf{H}}, 1) \\jump{\\bB{w}} = \\jump{\\bB{u}}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Computing the Hessian of E as a function of (h, q, m_i) with q = h u_m, m_i = h alpha_i and inverting gives H^{-1} = (1/g)( y y^T + diag(0, gh, 3gh, ..., (2N+1)gh) ) with y = (1, u_m, alpha^T); the first diagonal entry of z must be 0, not 1. For example, g=1, h=2, u_m=0.5, alpha_1=0.3, N=1: the true (1,1) entry of H^{-1} is 1, while the stated formula gives (1+1)/1 = 2. Hence bar H = H^{-1} + (1/g) e_1 e_1^T, the claim that it is the inverse entropy Hessian is false, and the stated relation diag(bar H, 1) jump(w) = jump(u) also fails. The entropy stability of the scheme is unaffected because the dissipation argument requires only positive definiteness of the dissipation matrix, which bar H still satisfies.",
+      "failure_location": {
+        "quote": "\\bar{\\mbf{H}} := \\frac{1}{g}\\left(\\avg{\\mbf{y}}\\avg{\\mbf{y}}^{\\rm T} + \\text{diag}(\\avg{\\mbf{z}}) \\right), with vectors $\\mbf{y} = (1, u_m, \\bB{\\alpha}^{\\rm T})^{\\rm T}$ and $\\mbf{z} = (1, gh, 3gh, \\dots, (2n+1)gh)^{\\rm T}$ is the positive definite inverse of the Hessian of the entropy function $\\mathbb{E}\\big((h, hu_m, h\\bB{\\alpha}^{\\rm T})\\big)$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Change the first entry of the vector z from 1 to 0, i.e., z = (0, gh, 3gh, ..., (2N+1)gh), which makes bar H the inverse Hessian as claimed.",
+      "overall_effect": "The claim that bar H is the inverse entropy Hessian (and the associated jump relation between entropy and conservative variables) is false; the ES scheme's entropy stability guarantee survives because only positive definiteness of the dissipation matrix is used.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The ES dissipation matrix is not the inverse entropy Hessian as claimed (first entry of z is wrong)",
+      "why_classification": "A one-entry correction restores the claimed property, and the entropy stability guarantee of the ES scheme is preserved unchanged since the proof uses only positive definiteness of the dissipation matrix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\widetilde{B}_{ijk} + \\widetilde{A}_{kji} + \\widetilde{B}_{kji} = 0",
+          "tag": null
+        },
+        {
+          "quote": "where the unscaled coefficients are $\\widetilde{A}_{ijk}\\coloneqq A_{ijk}/(2i+1)$ and $\\widetilde{B}_{ijk} \\coloneqq B_{ijk}/(2i+1)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The identity eq:condition holds for the unscaled coefficients tilde A_{ijk} = A_{ijk}/(2i+1) and tilde B_{ijk} = B_{ijk}/(2i+1); solving it for A gives A_{kji} = -(2k+1)/(2i+1) B_{ijk} - B_{kji}, not A_{kji} = -(B_{ijk} + B_{kji}). The stated formula is only correct when i = k. Counterexample with phi_1 = 1-2zeta, phi_2 = 6zeta^2-6zeta+1: for (i,j,k) = (1,1,2), A_{211} = 5 int_0^1 phi_2 phi_1^2 d zeta = 2/3, while B_{112} = 1/5 and B_{211} = -1, so the stated formula yields 4/5 instead of 2/3. Implemented as written, the procedure computes an incorrect A tensor and hence an incorrect moment flux A-frak; the main text's alternative of computing A directly by Legendre-Gauss quadrature is unaffected, and no formal result depends on the formula.",
+      "failure_location": {
+        "quote": "it is computationally more efficient to create the $A_{ijk}$ tensor from the already computed $B_{ijk}$ tensor using the relation \\eqref{eq:condition}, i.e., ${A}_{kji} = -({B}_{ijk} +{B}_{kji})$, with $i,j,k = 1,\\ldots,N$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the formula by A_{kji} = -(2k+1)/(2i+1) B_{ijk} - B_{kji}, or compute A_{ijk} directly from its definition by the Legendre-Gauss quadrature already described in the same appendix.",
+      "overall_effect": "The computational procedure in sec:computeTensors miscomputes A_{ijk} whenever i != k, which would corrupt the SWME flux and any simulation using that shortcut; the theorems and the directly computed tensors are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Appendix formula computing A from B misses a normalization factor",
+      "why_classification": "A single-line normalization fix restores correctness; no theorem, guarantee, or rate depends on the wrong formula, and a valid direct computation is already given in the source."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2602.06513",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "810b42c0d1a411f7078d093af1727e25d2bc6a95ced53efff237797d3b11ab31",
+  "status": "ok"
+}

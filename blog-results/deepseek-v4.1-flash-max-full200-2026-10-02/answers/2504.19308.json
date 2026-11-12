@@ -1,0 +1,243 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\textbf{Input:} Matrix \\( A \\) of size \\( m \\times n \\), an integer \\( s \\)",
+          "tag": "algo:rsvd"
+        },
+        {
+          "quote": "\\State \\textbf{Output:} Matrices \\( U ( \\in \\mathbb{R}^{m\\times k}), \\Sigma (\\in \\mathbb{R}^{k\\times k}), V(\\in \\mathbb{R}^{n\\times k}) \\)",
+          "tag": "algo:rsvd"
+        }
+      ],
+      "failure_explanation": "For m<n, k can exceed m, but an m-row matrix cannot have k singular values. The QR and partial SVD steps then have incompatible dimensions, so the algorithm is not well-defined for rectangular inputs with m<n. The cap should be min(m,n).",
+      "failure_location": {
+        "quote": "\\State \\( k \\gets \\min(s \\times \\lfloor \\log_2(n) \\rfloor + 1, n) \\)",
+        "tag": "algo:rsvd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the cap by min(s*floor(log2(n))+1, m, n) (or otherwise enforce k<=min(m,n)) and adjust the QR/SVD dimensions accordingly.",
+      "overall_effect": "Algorithm algo:rsvd fails for rectangular matrices with m<n; its stated output dimensions and partial SVD guarantee are invalid there.",
+      "primary_affected_tag": "algo:rsvd",
+      "target_type": "algorithm",
+      "title": "Randomized SVD caps rank at n instead of min(m,n)",
+      "why_classification": "The repair is a local dimension correction and does not affect the square-matrix use or the main complexity claims."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "R_k\\hat{e}_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}",
+          "tag": null
+        },
+        {
+          "quote": "R_{k}(j,0) = \\frac{1}{n} \\left( \\mathbf{1}^T (AD^{-k} \\circ C^{j}) \\mathbf{1} \\right)",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "With \\tilde A having cycles as columns and U=W\\tilde A, the j-th entry of the first column of R_k is proportional to D^k_{jj} U_{k,j}. Thus R_k's first column is row k of U (with factor D^k and normalization), not column k of U multiplied by D^{-k}. The algorithm therefore outputs incorrect circulant components.",
+      "failure_location": {
+        "quote": "\\State \\( R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)} \\)",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the extraction by R_k e_1 = (1/n) D^k (row k of U)^T (adjusting for FFT normalization) and correct the corresponding displayed formula.",
+      "overall_effect": "Algorithm algo:circulant_decomposition_fft does not compute the claimed R_k; the CD-based multiplication and numerical CD results become unreliable as written.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "Circulant decomposition extracts R_k from the wrong column and with wrong sign",
+      "why_classification": "The error is a local indexing/sign/normalization mistake; the intended construction is clear and the fix preserves the algorithm's scope and complexity."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\( L[j] \\gets \\Lambda_j\\)",
+          "tag": "algo:circulant_decomposition_fft"
+        },
+        {
+          "quote": "W\\bm l_k \\circ W(D^k\\bm b) = W \\bm l_k \\circ WD^kW^{*}W\\bm b =  W\\bm l_k \\circ C^kW\\bm b",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Fourier-domain product \\tilde A B requires the diagonal matrix diag(W l_t), where l_t is the first column of R_t. The algorithm instead uses L_A[t]=\\Lambda_t, the cycle diagonal of A from the cycle decomposition. Since \\Lambda_t is not the FFT of R_t's first column, the formula computes a different matrix.",
+      "failure_location": {
+        "quote": "\\State \\( {\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right)) \\)",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Compute L_A[t] and L_B[t] as diag(FFT(R_A[t])) and diag(FFT(R_B[t])) (the eigenvalues of the circulant components) before using them in Step 5.",
+      "overall_effect": "Algorithm algo:cd_matrix_multiplication does not compute the claimed \\tilde A B term; the first-order CD approximation is invalid as written.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "CD multiplication uses cycle diagonals instead of FFT of circulant first columns",
+      "why_classification": "The repair requires adding a missing construction (computing the FFT of each selected circulant first column), though it remains within the same O(n^2 log n) scaling."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\( {\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right)) \\)",
+          "tag": "algo:cd_matrix_multiplication"
+        }
+      ],
+      "failure_explanation": "For \\tilde B=\\sum_t R_tD^t, the Fourier transform of \\Delta A\\tilde B is \\sum_t (W\\Delta A W^*) L_B[t] C^t W. The algorithm's expression ends with C^t and lacks the final right multiplication by W, so it does not compute the intended product even if L_B[t] were correct.",
+      "failure_location": {
+        "quote": "\\State \\( \\Delta A {\\tilde{B}} \\gets \\text{IFFT}\\left( \\sum_{t \\in In_B} ((\\text{FFT}(\\Delta A) L_B[t])  C^t )\\right) \\)",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Insert the missing right factor W (or reformulate the computation using the appropriate 2D Fourier transform) so that the expression equals W(\\Delta A\\tilde B).",
+      "overall_effect": "The second term \\Delta A\\tilde B in algo:cd_matrix_multiplication is computed incorrectly, invalidating the algorithm's first-order CD multiplication.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "Fourier-domain formula for the residue term is missing a right FFT factor",
+      "why_classification": "The repair is a local algebraic correction to the displayed Fourier-domain formula and does not change the method's scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Require $\\mathbf{A} \\in \\mathbb{C}^{n \\times n}$ (input matrix), $k$ (sparsity parameter), $n$ (matrix dimension)",
+          "tag": "alg:topk"
+        },
+        {
+          "quote": "\\For{$i \\gets 1$ to $n$}",
+          "tag": "alg:topk"
+        },
+        {
+          "quote": "\\Require $\\mathbf{A} \\in \\mathbb{C}^{m \\times n}$, $\\mathbf{B} \\in \\mathbb{C}^{n \\times p}$ (input matrices)",
+          "tag": "alg:mul_topk"
+        }
+      ],
+      "failure_explanation": "Algorithm alg:topk is written for an n x n matrix and loops over n rows. In alg:mul_topk, \\tilde A has m rows and \\tilde B has n rows, but the calls pass n for \\tilde A and p for \\tilde B as the row count. Unless m=n=p, the helper loops over the wrong dimension and cannot produce the claimed top-k approximation.",
+      "failure_location": {
+        "quote": "\\State \\(\\tilde{B}_{\\text{approx}}\\gets \\text{Algorithm} \\ref{alg:topk}(\\tilde{B},k,p)\\)",
+        "tag": "alg:mul_topk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Modify alg:topk to accept separate row and column counts, and call it with the correct row counts (m for \\tilde A and n for \\tilde B).",
+      "overall_effect": "Algorithm alg:mul_topk is not well-defined for the general rectangular inputs it declares; its sparsified multiplication guarantee fails there.",
+      "primary_affected_tag": "alg:mul_topk",
+      "target_type": "algorithm",
+      "title": "Top-k helper is called with wrong row dimension for rectangular matrices",
+      "why_classification": "The repair is a local dimension-parameter fix; it does not affect the square-matrix results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{96 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right) \\label{concentration}",
+          "tag": "th:concentrationprob"
+        }
+      ],
+      "failure_explanation": "With L=2\\|D_1\\|_F^2\\|D_2\\|_2^2, the concentration theorem gives denominator 24L^2=96\\|D_1\\|_F^4\\|D_2\\|_2^4. The proof derives the 96 denominator, so the statement's 48 denominator is a stronger bound not established.",
+      "failure_location": {
+        "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Change the denominator in the corollary statement from 48 to 96 to match the proof.",
+      "overall_effect": "The corollary th:concentrationprob overstates the concentration bound by a factor of two; the exact constant in the stated corollary is unreliable.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration corollary states exponent constant 48 while proof gives 96",
+      "why_classification": "The repair is a single constant correction and the qualitative concentration conclusion is unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:estimated_relative_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where for each $n_i$, $\\mathbb{G}_{n_i}$ is one of $\\mathbb{SO}(n_i)$, $\\mathbb{SO}^{-}(n_i)$, $\\mathbb{SU}(n_i)$, $\\mathbb{U}(n_i)$, or $\\mathbb{Sp}(2n_i)$",
+          "tag": "elizabeths"
+        }
+      ],
+      "failure_explanation": "Theorem elizabeths is stated only for the listed groups; O(n) is not among them. Therefore the proof of th:concentrationprob invokes the concentration theorem outside its hypotheses, and the corollary for O(n) is not established by the given argument.",
+      "failure_location": {
+        "quote": "Let us apply the Theorem \\ref{elizabeths}, with $X = \\mathbf{O}(n)$",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Either restrict the corollary to one of the groups covered by Theorem elizabeths (e.g. SO(n)) or provide a concentration result that explicitly covers O(n).",
+      "overall_effect": "Corollary th:concentrationprob is unsupported for O(n)-Haar matrices; the variance-vanishing justification used in th:estimated_relative_error is also unsupported.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration theorem applied to O(n) outside its stated hypotheses",
+      "why_classification": "The repair requires either changing the distributional hypothesis or supplying a different concentration theorem, which is more than a local constant fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": "th:uniform_distribution_norms"
+        }
+      ],
+      "failure_explanation": "The theorem equates the expectation E[\\|AB\\|_F] with 3/4\\|A\\|_F\\|B\\|_F, but for random A,B the right-hand side is random. The proof only argues an approximate relation when the norms are treated as known (and via a squared-norm approximation). Thus the stated exact unconditional equality is not supported.",
+      "failure_location": {
+        "quote": "For two random matrices $A$ and $B$ with entries $\\sim$ $U(0,a)$, $\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$.",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Restate the theorem as an approximate conditional relation for fixed/known norms, or formulate it in terms of expectations of the norms.",
+      "overall_effect": "Theorem th:uniform_distribution_norms is ill-posed/false as stated; the unsigned-entry case in th:estimated_relative_error inherits an overclaimed premise.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Uniform-entry norm theorem states an exact equality with random norms",
+      "why_classification": "The mathematical content is an approximation; correcting the statement to conditional/approximate form is local and preserves the intended use."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Now using the fact that for Haar distributed matrices we have $\\mathbf{E}[|Q_{i,j}|^4]  = \\frac{2}{n(n+1)}$ and $\\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2]  = \\frac{1}{n(n+1)}$.",
+          "tag": "lem:added-1"
+        }
+      ],
+      "failure_explanation": "The calculation treats all distinct entry-pair products as having the same expectation, ignoring row/column correlations of Haar matrices. A counterexample is D_1=D_2=I_n: then S=\\|Q\\|_F^2=n deterministically, so E[S^2]=n^2, while the formula gives n(n^2+1)/(n+1), which is 10/3 for n=2 versus 4. Hence the lemma is false.",
+      "failure_location": {
+        "quote": "We have $\\mathbf{E}[S^2] = \\frac{1}{n(n+1)} (\\beta_1 \\beta_2 + \\alpha_1^2 \\alpha_2^2).$",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Recompute E[S^2] using the correct joint moments of Haar orthogonal/unitary matrices (accounting for shared rows/columns), then update lem:added-2 and the Taylor expansion.",
+      "overall_effect": "Lemma lem:added-1 and its dependent variance lemma lem:added-2 are invalid; the subsequent Taylor-series expression for E[\\sqrt{S}] in the appendix is also unreliable.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Lemma for E[S^2] ignores correlations and is false",
+      "why_classification": "The lemma is false as stated and its repair requires a new correct moment calculation; the dependent variance and Taylor-series results are lost."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n01a",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

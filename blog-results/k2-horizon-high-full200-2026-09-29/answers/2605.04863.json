@@ -1,0 +1,139 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We show the local truncation error modification is higher-order in smooth regions.",
+          "tag": null
+        },
+        {
+          "quote": "Then $s_j^n$ is not $\\mathcal{O}(h^p)$ in smooth regions with nonzero updates; instead, $s_j^n \\approx 1/(1+\\tau^p)$ whenever any update is present.",
+          "tag": "cor:normalized-accuracy"
+        },
+        {
+          "quote": "\\eta_j = \\frac{\\Delta U_{\\max,j}}{\\varepsilon + \\Delta U_{\\max,j}},",
+          "tag": "def:eta"
+        },
+        {
+          "quote": "This means the normalized implementation does not satisfy the theoretical scaling $s_j^n = \\mathcal{O}(h^p)$ in smooth regions with nonzero updates.",
+          "tag": null
+        },
+        {
+          "quote": "with $\\eta_j$ derived from local update magnitudes, satisfies this scaling for any $p \\ge 1$ under a standard CFL condition.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The implemented (normalized) indicator eta_j = ΔU_max/(ε+ΔU_max) saturates at ≈1 for any update larger than ε, so s_j = η_j^p/(η_j^p+τ^p) is effectively binary (≈1/(1+τ^p) whenever any update is present) and does not scale with the update magnitude. Hence the premise |s_j^n| ≤ C_s h^p of Proposition prop:local-consistency is never satisfied by the implemented method, and the local truncation error difference is only O(h), the same order as the base scheme — as the paper itself states in cor:normalized-accuracy and sec:blending-design. The higher-order conclusion of prop:local-consistency holds only for an unnormalized indicator that is discussed but never implemented. Nevertheless, the abstract, the introduction's 'Analytical results' paragraph, and the conclusion advertise the higher-order modification as an established property of the proposed mechanism.",
+      "failure_location": {
+        "quote": "When this parameter scales with the magnitude of the finite-volume update—as is the case for the shut-off mechanism we propose—the additional contribution of UM-SRD to the local truncation error is of higher order than that of the base first-order scheme.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the abstract, introduction, and conclusion to restrict the higher-order claim to the unnormalized indicator and to state that, for the implemented normalized indicator, the truncation-error difference is O(h) (same order as the base first-order scheme), leaving first-order accuracy as the supported accuracy statement. The paper's own body (cor:normalized-accuracy, sec:blending-design) already contains the correct content, so no new proof is needed.",
+      "overall_effect": "The headline analytical claim that UM-SRD's local truncation error modification is higher-order in smooth regions is withdrawn for the method the paper actually defines and implements; only the same-order O(h) bound and the numerically confirmed first-order convergence remain supported. The abstract, introduction, and conclusion misstate the scope of the theory relative to the paper's own corollary.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Abstract/introduction/conclusion advertise a higher-order truncation-error modification that the implemented shut-off does not deliver",
+      "why_classification": "The repair is a contained weakening of prose claims requiring no new proof architecture, and the supported first-order accuracy, conservation, shut-off, and (1D) TVD content all survive; the loss is limited to the higher-order smoothness selling point, which the paper's own corollary concedes does not apply to the implemented indicator."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:normalized-accuracy"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "U^{n+1}_i = (1 - s_j) U^*_i + s_j \\sum_{k \\in W_i} w_{i,k} \\hat{Q}^*_k,",
+          "tag": null
+        },
+        {
+          "quote": "Let $B$ denote one time step of the base finite-volume scheme (first-order upwind) on the original mesh:",
+          "tag": null
+        },
+        {
+          "quote": "Pre-merge: apply $S_j$ to map $U^n$ to neighborhood averages $Q^{n,-1}$ (lifted to the original mesh).",
+          "tag": null
+        },
+        {
+          "quote": "0 \\le a \\frac{\\Delta t}{\\Delta x_i} \\le 1 \\qquad \\text{for all cells } i,",
+          "tag": null
+        },
+        {
+          "quote": "Under the assumptions above (1D, one small cell with $\\alpha < 1/2$, merging left, first-order upwind, CFL $a \\Delta t / h \\le 1$), the UM-SRD time-stepping operator is TVD on the original mesh:",
+          "tag": "thm:TVD-UMSRD"
+        },
+        {
+          "quote": "Using the full-mesh timestep violates the small-cell CFL condition and causes the base scheme to diverge.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The UM-SRD operator defined in the paper (Definition 'UM-SRD operator', the component form, and Algorithm alg:added-1) is U^{n+1} = R_j(s_j) U^* with U^* = B(U^n) the finite-volume update on the original cut-cell mesh, where the small cell has local CFL aΔt/(αh) = ν/α. Theorem thm:TVD-UMSRD instead proves TVD for the different composition pre-merge → finite-volume update on the merged mesh → blended redistribution (its proof steps 1–3), i.e., the Berger–Giuliani SRD time step. The operators genuinely differ: from U_{j-1}=1, U_j=0 (all other cells 0), ν=0.5, α=0.1, s_j=1, the defined algorithm gives U^{n+1}_{j-1}=U^{n+1}_j = (0.5+0.1·5)/1.1 ≈ 0.909, while the theorem's operator gives ≈ 0.496. For the defined operator the only available chain is TV(U^{n+1}) ≤ TV(U^*) ≤ TV(U^n); the second inequality is TVD of the original-mesh upwind scheme, which fails under the theorem's stated CFL aΔt/h ≤ 1 at the small cell, and the proof never analyzes the original-mesh update. The argument is valid but establishes TVD of a materially different time-stepping operator than the one stated, defined, and implemented.",
+      "failure_location": {
+        "quote": "Neighborhood finite volume update on the merged mesh: $Q^{n,-1} \\mapsto Q^n$. By Proposition~\\ref{prop:TVD-Q-update},",
+        "tag": "thm:TVD-UMSRD"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either (a) prove TVD directly for the actual composed operator R_j(s_j)∘B on the original mesh under the full-mesh CFL aΔt/h ≤ 1 — a new analysis, since the base step is not TVD at the small cell under this CFL — or (b) restrict the theorem's CFL hypothesis to the cell-wise condition aΔt/Δx_i ≤ 1 for all i, forfeiting the advertised full-mesh-timestep stabilization regime that motivates the method.",
+      "overall_effect": "The paper's central guarantee — TVD of UM-SRD under the base-scheme (full-mesh) CFL — is unproved for the algorithm the paper defines and tests (Experiment 5 uses the original-mesh base scheme that diverges under the full-mesh timestep). Consequently cor:normalized-accuracy loses the stability basis for its global first-order-accuracy conclusion; the algorithm's claimed TVD inheritance after alg:added-1, Experiment 3's TVD confirmation, and the abstract's TVD claim are all unreliable. Under the stronger cell-wise CFL aΔt/(αh) ≤ 1 the defined operator would be TVD from the existing propositions, but that excludes the advertised full-mesh-timestep stabilization regime.",
+      "primary_affected_tag": "thm:TVD-UMSRD",
+      "target_type": "formal_result",
+      "title": "Theorem thm:TVD-UMSRD proves TVD for a merged-mesh finite-volume operator, not for the UM-SRD operator defined and implemented in the paper",
+      "why_classification": "Every supported resolution either requires essentially new proof architecture (a direct TVD analysis of the composed original-mesh operator under the full-mesh CFL, whose success the source does not establish) or abandons the advertised regime (restricting to the small-cell CFL makes the base scheme itself TVD and the result vacuous relative to SRD's purpose). No local edit preserves the theorem's stated quantifier and regime."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:steady-accumulation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "[S_j V]_{j-1} = [S_j V]_j\n  = \\frac{h\\,V_{j-1} + \\alpha h\\, V_j}{h + \\alpha h}\n  = (1-\\alpha)V_{j-1} + \\alpha V_j.",
+          "tag": "prop:local-consistency"
+        },
+        {
+          "quote": "U^N_{j-1} - u(x_{j-1}) = (1-\\alpha)\\varepsilon_{j-1} + \\alpha\\varepsilon_j,",
+          "tag": "cor:steady-accumulation"
+        },
+        {
+          "quote": "\\hat{Q}^*_j = \\frac{1}{\\hat{V}_j} \\sum_{i \\in M_j} w_{i,j} V_i U^*_i.",
+          "tag": null
+        },
+        {
+          "quote": "\\sum_{j \\in W_i} w_{i,j} = 1 \\quad \\forall i,",
+          "tag": null
+        },
+        {
+          "quote": "\\hat{Q}^* = (1 \\cdot 1.5 + 0.2 \\cdot 2.5)/(1 + 0.2)\n= 1.6\\overline{6}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the paper's own weights (w_{i,j}=1, forced by the conservation constraint when W_i={j}), the neighborhood average is (hU_{j-1}+αhU_j)/(h+αh) = (U_{j-1}+αU_j)/(1+α), which is not equal to (1−α)U_{j-1}+αU_j for α∈(0,1) (e.g., α=0.2: coefficients 0.833/0.167 versus 0.8/0.2). The displayed identity is algebraically false. The same false simplification appears in the statement of Proposition prop:srd-steady, in the statement of Corollary cor:steady-accumulation, and in the proof of Proposition prop:local-consistency. Experiment 6 confirms the volume average: (1·1.5+0.2·2.5)/1.2 = 5/3 ≈ 1.667, not (1−0.2)·1.5+0.2·2.5 = 1.7.",
+      "failure_location": {
+        "quote": "\\hat{Q}^* = \\frac{h \\cdot U^n_{j-1} + \\alpha h \\cdot U^n_j}{h + \\alpha h}\n            = (1-\\alpha)U^n_{j-1} + \\alpha U^n_j.",
+        "tag": "prop:srd-steady"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace (1−α)U_{j-1}+αU_j by (U_{j-1}+αU_j)/(1+α) in the two statements and in the proof of prop:local-consistency (equivalently [(S_j−I)V]_{j-1} = α(V_j−V_{j-1})/(1+α)); this is the unique correction consistent with the paper's weighted-average definition, its conservation constraint, and its own Experiment 6. No new argument is required and no conclusion changes.",
+      "overall_effect": "The displayed steady-state redistribution values in prop:srd-steady and the error-accumulation formulas in cor:steady-accumulation are numerically wrong (the correct coefficients are 1/(1+α) and α/(1+α)), and the proof of prop:local-consistency contains the same false step. All qualitative conclusions survive: SRD still fails to preserve steady states, errors are still replaced by their volume-weighted average, and (S_j−I)B(u^n) remains O(h), so the O(h^{p+1}) local-truncation-error conclusion of prop:local-consistency is unaffected.",
+      "primary_affected_tag": "prop:srd-steady",
+      "target_type": "formal_result",
+      "title": "False algebraic identity for the neighborhood average: (U_{j-1} + αU_j)/(1+α) is equated to (1−α)U_{j-1} + αU_j",
+      "why_classification": "The repair is a short, local, forced correction — the source's own definitions and Experiment 6 pin down the unique right-hand side — and every substantive claim, rate, and guarantee survives unchanged; the issue is minor even though the false identity appears in formal statements."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2605.04863",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7818cd4cd642c55846288cd8538a55a3a2f19a519b1a0153dbaf44ab1fba0b17",
+  "status": "ok"
+}

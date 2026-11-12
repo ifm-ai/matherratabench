@@ -1,0 +1,116 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "2 \\left\\langle E_h(t),  \\Delta_h \\Pi_h u(t) - \\Pi_h \\Delta_g u(t)\\right\\rangle_{\\ell_h^2}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The stated consistency property (L3) applies the heat semigroup e^{t\\Delta_g} to u(t) in both terms, but the proof of Theorem thm:added-1 and the concrete consistency estimates in Remarks rem:consistency-first-laplace-sos and rem:consistency-second-laplace-sos use \\Delta_h \\Pi_h u(t) - \\Pi_h \\Delta_g u(t). Thus the theorem as stated relies on an estimate that is not the one established.",
+      "failure_location": {
+        "quote": "\\|\\Delta_h \\Pi_h e^{t\\Delta_g} u(t) - \\Pi_h \\Delta_g e^{t\\Delta_g} u(t)\\|_{\\ell_h^2}\\leq C_{u_0,f,T}\\, h^2",
+        "tag": "eq:consistency-discrete-lapl"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Remove the factors e^{t\\Delta_g} from the consistency assumption (L3), stating it for u(t) itself.",
+      "overall_effect": "The abstract semi-discrete convergence theorem thm:added-1 is not justified under its stated assumptions.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Abstract consistency assumption includes spurious heat semigroup",
+      "why_classification": "The correction is a local deletion of the spurious semigroup factors and preserves all substantive claims."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence-theta"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "(1 - \\theta) \\Delta_h E^k + \\theta \\Delta_h E^{k+1}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The explicit part is written as (id + \\tau(1-\\theta))U, which adds a scalar to the identity operator and is not a well-defined operator on grid functions. The standard theta-scheme and the convergence proof require (id + \\tau(1-\\theta)\\Delta_h)U.",
+      "failure_location": {
+        "quote": "$U\\leftarrow ({\\rm id}-\\tau \\theta \\Delta_h)^{-1}\\left[ \\left({\\rm id}+\\tau (1-\\theta)\\right)U+ \\tau f((k+\\theta)\\tau,\\xi_{i,j}) \\right] $",
+        "tag": "alg:update-u"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace (id + \\tau(1-\\theta))U by (id + \\tau(1-\\theta)\\Delta_h)U in the update line.",
+      "overall_effect": "Algorithm alg:theta-heat-hyperbolic cannot be executed as written, and the convergence guarantee of thm:convergence-theta for its output is unsupported.",
+      "primary_affected_tag": "alg:theta-heat-hyperbolic",
+      "target_type": "algorithm",
+      "title": "Theta-scheme update omits Delta_h in explicit term",
+      "why_classification": "The repair is a one-line insertion of \\Delta_h and preserves the algorithm's advertised guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence-theta"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "k_{\\tau,T}=\\left\\lfloor \\frac{T}{\\tau}\\right\\rfloor",
+          "tag": null
+        },
+        {
+          "quote": "\\left\\|U-\\Pi_h(u(T))_{i,j}\\right\\|_{\\ell_h^2}\\leq C_{T,u_0,f,\\gamma,\\zeta} (h^2+\\tau)",
+          "tag": "thm:convergence-theta"
+        }
+      ],
+      "failure_explanation": "The repeat-until condition k\\tau > T causes the loop to stop only after k\\tau exceeds T, i.e. at k=\\lfloor T/\\tau\\rfloor+1 when T is not a multiple of \\tau, and at T+\\tau when T is a multiple. The theorem compares the output to u(T). Thus the algorithm outputs an approximation at a later time, invalidating the stated convergence guarantee, especially the O(\\tau^2) Crank-Nicolson case.",
+      "failure_location": {
+        "quote": "\\Repeat{$k\\tau > T$}{",
+        "tag": "alg:theta-heat-hyperbolic"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change the loop condition to stop at k\\tau \\ge T (or use a while loop with k\\tau < T and handle the final step at T).",
+      "overall_effect": "The output time of Algorithm alg:theta-heat-hyperbolic does not match the target time T in thm:convergence-theta, so the convergence guarantee for the algorithm as written fails.",
+      "primary_affected_tag": "alg:theta-heat-hyperbolic",
+      "target_type": "algorithm",
+      "title": "Theta-scheme loop stops after exceeding T",
+      "why_classification": "A one-line control-flow correction fixes the output time and preserves all convergence claims."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\HHD\\coloneqq [-D,D]\\times [1/D,D] \\subset \\HH",
+          "tag": null
+        },
+        {
+          "quote": "(i\\rho(h),e^{jh}) \\in \\HH\\,, \\quad \\, i, j \\in \\mathbb{Z}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the second grid, x_2=e^{jh} with j\\in\\mathbb Z. Since H_D has x_2\\in[1/D,D], the vertical index j must include negative values down to about -\\log D/h. The definition Z_2=\\{1,\\dots,M\\} restricts to x_2\\ge e^h, omitting the region 1/D\\le x_2<e^h. This contradicts the infinite grid and the algorithm's index set based on \\xi_{i,j}\\in H_D.",
+      "failure_location": {
+        "quote": "Z_1 = \\overline{- N, N}\\,,\\, Z_2 = \\overline{1, M}",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Define Z_2 to include the negative indices needed to cover [1/D,D], e.g. Z_2=\\overline{-\\lfloor \\log D/h\\rfloor,\\lfloor \\log D/h\\rfloor} (or use the set of j with \\xi_{i,j}\\in H_D).",
+      "overall_effect": "The second discrete Laplacian's bounded-domain setup does not cover H_D, so the convergence theorem thm:convergence-theta is not supported for the second scheme as defined.",
+      "primary_affected_tag": "thm:convergence-theta",
+      "target_type": "formal_result",
+      "title": "Bounded grid for second Laplacian omits lower half of H_D",
+      "why_classification": "The repair is a local index-range correction and preserves the second scheme's convergence claims."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2409.01211",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n02b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "1bd264ce0744fe3d6f170f7113e3acb5dc2934bc252abd7335b9302e0a2a9d1d",
+  "status": "ok"
+}

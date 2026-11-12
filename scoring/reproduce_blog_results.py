@@ -94,7 +94,7 @@ def score_run(run_path, gold):
 
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument('--bundle', type=Path, required=True, help='Extracted directory containing blog_results_index.json')
+    cli.add_argument('--bundle', type=Path, default=ROOT / 'blog-results', help='Folder containing blog_results_index.json (default: blog-results/)')
     args = cli.parse_args()
     bundle_dir = args.bundle.expanduser().resolve()
     bundle = read(bundle_dir / 'blog_results_index.json')
@@ -102,7 +102,7 @@ def main():
     scores_by_run, pooled, fully_recovered = {}, set(), set()
     accepted_total = 0
     for run in bundle['runs']:
-        scores, accepted, recovered, complete = score_run(bundle_dir / 'results' / run, gold)
+        scores, accepted, recovered, complete = score_run(bundle_dir / run, gold)
         scores_by_run[run] = scores
         pooled.update(recovered)
         fully_recovered.update(complete)

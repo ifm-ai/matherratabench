@@ -1,0 +1,89 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "=\\frac{1}{\\tilde{\\lambda}}I_n-\\frac{1}{\\tilde{\\lambda}^3}M^T\\{MM^T+\\tilde{\\lambda}I_r\\}M",
+          "tag": "thm:woodberry_identity"
+        }
+      ],
+      "failure_explanation": "The proof of Lemma 2.1 applies the Woodbury matrix inversion formula without inverting the inner bracketed term $(I_n + M^T (\tilde{\\lambda} I_r)^{-1} M)^{-1}$. This produces the erroneous matrix equations (2.3) and (2.4), which claim that $(\tilde{\\lambda} I_r + M M^T)^{-1} = \\frac{1}{\\tilde{\\lambda}} I_r - \\frac{1}{\\tilde{\\lambda}^3} M (M^T M + \\tilde{\\lambda} I_n) M^T$. For scalar $M=1$ and $\\tilde{\\lambda}=1$, the left-hand side is $1/2$ while the right-hand side is $-1$.",
+      "failure_location": {
+        "quote": "(\\tilde{\\lambda}I_r+MM^T)^{-1} =(\\tilde{\\lambda}I_r+MI_nM^T)^{-1}\\notag\\\n&=(\\tilde{\\lambda}I_r)^{-1}-(\tilde{\\lambda}I_r)^{-1}M\\{M^T (\\tilde{\\lambda}I_r)^{-1}M+(I_n)^{-1} \\}M^T(\\tilde{\\lambda}I_r)^{-1}\\notag \\\n&=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T",
+        "tag": "thm:woodberry_identity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the proof with the standard one-line identity $(M^T M + \\tilde{\\lambda} I_n) M^T = M^T (M M^T + \\tilde{\\lambda} I_r)$, and multiply on the left by $(M^T M + \\tilde{\\lambda} I_n)^{-1}$ and on the right by $(M M^T + \\tilde{\\lambda} I_r)^{-1}$.",
+      "overall_effect": "The proof of Lemma 2.1 is invalid as written, though the statement itself is true.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Invalid proof of matrix identity using erroneous Woodbury formula",
+      "why_classification": "The stated lemma statement is mathematically correct, and a routine one-line algebraic argument replaces the proof without affecting any dependent results."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_{t+1} - x_\\star\\|_2 \\leq \n    \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau) + \\tilde{\\lambda}} \\|x_t - x_\\star\\|_2",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "\\mathbb{E}[\\|x_{t}-x_\\star\\|_2]\\le \\left( \\frac{\\tilde{\\lambda}}{\\lambda_{\\text{min}}^{\\text{block}}+\\tilde{\\lambda}} \\right)^t\\mathbb{E}[\\|x_0-x_\\star\\|_2]",
+          "tag": "thm:err_bound"
+        }
+      ],
+      "failure_explanation": "In Theorem 2.3, the error relation is $x_{t+1} - x_\\star = \\tilde{\\lambda}(A_\\tau^T A_\\tau + \\tilde{\\lambda} I)^{-1}(x_t - x_\\star)$. The proof bounds the operator norm by replacing the minimum eigenvalue with the smallest non-zero eigenvalue $\\lambda_{\\min}^+(A_\\tau^T A_\\tau)$. However, since $A_\\tau$ has size $k \\times n$ with $k < n$, $A_\\tau^T A_\\tau$ is rank-deficient and has eigenvalue 0 with multiplicity at least $n - k$. On the null space $\\mathcal{N}(A_\\tau)$, the operator $\\tilde{\\lambda}(A_\\tau^T A_\\tau + \\tilde{\\lambda} I)^{-1}$ acts as the identity with eigenvalue $\\frac{\\tilde{\\lambda}}{0 + \\tilde{\\lambda}} = 1$. Because $x_t - x_\\star$ lies in $\\mathcal{R}(A^T)$ rather than $\\mathcal{R}(A_\\tau^T)$, it has a nonzero component in $\\mathcal{N}(A_\\tau)$ that is unattenuated by the update. The claimed contraction bound is false and would absurdly imply that taking $\\tilde{\\lambda} \\to 0$ solves any system in a single block update.",
+      "failure_location": {
+        "quote": "\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2",
+        "tag": "thm:err_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a valid convergence proof for regularized block Kaczmarz that analyzes the expectation over the choice of blocks across the full matrix $A$, yielding a contraction rate governed by the spectrum of the global matrix $A$ rather than $\\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{\\text{block}} + \\tilde{\\lambda}}$.",
+      "overall_effect": "Theorem 2.3 is false: neither the deterministic step bound nor the expected exponential convergence rate holds as stated.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "False error contraction bound ignoring zero eigenvalues of block Gram matrix",
+      "why_classification": "The central theoretical convergence guarantee of the paper for Algorithm 1 fails completely, and no local correction can preserve the claimed contraction rate."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\textit{Consider the ROR-BK algorithm, namely \\cref{algo:roar-bk} with $M(A_S) = (A_S A_S^\\top + \\tilde{\\lambda} I)^{-1}$ and $\\mu$ be the sampling rule defined earlier. Let $\\alpha = \\sigma^+_{\\min}(\\bar{P})$ and assume $x_0 \\in \\mathcal{R}(A^T)$. Then the expectation of the ROR-BK iterates $x_T$ converges to $x^{(\\mu)}$ as}",
+          "tag": "thm:dobk_for_least_square_problems"
+        },
+        {
+          "quote": "$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$ where $i=1,2,\\dots m$",
+          "tag": "algo:roar-bk"
+        }
+      ],
+      "failure_explanation": "Theorem 4.2 claims that iterates of Algorithm 1 converge in expectation to $x^{(\\mu)}$ by invoking Theorem 4.1 of [15] (ReRBK). However, Theorem 4.1 of ReRBK strictly requires blocks to be sampled from a fixed probability distribution $\\mu$ independently of the current iterate $x_j$. Algorithm 1 includes an adaptive, deterministic step (Step 10) that selects row indices $\\mathcal{I}$ corresponding to the largest squared entries of the residual $b - A x_j$. Because $\\mathcal{I}$ depends nonlinearly on $x_j$, the blocks are not drawn from a fixed distribution independent of $x_j$, and the conditional expectation relation $\\mathbb{E}[x_{j+1} \\mid x_j] = (I - \\bar{P}) x_j + \\dots$ fails. Thus, the hypotheses of the invoked result do not hold.",
+      "failure_location": {
+        "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must formulate a convergence proof that accounts for the nonlinear residual-dependent greedy selection step or restrict the claim to an algorithm that omits the adaptive greedy step.",
+      "overall_effect": "The guarantee that Algorithm 1 converges in expectation to the weighted least-squares solution $x^{(\\mu)}$ is unestablished.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "Misapplication of ReRBK convergence theorem to an adaptive hybrid algorithm",
+      "why_classification": "The claim relies on an external theorem whose fundamental independence premise is violated by the proposed algorithm, requiring an entirely new proof architecture for hybrid randomized/greedy iterations."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

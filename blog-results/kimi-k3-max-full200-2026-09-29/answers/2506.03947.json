@@ -1,0 +1,137 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\begin{pmatrix}\n\t\t\t0 & & & \\alpha \\\\\n\t\t\t1 & 0 & & \\\\\n\t\t\t& \\ddots & \\ddots & \\\\\n\t\t\t& & 1 & 0\n\t\t\\end{pmatrix}",
+          "tag": "eq:exactPBE"
+        },
+        {
+          "quote": "\\lambda_j = \\alpha^{1/\\ell}\\exp \\left(\\frac{2\\pi i (j-1)}{\\ell}\\right), {\\quad j=1, \\ldots, \\ell},",
+          "tag": "eq:palpha"
+        },
+        {
+          "quote": "$$U_j = \\frac{1}{\\sqrt{\\ell}}\\left(1,\\exp\\left(\\frac{2\\pi i(j-1)}{\\ell}\\right), \\exp\\left(\\frac{2\\pi i(2(j-1))}{\\ell}\\right),\\dots,\\exp\\left(\\frac{2\\pi i(\\ell-1)(j-1)}{\\ell}\\right)\\right)^{\\top},$$",
+          "tag": "eq:palpha"
+        }
+      ],
+      "failure_explanation": "With the displayed positive-frequency Fourier columns and positive-exponent eigenvalues, (U Lambda U^*)_{r,s} is nonzero when r-s+1 is 0 modulo ell. Thus it puts its cycle entries on the superdiagonal and in the (ell,1) position. The displayed C_alpha instead has subdiagonal ones and alpha in the (1,ell) position. For alpha=1, the factorization gives C_alpha^T, not C_alpha; for general alpha the Gamma scaling does not repair the orientation.",
+      "failure_location": {
+        "quote": "& = I_{\\ell} \\otimes {A} + \\Gamma_{\\alpha}^{-1}U\\Lambda U^*\\Gamma_{\\alpha} \\otimes(-I_\\sizeA)",
+        "tag": "eq:palpha"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Conjugate the entries of Lambda, equivalently reverse/conjugate the Fourier-mode convention, and propagate the resulting ordering to the inverse formula. The same set of shifted blocks and all later methods can be retained.",
+      "overall_effect": "The Kronecker factorization and hence the displayed inverse formula used to define the block-diagonal inner problems do not represent the stated preconditioner P_alpha. The computational connection between the later inner solvers and P_alpha is unsupported until the Fourier orientation is corrected.",
+      "primary_affected_tag": "eq:palpha",
+      "target_type": "algorithm",
+      "title": "Fourier factorization uses the opposite cyclic orientation",
+      "why_classification": "The repair is a local Fourier-ordering correction. It does not change the shift set, inner problems, convergence analysis, rates, or advertised scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:errorbound",
+        "lem:asymptoticrate",
+        "thm:convergence",
+        "prop:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $M$ be symmetric positive definite, with eigenvalues in $[\\upsilon_{\\min},\\upsilon_{\\max}]$.",
+          "tag": "thm:AxelssonIteration"
+        },
+        {
+          "quote": "T_p \\left( (\\xi_j^{(1)} + \\xi_j^{(N)} - 2 \\mu) / (\\xi_j^{(1)} - \\xi_j^{(N)} ) \\right)",
+          "tag": "prop:errorbound"
+        },
+        {
+          "quote": "Compute $r({{j}}) = \\frac{\\ln(\\sigma_1)}{\\ln(\\sigma_{{j}})}$.",
+          "tag": "alg:AssignIterations"
+        }
+      ],
+      "failure_explanation": "The theorem permits upsilon_min=upsilon_max. For example M=2I is SPD and has one distinct eigenvalue. The denominator in the displayed p^* formula is then not a finite real number; interpreted as a limit it gives p^*=0, although a nonzero initial error is not reduced at iteration zero and one correctly scaled Chebyshev step is needed. The same degenerate interval makes the shifted-Chebyshev normalization in the later results divide by xi_j^(1)-xi_j^(N)=0 and makes Algorithm 1 take logarithms of sigma_j=0.",
+      "failure_location": {
+        "quote": "p^* = \\frac{\\ln\\left(\\frac{1}{\\epsilon}+ \\sqrt{\\frac{1}{\\epsilon^2}-1}\\right)}{\\ln\\left(\\frac{1+\\sqrt{\\upsilon_{\\min}/\\upsilon_{\\max}}}{1-\\sqrt{\\upsilon_{\\min}/\\upsilon_{\\max}}}\\right)}.",
+        "tag": "thm:AxelssonIteration"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that the extreme eigenvalues are distinct, or explicitly handle the one-distinct-eigenvalue case separately as an exactly solvable shifted identity and bypass the logarithmic allocation formulas.",
+      "overall_effect": "All later Chebyshev bounds based on the two distinct endpoints, and the logarithmic resource-allocation rule, are ill-defined for a scalar or otherwise single-eigenvalue operator.",
+      "primary_affected_tag": "thm:AxelssonIteration",
+      "target_type": "formal_result",
+      "title": "Chebyshev formulas omit the nonzero spectral-interval condition",
+      "why_classification": "A standard nondegeneracy hypothesis or a trivial scalar-case bypass is local and preserves every rate and the advertised large-dimensional diffusion regime."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "${x_j = \\Re({x_j}) + i \\;\\Im({x_j})}$,\n\t\t${b_j = \\Re({b_j}) + i \\;\\Im({b_j})}$.",
+          "tag": "eq:saddlesystem"
+        },
+        {
+          "quote": "B_j = {A} - \\lambda_j I_\\sizeA, \\quad {j = 1, \\ldots, \\ell}.",
+          "tag": "eq:B definition"
+        }
+      ],
+      "failure_explanation": "Writing lambda_j=a+ic and Psi=A-aI, the complex system is equivalent to Psi Re(x)+c Im(x)=Re(b) and -c Re(x)+Psi Im(x)=Im(b). The displayed system instead imposes c Re(x)-Psi Im(x)=-Re(b) and Psi Re(x)+c Im(x)=Im(b), a different set of equations. For instance, with A=2I, lambda=1+i, x=1+2i, and hence b=(1-i)(1+2i)=3+i, the displayed real system returns Re(x)=-1 rather than 1.",
+      "failure_location": {
+        "quote": "\\underbrace{\\begin{pmatrix}\n\t\t\t\t\t\\Im(\\lambda_j)I_\\sizeA & {A}-\\Re(\\lambda_j)I_\\sizeA \\\\\n\t\t\t\t\t{A}-\\Re(\\lambda_j)I_\\sizeA & -\\Im(\\lambda_j)I_\\sizeA\n\t\t\t\\end{pmatrix}}_{\\mathcal{S}}\\begin{pmatrix}\n\t\t\t\t\\Re({x_j}) \\\\ -\\Im({x_j})\n\t\t\t\\end{pmatrix} = \\begin{pmatrix}\n\t\t\t\t-\\Re({b_j})\\\\ \\Im({b_j})\n\t\t\t\\end{pmatrix},",
+        "tag": "eq:saddlesystem"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "With the same matrix S, replace the displayed unknown and right-hand side by (Im(x_j), Re(x_j))^T and (Re(b_j), Im(b_j))^T, respectively. This gives the two correct real equations.",
+      "overall_effect": "The saddle-point construction P_SP does not solve the complex shifted systems from which it is derived. Consequently, the stated MINRES implementation and its numerical performance claims are not mathematically tied to the intended subproblems as written.",
+      "primary_affected_tag": "eq:saddlesystem",
+      "target_type": "algorithm",
+      "title": "Real saddle-point system does not represent the complex subproblem",
+      "why_classification": "The correction is a local reordering of the two real components and right-hand side. The matrix, eigenvalue analysis, MINRES architecture, rates, and scope remain unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\phimat & \\psimat\\\\ \\psimat & -\\phimat",
+          "tag": "eq:saddlesystem"
+        },
+        {
+          "quote": "with $\\phimat$ and $\\psimat$ symmetric positive definite.",
+          "tag": "thm:added-2"
+        },
+        {
+          "quote": "$\\lambda_j = \\overline{\\lambda}_{\\ell+2-j}$, {$j =\\{2,3, \\ldots, \\ell/2 \\}$}",
+          "tag": "sec:ApproxPrecond"
+        }
+      ],
+      "failure_explanation": "The construction sets Phi=Im(lambda_j)I, but half of the nonreal scaled roots have Im(lambda_j)<0. For those blocks Phi is negative definite and Phi+Psi need not be SPD. For example, take ell=10, alpha=1, A=diag(1.2,2), and lambda=0.8090-0.5878i. Then Psi has smallest eigenvalue 1.2-0.8090>0, but Phi+Psi has smallest eigenvalue 1.2-0.8090-0.5878<0. Thus P_D is indefinite, is not a valid SPD MINRES preconditioner, and is outside the hypothesis under which the displayed eigenvalue intervals are proved.",
+      "failure_location": {
+        "quote": "\\mathcal{P}_{D} =\\begin{pmatrix}\n\t\t\t\t\\phimat + \\psimat & 0 \\\\ 0 & \\phimat+\\psimat\n\t\t\\end{pmatrix}.",
+        "tag": "eq:minresprecond"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use Phi=|Im(lambda_j)|I together with the appropriate sign-adjusted realification for negative-imaginary roots, or restrict the displayed construction to positive-imaginary roots and obtain their conjugate counterparts separately. The same eigenvalue theorem then applies.",
+      "overall_effect": "For every negative-imaginary root, the stated block preconditioner and the accompanying eigenvalue guarantee for the saddle-point solve may fail; in representative cases the preconditioner is indefinite.",
+      "primary_affected_tag": "eq:minresprecond",
+      "target_type": "algorithm",
+      "title": "Saddle preconditioner is not positive definite for negative-imaginary roots",
+      "why_classification": "The repair is a standard sign or absolute-value case adjustment. It preserves the same preconditioner form, eigenvalue intervals, MINRES method, rate, and covered roots."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2506.03947",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3524514ec032ec87b79cf3f5eba88988a0a08a64f20bf981e36596fab8eae76d",
+  "status": "ok"
+}

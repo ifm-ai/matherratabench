@@ -1,0 +1,190 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thmGeneralization",
+        "repetatildei",
+        "approxetai"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "with output $\\|{\\rm T}(\\theta;\\cdot)\\|_{L^{\\infty}(\\mathbb{R}^D)}\\leq R$ and weight magnitude $\\|\\theta\\|_{\\infty}\\leq \\kappa$",
+          "tag": "TNC"
+        },
+        {
+          "quote": "for any $x\\in [0,1]^D$",
+          "tag": "repetatildei"
+        },
+        {
+          "quote": "In addition, we assume $\\|f\\|_{L^{\\infty}(\\mathcal{M}(q))}\\le R$ for some $R>0$.",
+          "tag": "assumpf"
+        }
+      ],
+      "failure_explanation": "Membership in $\\mathcal{T}(\\ldots,R,\\kappa)$ requires $\\|{\\rm T}\\|_{L^\\infty(\\mathbb{R}^D)}\\le R$ on all of $\\mathbb{R}^D$. The proof of thmApprox (via Props repetatildei/approxetai) controls the network only on $[0,1]^D$ or $\\mathcal{M}(q)$; no step establishes global boundedness, and the construction violates it: the guarded arithmetic (ReLU guards such as $\\sigma(cs+M)-M$) is exact only for bounded inputs, and off the guard region the computed $\\|\\tilde\\eta(x)\\|_1$ can reach $K(1+2M)$, so the power-series approximation of $1/\\|\\tilde\\eta(x)\\|_1$ produces outputs growing with powers of $K$; the output is unbounded on $\\mathbb{R}^D$. The same unestablished $R$-bound appears in the class-membership claims of Props repetatildei and approxetai, and the bias step of thmGeneralization needs an $\\epsilon$-approximant inside the ERM class whose $R$-bound also enters the variance estimate.",
+      "failure_location": {
+        "quote": "there exists a transformer network ${\\rm T}(\\theta;\\cdot)\\in\\mathcal{T}(L_{\\rm T}, m_{\\rm T},d_{embed},\\ell,L_{\\rm FFN},w_{\\rm FFN},R,\\kappa)$ with parameters",
+        "tag": "thmApprox"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Append a final clipping FFN block adding the tokenwise correction $-\\sigma(s-R)+\\sigma(-R-s)$ to the readout entry (clipping cannot increase the on-tube error since $|f|\\le R$ by Assumption assumpf), and clip the propositions' outputs to $[0,1]$; all stated parameters, rates and scopes survive up to absorbed constants.",
+      "overall_effect": "The output-boundedness part of class membership in thmApprox and in Props repetatildei/approxetai is unproven and false for the given constructions; the bias step of thmGeneralization lacks a valid in-class approximator as written.",
+      "primary_affected_tag": "thmApprox",
+      "target_type": "formal_result",
+      "title": "Global output bound required for class membership is never established and is violated by the constructed networks",
+      "why_classification": "A short, local, standard construction (output clipping) repairs the missing boundedness while preserving every stated guarantee, rate and advertised scope; only the routine check that clipping is harmless is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thmGeneralization",
+        "repetatildei",
+        "approxetai"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\kappa=O(D^2\\delta^{-2d})$ such that $T_1(\\theta;\\cdot)$ can exactly represent $H$",
+          "tag": "approxetai"
+        },
+        {
+          "quote": "$\\kappa=O(D^2d^6\\delta^{-8})$",
+          "tag": "repetatildei"
+        },
+        {
+          "quote": "Let $M>0$, and $c=(c^1,\\cdots,c^D)$ and $x=(x^1,\\cdots,x^D)$ be vectors in $\\mathbb{R}^D$ be such that $\\|c\\odot x\\|_{\\infty}\\leq M$",
+          "tag": "lemcmulti"
+        },
+        {
+          "quote": "$\\|\\theta_A\\|_{\\infty}=O(d_{embed}^4\\mu^2\\ell^2M^2)$",
+          "tag": "IAlemma"
+        }
+      ],
+      "failure_explanation": "No kappa bound in the paper is derived (each is asserted by 'reexamining the proof'), and the assertions contradict each other: the proof of Prop approxetai claims the network $T_1$ implementing all $\\tilde\\eta_i$'s and their sum has $\\kappa=O(D^2\\delta^{-2d})$ (only $d,q,\\tau,\\mathrm{Vol}$ hidden), while Prop repetatildei claims each single $\\tilde\\eta_i$ already requires $\\kappa=O(D^2\\delta^{-8})$; for $d\\le 3$ this is impossible since $T_1$ contains each component's weights and delta-powers cannot be hidden. Moreover, the guards forced by the construction (multiplying $\\|P(z_i)^\\top(x-z_i)\\|^2\\le dD$ on $[0,1]^D$ by $(h\\delta)^{-2}$) have magnitude $\\Theta(dD\\delta^{-2})$, and inserting these with $\\ell=\\Theta(Dd)$ into the Interaction Lemma's bound $O(d_{embed}^4\\mu^2\\ell^2M^2)$ yields scaling like $D^6d^6\\delta^{-8}$ rather than the claimed $D^2$. Hence the explicit kappa guarantees of thmApprox, thmGeneralization and the propositions are unsupported and, in their explicit $D$-dependence, not obtainable from the paper's own tools.",
+      "failure_location": {
+        "quote": "$\\kappa=O(D^2\\epsilon^{-\\frac{2d+8}{\\alpha}})$",
+        "tag": "thmApprox"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redo the weight accounting with explicit guard constants (of order $dD\\delta^{-2}$) and token counts, resolve the $\\delta^{-2d}$ vs $\\delta^{-8}$ inconsistency, and restate the kappa bounds in Props repetatildei/approxetai and Theorems thmApprox/thmGeneralization accordingly (possibly with higher $D$-powers); all rates and other guarantees are preserved.",
+      "overall_effect": "The stated weight-magnitude guarantees in thmApprox and thmGeneralization (and both propositions) are unreliable; if the true required kappa exceeds the class parameter in thmGeneralization, the epsilon-approximator is not in the ERM class and the bias step fails. The final generalization rate survives because kappa enters the covering number only logarithmically.",
+      "primary_affected_tag": "thmApprox",
+      "target_type": "formal_result",
+      "title": "Weight-magnitude (kappa) bounds are underived and mutually inconsistent (delta^{-2d} vs delta^{-8} for the same construction)",
+      "why_classification": "The quantitative kappa guarantee of the main theorems is not established, is internally contradicted, and may have to be weakened (limited quantitative loss); repairing it requires a contained but nontrivial recomputation of the weight bookkeeping, though no proof architecture change or rate loss is involved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemadd",
+        "lemcmulti",
+        "lemsq",
+        "lempp",
+        "lemrpower",
+        "lemdiv",
+        "repetatildei",
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "${\\rm B}(H) = {\\rm FFN}({\\rm MHA}(H) + H) + {\\rm MHA}(H) + H.",
+          "tag": null
+        },
+        {
+          "quote": "h_t & \\text{if}\\text{  } t\\in\\{1,\\cdots,k\\}",
+          "tag": "Gatinglemma"
+        },
+        {
+          "quote": "For the feed-forward layer of $B_8$, we take the weight matrix equals to identity and bias equals to zero, so that it implements the identity operation.",
+          "tag": "repetatildei"
+        }
+      ],
+      "failure_explanation": "In the block $B(H)=FFN(MHA(H)+H)+MHA(H)+H$ the FFN output is added to the post-attention matrix, so preserving a token requires the FFN to output 0 there, and subtracting a constant requires outputting the negative constant. The Gating Lemma as stated outputs values ($h_t$ on kept tokens, zeroed data rows otherwise), which in this block would double the kept tokens and the positional rows; it also performs no constant subtraction. Likewise the 'identity' FFN in the proof of Prop repetatildei would double every entry instead of preserving. Hence the final FFN step of every arithmetic-operation proof fails to establish the claimed block output, and the required correction-FFNs (position-dependent constant subtraction/zeroing) are never constructed or cited.",
+      "failure_location": {
+        "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $DM$ in the $D+1$-th column.",
+        "tag": "lemsumD"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "State and prove a corrected gating lemma producing the needed correction-FFN (e.g. $FFN(h_t)=-c\\,\\mathbb{1}[\\text{position in a range}]e_1$ with zero output on preserved tokens, implementable by thresholds on $\\mathcal{I}_t$ with weights $O(\\ell M)$), or consistently amend the block definition, and adjust the arithmetic-lemma proofs; all stated results and bounds then survive.",
+      "overall_effect": "All exact-representation lemmas for arithmetic operations, both propositions, and both main theorems have invalid final assembly steps as written; every downstream claim rests on them.",
+      "primary_affected_tag": "lemsumD",
+      "target_type": "formal_result",
+      "title": "Gating/FFN steps of the arithmetic-lemma proofs are incompatible with the residual transformer block (would double preserved tokens; no constant subtraction)",
+      "why_classification": "A genuinely missing lemma/construction (the correction-FFN) plus edits to every arithmetic proof are required, but a contained repair exists that preserves all statements, rates and scopes; hence neither minor nor serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "${\\rm DE}:\\mathbb{R}^{d_{embed}\\times\\ell}\\to\\mathbb{R}$ is the decoding layer which outputs the first element in the last column.",
+          "tag": "Trep"
+        },
+        {
+          "quote": "where $I_{d+7}=\\{1,\\cdots,(d+3)D+2d+6\\}$.",
+          "tag": "repetatildei"
+        },
+        {
+          "quote": "there exists ${\\rm T}(\\theta;\\cdot)=({\\rm T}^1(\\theta;\\cdot),\\cdots,{\\rm T}^K(\\theta;\\cdot))$ with each ${\\rm T}^i(\\theta;\\cdot)\\in\\mathcal{T}(L_T, m_T,d_{embed},\\ell,L_{\\rm FFN},w_{\\rm FFN},R,\\kappa)$",
+          "tag": "approxetai"
+        }
+      ],
+      "failure_explanation": "The class $\\mathcal{T}$ has a fixed decoder returning the first entry of the last column. The constructions place their results in interior columns followed by zero padding (e.g. $\\tilde\\eta_i(x)$ at column $(d+3)D+2d+7$, with padding up to column $\\ell$), so the literally constructed network outputs 0, not the claimed value; no step routes the result into the last column. Moreover, Prop approxetai claims a $K$-vector of networks each belonging to the scalar-output class $\\mathcal{T}$, which the single fixed decoder cannot produce (each component would need to read a different column).",
+      "failure_location": {
+        "quote": "${\\rm T}(\\theta;x)=\\tilde\\eta_i(x)$",
+        "tag": "repetatildei"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Route each final computed value into the last column (feasible by the placement flexibility of Remark rmkflexibility at no parameter cost), and for approxetai let the decoder read a specified column per component or restate the components accordingly.",
+      "overall_effect": "The output claims of Props repetatildei and approxetai, and the final network identity in the proof of thmApprox (hence thmGeneralization's approximator), are not established as written.",
+      "primary_affected_tag": "repetatildei",
+      "target_type": "formal_result",
+      "title": "Constructed networks never route results to the decoder's readout (last column); vector-valued claim conflicts with the fixed scalar decoder",
+      "why_classification": "A short, local, routine rerouting/decoder-convention fix preserves all claims and parameter bounds; only the final readout step is missing."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$m_T=\\max(m_{T_1},m_{T_2}) = O(\\max(D\\delta^{-d},\\ln(\\frac{1}{\\epsilon})+K))=O(D\\delta^{-d})$",
+          "tag": "approxetai"
+        },
+        {
+          "quote": "we make the assumption that the logarithmic term $\\ln(\\frac{1}{\\epsilon})$ is much smaller than the exponential term $\\delta^{-d}$. Although it is not always the case",
+          "tag": "log"
+        }
+      ],
+      "failure_explanation": "The tolerance $\\epsilon$ and net scale $\\delta$ in Prop approxetai are independent, and the proof's own derivation gives $m_T=O(\\max(D\\delta^{-d},\\ln(1/\\epsilon)+K))$ and $\\ell\\ge O(D\\delta^{-d}+\\ln(1/\\epsilon)+K)$. Asserting $O(D\\delta^{-d})$ requires $\\ln(1/\\epsilon)\\lesssim\\delta^{-d}$, an assumption acknowledged only in Remark log ('Although it is not always the case') and absent from the proposition's hypotheses; e.g. for fixed $\\delta$ and $\\epsilon=e^{-\\delta^{-2d}}$ the stated bounds are false. Theorems thmApprox/thmGeneralization are unaffected because they set the tolerance to $\\delta^\\alpha$, where the regime holds.",
+      "failure_location": {
+        "quote": "m_T=O(D\\delta^{-d})",
+        "tag": "approxetai"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add the hypothesis $\\ln(1/\\epsilon)\\le C\\delta^{-d}$ to the statement (as in Remark log), or restate $m_T=O(D\\delta^{-d}+\\ln(1/\\epsilon))$ and $\\ell\\ge O(D\\delta^{-d}+\\ln(1/\\epsilon))$.",
+      "overall_effect": "Prop approxetai, advertised as a reusable building block, overclaims its head and token counts outside the regime $\\ln(1/\\epsilon)\\lesssim\\delta^{-d}$; no downstream theorem is affected.",
+      "primary_affected_tag": "approxetai",
+      "target_type": "formal_result",
+      "title": "Proposition approxetai's stated m_T and ell bounds drop the ln(1/epsilon) term and hold only under an unstated regime",
+      "why_classification": "A local hypothesis addition or restatement repairs it; all downstream results, which operate in the valid regime, are unchanged."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2505.03205",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n01-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e251cd718a4c2fe4d9791d1e58d8251eec6a75089c28852e7c9426637e3b810a",
+  "status": "ok"
+}

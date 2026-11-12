@@ -1,0 +1,184 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The framework applies to both diagonal/adaptive and curvature-aware preconditioners and yields a simple design principle: choose \\(\\bfM\\) to improve local conditioning while attenuating noise.",
+          "tag": null
+        },
+        {
+          "quote": "Fix an SPD matrix $\\bfM$ and an open neighborhood $\\mathcal U\\subset\\mathbb R^d$.",
+          "tag": null
+        },
+        {
+          "quote": "implicitly apply \\emph{diagonal} preconditioners by rescaling gradients with running estimates of coordinatewise second moments.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims the theory covers diagonal/adaptive and curvature-aware preconditioners. Every result analyzes one fixed deterministic SPD matrix M (update \\eqref{alg:PSGD} with constant M; \"Fix an SPD matrix $\\bfM$\" in the local section), with all constants (M-strong convexity, M-Lipschitz gradient, moment bounds in the fixed M^{-1}-norm) defined in that one metric. Adaptive methods (Adam, RMSProp, AdaGrad) and the curvature-aware methods used in the experiments (Hessian, GGN/Fisher, K-FAC, L-BFGS) use iterate-dependent, random, time-varying preconditioners M_k; no assumption or proof is stated for such M_k, and the descent/noise estimates do not transfer.",
+      "failure_location": {
+        "quote": "The theory covers diagonal/adaptive and curvature‑aware preconditioners.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Requalify the claim to fixed SPD preconditioners (including fixed diagonal and fixed curvature-based M) and present adaptive/state-dependent methods as a design heuristic, or add a new analysis for random time-varying M_k with correspondingly strengthened assumptions.",
+      "overall_effect": "The advertised scope — that the rate, noise-floor and basin-stability theory applies to adaptive and curvature-based optimizers — is unsupported; only fixed SPD preconditioners (e.g. the fixed spectral M of the diagnostic experiment) fall under the theorems.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed coverage of adaptive and curvature-based preconditioners unsupported",
+      "why_classification": "A short re-qualification preserves every theorem, rate and floor bound, but necessarily withdraws the advertised regime of adaptive/state-dependent preconditioners; establishing that regime would require a new analysis with new assumptions."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "that $\\nabla_z^2 f(z)$, i.e. $\\bfP^\\top \\nabla_w^2 F(\\bfw) \\bfP$, has eigenvalues bounded above by $\\hat L$.",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "if and only if the eigenvalues of the matrix $\\nabla^2 F(\\bfw)$ are bounded above by $ L$ for all $w$.",
+          "tag": "rmk:condNum"
+        }
+      ],
+      "failure_explanation": "For twice differentiable F, M-Lipschitz continuity of the gradient with constant L̂ is equivalent to ||P^T∇²F(w)P||_2 ≤ L̂ for all w, i.e. to eigenvalues in [−L̂, L̂]; a one-sided bound λ ≤ L̂ is not equivalent without a PSD/convexity hypothesis. E.g. f(z) = −z²/2 (equivalently F(w) = −(w^T M^{-1} w)/2) has its only eigenvalue −1 ≤ L̂ = 0 yet its gradient is 1-Lipschitz, not 0-Lipschitz. The proof's step equating Lipschitz continuity with \"eigenvalues bounded above\" silently uses positivity of the Hessian, which is not among the lemma's hypotheses.",
+      "failure_location": {
+        "quote": "$\\iff$ all eigenvalues of $\\bfP^\\top\\nabla^2F(\\bfw)\\bfP$ are $\\le \\hat L$;",
+        "tag": "lemma:bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace \"eigenvalues ≤ L̂\" by \"eigenvalues bounded in absolute value by L̂\" (or add a convexity/PSD-Hessian hypothesis) in the lemma, its restatement and the remark.",
+      "overall_effect": "Lemma lemma:bound(i), its verbatim restatement lem:added-1 and Remark rmk:condNum are false as stated for nonconvex F; downstream strongly convex results are unaffected because Assumption assumption:44 forces the relevant eigenvalues to be positive.",
+      "primary_affected_tag": "lemma:bound",
+      "target_type": "formal_result",
+      "title": "Spectral characterization of M-Lipschitz gradient uses a one-sided eigenvalue bound",
+      "why_classification": "A one-clause local correction of a characterization; every conclusion, rate, floor and guarantee of the paper survives unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(1-\\rho)^{k-1}\\bigl(F(\\bw_1)-F_\\ast - C\\bigr),",
+          "tag": "thm:3rdmainthm"
+        }
+      ],
+      "failure_explanation": "The displayed estimate is only an upper bound whose right-hand side tends to C, so at best limsup E[F(w_k)−F_*|τ=∞] ≤ C follows. Convergence to C is false whenever the variance bound is not saturated along the trajectory: for F(w)=w²/2 with g = w+ζ, ζ = ±a unbiased (so K = a² is the minimal admissible noise level, μ = μ̂_PL = α_QG = L̂ = K_G = 1, PL/QG/containment all hold, P(τ=∞)=1 for a ≤ r), the iterates form an AR(1) with E[F(w_k)] → ᾱa²/(2(2−ᾱ)) = C/(2−ᾱ) < C.",
+      "failure_location": {
+        "quote": "and in particular $\\mathbb E[F(\\bfw_k)-F_\\ast\\mid\\tau=\\infty]\\to C$ as $k\\to\\infty$.",
+        "tag": "thm:3rdmainthm"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace \"→ C\" by \"limsup_{k→∞} E[F(w_k)−F_*|τ=∞] ≤ C\", or add a matching lower bound under a tightness assumption on the noise level K.",
+      "overall_effect": "The theorem's advertised convergence of the conditional gap to the noise floor C is an overstatement; only a one-sided asymptotic bound by C is established.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "Conditional gap claimed to converge to the floor C",
+      "why_classification": "Swapping a two-sided limit statement for a one-sided asymptotic bound is a local edit that leaves the geometric rate and the floor constant intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:4thmainthm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Setting $x_k:=\\mathbb E[F(\\bw_k)-F_\\ast\\mid\\Omega_\\infty]$ and taking expectations under $\\mathbb P(\\cdot\\mid\\Omega_\\infty)$ yields",
+          "tag": "thm:3rdmainthm"
+        },
+        {
+          "quote": "Multiply \\eqref{eq:stopped-one-step} by $\\mathbf 1_{\\Omega_\\infty}$ and take expectations;",
+          "tag": "thm:4thmainthm"
+        }
+      ],
+      "failure_explanation": "Ω_∞ = {τ = ∞} depends on ξ_k and later noise and is not F_k-measurable, so the one-step inequality E[S_{k+1}|F_k] ≤ … cannot be restricted to Ω_∞ (nor multiplied by 1_{Ω_∞}) to yield E[S_{k+1}|F_k, Ω_∞] ≤ … : such conditioning changes the conditional law of g_k used to derive the inequality. Hence the recursions x_{k+1} ≤ (1−ρ)x_k + ρC and x_{k+1} ≤ (1−a/(γ+k))x_k + b/(γ+k)² for x_k = E[F(w_k)−F_*|τ=∞] do not follow. What the stopped-process estimates do give is the same bounds for the unconditioned sub-expectations E[(F(w_k)−F_*)1_{k<τ}].",
+      "failure_location": {
+        "quote": "Restricting \\eqref{eq:cond-step} to $\\Omega_\\infty$ gives",
+        "tag": "thm:3rdmainthm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Supply a valid estimate for the survival-conditioned recursion (e.g. a weighted/Doob h-transform supermartingale argument), or weaken the statements to E[F(w_k)−F_*|τ=∞] ≤ (C+(1−ρ)^{k−1}(F(w_1)−F_*−C))/P(τ=∞) (resp. ν/((γ+k)P(τ=∞))), which follows from the stopped-process estimate.",
+      "overall_effect": "The conditional geometric and O(1/k) convergence conclusions of thm:3rdmainthm and thm:4thmainthm are unproved, and are not even well defined in cases allowed by the hypotheses (P(τ=∞) can be 0).",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "Survival-conditioned rate bounds condition on a non-measurable event",
+      "why_classification": "The inference is genuinely invalid; a repair needs a contained new argument (weighted supermartingale) or a limited weakening by a factor 1/P(τ=∞), while the rate form and floor constant remain recognizable."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:4thmainthm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "(1-\\rho\\,\\mathbf 1_{\\{k<\\tau\\}})\\,Y_k,",
+          "tag": "thm:3rdmainthm"
+        },
+        {
+          "quote": "1 - \\frac{F(\\bfw_1)-F_\\ast}{\\tfrac{\\alpha_{\\rm QG}}{2}\\,r^2}",
+          "tag": "thm:3rdmainthm"
+        },
+        {
+          "quote": "\\mathbb E[Y_{\\tau\\wedge k}]\\le Y_1 = F(\\bfw_1)-F_\\ast-\\widetilde C",
+          "tag": "thm:4thmainthm"
+        }
+      ],
+      "failure_explanation": "E[Y_{k+1}|F_k] ≤ (1−ρ1_{k<τ})Y_k does not imply E[Y_{k+1}|F_k] ≤ Y_k: when Y_k < 0, i.e. F(w_k)−F_* < C (in particular at the minimizer), (1−ρ)Y_k > Y_k, so Y is not a supermartingale and optional stopping is unavailable. In thm:4thmainthm the analogous step \"≤ Y_k\" requires F(w_k)−F_* ≥ (α_k/α_1)C̃, which is neither assumed nor true. The claimed bound is itself false: with F(w)=w²/2, M=1, r=1, r_+=3, g = w+ζ and ζ ∈ {0,±2,±4} with probabilities 0.96, 0.01, 0.01 (μ = μ̂_PL = α_QG = L̂ = μ_G = K_G = 1, K = 0.4), all of Assumptions localPL–onestep hold and ᾱ = 1/2 satisfies every learning-rate restriction in the theorem, yet from w_1 = 0 ∈ S the first update leaves N_r with probability 0.02 at each visit to S, so P(τ = ∞) = 0 while the theorem asserts P(τ = ∞) ≥ 1.",
+      "failure_location": {
+        "quote": "so $(Y_{k\\wedge\\tau})_{k\\ge1}$ is a supermartingale.",
+        "tag": "thm:3rdmainthm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the noise-independent infinite-horizon lower bound by a guarantee that accounts for noise-induced single-step exits (e.g. a finite-horizon bound carrying the K term) or add an assumption forbidding exits from N_r in one step, and give a valid optional-stopping argument for the shifted process.",
+      "overall_effect": "The basin-stability guarantees of thm:3rdmainthm and thm:4thmainthm — advertised in the abstract, the contributions and the conclusion as an explicit lower bound on the probability of remaining in the basin — are false under the stated assumptions: survival probability can be zero even when F(w_1) = F_*. All prose restatements of this guarantee inherit the defect.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "Basin-stability lower bound on P(τ=∞) is false",
+      "why_classification": "A counterexample satisfying every hypothesis falsifies the bound, and under the stated assumptions P(τ=∞) may be 0 even from the minimizer, so no comparable noise-free infinite-horizon guarantee survives; any fix changes either the guarantee type or the assumption regime."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(1-\\overline\\alpha\\,\\hat c\\,\\mu)^{k-1}",
+          "tag": "1stmainthm"
+        },
+        {
+          "quote": "\\;\\xrightarrow{k\\to\\infty}\\; \\frac{\\overline\\alpha\\,\\hat L\\,K}{2\\,\\hat c\\,\\mu}.",
+          "tag": "1stmainthm"
+        }
+      ],
+      "failure_explanation": "Theorem 1 gives only an upper bound converging to the floor ᾱL̂K/(2ĉμ) with per-step factor (1−ᾱĉμ); it does not show that the gap ever drops strictly below that floor (indeed the bound increases to the floor when F(w_1)−F_* is below it, and unbiased noise makes the gap rise from 0 to the floor). Nor is the guaranteed rate ĉ/L̂: in the corollary's setting (unbiased gradients with gradient-independent variance) K_G = 1, so the admissible step is ᾱ ≤ 1/L̂ and the contraction factor is 1−ᾱĉ, while ᾱĉ ≤ ĉ/L̂ is only an upper bound on the per-step improvement obtained at the largest admissible step.",
+      "failure_location": {
+        "quote": "$ \\bbE[F(\\bfw_k)-F_\\ast]$ decreases to below $ \\frac{\\overline{\\alpha}\\hat{L}K}{2\\hat{c}\\mu}$ at the rate of  $\\frac{\\hat{c}}{\\hat{L}}$.",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restate the corollary: the gap is bounded by ᾱL̂K/(2ĉμ) plus a term decaying with factor (1−ᾱĉ), with monotone decrease only from initial gaps above the floor.",
+      "overall_effect": "The corollary's conclusions about the level eventually reached and the convergence rate are unsupported and can be false (monotone decrease fails from small initial gaps).",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Corollary overstates the attained level and the rate under fixed steps",
+      "why_classification": "A local restatement of Theorem 1's bound preserves the method, the floor expression and the rate; no new argument or construction is needed."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2511.19716",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e917ba1144e6fa4c2415186c265b16ef399f1891d6a4e98601ba893f94692732",
+  "status": "ok"
+}

@@ -1,0 +1,157 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that the unique entries of $R_k$ in its first column, are evaluated using this corresponding column of $W\\Tilde{A}$ i.e. $R_k\\hat{e}_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}$, as in step-4 of this algorithm.",
+          "tag": null
+        },
+        {
+          "quote": "\\implies R_{k}(j,0) &= \\frac{1}{n} \\left( \\mathbf{1}^T (AD^{-k} \\circ C^{j}) \\mathbf{1} \\right) \\text{for } j = 0,1, \\cdots n-1.",
+          "tag": "thm:added-2"
+        },
+        {
+          "quote": "Let $W(p,q) = \\frac{1}{\\sqrt{n}}e^{-i \\frac{2\\pi pq}{n}}$, with $p,q=0,1,2\\cdots n-1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With U = W\\tilde{A} whose columns are the cycle diagonals Lambda_j (appendix example), U(k,j) = (1/sqrt(n)) sum_q Lambda_j(q,q) omega^{-kq}. The first column of the k-th circulant component is therefore R_k(j,0) = (omega^{kj}/sqrt(n)) U(k,j) — built from ROW k of U twisted by D^k, exactly matching the mean-of-cycle formula of thm:added-2. Step 4 instead uses COLUMN k of U with the inverse phase (D^k)^{-1}, giving a different vector: e.g. for n=2, A=[[1,2],[3,4]] the true R_1(:,0) = (-3/2, 1/2)^T while the stated formula yields (5,1)^T (unnormalized FFT), not even proportional. So as written the algorithm does not output the circulant components R_j (j >= 1), contradicting the paper's own thm:added-2 and breaking its input-output contract.",
+      "failure_location": {
+        "quote": "\\( R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)} \\)",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace Step 4 with the row-based extraction R[j] <- (1/sqrt(n)) D^j (row j of U)^T (up to FFT normalization), equivalently implement the mean formula of thm:added-2.",
+      "overall_effect": "The algorithm returns wrong R_j for j >= 1; consequently the weights T_A[i] = ||R_A[i]||_2 and the truncated matrices in Steps 2-4 of algo:cd_matrix_multiplication would also be built from incorrect components. The claimed O(n^2 log n) cost is unaffected.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "FFT circulant-decomposition algorithm extracts the wrong vector as the first column of R_k",
+      "why_classification": "A one-line local correction whose correct form is forced by the paper's own thm:added-2; no new lemma, no change to complexity, methods, or results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\( L[j] \\gets \\Lambda_j\\)",
+          "tag": "algo:circulant_decomposition_fft"
+        },
+        {
+          "quote": "W\\bm l_k \\circ W(D^k\\bm b) = W \\bm l_k \\circ WD^kW^{*}W\\bm b =  W\\bm l_k \\circ C^kW\\bm b",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper's own derivation shows the Fourier-domain factor must be W l_t, the FFT of the first column l_t of the circulant R_t (l_t mixes all cycles at frequency t: l_t(j) = omega^{jt} rho_{j,t}). But Algorithm algo:circulant_decomposition_fft defines the output L as the raw cycle diagonals Lambda_t, so Step 5 multiplies by Lambda_t; as written it computes W^* sum_t diag(Lambda_t) C^t W B = sum_t circ(W^* Lambda_t) D^t B, which is not \\tilde{A}B = sum_t R_t D^t B. The same defect appears in the second line, which uses L_B[t] for the Delta A \\tilde{B} term. The algorithm as written therefore does not deliver the claimed first-order approximation \\tilde{A}B + Delta A \\tilde{B} of eq:first_order_expansion.",
+      "failure_location": {
+        "quote": "\\( {\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right)) \\)",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace L_A[t] by the Hadamard factor FFT(R_A[t]) (and analogously use the right-multiplication kernel, the FFT of the reversed first column of R_t, in the second line), exactly as derived in the preceding prose.",
+      "overall_effect": "The central circulant-decomposition multiplication algorithm, as written, computes a different product than the advertised first-order approximation; its guarantee (approximate AB in O(n^2 log n)) fails without correction.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "Fourier-domain products in the CD multiplication algorithm use the cycle diagonals Lambda_t instead of the FFT of the circulant first column",
+      "why_classification": "Local one-line-per-product correction; the correct left-multiplication factor is already derived in the paper; complexity and all stated results are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{96 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right) \\label{concentration}.",
+          "tag": "th:concentrationprob"
+        },
+        {
+          "quote": "and the Lipschitz constant $L = 2 \\norm{D_1}^2_F \\norm{D_2}^2_2$. This gives us:",
+          "tag": "th:concentrationprob"
+        }
+      ],
+      "failure_explanation": "Substituting L = 2||D_1||^2_F ||D_2||^2_2 into the quoted Theorem elizabeths bound exp(-(n-2)t^2/(24 L^2)) gives denominator 24 * 4 ||D_1||^4_F ||D_2||^4_2 = 96 ||D_1||^4_F ||D_2||^4_2, exactly as the proof's own eq. (concentration) concludes. The corollary statement instead asserts 48, i.e., a tail bound with an exponent twice as large as the proof establishes; nothing in the proof yields 48.",
+      "failure_location": {
+        "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)$.",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change 48 to 96 in the corollary statement so that it matches its proof.",
+      "overall_effect": "The stated one-sided concentration inequality is stronger than the proven one by a factor 2 in the exponent constant. The subsequent qualitative use ('concentrates when L^2/n -> 0') and the heuristic use in th:estimated_relative_error are unaffected.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration corollary states exponent constant 48 while its proof derives 96",
+      "why_classification": "Single forced correction with no effect on any downstream qualitative use; every substantive claim survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& \\approx \\frac{9}{16}\\text{for } n \\gg 1 \\label{eq:uniform_distributions_norms5}",
+          "tag": "th:uniform_distribution_norms"
+        },
+        {
+          "quote": "When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": "th:uniform_distribution_norms"
+        }
+      ],
+      "failure_explanation": "As written the statement asserts an exact equality between a deterministic expectation and the random quantity (3/4)||A||_F||B||_F, which is false and ill-defined: for m=n=p=1, E[xy] = a^2/4 while (3/4)xy is random with mean 3a^2/16; and the exact ratio computed in the proof is 1/n + 9(n-1)/(16n), equal to 9/16 only as n -> infinity. The proof establishes only E||AB||_F^2 approximately (9/16) E||A||_F^2 E||B||_F^2 for large n, then passes to E[S] approximately sqrt(E[S^2]) and replaces the expected norms by the known norms without any concentration argument; independence of all entries is used but never stated as a hypothesis.",
+      "failure_location": {
+        "quote": "For two random matrices $A$ and $B$ with entries $\\sim$ $U(0,a)$, $\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$.",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate the theorem as the asymptotic statement: for independent entries, E||AB||_F^2 / (E||A||_F^2 E||B||_F^2) -> 9/16 and E||AB||_F approximately (3/4)||A||_F||B||_F for n >> 1, matching the proof's final line.",
+      "overall_effect": "The theorem as stated is false; only its weaker asymptotic-approximation version is supported. That weaker version is what Case-2 of th:estimated_relative_error actually uses, so the heuristic downstream use survives.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Theorem states exact identity E||AB||_F = (3/4)||A||_F||B||_F while the proof only establishes an asymptotic approximation",
+      "why_classification": "The supported approximate statement is already what the proof delivers and what the paper uses; restating requires no new substantive argument and loses nothing used downstream."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We have $\\mathbf{E}[S^2] = \\frac{1}{n(n+1)} (\\beta_1 \\beta_2 + \\alpha_1^2 \\alpha_2^2).$",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "$\\text{Var}(S) = \\mathbf{E}[S^2] - \\mathbf{E}[S]^2 = \\frac{1}{n(n+1)} \\left( \\beta_1 \\beta_2 - \\frac{\\alpha_1^2 \\alpha_2^2}{n} \\right)$.",
+          "tag": "lem:added-2"
+        },
+        {
+          "quote": "&= \\sqrt{\\mathbf{E}[S]}\\left(1 + \\frac{1}{8(n+1)} - \\frac{n\\beta_1 \\beta_2  }{8(n+1) (\\alpha_1 \\alpha_2)^{2}} \\right) + \\epsilon.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For Haar Q (the complex case used, since E|Q_ij|^4 = 2/(n(n+1))), the cross-moment E|Q_ij|^2|Q_kl|^2 equals 1/(n(n+1)) only when the distinct pairs share a row or a column; for i != k and j != l the correct value is 1/(n^2-1). Applying 1/(n(n+1)) to every pair (i,j) != (k,l) makes the case split invalid and the resulting formula false: for D_1 = D_2 = I, S = ||Q||_F^2 = n deterministically so E[S^2] = n^2, but the lemma gives (n^4+n)/(n(n+1)) = n(n^2+1)/(n+1) != n^2 (n=2: 10/3 != 4). The correct value (Weingarten) is [n(alpha_1^2 alpha_2^2 + beta_1 beta_2) - beta_1 alpha_2^2 - alpha_1^2 beta_2]/(n(n^2-1)). Consequently lem:added-2's 'variance' is negative in concrete cases (D_1=D_2=I gives -n(n-1)/(n+1) instead of 0, and it is generically negative for large n), and the final delta-method display yields E[sqrt(S)] > sqrt(E[S]) (the correction +1/(8(n+1)) dominates), contradicting Jensen's inequality E[sqrt(S)] <= sqrt(E[S]).",
+      "failure_location": {
+        "quote": "Now using the fact that for Haar distributed matrices we have $\\mathbf{E}[|Q_{i,j}|^4]  = \\frac{2}{n(n+1)}$ and $\\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2]  = \\frac{1}{n(n+1)}$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Recompute E[S^2] splitting into the cases (i,j)=(k,l), shared row or column, and distinct rows and columns, using the correct Weingarten moments 2/(n(n+1)), 1/(n(n+1)), 1/(n^2-1); restate lem:added-1 and lem:added-2 with the correct formulas and recompute the delta-method correction, which then has the correct (negative) sign.",
+      "overall_effect": "The appendix's exact second-moment and variance formulas and the concluding E[sqrt(S)] expansion are false as stated; quantitative support for the main-text heuristic E||AB||_F approximately sqrt(E||AB||_F^2) is undermined, although the qualitative conclusion (relative variance -> 0, E[sqrt(S)] approximately sqrt(E[S])) remains valid and is independently supported by th:concentrationprob.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Wrong Haar fourth-moment formula invalidates the appendix's E[S^2] and variance formulas",
+      "why_classification": "The stated formulas are false and must be replaced via a contained but nontrivial moment recomputation; no global proof architecture changes and the qualitative conclusion survives, so this exceeds a local fix but causes no major loss."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

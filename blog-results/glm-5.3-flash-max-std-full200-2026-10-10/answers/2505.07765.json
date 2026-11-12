@@ -1,0 +1,193 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "k(x,x') = \\int_{\\Omega} \\varphi(x; \\omega) \\varphi(x';\\omega) \\de\\rho(\\omega).",
+          "tag": "eq:kernel"
+        },
+        {
+          "quote": "\\varphi(x; \\omega) = \\sigma^{s-d} \\hat{\\varphi}\\left(\\frac{x-y}{\\sigma} \\right).",
+          "tag": "eq:scaledGaussian"
+        },
+        {
+          "quote": "&\\approx \\frac{\\sigma^{2(s-d)}}{|D_1|}  \\int_{\\R^d}  \\hat{\\varphi}((x-y)/\\sigma) \\hat{\\varphi}((x'-y)/\\sigma) \\de y  \\",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims the exact evaluation of the integral of the product of two standard Gaussian densities. The correct evaluation is a convolution of two Gaussians: with sigma^s phi(x;(y,sigma)) = sigma^s p_sigma(x-y), the integral over R^d equals sigma^d (4*pi)^{-d/2} exp(-||x-x'||^2/(4*sigma^2)), i.e. a Gaussian of variance 2*sigma^2 (scale sqrt(2)*sigma). The displayed final line instead gives a Gaussian of width 2*sigma (exponent exp(-||x-x'||^2/(8*sigma^2))) with a prefactor smaller by the factor 2^{-d/2}. As a check, at x = x' the true value is sigma^d (4*pi)^{-d/2} while the displayed value is sigma^d (2*sigma)^{-d} (2*pi)^{-d/2}, which differs by 2^{-d/2}. The displayed identity is therefore false.",
+      "failure_location": {
+        "quote": "&=  \\frac{\\sigma^{2s}}{(2\\sigma)^d}\\hat{\\varphi}((x-x')/(2\\sigma))",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Recompute the Gaussian product integral and replace the last line by k(x,x') ~ sigma^{2(s-d)} sigma^d (4*pi*sigma^2)^{-d/2} exp(-||x-x'||^2/(4*sigma^2))/|D_1|, i.e. a Gaussian kernel of width sqrt(2)*sigma; purely local.",
+      "overall_effect": "The motivational claim that the GP covariance kernel equals a Gaussian kernel with a fixed scale parameter remains true only in a corrected form; the kernel width and constant displayed (2*sigma, and the stated prefactor) are wrong. No formal theorem or algorithm depends on this computation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Gaussian product integral mis-evaluated in the GP-kernel comparison",
+      "why_classification": "A single local integral is mis-evaluated; the corrected evaluation is a routine Gaussian convolution computation, and the qualitative conclusion (Gaussian kernel with fixed scale) is preserved, so every guarantee survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The right-hand side in the above can be made arbitrarily by density of $\\cV$ in $\\cU_o$.",
+          "tag": "thm:convergence"
+        },
+        {
+          "quote": "First, by density of $\\cV$ in $\\cU_o$, for any $\\delta>0$, there exists $u^\\delta \\in \\cV$ such that",
+          "tag": "thm:error_bound"
+        }
+      ],
+      "failure_explanation": "The convergence analysis uses density of V in U_o in the U_o-norm (a Sobolev norm, e.g. H^2(D)); the estimate ||u - u^delta||_{U_o} = delta is an H^k-type approximation. The cited justification only provides uniform approximation of continuous functions by shifts of a fixed kernel, which controls no derivatives and therefore does not imply density of V(D) in a Sobolev space U_o. The conclusion (density) is in fact true, but the source contains no valid argument for it.",
+      "failure_location": {
+        "quote": "However, a key advantage is that $\\cV$ is dense in $\\cU_o$. This property follows from the fact that the Gaussian kernel is a ``universal kernel'', meaning that finite linear combinations of its shifts can approximate any continuous function on a compact set arbitrarily well \\cite{micchelli2006universal}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Insert the standard short argument for density in Sobolev norm, e.g. approximate u in U_o by smooth compactly supported functions and represent each mollified approximation as an integral network with a finite measure supported in D_1 x (0, sigma_max]; no new architecture is needed.",
+      "overall_effect": "The approximation step 'there exists u^delta in V with ||u - u^delta||_{U_o} small', used in the convergence discussion and in the proof of Theorem thm:error_bound, is left unsupported as written; the stated error bounds themselves remain true once density is established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Density of V in U_o claimed from C^0-universality, which does not imply Sobolev density",
+      "why_classification": "The gap is closed by a short, standard density argument (mollification plus representation by a Gaussian measure supported in Omega); all claims, rates, and scopes are preserved, so the repair is minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(u,g,H) &\\mapsto E(x, u, g, H) &&\\text{is continuous for almost all } x \\in D, \\",
+          "tag": "assu:caratheodory"
+        },
+        {
+          "quote": "The result follows directly from the pointwise convergence \\eqref{eq:continuity} and \\Cref{assu:caratheodory}.",
+          "tag": "lem:continuity"
+        }
+      ],
+      "failure_explanation": "The Caratheodory conditions only guarantee that (u,g,H) -> E(x,u,g,H) is continuous for almost every x. At points x in the exceptional null set, E(x,.) can be discontinuous, so convergence of (N mu_k, grad N mu_k, nabla^2 N mu_k)(x) to that of N mu does not imply convergence of E[N mu_k](x) there. Counterexample: D = (0,1), E(x,u,g,H) = 1_{x=1/2} * 1_{u>0} (and analogously for B); these E, B satisfy Assumption assu:caratheodory, and for mu_k = k^{-1} delta_{(1/2,sigma_0)} weak-* converging to 0 we get E[N mu_k](1/2) = 1 not converging to E[N 0](1/2) = 0. The lemma as stated (for all x) is false; only a.e. convergence follows.",
+      "failure_location": {
+        "quote": "&\\cE[\\cN \\mu_k](x) \\to \\cE[\\cN \\mu](x)  \\quad \\forall x \\in D, \\\\",
+        "tag": "lem:continuity"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the lemma with 'for nu_D-a.e. x in D' and 'for nu_{boundary D}-a.e. x in boundary D'; all downstream arguments (Fatou lower semicontinuity in thm:existence and thm:convergence) then go through unchanged.",
+      "overall_effect": "Lemma lem:continuity as stated is false; the pointwise claims 'for all x in D' and 'for all x in boundary D' must be weakened to a.e. statements. The downstream existence and convergence arguments only invoke this lemma together with Fatou's lemma, which needs only a.e. convergence, so those results survive with the corrected statement.",
+      "primary_affected_tag": "lem:continuity",
+      "target_type": "formal_result",
+      "title": "Lemma lem:continuity asserts pointwise convergence although Caratheodory continuity gives only a.e. continuity",
+      "why_classification": "A local quantifier fix (almost everywhere instead of everywhere) preserves the lemma and every application of it, since the only uses pass through Fatou's lemma, which needs a.e. convergence only."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Consider the unrestricted dictionary \\(\\Omega = \\R^d \\times (0, \\sigma_{\\max}]\\)  with \\(\\sigma_{\\max} = 1\\).",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "To define the parameter space $\\Omega$, fix a maximum bandwidth \\(\\sigma_{\\max}>0\\) and let $D_{1} :=  \\overline{D + B_{\\sigma_{\\max}}(0)}$. We then set\n\\[\n\\Omega =  D_1 \\times (0, \\sigma_{\\max}].\n\\]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The appendix proves B^s_{1,1}(R^d) embeds into the space V(R^d) built on the unrestricted dictionary Omega = R^d x (0, sigma_max], whose representing measures have atoms with centers y ranging over all of R^d (the multipliers mu_j are L^1 functions with full support). The paper's framework, however, fixes Omega = D_1 x (0, sigma_max] with centers restricted to D_1, and the claims that 'the PDE solution u in U_o also lies in the RKBS V' and that this 'can be justified in certain cases, such as the example provided in subsec:functional_setup' rely on the appendix embedding. Since the embedding is stated and proved only for the unrestricted dictionary, it does not give membership in the restricted space V(D) used by the optimization problems, and for a generic H^k solution no representation with centers confined to D_1 and sigma <= sigma_max is available (e.g. the representing measure would have to place mass with centers arbitrarily far away). The inference is therefore unsupported.",
+      "failure_location": {
+        "quote": "In this case, the PDE solution $u\\in \\cU_o$ also lies in the RKBS $\\cV$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Weaken the statement to the unrestricted-dictionary setting (or prove a restricted-parameter membership result); at minimum the claim 'u in U_o also lies in the RKBS V' must be withdrawn or proved for Omega = D_1 x (0, sigma_max].",
+      "overall_effect": "The claim that the exact PDE solution lies in V (invoked in Remark rmk:convergence to justify the source condition u* = u) is not established for the restricted parameter space Omega = D_1 x (0, sigma_max] under which existence, the representer theorem, and the error bounds are proved; only the weaker density of V in U_o is available.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "RKBS membership of the PDE solution justified via an embedding proved for a different (unrestricted) parameter space",
+      "why_classification": "No source-supported complete repair is identified (a restricted-center representation of a general H^k solution does not exist in general, since Gaussian mixtures with bounded bandwidth and restricted centers are far smaller classes), so the inclusion claim must be dropped or moved to the unrestricted setting; this is more than a local fix but only weakens a supporting example, not the main theorems, hence moderate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Under sufficient additional smoothness assumptions on the domain $D$ and the data $f_\\cE$ and $f_\\cB$, one may also take $\\cU_o = H^k(D)\\cap \\cU$ with $\\cF_o = H^{k-2}(D) \\times H^{k-1/2}(\\partial D)$ for any integer $k \\geq 2$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Classical H^2 elliptic regularity for the Dirichlet problem (-Delta ubar u = f in D, u = f_B on boundary) holds for C^{1,1} domains (or convex domains), not for general Lipschitz domains. On a Lipschitz domain with a re-entrant corner (interior opening angle omega > pi, e.g. an L-shaped domain), the solution of -Delta ubar u = f with homogeneous Dirichlet data contains a term r^{pi/omega} sin(pi theta/omega) whose second derivatives behave like r^{pi/omega - 2}, which is not square integrable when pi/omega <= 1, i.e. omega >= pi; hence U_o = H^2(D) is false in general for Lipschitz domains. The claimed instantiation of Assumption assu:wellposedness with U_o = H^2(D) is thus justified only under a stronger domain hypothesis.",
+      "failure_location": {
+        "quote": "Now the choice of $\\cU_o$ and $\\cF_o$ depends on the smoothness of the domain and the data.  For example, the classical elliptic regularity for Lipschitz domains allows us to choose \n$\\cU_o = H^2(D)\\cap \\cU$ and $\\cF_o = L^2(D) \\times H^{3/2}(\\partial D)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add the standard hypothesis that D is C^{1,1} (or convex) for this example, so that the classical H^2 elliptic regularity indeed applies; this is a contained, local hypothesis repair that preserves the example and all guarantees on that class of domains.",
+      "overall_effect": "The advertised validity of the framework for the semilinear Poisson example on Lipschitz domains (with U_o = H^2(D) and F_o = L^2(D) x H^{3/2}(boundary)) is unsupported; the convergence/error results are only applicable under a stronger domain regularity assumption.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "H^2 elliptic regularity invoked for merely Lipschitz domains",
+      "why_classification": "The repair is a standard local hypothesis (C^{1,1} or convex domain) under which the example and all downstream estimates survive unchanged; no rate or guarantee is lost on the corrected regime."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\item We use an empty network as the initialization of Algorithm \\ref{alg:main} unless otherwise specified.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The documented initialization is the empty network, i.e. N^{(0)} = 0. At t = 0 the step 'Compute p_0 = max_{1<=n<=N^{(t)}} |p(omega_n^{(t)})[u^{(t)}]|' is a maximum over an empty index set and is undefined, so the subsequent insertion test 'If p_hat > max {alpha, p_0}' cannot be evaluated and the algorithm as specified does not define its first iteration.",
+      "failure_location": {
+        "quote": "Compute $p_0 = \\max_{1\\leq n\\leq N^{(t)}}|p(\\omega^{(t)}_{n})[u^{(t)}]|$",
+        "tag": "alg:main"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Adopt the convention max over an empty set equals 0 (or explicitly bypass the comparison when N^{(t)} = 0); this is a local, routine fix that leaves all stated guarantees intact.",
+      "overall_effect": "Algorithm alg:main, as literally specified, cannot be executed from its documented initialization; every run of the experiments (which start from an empty network) silently relies on an unspecified convention for this degenerate case.",
+      "primary_affected_tag": "alg:main",
+      "target_type": "algorithm",
+      "title": "Algorithm 1 Phase I computes a maximum over an empty index set for the documented empty-network initialization",
+      "why_classification": "Fixing the degenerate initial case is a one-line routine convention (max of empty set treated as 0 or the comparison skipped) that preserves the algorithm's operation and all advertised guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat{p} =\\max_{\\hat{\\omega}_{m}}|p(\\hat{\\omega}_{m})[u^{(t)}]|$ and  $\\omega_{N^{(t)} + 1} = \\arg\\max_{\\hat{\\omega}_{m}}|p(\\hat{\\omega}_{m})[u^{(t)}]|$",
+          "tag": "alg:main"
+        }
+      ],
+      "failure_explanation": "The stated termination condition references the object 'omega_{omega_{N+1}}', which is not defined anywhere (there is a single insertion candidate omega_{N+1}, and omega_n denotes kernel nodes, not indices of omega). As written, the quantity |p[u](omega_{omega_{N+1}})| - alpha is not a well-defined expression, so the algorithm's stopping rule cannot be evaluated.",
+      "failure_location": {
+        "quote": "\\[\n    \\text{Estimated Descent} < \\epsilon  \\text{   and   }  |p[u](\\omega_{\\omega_{N+1}})| -\\alpha < \\epsilon,\n\\]",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the ill-defined symbol by the intended quantity, the best sampled candidate's dual variable, i.e. the condition |p[u](omega_{N+1})| - alpha < epsilon, matching the Phase-I quantity omega_{N^{(t)}+1} = argmax; a local, forced repair that changes no guarantee.",
+      "overall_effect": "The documented termination rule for Algorithm alg:main is not executable as written; any implementation must replace it, so the algorithm's stated stopping guarantee is unsupported as specified.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Stopping criterion in Appendix A is ill-defined (double subscript omega_{omega_{N+1}} and wrong candidate index)",
+      "why_classification": "The repair is a local, forced correction of a garbled symbol in one line of the stopping rule; the algorithm's operation and all advertised behavior are preserved, so the issue is minor."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2505.07765",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c2bc7cf361cb6e12142408073cedacd29d8351e355b3347316c7065908358592",
+  "status": "ok"
+}

@@ -1,0 +1,210 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Theoretical analysis demonstrates that, for an appropriately chosen threshold, any $s$-sparse solution recoverable via conventional penalties remains a local optimum under the truncated Huber function.",
+          "tag": null
+        },
+        {
+          "quote": "If $\\mu$ satisfies $ \\mu< |\\wvx_i|$ for all $i \\in \\mathrm{supp}(\\wvx)$, then $\\wvx$ is a local minimizer of $\\min_{\\vx\\in\\cS} \\Phi_{\\mu}(\\vx)$.",
+          "tag": "TH:s-sparse"
+        },
+        {
+          "quote": "model failures: occur when $\\Phi(\\overline{\\vx}) > \\Phi(\\wvx)$, which contradicts the assumption of $\\overline{\\vx}$ being the global minimizer;",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The only recovery-related formal result is Theorem TH:s-sparse: a sparse feasible vector is a local minimizer when mu is below its smallest nonzero magnitude. The abstract asserts that this property lets exact and robust recovery theories for other penalties be 'directly extended' to TH. No such extension is established anywhere (there is no global-recovery or robustness theorem for models \\eqref{constrain_model}/\\eqref{obj_singleu}), and the implication is false: e.g., for A with columns (1,0), (0,1), (1,1)/sqrt(2), (1,-1)/sqrt(2) (spark 3) and b=e_1, the unique 1-sparse solution xbar=e_1 (uniquely recoverable by L0, s<spark/2) is a local minimum with Phi_mu(xbar)=1 for mu=0.8<1, but the feasible point x*=(1/2,0,1/(2*sqrt(2)),1/(2*sqrt(2))) has all entries below mu and Phi_mu(x*)=0.5/0.64<1, so the TH global minimizer does not recover xbar. Local optimality alone does not yield exact recovery.",
+      "failure_location": {
+        "quote": "This property allows the exact and robust recovery theories developed for other penalty regularization functions to be directly extended to the truncated Huber function.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Soften or remove the abstract sentence, claiming only that sparse solutions remain local optima (Theorem TH:s-sparse) and making clear that no exact/robust recovery guarantee for the TH models is established.",
+      "overall_effect": "Readers are led to believe the TH penalty inherits exact/robust recovery guarantees from conventional penalties; in fact only local optimality of sparse solutions is proven, and global TH minimization can fail to recover signals that L0 recovers (consistent with the nonzero 'model failure' rates observed for TH in Section 4).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Abstract overclaims that exact/robust recovery theories extend directly to the TH penalty",
+      "why_classification": "A purely editorial repair: every formal result stands as stated and only an unsupported abstract-level implication is withdrawn."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "covgergalg1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $m=\\mathrm{spark}(A)-1\\leq\\mathrm{rank}(A)\\leq m$, the matrices $A_{\\cI^{j}_{1}}^\\top A_{\\cI^{j}_{1}}$ and $A_{\\cI^{j}_{2}}A_{\\cI^{j}_{2}}^\\top$ are invertible.",
+          "tag": null
+        },
+        {
+          "quote": "Assume that $\\mathrm{spark}(A)=m+1$ and the initial value $\\cQ_\\mu(\\wvx^0,\\widehat\\vomega^0)< \\mathrm{spark}(A)$.",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "it is essential to ensure the invertibility of the matrices $A_{\\cI^j_1}^\\top A_{\\cI^j_1}$ and $A_{\\cI^j_2}A_{\\cI^j_2}^\\top$ (see \\eqref{updateforx_I1}), which requires $\\mathrm{card}(\\cI^j_1) \\leq m$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "From spark(A)=m+1 and the initialization bound one gets card(I_1^j)<=m, hence card(I_2^j)=n-card(I_1^j)>=n-m; but the asserted '(n-m)>m' requires n>2m, which no hypothesis in the paper states. Invertibility of A_{I_2^j}A_{I_2^j}^T, required for the closed-form updates \\eqref{updateforx_I1}-\\eqref{formulation_y} (step 4 of Algorithm BCD, noise-free branch, and the proof of Theorem covgergalg1), needs card(I_2^j)>=m; if m<n<2m and card(I_1^j)=m (permitted by the stated assumptions), then card(I_2^j)=n-m<m and A_{I_2^j}A_{I_2^j}^T is singular, so the update step is undefined. The continuation section's stated requirement card(I_1^j)<=m is likewise insufficient for this invertibility (the correct condition is card(I_1^j)<=n-m).",
+      "failure_location": {
+        "quote": "Thus, $\\mathrm{card}(\\cI_1^j)=\\norm{\\widehat\\vomega^{j}}_0\\leq m$ and $\\mathrm{card}(\\cI_2^j)\\geq (n-m)>m$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the missing dimension/index-count hypothesis (e.g., n>=2m, or card(I_2^j)>=m for all j) to the noise-free scheme and Theorem covgergalg1, correct the asserted inequality, and replace the continuation section's condition card(I_1^j)<=m by card(I_1^j)<=n-m.",
+      "overall_effect": "Algorithm BCD's noise-free branch is not guaranteed to be executable under the stated assumptions when n<2m, and the proof of Theorem covgergalg1, which uses these update rules, presupposes the unjustified invertibility; the asserted inequality and the continuation section's invertibility condition are incorrect as written.",
+      "primary_affected_tag": "BCD",
+      "target_type": "algorithm",
+      "title": "Noise-free BCD updates need an unstated dimension condition (n>=2m) for invertibility",
+      "why_classification": "A one-line dimension hypothesis (vacuous in the paper's m<<n regime) plus correcting two stated conditions repairs the algorithm and the proof route; method, conclusions, and advertised scope survive."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "convergalg2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "A vector $\\widehat{\\vx}$ minimizes \\eqref{constrain_model} locally or globally if and only if $\\abs{\\wvx_i}\\neq \\mu$ for all $i$ and there exists $\\wvy\\in\\rr^m$ such that",
+          "tag": "linearoptcond"
+        },
+        {
+          "quote": "Theorem  \\ref{linearoptcond} establishes that $(\\wvx, \\widehat{\\vomega})$ is a minimizer of the model \\eqref{constrain_model}.",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "According to Theorem \\ref{noise_optcond}, the limit point $(\\wvx,\\widehat{\\vomega})$ is a minimizer of model \\eqref{obj_singleu}.",
+          "tag": "convergalg2"
+        },
+        {
+          "quote": "$\\widehat{\\vomega}^{(j+1)} = \\cH_{\\mu}(\\wvx^{(j+1)})$",
+          "tag": "updateforw"
+        }
+      ],
+      "failure_explanation": "The proofs of covgergalg1 and convergalg2 apply linearoptcond/noise_optcond at the BCD limit without verifying their hypothesis |x_hat_i| != mu for all i. This hypothesis can fail: since H_mu maps |x_i|=mu to 0 (eq. porpoptw), BCD fixed points may sit exactly at breakpoints, where the flat part of phi_mu provides a descent direction that the subproblem stationarity (which balances only the quadratic side) does not see. Counterexample (noise-free): A=[2,1,1] in R^{1x3}, b=3, mu=1, spark(A)=2=m+1; initialized at x^0=(1,0.5,0.5), omega^0=(0,0,0) with Q_mu=1.5<2, the x-subproblem min ||x||^2 s.t. 2x_1+x_2+x_3=3 has unique minimizer (1,0.5,0.5) (reproduced exactly by the paper's formulas \\eqref{updateforx_I1}-\\eqref{formulation_y}) and H_1(1,0.5,0.5)=(0,0,0), so the sequence is constantly (1,0.5,0.5); yet the feasible points (1+g,0.5-g,0.5-g) satisfy Phi_1=1+2(0.5-g)^2<1.5 for small g>0, so the limit is not even a local minimizer (note |x_hat_1|=1=mu). Noisy analogue for convergalg2: A=[1,0.1,0.1], b=1.22, alpha=10, mu=1; the fixed point (1,0.1,0.1) satisfies J_mu=1.22<2 and G_mu(1+g,0.1,0.1)=5(g-0.2)^2+1.02<1.22 for small g>0, so the limit is not a local minimizer. Both theorems' conclusions are therefore false under their own hypotheses.",
+      "failure_location": {
+        "quote": "Then, the sequence $\\{(\\wvx^{k},\\widehat{\\vomega}^{k})\\}_k$ is bounded and converges to the minimizer of model \\eqref{constrain_model} in a finite number of steps.",
+        "tag": "covgergalg1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either add and justify assumptions excluding breakpoint limit points (e.g., a genericity argument that the limit satisfies |x_hat_i| != mu) or weaken Theorems covgergalg1 and convergalg2 to finite-step convergence to a BCD fixed point, explicitly withdrawing the guarantee that the limit is a (local) minimizer.",
+      "overall_effect": "Theorems covgergalg1 and convergalg2 are false as stated: the BCD sequence can converge in finitely many steps to a non-minimizer sitting exactly at a non-differentiability point |x_hat_i|=mu. The abstract's/intro's/conclusion's 'finite-step convergence guarantees under spark conditions' and the conclusion's claim of 'differentiability at convergence points' are thereby unreliable.",
+      "primary_affected_tag": "covgergalg1",
+      "target_type": "formal_result",
+      "title": "Convergence theorems false: BCD limit need not be a minimizer (not even local) at breakpoint fixed points",
+      "why_classification": "Counterexamples satisfying all hypotheses falsify the central algorithmic guarantee (finite-step convergence to a minimizer); every repair either abandons the minimizer conclusion or requires new assumptions and proof architecture absent from the source."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "convergalg2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "A vector $\\widehat{\\vx}$ minimizes \\eqref{constrain_model} locally or globally if and only if",
+          "tag": "linearoptcond"
+        },
+        {
+          "quote": "Then, the sequence $\\{\\wvx^k,\\widehat\\vomega^k\\}_k$ is bounded and converges to the minimizer of model \\eqref{obj_singleu} in a finite number of steps.",
+          "tag": "convergalg2"
+        },
+        {
+          "quote": "algorithm failures: occur when $\\Phi(\\overline{\\vx}) < \\Phi(\\wvx)$, indicating that the algorithm did not converge to a satisfactory minimizer.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Even when the BCD limit has no breakpoint coordinates, it is in general only a local minimizer, because BCD minimizes the bivariate surrogate Q_mu coordinate-wise and can stall at strict local minima, while the theorems claim convergence to 'the minimizer' of models \\eqref{constrain_model}/\\eqref{obj_singleu}, i.e., their global solutions. Counterexample: A=[1,1,1], b=2, mu=1, spark(A)=2=m+1; initialized at x^0=(2/3,2/3,2/3), omega^0=(0,0,0) with Q_mu=4/3<2, the x-subproblem min ||x||^2 s.t. x_1+x_2+x_3=2 has unique minimizer (2/3,2/3,2/3), so the sequence is constant at this strict local minimizer with Phi_1=4/3, whereas the global minimum of the model is 1, attained at (2,0,0) and permutations. The proof's tool (linearoptcond) characterizes 'local or global' minimizers and thus cannot deliver the stated global conclusion; the paper's own experiments even classify such outcomes as 'algorithm failures'.",
+      "failure_location": {
+        "quote": "Then, the sequence $\\{(\\wvx^{k},\\widehat{\\vomega}^{k})\\}_k$ is bounded and converges to the minimizer of model \\eqref{constrain_model} in a finite number of steps.",
+        "tag": "covgergalg1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate Theorems covgergalg1 and convergalg2 (and the dependent abstract/conclusion prose) as finite-step convergence to a local minimizer of the respective models.",
+      "overall_effect": "Both convergence theorems, read as promising convergence to the (global) minimizer of the respective models, overclaim what BCD on the nonconvex surrogate can deliver; only convergence to a local minimizer (absent breakpoints) is supportable.",
+      "primary_affected_tag": "covgergalg1",
+      "target_type": "formal_result",
+      "title": "Convergence theorems claim convergence to 'the minimizer' but only local minimality can hold",
+      "why_classification": "The limited weakening 'the minimizer' -> 'a local minimizer' leaves a recognizably comparable finite-step convergence result, but it withdraws the stated global-solution guarantee, so it is more than a routine local fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "convergalg2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\big(A^\\top A + \\tfrac{2}{\\mu^2}\\mathrm{diag}(\\mathbf{1}-\\widehat{\\vomega}^{(k-1)})\\big)\\wvx^k=A^\\top\\vb-A^\\top\\widehat\\vy^k.$",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "Since $\\mathrm{spark}(A)=m+1$,  the existence of $\\widehat{\\vy}^k$ is guaranteed (see \\eqref{formulation_y}).",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "Passing to the limit in \\eqref{conviterk}, we obtain",
+          "tag": "convergalg2"
+        }
+      ],
+      "failure_explanation": "Theorem thm:uniqueness_boundedness bounds the solution of (A^T A + lambda D)x = c in terms of ||c|| for fixed c and D. In covgergalg1 it is applied to a system whose right-hand side A^T b - A^T y^k contains the multiplier y^k: only the existence of y^k is asserted, never a bound on ||y^k|| (nor a uniform bound on the k-dependent inverse matrices), so boundedness of {x^k} does not follow. The subsequent limit equation involving a limiting y presupposes an unproven convergent multiplier subsequence; the identification x^{(k_j+1)}=x_hat and the 'by induction' whole-sequence claim are asserted without argument. In convergalg2 the limit is taken in \\eqref{conviterk}, which involves omega^{(k-1)}, while convergence was extracted only for (x^{k_j}, omega^{k_j}); the index mismatch is not addressed. Correct arguments exist (the monotone objective bounds the I_2-coordinates; injectivity of A_{I_1} over the finitely many admissible patterns bounds the I_1-coordinates; the pattern sequence is a deterministic map on a finite set) but are not in the source.",
+      "failure_location": {
+        "quote": "According to Theorem \\ref{thm:uniqueness_boundedness} and the update rule in \\eqref{updateforw}, the sequence $\\{(\\wvx^k,\\widehat{\\vomega}^k)\\}_k$ is bounded.",
+        "tag": "covgergalg1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the boundedness and limit-passage steps: bound the iterates via the monotone objective (which controls the I_2-coordinates) plus the uniform injectivity of A_{I_1} over the finitely many admissible patterns, and derive the limit/fixed-point equations via a further subsequence or a finite-state argument on the pattern sequence.",
+      "overall_effect": "The proofs of Theorems covgergalg1 and convergalg2 do not validly establish boundedness of the iterates, the limit equations, or the finite-step convergence claim as written.",
+      "primary_affected_tag": "covgergalg1",
+      "target_type": "formal_result",
+      "title": "Boundedness and limit-passage steps in the convergence proofs are unjustified",
+      "why_classification": "The boundedness and limit conclusions are repairable by a contained but genuinely new replacement argument; no additional mathematical loss beyond the separately reported statement defects."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\mathcal{K}+1=\\{i\\mid \\abs{(\\wvx_{k})_i}\\leq c_{k+1}\\}$, $c_{k+1}=\\tfrac{\\mu_{k}}{\\rho}$, and $\\rho>1$ is a constant.",
+          "tag": null
+        },
+        {
+          "quote": "From Lemma \\ref{mudecre_objincre} and Lemma \\ref{upperbound_lema2_rev}, we can easily obtain",
+          "tag": null
+        },
+        {
+          "quote": "However, when $\\mu$ is small and the initial values $(\\widehat{\\vx}^{0}, \\widehat{\\vomega}^{0})$ deviate significantly from the true solution, the number of elements in $\\widehat{x}^{j}$ with absolute values exceeding $\\mu$ may exceed $m$, potentially leading to singular matrices.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Since m<n, the denominator m-n+card(K+1) in \\eqref{updatemu} is positive only if card(K+1)>n-m, i.e., only if fewer than m entries of x_k exceed c_{k+1}=mu_k/rho. If at least m entries exceed the threshold (exactly the situation the continuation strategy is meant to guard against, as the quoted passage acknowledges), the denominator is zero or negative and the square root (or the division) is undefined, so step 4 of Algorithm continuescheme cannot be executed. Moreover, the claimed derivation from Lemma mudecre_objincre (monotonicity of the optimal value in mu) and Lemma upperbound_lema2_rev (surrogate decomposition) is unsupported: neither lemma yields a formula for mu_{k+1} involving an RMS of the sub-threshold entries.",
+      "failure_location": {
+        "quote": "$\\mu_{k+1}=\\min\\{\\max\\{c_{k+1}, \\sqrt{\\tfrac{\\sum_{i\\in\\mathcal{K}+1}(\\wvx_{k})_i^2}{m-n+\\mathrm{card}(\\mathcal{K}+1)}}\\}, \\mu_{k}\\}$",
+        "tag": "updatemu"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Redefine mu_{k+1} as a well-defined schedule (e.g., by guarding the denominator m-n+card(K+1)>0 or replacing the RMS term) and remove or substantiate the claimed derivation from Lemmas mudecre_objincre and upperbound_lema2_rev.",
+      "overall_effect": "Step 4 of Algorithm continuescheme is ill-defined for reachable inputs (at least m entries of x_k above mu_k/rho), and the advertised role of the continuation strategy in keeping the iterations well-posed and numerically stable is unsupported.",
+      "primary_affected_tag": "updatemu",
+      "target_type": "algorithm",
+      "title": "Mu-continuation update rule is ill-defined and its derivation is unsupported",
+      "why_classification": "The ill-defined update rule must be redesigned (a choice among repairs with unclear intended semantics), but no formal theorem depends on it, so the loss is contained."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2504.04509",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n01-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "806db391bc2a12e7e296de5a289b045ed6046db853e63982b09093bf18596081",
+  "status": "ok"
+}

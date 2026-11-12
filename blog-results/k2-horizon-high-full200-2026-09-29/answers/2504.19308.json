@@ -1,0 +1,225 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "    A &= \\sum_j \\Lambda_j C^j = \\sum_{j,k} r_{j,k}  C^j D^k, \\\\\n    & = \\sum_{k} \\left(\\sum_{j} r_{j,k} C^j \\right) D^k = \\sum_{k} R_k D^k.",
+          "tag": "th:circulant_decomposition"
+        },
+        {
+          "quote": "The decomposition of any matrix into cycles is given by $A = \\sum_{j=0}^{n-1} \\Lambda_jC^j$, where $\\Lambda_j$ are diagonal matrices containing $n$ entries of the matrix in a cycle.",
+          "tag": null
+        },
+        {
+          "quote": "    &= \\sum_{k=0}^{n-1} R_{k}D^k \\quad \\text{where } D(q,q) = \\omega^q = e^{i\\frac{2 \\pi}{n} q} \\text{, and }",
+          "tag": "th:circulant_decomposition"
+        }
+      ],
+      "failure_explanation": "After Fourier-expanding the cycle diagonal as \\Lambda_j = \\sum_k r_{j,k} D^k, the proof asserts \\Lambda_j C^j = \\sum_k r_{j,k} C^j D^k and regroups into \\sum_k R_k D^k with circulant R_k. But D^k (diagonal entries \\omega^q) does not commute with the cycle permutation C^j: (D^k C^j)_{ab} = \\omega^{ak}(C^j)_{ab} whereas (C^j D^k)_{ab} = \\omega^{bk}(C^j)_{ab}. The valid identity \\Lambda_j C^j = \\sum_k r_{j,k} D^k C^j cannot be regrouped into circulant-times-D^k form. The construction in the proof therefore does not produce A: for n = 2, A = [[1,2],[3,4]] it yields \\sum_k R_k D^k = [[1,3],[2,4]] = A^T, not A. The theorem's statement is nonetheless true (the components are uniquely determined; equivalently via the paper's own identity R_k D^k = W^*(WAW^* \\circ C^k)W, from which the orthogonality claims also follow), so the defect is the invalid proof step, not the claim.",
+      "failure_location": {
+        "quote": "   Then using a Fourier series expansion of every cycle,\n   \\begin{align*}\n       \\Lambda_j C^j = \\sum_{k} r_{j,k}  C^j D^k.\n   \\end{align*}",
+        "tag": "th:circulant_decomposition"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the proof's regrouping argument with a valid derivation: either the paper's own 2D-DFT identity R_k D^k = W^*(WAW^* \\circ C^k)W (projection onto cycle k of WAW^*) or the direct inversion r_{k,s} = (1/n) sum_b \\omega^{-bk} A_{b+s,b}; the orthogonality claims then follow as noted. No change to the statement is needed.",
+      "overall_effect": "The circulant-decomposition theorem is stated correctly but its proof is invalid: the constructed components do not satisfy A = sum R_k D^k (a 2x2 counterexample gives A^T). Downstream uses rely only on the statement (orthogonality, component weights w_k, selection by component magnitude, and thm:added-2), which remains true, so they stand once the proof is repaired.",
+      "primary_affected_tag": "th:circulant_decomposition",
+      "target_type": "formal_result",
+      "title": "Circulant-decomposition proof illegally commutes C^j past D^k",
+      "why_classification": "The statement and all downstream uses survive, but the proof's central step is invalid and cannot be fixed by a local edit; the replacement derivation is contained and already implicit in the source, so the repair is more than minor yet loses no claim or guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "algo:cd_matrix_multiplication"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that the unique entries of $R_k$ in its first column, are evaluated using this corresponding column of $W\\Tilde{A}$ i.e. $R_k\\hat{e}_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}$, as in step-4 of this algorithm.",
+          "tag": null
+        },
+        {
+          "quote": "A more elegant statement equivalent of \\cref{th:circulant_decomposition} is that the inverse transformation of a cycle of the 2D-FFT of $A$ given by $WAW^*$, provides us a corresponding circulant component i.e. $R_kD^k=W^*(WAW^* \\circ C^k)W$.",
+          "tag": null
+        },
+        {
+          "quote": "  \\State Step 2: Load $\\tilde{A}$ and compute U $\\gets FFT(\\tilde{A})$",
+          "tag": "algo:circulant_decomposition_fft"
+        }
+      ],
+      "failure_explanation": "Step 4 sets the first column of R_j to (D^j)^{-1} U^{(j)} with U = W \\tilde{A} (FFT of the cycle-arranged matrix). This formula is wrong on three counts: it uses column j of W \\tilde{A} instead of row j, the phase \\omega^{-qj} instead of \\omega^{+qj}, and it lacks the 1/sqrt(n) factor. The correct extraction, which follows from the paper's own identity R_k D^k = W^*(WAW^* \\circ C^k)W, is R_k e_1 = (1/sqrt n) W^* v_k with v_k(p) = (WAW^*)_{p,(p-k) mod n}. Counterexample: for A = [[1,2],[3,4]] (n = 2) the unique decomposition A = R_0 + R_1 D has R_0 e_1 = (5/2, 5/2)^T, but the algorithm outputs (D^0)^{-1}(W \\tilde{A})^{(0)} = (5,-3)^T/sqrt(2) for R_0 and (5,1)^T/sqrt(2) for R_1, giving [[5 sqrt2, -2 sqrt2],[-sqrt2, 0]] instead of A.",
+      "failure_location": {
+        "quote": "    \\State \\( R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)} \\)",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace Steps 2-4 with the extraction implied by the paper's own identity R_k D^k = W^*(WAW^* \\circ C^k)W: compute WAW^* (two-dimensional FFT), extract the cycle-k diagonal v_k(p) = (WAW^*)_{p,(p-k) mod n}, and set R_k e_1 = (1/sqrt n) W^* v_k. This preserves the advertised O(n^2 log n) cost (the source itself notes this costs twice the current method, still O(n^2 log n)).",
+      "overall_effect": "The circulant components produced by the algorithm do not decompose A, so the component magnitudes, the top-k index selection, and the truncated matrices tilde A and tilde B are all unreliable; every procedure built on this algorithm, notably algo:cd_matrix_multiplication (Step 1), inherits the failure.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "FFT extraction formula for the circulant components R_k is incorrect",
+      "why_classification": "The written algorithm's output is entirely wrong and its core step cannot be patched by a local correction (transpose, phase, and normalization are all off), but the source itself contains the correct formula, so a contained reconstruction restores the decomposition at the same advertised complexity with no loss of the paper's claims."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "    \\State \\hspace{10pt} \\( \\Delta A {\\tilde{B}} \\gets \\text{IFFT}\\left( \\sum_{t \\in In_B} ((\\text{FFT}(\\Delta A) L_B[t])  C^t )\\right) \\)",
+          "tag": "algo:cd_matrix_multiplication"
+        },
+        {
+          "quote": "    \\State \\hspace{10pt} \\({\\tilde{B}} \\gets \\sum_{t \\in In_B} (R_{B_t}D^t) \\)\\Comment{$R_{B_t}$is the circulant matrix with first column as $R_B[t]$}",
+          "tag": "algo:cd_matrix_multiplication"
+        },
+        {
+          "quote": "    \\State \\( L[j] \\gets \\Lambda_j\\)",
+          "tag": "algo:circulant_decomposition_fft"
+        },
+        {
+          "quote": " W\\bm l_k \\circ W(D^k\\bm b) = W \\bm l_k \\circ WD^kW^{*}W\\bm b =  W \\bm l_k \\circ C^kW\\bm b  ",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Since L_A[t] = \\Lambda_tA (the cycle diagonal of A), Step 5 evaluates W^*(sum_t \\Lambda_tA C^t W B) = sum_t (W^* \\Lambda_tA W) D^t B, i.e. it uses the cycle diagonal as the Fourier-domain multiplier. But for the circulant component R_{A_t} D^t the correct multiplier is diag(W l_t) = (1/sqrt n) diag((WAW^*)_{p,(p-t) mod n}), where l_t is the first column of R_{A_t} -- exactly what the paper's own derivation R_k D^k b = W^*(W l_k \\circ C^k W b) gives. For A = [[1,2],[3,4]], In_A = {0}, B = I: the correct tilde A B = R_0 = [[2.5,2.5],[2.5,2.5]], while Step 5 returns W^* \\Lambda_0 A W = [[15.5,-2.5],[-12.5,1.5]]. Step 6 similarly returns \\Delta A sum_t \\Lambda_B[t] C^t = \\Delta A times the cycle-truncated B instead of \\Delta A tilde B = \\Delta A sum_t R_{B_t} D^t. Hence the algorithm does not compute its stated output M = tilde A B + \\Delta A tilde B even when given correct circulant components.",
+      "failure_location": {
+        "quote": "    \\State \\hspace{10pt} \\( {\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right)) \\)",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Rewrite Step 5 as IFFT( sum_{t in In_A} diag(W l_t) (C^t FFT(B)) ) with l_t the first column of R_{A_t}, and Step 6 as W^*((W \\Delta A W^*) sum_{t in In_B} diag(W m_t) C^t)W -- the computation the paper's prose itself derives (single inverse transform applied to the sum); the O(n^2 log n) scaling is preserved.",
+      "overall_effect": "The first-order circulant multiplication does not deliver its stated approximation: Step 5 applies the wrong Fourier-domain factor and Step 6 uses a cycle-truncated B rather than tilde B, so the returned matrix and its advertised error behavior are unreliable; the CD results' methodology is affected.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "Circulant first-order multiplication uses cycle diagonals instead of the correct Fourier masks",
+      "why_classification": "The algorithm's output contract fails completely, but the surrounding prose derives the correct computation, so a contained rewrite of the two steps repairs it without changing the advertised method, complexity, or results; the fix replaces the faulty steps rather than patching them, which keeps it above minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{96 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right) \\label{concentration}. ",
+          "tag": "th:concentrationprob"
+        },
+        {
+          "quote": "Let us apply the Theorem \\ref{elizabeths}, with $X = \\mathbf{O}(n)$ the norm $\\norm{\\cdot}_F$, function $F = - f(Q) = - \\norm{D_1 Q D_2}^2_F$, and the Lipschitz constant $L = 2 \\norm{D_1}^2_F \\norm{D_2}^2_2$. This gives us:",
+          "tag": "th:concentrationprob"
+        }
+      ],
+      "failure_explanation": "The corollary's statement claims a tail bound with 48 ||D_1||_F^4 ||D_2||_2^4 in the exponent denominator, but the proof applies Theorem elizabets with L = 2 ||D_1||_F^2 ||D_2||_2^2, and 24 L^2 = 96 ||D_1||_F^4 ||D_2||_2^4, as the proof's own display (concentration) shows. The stated constant 48 is stronger than anything the proof establishes; the statement must be corrected to 96 or a sharper Lipschitz constant must be proved.",
+      "failure_location": {
+        "quote": "    $ \\mathbb{P} \\left[   \\norm{D_1 Q D_2}^2_F \\leq \\mathbb{E}[\\norm{D_1 Q D_2}^2_F] - t \\right] \\leq \\exp\\left( -\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)$.",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Change the statement's 48 to 96 to match the bound derived from Theorem elizabets with L = 2 ||D_1||_F^2 ||D_2||_2^2 (or prove a sharper Lipschitz constant); a one-line correction.",
+      "overall_effect": "Only the constant in the exponent of the corollary's tail bound is affected; the qualitative conclusion (||D_1 Q D_2||_F^2 concentrates around its mean when L^2/n tends to 0) and all downstream uses are unchanged.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration corollary statement (48) contradicts the bound its proof derives (96)",
+      "why_classification": "A single forced constant correction aligns the statement with the proof, and every downstream claim is qualitative and unaffected, so no substantive content is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where for each $n_i$, $\\mathbb{G}_{n_i}$ is one of $\\mathbb{SO}(n_i)$, $\\mathbb{SO}^{-}(n_i)$, $\\mathbb{SU}(n_i)$, $\\mathbb{U}(n_i)$, or $\\mathbb{Sp}(2n_i)$.",
+          "tag": "elizabeths"
+        },
+        {
+          "quote": "Let $A = Q_1 D_1 Q_2$ and $B = Q_3 D_2 Q_4$ be singular value decompositions of $A$ and $B$, and $Q_1,Q_2,Q_3,Q_4$ be Haar distributed unitary matrices.",
+          "tag": "th:expected_norm_square"
+        }
+      ],
+      "failure_explanation": "The proof invokes Theorem elizabets with X = O(n), but the theorem as stated applies only when each factor is one of SO(n_i), SO^-(n_i), SU(n_i), U(n_i), or Sp(2n_i); O(n) is not covered, so the theorem is used outside its hypotheses. Moreover the underlying lemma is stated for Haar unitary matrices, so the consistent covered choice is X = U(n) (or SO(n) for real matrices).",
+      "failure_location": {
+        "quote": "Let us apply the Theorem \\ref{elizabeths}, with $X = \\mathbf{O}(n)$ the norm $\\norm{\\cdot}_F$, function $F = - f(Q) = - \\norm{D_1 Q D_2}^2_F$, and the Lipschitz constant $L = 2 \\norm{D_1}^2_F \\norm{D_2}^2_2$.",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace X = O(n) by X = U(n) in the proof (or SO(n) for real matrices), which is among the groups covered by Theorem elizabets and matches the lemma's Haar-unitary premise; a one-word correction.",
+      "overall_effect": "The corollary's conclusion is valid for the covered group U(n), but as written the proof relies on a result applied outside its stated scope; the gap is in the justification, not in the claim.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration theorem invoked on O(n), which its statement does not cover",
+      "why_classification": "A one-word correction brings the application within the cited theorem's stated hypotheses and matches the lemma's premise; no claim or guarantee changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, $\\eqref{eq:uniform_distributions_norms5}$ results in $\\mathbf{E}[\\|AB\\|_F^2]\\approx\\frac{9}{16}\\mathbf{E}[\\|A\\|_F^2].\\mathbf{E}[\\|B\\|_F^2]$. When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": "th:uniform_distribution_norms"
+        },
+        {
+          "quote": "    & \\approx \\frac{9}{16}\\text{for } n \\gg 1 \\label{eq:uniform_distributions_norms5}",
+          "tag": "th:uniform_distribution_norms"
+        }
+      ],
+      "failure_explanation": "The theorem asserts the exact identity E||AB||_F = (3/4)||A||_F||B||_F, but the proof derives only the second-moment ratio E||AB||_F^2 approximately (9/16) E||A||_F^2 E||B||_F^2 and then replaces E sqrt S by sqrt E S and the random quantities ||A||_F, ||B||_F by their means. That concentration step is asserted, not proved, and the conclusion as stated equates a deterministic scalar to a random quantity. The heuristic estimate itself is sound (the 9/16 ratio is computed correctly), so the defect is the unsupported exact statement.",
+      "failure_location": {
+        "quote": "For two random matrices $A$ and $B$ with entries $\\sim$ $U(0,a)$, $\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$.",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restate the claim as an asymptotic approximation (E||AB||_F approximately (3/4)||A||_F||B||_F for large n with concentrated norms), or add a variance bound (e.g., Chebyshev with fourth moments) justifying E sqrt S approximately sqrt E S.",
+      "overall_effect": "The heuristic estimate used for Case-2 of th:estimated_relative_error remains sound as an approximation, but the theorem's literal equality is unproved and must be weakened or justified; no formal downstream result depends on the exact identity.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Uniform-entry theorem states an exact identity that its proof only supports heuristically",
+      "why_classification": "Downgrading the equality to the approximation the proof actually establishes (or adding a standard concentration argument) preserves the heuristic use in the error proposition; no advertised result depends on the literal identity."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "    We have $\\mathbf{E}[S^2] = \\frac{1}{n(n+1)} (\\beta_1 \\beta_2 + \\alpha_1^2 \\alpha_2^2).$",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "        &= \\sum_{(i,j) = (k,l)} D_1(i)^4 D_2(j)^4\\mathbf{E}[|Q_{i,j}|^4] + \\sum_{(i,j) \\neq (k,l)}  D_1(i)^2 D_2(j)^2 D_1(k)^2 D_2(l)^2 \\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2] ",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "Let $S = \\norm{AB}_F^2$.  Let $\\alpha_1 = \\sum_{i} D_1(i)^2$ and $\\alpha_2 = \\sum_{i} D_2(i)^2$ and $\\beta_1 = \\sum_{i} D_1(i)^4$ and $\\beta_2 = \\sum_{i} D_2(i)^4$. then",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof splits the fourth moment into the diagonal case (i,j) = (k,l) and all (i,j) != (k,l), and assigns the single value 1/(n(n+1)) to every off-diagonal pair. For Haar unitary matrices the mixed moment is configuration-dependent: it equals 1/(n(n+1)) when the index pairs share a row or column, but 1/(n^2-1) when they lie in different rows and columns (the latter follows from sum_{ij} |Q_{ij}|^2 = n). Consequently the formula is false: for D_1 = D_2 = I, the product AB is Haar unitary so S = ||AB||_F^2 = n almost surely and E[S^2] = n^2, while the lemma gives n(n^2+1)/(n+1) (e.g., 10/3 instead of 4 for n = 2); the correct moments yield exactly n^2, confirming that the quoted mixed moment is the error. Lemma lem:added-2 and the appendix's Taylor-based estimates of E||AB||_F inherit the wrong variance.",
+      "failure_location": {
+        "quote": "    Now using the fact that for Haar distributed matrices we have $\\mathbf{E}[|Q_{i,j}|^4]  = \\frac{2}{n(n+1)}$ and $\\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2]  = \\frac{1}{n(n+1)}$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Recompute E[S^2] with the correct Haar moments: E|Q_{ij}|^4 = 2/(n(n+1)), E[|Q_{ij}|^2|Q_{kl}|^2] = 1/(n(n+1)) when the pairs share a row or column and 1/(n^2-1) when they are disjoint, giving E[S^2] = 2 beta_1 beta_2/(n(n+1)) + [beta_1(alpha_2^2 - beta_2) + beta_2(alpha_1^2 - beta_1)]/(n(n+1)) + [alpha_1^2 alpha_2^2 - beta_1 alpha_2^2 - beta_2 alpha_1^2 + beta_1 beta_2]/(n^2-1); then recompute the variance and Taylor estimates accordingly.",
+      "overall_effect": "lem:added-1's formula for E[S^2] is false, so lem:added-2's variance and the appendix's Taylor-based estimates of E||AB||_F are wrong; the main text does not cite these appendix lemmas, so the damage is confined to the appendix.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "False Haar mixed-moment makes the appendix formula for E[S^2] incorrect",
+      "why_classification": "The stated lemma is false with a clean counterexample, so it must be replaced by a recomputation with the correct configuration-dependent Haar moments; the repair is a contained but genuine new computation, and the error does not propagate to the main text's results."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

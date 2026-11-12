@@ -1,0 +1,273 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem1",
+        "lem2",
+        "prop:exponential decay",
+        "cea",
+        "thm:main local"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "If the mesh size $H$, the wavenumber $k$ satisfies the resolution condition such that",
+          "tag": "lm1"
+        },
+        {
+          "quote": "For $I_4$, by using of the resolution condition \\cref{eq:res} and  \\cref{eq:bound s} , we have",
+          "tag": "lem1"
+        },
+        {
+          "quote": "Under \\cref{ass:overlapping}, there exists constants $\\Upsilon,\\Lambda^*$ such that for any $\\Upsilon\\geq \\Upsilon'$ and $\\Lambda\\geq \\Lambda^*$, the multiscale solution $u_{\\mathup{ms}}$ of \\cref{cemvar} exists and is unique.",
+          "tag": "thm:main local"
+        }
+      ],
+      "failure_explanation": "The proofs of glothm (via Lemma lm1's coercivity), lem1 (term $I_4$), lem2, prop:exponential decay, cea (continuity estimate), and thm:main local all invoke the resolution condition \\cref{eq:res}, $C_1\\mu_{\\mathup{msh}}^{-1}k^2H^2\\leq C_*\\Lambda$, but none of these results lists it (or any mesh-wavenumber restriction) among its hypotheses: glothm states only $f\\in L^2(\\Omega)$ (and not even the large-contrast regime), and prop:exponential decay/thm:main local state only \\cref{ass:overlapping} plus the contrast/eigenvalue ranges. As stated, the conclusions are asserted for arbitrary $k$ and $H$; for large $k^2H^2$ the absorption of the $k^2$-term that every proof relies on cannot be performed.",
+      "failure_location": {
+        "quote": "If $f\\in L^2(\\Omega)$, then \n$$\\Norm{u-u_{\\mathup{glo}}}_{\\tilde{a}}\\leq \\frac{\\Norm{f}_{s^{-1}}}{\\sqrt{\\Lambda}}.$$",
+        "tag": "glothm"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the resolution condition \\cref{eq:res} (and the standing large-contrast regime) as an explicit hypothesis to glothm, lem1, lem2, prop:exponential decay, cea, and thm:main local.",
+      "overall_effect": "Every decay, well-posedness, and error statement in the analysis section is formally asserted without the mesh-wavenumber hypothesis its proof needs.",
+      "primary_affected_tag": "glothm",
+      "target_type": "formal_result",
+      "title": "Analysis results omit the resolution-condition hypothesis their proofs require",
+      "why_classification": "Adding the already-introduced standing hypothesis to the statements is a standard local condition; the method, conclusions, rates, and advertised scope are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cea",
+        "thm:main local"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&+C_*\\norm{z}_{\\tilde{a}}^2+C_*\\Lambda\\norm{\\pi z}_{\\tilde{s}}^2,",
+          "tag": "prop:exponential decay"
+        },
+        {
+          "quote": "& \\quad C''\\RoundBrackets*{\\norm{z}_{\\tilde{a}}^2+\\norm{\\pi z}_{\\tilde{s}}^2} \\leq \\sum_{i=1}^{N_\\mathup{elem}} \\RoundBrackets*{a(z_i, \\mathcal{T}z)+s(\\pi z_i,\\pi\\mathcal{T}z)}",
+          "tag": "prop:exponential decay"
+        },
+        {
+          "quote": "C_1 \\mu_{\\mathup{msh}}^{-1}k^2H^2\\leq C_*\\Lambda,",
+          "tag": "lm1"
+        },
+        {
+          "quote": "where $\\theta < 1$ from \\cref{lem1} and $c_0(\\Lambda)>0$ depends on $\\Lambda$, $C, C_*, C_0$, $C_1$, and $C_2$.",
+          "tag": "prop:exponential decay"
+        }
+      ],
+      "failure_explanation": "The per-element bound on $I_2=k^2(z_i,\\mathcal{T}z')$ uses global norms, leaving additive terms $C_*\\norm{z}_{\\tilde{a}}^2+C_*\\Lambda\\norm{\\pi z}_{\\tilde{s}}^2$ for every $i$ (the intermediate step $\\norm{z_i}_{\\tilde{s}}\\norm{z'}_{\\tilde{s}}\\leq \\norm{z}_{\\tilde{s}}^2+\\norm{z_i}_{\\tilde{s}}\\norm{z}_{\\tilde{s},\\hat{K}_i^{m+1}}$ is itself unjustified, since $\\norm{z_i}_{\\tilde{s}}\\not\\leq\\norm{z}_{\\tilde{s}}$ in general). Summation over $i=1,\\dots,N$ contributes $N(C_*\\norm{z}_{\\tilde{a}}^2+C_*\\Lambda\\norm{\\pi z}_{\\tilde{s}}^2)$, which is absorbed on the left, producing $C''$. This absorption (i) requires both $C_2-C_*N$ and $C_2-C_*\\Lambda N$ positive, so the combined constant must be the minimum, not the maximum as written; and (ii) positivity demands the unstated condition $C_*\\Lambda N<C_2$, i.e. via \\cref{eq:res}, $C_1\\mu_{\\mathup{msh}}^{-1}k^2H^2N<C_2$. Since $N\\sim H^{-d}$, this is $k^2H^{2-d}=O(1)$ (in 2D, $k$ restricted to $O(1)$), far stronger than the advertised mesh-resolution condition and violated by the paper's own numerical parameters ($k=2\\pi^2$, $H=1/20$, $N=400$). Under the stated hypotheses $C''$ can be nonpositive, and the claimed mesh-independent constant $c_0(\\Lambda)$ would inherit the $N$-dependent factor $C''^{-1}$.",
+      "failure_location": {
+        "quote": "where $C''=\\max\\{C_2-C_*N,C_2-C_*\\Lambda N\\}>0$.",
+        "tag": "prop:exponential decay"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Re-estimate $I_2$ by localizing $z_i$ on $\\Omega\\setminus\\hat{K}_i^m$ (where $z_i=\\mathcal{G}_i^\\infty\\psi$) and exploiting Lemma lem1's decay together with the overlap bound, eliminating the global per-$i$ terms and the max/min error; this yields the same decay form up to an additional $O(N\\theta^{m-1})$ term in the constant, so the downstream final estimate remains valid in the logarithmic oversampling regime (with threshold $\\sim(4+d)|\\log H|/|\\log\\theta|$).",
+      "overall_effect": "The exponential-decay/localization estimate is unproved as stated; the inf-sup argument in Lemma cea and the final error estimate in Theorem thm:main local, which quote the decay with a mesh-independent constant, inherit the gap.",
+      "primary_affected_tag": "prop:exponential decay",
+      "target_type": "formal_result",
+      "title": "Summed low-order term produces an N-dependent absorption constant in the localization theorem",
+      "why_classification": "The defective step requires a contained but nontrivial rework using the decay already proved in Lemma lem1, and the intermediate statement is weakened by an extra $N\\theta^{m-1}$ term; the headline convergence result survives in the logarithmic regime, so no new global proof architecture or major loss is forced."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:main local"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{(\\mathcal{G}^\\infty-\\hat{\\mathcal{G}}^m) \\psi}_{\\tilde{a}}^2 + \\norm{\\pi (\\mathcal{G}^\\infty-\\hat{\\mathcal{G}}^m)\\psi} \\psi_{\\tilde{s}}^2 \\leq c_0(\\Lambda)C_\\mathup{ol} (m+1)^d \\theta^{m-1}\\norm{\\pi\\psi}_{\\tilde{s}}^2,",
+          "tag": "prop:exponential decay"
+        },
+        {
+          "quote": "&\\geq\\underbrace{(\\beta_{\\mathup{glo}}/4-9\\alpha \\eta/4-3\\alpha\\eta/2)}_{\\beta_{\\mathup{cem}}}\\|u_{\\mathup{ms}}\\|_{\\tilde{a}}\\|v_{\\mathup{ms}}\\|_{\\tilde{a}},",
+          "tag": "cea"
+        },
+        {
+          "quote": "by the smallness of $\\eta$",
+          "tag": "cea"
+        },
+        {
+          "quote": "the multiscale solution $u_{\\mathup{ms}}$ of \\cref{cemvar} exists and is unique.",
+          "tag": "thm:main local"
+        }
+      ],
+      "failure_explanation": "Theorem prop:exponential decay bounds $\\|( \\hat{\\mathcal{G}}^m-\\mathcal{G}^{\\infty})\\phi\\|_{\\tilde{a}}$ by $\\sqrt{c_0(\\Lambda)C_{\\mathup{ol}}(m+1)^d\\theta^{m-1}}\\,\\norm{\\pi\\phi}_{\\tilde{s}}$, but the factor $\\sqrt{c_0C_{\\mathup{ol}}(m+1)^d\\theta^{m-1}}$ is omitted from $\\eta$, leaving $\\eta=C_*'H^{-1}$. Since $\\alpha=C_1+C_*(1+C_{\\mathup{po}}H^{-1}\\sqrt{\\Lambda})=O(H^{-1})$, one has $C_*'=O(H^{-1})$ and $\\eta=O(H^{-2})$, which is not small for small $H$; hence the claimed norm equivalences $1/2\\norm{v_{\\mathup{ms}}}_{\\tilde{a}}\\leq\\norm{v_{\\mathup{glo}}}_{\\tilde{a}}\\leq 3/2\\norm{v_{\\mathup{ms}}}_{\\tilde{a}}$ and $\\beta_{\\mathup{cem}}=\\beta_{\\mathup{glo}}/4-9\\alpha\\eta/4-3\\alpha\\eta/2>0$ fail as written (the constant is negative for small $H$). Even with the decay factor restored, $\\beta_{\\mathup{cem}}>0$ requires $\\alpha\\eta\\sim H^{-3}(m+1)^{d/2}\\theta^{(m-1)/2}$ to be small, i.e. an oversampling regime $m\\gtrsim \\mathrm{const}\\,|\\log H|/|\\log\\theta|$, which Theorem thm:main local does not assume when asserting existence/uniqueness of $u_{\\mathup{ms}}$ and the error estimate for all $m\\geq 1$.",
+      "failure_location": {
+        "quote": "Then, $\\|v_{\\mathup{ms}}-v_{\\mathup{glo}}\\|_{\\tilde{a}}\\leq C_*'H^{-1}\\|\\mathcal{G}^{\\infty}\\phi\\|_{\\tilde{a}}=\\eta\\|v_{\\mathup{glo}}\\|_{\\tilde{a}},$ where $C_*'=\\frac{\\sqrt{C_1^2+\\alpha^2}\\sqrt{1+C_{\\mathup{inv}}^2}\\sqrt{2C_{\\mathup{po}}}}{C_5}$.",
+        "tag": "cea"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restore the decay factor in $\\eta$ and add to Theorem thm:main local (and to the inf-sup statement) the requirement that $m$ be large enough that $\\alpha\\eta$ is small (logarithmic in $H^{-1}$); the advertised optimal-convergence claim in that regime is preserved.",
+      "overall_effect": "The inf-sup condition of the multiscale problem \\cref{cemvar} - hence its well-posedness and the quasi-optimality of $u_{\\mathup{ms}}$ - is unproved; Theorem thm:main local's unconditional existence, uniqueness, and all-$m$ error estimate are unsupported outside a logarithmic oversampling regime.",
+      "primary_affected_tag": "cea",
+      "target_type": "formal_result",
+      "title": "Inf-sup proof for the multiscale space drops the decay factor, so positivity of the inf-sup constant is not established",
+      "why_classification": "The repair restores a dropped factor and adds a regime hypothesis: a limited weakening of the stated quantifiers that keeps the headline result, but the well-posedness and error estimate for general $m\\geq 1$ are lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\inf_{u_{\\mathup{ms}}\\in V_{\\mathup{ms}}} \\sup_{v_{\\mathup{ms}}\\in V_{\\mathup{ms}}} \\frac{\\mathcal{B}(u_{\\mathup{ms}}, v_{\\mathup{ms}})}{\\norm{u_{\\mathup{ms}}}_{\\tilde{a}} \\norm{v_{\\mathup{ms}}}_{\\tilde{a}}}\\geq \\beta_{\\mathup{cem}},",
+          "tag": "cea"
+        }
+      ],
+      "failure_explanation": "The first step of the Cea derivation writes $\\beta_{\\mathup{cem}}\\|u-u_{\\mathup{ms}}\\|_{\\tilde{a}}^2\\leq\\mathcal{B}(u-u_{\\mathup{ms}},u-u_{\\mathup{ms}})$, but the established inf-sup condition only provides a supremizer $v\\neq u-u_{\\mathup{ms}}$ with $\\beta_{\\mathup{cem}}\\norm{w}\\norm{v}\\leq\\mathcal{B}(w,v)$; no coercivity $\\mathcal{B}(w,w)\\geq\\beta\\norm{w}^2$ is available: $\\mathcal{B}$ is indefinite, and the $\\mathcal{T}_H$-coercivity of Lemma lm1 holds only on $\\tilde{V}$, whereas $u-u_{\\mathup{ms}}\\notin\\tilde{V}$ in general. The subsequent orthogonality and continuity steps are valid; only this first inequality is wrong.",
+      "failure_location": {
+        "quote": "\\beta_{\\mathup{cem}}\\|u-u_{\\mathup{ms}}\\|_{\\tilde{a}}^2\\leq\\mathcal{B}(u-u_{\\mathup{ms}},u-u_{\\mathup{ms}})",
+        "tag": "cea"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use the standard Babuska argument: for any $v_{\\mathup{ms}}\\in V_{\\mathup{ms}}$, apply the inf-sup condition to $u_{\\mathup{ms}}-v_{\\mathup{ms}}\\in V_{\\mathup{ms}}$ with Galerkin orthogonality to get $\\beta_{\\mathup{cem}}\\|u_{\\mathup{ms}}-v_{\\mathup{ms}}\\|_{\\tilde{a}}\\leq\\alpha\\|u-v_{\\mathup{ms}}\\|_{\\tilde{a}}$, then the triangle inequality, yielding $\\|u-u_{\\mathup{ms}}\\|_{\\tilde{a}}\\leq(1+\\alpha/\\beta_{\\mathup{cem}})\\|u-v_{\\mathup{ms}}\\|_{\\tilde{a}}$.",
+      "overall_effect": "The final derivation of the Cea quasi-optimality bound is invalid as written, and the stated constant $\\alpha/\\beta_{\\mathup{cem}}$ is unjustified.",
+      "primary_affected_tag": "cea",
+      "target_type": "formal_result",
+      "title": "Cea derivation misapplies the inf-sup condition as coercivity in identical arguments",
+      "why_classification": "A routine textbook repair restores the claim with the constant $1+\\alpha/\\beta_{\\mathup{cem}}$ in place of $\\alpha/\\beta_{\\mathup{cem}}$; no mathematical content, rate, or dependent result is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For $I_1$, we utilize the global error estimate \\cref{glothm}, and for the constant $C_1$, we use the resolution condition \\cref{eq:res} again to obtain the estimate that $C_1$ depends on $k^{-1}$.",
+          "tag": "thm:main local"
+        },
+        {
+          "quote": "\\frac{C_1\\Norm{f}_{\\tilde{s}^{-1}}}{\\sqrt{\\Lambda}}",
+          "tag": "thm:main local"
+        },
+        {
+          "quote": "C_1 & \\coloneqq \\max\\CurlyBrackets*{\\RoundBrackets*{1+8\\norm{\\mathcal{R}}_0^2 / \\Upsilon}^{1/2},\\ \\sqrt{2}},",
+          "tag": "well"
+        }
+      ],
+      "failure_explanation": "The proof bounds the global part by $\\frac{\\alpha}{\\beta_{\\mathup{cem}}}\\frac{C_1\\norm{f}_{\\tilde{s}^{-1}}}{\\sqrt{\\Lambda}}$, where $C_1=\\max\\{(1+8\\norm{\\mathcal{R}}_0^2/\\Upsilon)^{1/2},\\sqrt{2}\\}$ is independent of $k$. The assertion that the resolution condition makes \"$C_1$ depend on $k^{-1}$\" is an invalid inference: \\cref{eq:res} constrains $k^2H^2$ relative to $\\Lambda$ and cannot turn a fixed constant into $k^{-1}$. For $k>1$ the stated term $k^{-1}/\\sqrt{\\Lambda}$ is strictly smaller than the proved $C_1/\\sqrt{\\Lambda}$, so the displayed estimate is stronger than what the proof establishes.",
+      "failure_location": {
+        "quote": "\\norm{u-u_{\\mathup{ms}}}_{\\tilde{a}} \\leq  C_{\\mathup{cem}}\\RoundBrackets*{\\frac{k^{-1}}{\\sqrt{\\Lambda}}+ H^{-2}(m+1)^{d/2}\\theta^{(m-1)/2}} \\norm{f}_{\\tilde{s}^{-1}},",
+        "tag": "thm:main local"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace $k^{-1}/\\sqrt{\\Lambda}$ by $C/\\sqrt{\\Lambda}$ with a $k$-independent constant (equivalently, delete the $k^{-1}$ factor and the sentence justifying it).",
+      "overall_effect": "The wavenumber dependence of the final a priori estimate is misrepresented (an unjustified improvement by a factor $k^{-1}$); the $H$-convergence content is unaffected.",
+      "primary_affected_tag": "thm:main local",
+      "target_type": "formal_result",
+      "title": "Unsupported k^{-1} factor in the first term of the final error estimate",
+      "why_classification": "A one-term correction restores the proved statement; the convergence rate in $H$ and all downstream claims survive, losing only an unsupported improvement in the $k$-dependence."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "H^{-2}(m+1)^{d/2}\\theta^{(m-1)/2}",
+          "tag": "thm:main local"
+        },
+        {
+          "quote": "\\norm{u-u_{\\mathup{ms}}}_{\\tilde{a}} \\leq  C_{\\mathup{cem}}^{-1}(k)\\norm{f}_{\\tilde{s}^{-1}}\\approx \\mathcal{O}(H).",
+          "tag": "thm:main local"
+        }
+      ],
+      "failure_explanation": "With $m=4|\\log H|/|\\log\\theta|$ one gets $\\theta^{(m-1)/2}=\\theta^{-1/2}H^2$, so the localization term $H^{-2}(m+1)^{d/2}\\theta^{(m-1)/2}$ reduces to $O((m+1)^{d/2})=O(|\\log H|^{d/2})$, not $O(1)$. Hence the bound actually proved at the stated oversampling choice is $\\norm{u-u_{\\mathup{ms}}}_{\\tilde{a}}=O(|\\log H|^{d/2})\\norm{f}_{\\tilde{s}^{-1}}=O(H|\\log H|^{d/2})$, while the displayed conclusion claims an $H$-independent constant times $\\norm{f}_{\\tilde{s}^{-1}}\\approx\\mathcal{O}(H)$, suppressing the logarithmic factor.",
+      "failure_location": {
+        "quote": "In particular, if $m\\geq 4|\\mathup{log} (H)|/|\\mathup{log} (\\theta)|$, then we have optiaml order convergence in $H$; i.e., it holds that",
+        "tag": "thm:main local"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Either restate the conclusion with the $|\\log H|^{d/2}$ factor, or strengthen the threshold to $m\\geq(4+\\varepsilon)|\\log H|/|\\log\\theta|$ (any $\\varepsilon>0$), under which the localization term is $O(H^{\\varepsilon/2})$ and the clean $\\mathcal{O}(H)$ rate is recovered.",
+      "overall_effect": "The advertised optimal convergence in $H$ holds only up to a factor $|\\log H|^{d/2}$ at the stated oversampling threshold.",
+      "primary_affected_tag": "thm:main local",
+      "target_type": "formal_result",
+      "title": "Logarithmic factor dropped in the 'optimal order convergence' claim",
+      "why_classification": "The correction changes only a logarithmic factor or the constant in the oversampling threshold; the method, the rate in $H$, and the advertised scope are preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cea"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{B}(\\phi_{i,m}^j,w)+s(\\pi \\phi_{i,m}^j,\\pi w)=s(\\psi_{i}^j,\\pi w),\\quad\\forall w\\in V_0(K_i^m),",
+          "tag": "msbasis1"
+        },
+        {
+          "quote": "\\mathcal{B}(\\hat{\\mathcal{G}}_i^m \\psi, w)_{\\hat{K}_i^m} + s(\\pi\\hat{\\mathcal{G}}_i^m \\psi, \\pi w)_{\\hat{K}_i^m} = s(\\pi\\psi, \\pi w)_{K_i}.",
+          "tag": "eq:new local operator"
+        },
+        {
+          "quote": "We add a hat notation ``$\\hat{\\cdot}$'' (e.g., $\\hat{V}_i^m=H_0^1(\\hat{K}_i^m)$) to indicate that this term is associated with $\\hat{K}_i^m$ rather than $K_i^m$.",
+          "tag": null
+        },
+        {
+          "quote": "First, for any $u_{\\mathup{ms}}\\in V_{\\mathup{ms}}$, we can find $\\psi$ such that $u\\in V_{\\mathup{ms}}=\\hat{\\mathcal{G}}^m\\psi$.",
+          "tag": "cea"
+        }
+      ],
+      "failure_explanation": "The multiscale space entering \\cref{cemvar} is defined by \\cref{msbasis1} through local problems on the standard oversampling domains $K_i^m$, but every analytic step - well-posedness of the local operator \\cref{eq:new local operator}, the decay results lem1/lem2/prop:exponential decay, the inf-sup argument in cea, and the choice $v_{\\mathup{ms}}=\\hat{\\mathcal{G}}^m\\psi$ in the proof of thm:main local - uses the symmetrized patches $\\hat{K}_i^m$, which the text explicitly states differ from $K_i^m$. No argument identifies $\\phi_{i,m}^j$ with $\\hat{\\mathcal{G}}_i^m\\psi_i^j$ or transfers the estimates between the two; in particular $v_{\\mathup{ms}}=\\hat{\\mathcal{G}}^m\\psi$ is not shown to belong to $V_{\\mathup{ms}}$, and the existence proof promised for \\cref{msbasis1} is only given for the hatted problem. The proofs therefore establish well-posedness and the error estimate for a method built from the symmetrized local problems, not for the method defined in \\cref{msbasis1}/\\cref{cemvar} and used in the numerical section.",
+      "failure_location": {
+        "quote": "For $I_2$, we assume $u_{\\mathup{glo}}=\\mathcal{G}^{\\infty}\\psi$ ane let $v_{\\mathup{ms}}=\\hat{\\mathcal{G}}^m\\psi$.",
+        "tag": "thm:main local"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Redefine the multiscale basis \\cref{msbasis1} using the symmetrized local problems \\cref{eq:new local operator} so that the analyzed and defined methods coincide (or add a comparison lemma transferring the decay and inf-sup estimates between the two local problems); all estimates then apply to the corrected method.",
+      "overall_effect": "The main theorem and the Cea lemma are proved for the hatted (symmetrized) scheme; the stated conclusions about the scheme actually defined and implemented are unsupported.",
+      "primary_affected_tag": "thm:main local",
+      "target_type": "formal_result",
+      "title": "Analysis is performed on symmetrized patches while the method is defined on standard oversampling domains",
+      "why_classification": "The repair realigns the method's definition with the analysis - a contained definitional change that preserves every estimate for the corrected method - but as written the main theorem does not cover the scheme it states, and no simple added condition closes the gap, since the failure of T-coercivity on standard patches is the paper's stated reason for symmetrization."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\nabla\\cdot(\\sigma\\nabla u)-k^2 cu=f,",
+          "tag": "eq:ell1"
+        },
+        {
+          "quote": "u(x_1, x_2) = \\begin{cases}\n    -\\sigma^-_*x_1(x_1-1)x_2(x_2-1)(x_2-\\gamma), & \\text{ in } \\Omega^+, \\\\\n    \\sigma^+_*x_1(x_1-1)x_2(x_2-1)(x_2-\\gamma),  & \\text{ in } \\Omega^-,\n  \\end{cases}",
+          "tag": null
+        },
+        {
+          "quote": "which corresponds to a smooth source term $f$ given by",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims the displayed $u$ is the exact solution of \\cref{eq:ell1} corresponding to the displayed source $f$. Direct substitution gives, with $p=x_1(x_1-1)$ and $q=x_2(x_2-1)(x_2-\\gamma)$: in $\\Omega^+$ ($\\sigma=c=\\sigma_*^+$), $-\\nabla\\cdot(\\sigma\\nabla u)-k^2cu=\\sigma_*^-\\sigma_*^+[\\Delta(pq)+k^2pq]$, and in $\\Omega^-$ ($\\sigma=c=-\\sigma_*^-$) the same value; hence the exact source is $\\sigma_*^-\\sigma_*^+(2q+p(6x_2-2(\\gamma+1))+k^2pq)$, while the displayed $f$ has $-k^2pq$. The sign of the wavenumber term is wrong in both subdomains, so the displayed pair solves the different equation $-\\nabla\\cdot(\\sigma\\nabla u)+k^2\\sigma u=f$, not \\cref{eq:ell1}.",
+      "failure_location": {
+        "quote": "f(x_1, x_2) = \n  \\sigma^-_*\\sigma^+_*\\Big(2x_2(x_2 - 1)(x_2 - \\gamma)+ x_1(x_1 - 1)(6x_2 - 2(\\gamma + 1))-k^2x_1(x_1-1)x_2(x_2-1)(x_2-\\gamma)\\Big).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Change the sign of the $k^2$-term in the displayed $f$ to $+k^2x_1(x_1-1)x_2(x_2-1)(x_2-\\gamma)$; the tiny reported errors are consistent with the corrected source (the $O(k^2)$ inconsistency implied by the displayed $f$ would otherwise dominate), so the experimental conclusions then stand.",
+      "overall_effect": "The paper's only exact-solution validation (flat-interface model, Table tab:flat1 and Figure fig:flat-error) is documented with a source term that does not produce the stated exact solution for the model \\cref{eq:ell1}; either the displayed formula is wrong or the reported convergence test concerns a modified equation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Manufactured exact-solution/source pair is inconsistent with the model equation",
+      "why_classification": "The coherent resolution is a one-sign correction to the displayed formula; no inference, construction, or other result in the paper depends on the erroneous form, and the numerical conclusions are preserved."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2511.20103",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "69b9ef96c2530ae8c6e700e4aca50f55aee99e198b1bdf5ae0475bf8c9778672",
+  "status": "ok"
+}

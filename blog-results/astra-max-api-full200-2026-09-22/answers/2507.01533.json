@@ -1,0 +1,587 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:quadrature_error",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "m_1 = 1, \\quad \\text{and} \\quad m_i = 2^{i-1} + 1, \\quad i > 1,",
+          "tag": "closed_non_linear_growth"
+        }
+      ],
+      "failure_explanation": "The growth rule requires a one-point univariate rule, but the supplied node formula evaluates 0/0 when m=1. No separate base rule is specified. This base rule also occurs in tensor products at higher sparse-grid levels, so the omission is not confined to the initial sparse grid.",
+      "failure_location": {
+        "quote": "\\xi_j = \\cos\\left(\\frac{(j-1)\\pi}{m-1}\\right), \\quad j = 1, \\dots, m.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Specify the one-point rule separately, for example the midpoint with weight equal to the total mass of the univariate weight.",
+      "overall_effect": "The stated sparse-grid construction is not fully defined.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The Clenshaw–Curtis construction does not define its required one-point rule",
+      "why_classification": "A standard local base-case definition preserves the method and all asymptotic guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "denote by $\\Phi := \\Phi_{0,1}$ the flow map evaluated at final time $t = 1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The returned random variable is Phi^{-1}(Z), whose law is (Phi^{-1})_*nu, not Phi_*nu. These laws generally differ for a nonidentity flow.",
+      "failure_location": {
+        "quote": "allowing efficient computation of samples from $\\Phi_* \\nu$ by sampling $Z \\sim \\nu$ and solving the ODE backward in time with $z$, a realization of $Z$, to obtain $x = \\Phi^{-1}(z)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Generate Phi_*nu by solving forward from Z and returning Phi(Z).",
+      "overall_effect": "The described sampling procedure has the wrong output distribution.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Backward sampling produces the inverse pushforward",
+      "why_classification": "Changing the direction of this local sampling step restores its contract without changing the theoretical method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$",
+          "tag": null
+        },
+        {
+          "quote": "\\widehat{L}_n(\\theta, \\chi_n) := -\\frac{1}{n} \\sum_{j=1}^n \\log f_{\\Phi^\\theta_*\\nu}(Z_j),",
+          "tag": "neural_ode_log_likelihood"
+        }
+      ],
+      "failure_explanation": "For a forward flow, the correct identity subtracts the divergence integral along Phi_t(Phi^{-1}(y)). The displayed formula instead adds the integral and starts the trajectory at the endpoint y. Already v(x)=ax in one dimension gives a density multiplier exp(-a), whereas the displayed formula gives exp(a).",
+      "failure_location": {
+        "quote": "\\log f_{\\Phi_*\\nu}(y) = \\log f_\\nu(\\Phi^{-1}(y)) + \\int_0^1 \\operatorname{div}_y v(\\Phi_t(y), t) \\, dt,",
+        "tag": "eq:liouville_log_det"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the integral by minus the integral of div v along Phi_t(Phi^{-1}(y)), and use that formula in likelihood evaluation.",
+      "overall_effect": "Likelihood evaluations performed using the advertised identity are incorrect. Later arguments formulated directly with the true pushforward density do not automatically inherit this error.",
+      "primary_affected_tag": "eq:liouville_log_det",
+      "target_type": "other",
+      "title": "The Liouville density formula has the wrong sign and trajectory",
+      "why_classification": "A local correction of the change-of-variables identity preserves the estimator's intended objective and all rates."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\nu, \\mu \\in \\mathcal{M}_1^+([0,1]^d)$ admit continuous densities $f_\\nu(x), f_\\mu(x) \\geq \\kappa$ on $[0,1]^d$ for some constant $\\kappa > 0$",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "Continuity gives the diagonal derivatives of the triangular transport, but not all cross derivatives forming DT. For example, take f_nu=1 and f_mu(x1,x2)=1+|x1-1/2|(2x2-1). Then T1=x1 and T2 solves z+|x1-1/2|(z^2-z)=x2. Its derivative in x1 fails at x1=1/2 for interior x2, although both densities satisfy the stated positivity and continuity assumptions.",
+      "failure_location": {
+        "quote": "T_* \\nu = \\mu, \\quad \\text{and} \\quad f_\\nu(x) = f_\\mu(T(x)) \\left|\\det(D T(x))\\right|, \\quad x \\in [0,1]^d,",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "State the continuous-density identity using the product of the diagonal partial derivatives, and reserve the classical DT formulation for sufficiently differentiable densities.",
+      "overall_effect": "The everywhere classical-Jacobian assertion is not defined under the theorem's hypotheses; the pushforward assertion remains valid.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Continuous densities do not ensure the claimed classical Jacobian",
+      "why_classification": "This local reformulation preserves the transport and density identities needed later, where stronger smoothness is already assumed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "let $\\nu, \\mu \\in \\mathcal{M}_1^+([a,b]^d)$.",
+          "tag": "thm:decomposition_of_total_error"
+        },
+        {
+          "quote": "\\left| \\int_{[a,b]^d} \\qoi(x) \\, d\\mu(x) - \\int_{[a,b]^d} \\qoi(x) \\, d(\\Phi_* \\nu)(x) \\right| \\leq \\|\\qoi\\|_\\infty \\mathrm{TV}(\\mu, \\Phi_* \\nu).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "An essential supremum relative to Lebesgue measure, or to just one of the measures, need not control integration against the other arbitrary measure. On [0,1], let qoi=1_{\\{0\\}}, mu=delta_0, nu=delta_1, Phi=id, and use the node 1 with weight 1. The Lebesgue essential norm and quadrature error are zero, but the total error is one.",
+      "failure_location": {
+        "quote": "Let $\\qoi \\colon [a,b]^d \\to \\mathbb{R}$ be (essentially) bounded, and let $\\Phi \\colon [a,b]^d \\to [a,b]^d$ be measurable.",
+        "tag": "thm:decomposition_of_total_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Require a bounded measurable representative and its pointwise supremum, or use an essential supremum relative to mu+Phi_*nu.",
+      "overall_effect": "The essentially bounded version of the theorem is false without specifying an essential bound valid for both measures.",
+      "primary_affected_tag": "thm:decomposition_of_total_error",
+      "target_type": "formal_result",
+      "title": "Essential boundedness is insufficient for the arbitrary-measure error decomposition",
+      "why_classification": "The correction is local, and all later applications use continuous quantities of interest."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "f_\\nu(x) = \\prod_{i=1}^d f_{\\nu_i}(x_i), \\quad \\text{with } f_{\\nu_i} \\in L^p([a,b]) \\text{ for some } p > 1,",
+          "tag": null
+        },
+        {
+          "quote": "\\leq \\tilde{c}_{d,k} \\, m^{-k/d} (\\log m)^{(d-1)(k/d+1)} \\|g\\|_{C^k},",
+          "tag": "eq:sg_error_estimte_clenshaw_curtis"
+        }
+      ],
+      "failure_explanation": "There is no uniform bound on p or the density norms. In dimension one, densities can concentrate arbitrarily closely to an off-grid point, making the weighted quadrature error approach the Clenshaw–Curtis interpolation error there. Smooth disjoint bumps of height m^{-k} at central nodes, with signs matching the cardinal polynomials at that point, have bounded C^k norm but interpolation error of order m^{-k} log m. Smooth concentrating probability densities are admitted by the L^p hypothesis. Thus the claimed density-independent m^{-k} bound fails.",
+      "failure_location": {
+        "quote": "$c_{d,k,a,b}$ is a constant depending only on $d,k,a,b$.",
+        "tag": "thm:quadrature_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Use a weighted estimate whose constant depends on p and the marginal density norms, and propagate that dependence; alternatively retain the additional interpolation logarithmic loss.",
+      "overall_effect": "The general weighted quadrature estimate and its stated constant dependence are unsupported.",
+      "primary_affected_tag": "thm:quadrature_error",
+      "target_type": "formal_result",
+      "title": "The weighted quadrature constant cannot be uniform over all admitted densities",
+      "why_classification": "A corrected weighted estimate is needed, but a density-dependent version retains comparable convergence for every fixed source distribution without new global proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "m_1 = 1",
+          "tag": "closed_non_linear_growth"
+        },
+        {
+          "quote": "given for $q \\geq d$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At q=d, the sparse grid contains one tensorized one-point node, so m=1. For d>1 the displayed logarithmic factor is zero. A one-node rule cannot integrate every C^k function exactly: with the uniform source and Phi=id, the function (x1-xi1)^2 vanishes at the node but has positive integral.",
+      "failure_location": {
+        "quote": "\\leq c_{d,k,a,b} \\, m^{-k/d} (\\log m)^{(d-1)(k/d+1)} \\|\\qoi\\|_{C^k([a,b]^d)} \\left(1 + \\|\\Phi\\|_{C^k([a,b]^d)}\\right)^k,",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace log m by 1+log m, or explicitly restrict the estimate to noninitial levels and handle the base level separately.",
+      "overall_effect": "The stated all-level error estimate is false at the admissible initial level, even after defining the missing one-point rule.",
+      "primary_affected_tag": "thm:quadrature_error",
+      "target_type": "formal_result",
+      "title": "The quadrature error bound incorrectly vanishes at the initial sparse-grid level",
+      "why_classification": "A local small-m correction preserves the asymptotic rate and every large-sample application."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $t_0 \\leq t_1 \\leq \\cdots \\leq t_m$ be a collection of real numbers, referred to as \\emph{knots}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The admitted nondecreasing knot sequences can make either denominator zero. For instance, t0=t1 gives an undefined first term for j=0, k=1. No convention for zero-denominator terms is supplied.",
+      "failure_location": {
+        "quote": "B_{j,k}(t) := \\frac{t - t_j}{t_{j+k} - t_j} B_{j,k-1}(t) + \\frac{t_{j+k+1} - t}{t_{j+k+1} - t_{j+1}} B_{j+1,k-1}(t),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Declare zero-denominator terms to be zero, or restrict this definition to strictly increasing knots.",
+      "overall_effect": "The recursive definition is not executable on all of its stated inputs.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The spline recursion is undefined for allowed repeated knots",
+      "why_classification": "A standard local convention repairs the definition; the subsequent equidistant-knot applications are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:universal_approx"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "composed of tensor-product B-splines of order $k$ with uniformly spaced knots",
+          "tag": null
+        },
+        {
+          "quote": "For all $\\ell \\in \\{0, \\dots, k\\}$,",
+          "tag": null
+        },
+        {
+          "quote": "the normalized B-splines $B_{j,s}$ of degree $s$ admit a representation in terms of shifted $\\ReLU^s$ functions",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Under the given recursion, order k means piecewise degree k, with only C^{k-1} continuity at simple knots. The classical C^k norm used here is therefore generally undefined. In one dimension, a degree-k spline that is genuinely C^k across every knot is a global degree-k polynomial; such polynomials cannot approximate f(x)=x^{k+1} in C^k with error tending to zero as K grows.",
+      "failure_location": {
+        "quote": "\\|f - B_f\\|_{C^\\ell([0,1]^d)} \n\\leq \\frac{(1 + 9^{d(k-1)} (2k+1)^{2d + \\ell})(\\sqrt{2} e d)^{k + \\alpha}}{K^{k + \\alpha - \\ell}} \n \\|f\\|_{C^{k,\\alpha}([0,1]^d)}.",
+        "tag": "eq:spline_approx_bound"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Restrict classical C^ell claims to ell<k and use a weak-derivative norm at ell=k, or provide a higher-degree, sufficiently smooth spline construction with revised architecture bounds.",
+      "overall_effect": "The highest-order classical spline estimate, and the exact-spline justification of the corresponding network estimate, fail. The lower-order C^1 approximation needed later is not defeated by this particular issue.",
+      "primary_affected_tag": "eq:spline_approx_bound",
+      "target_type": "formal_result",
+      "title": "Degree-k splines cannot provide the stated classical Ck approximation",
+      "why_classification": "Repair requires a meaningful norm weakening or a new approximation construction, but comparable lower-order approximation and the integration method survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "for any $f \\colon [0,1]^d \\to \\R^p, f \\in C^{k,\\alpha}([0,1]^d)$",
+          "tag": "thm:universal_approx"
+        }
+      ],
+      "failure_explanation": "The theorem allows f=0 and functions with norm at most one, but log_2(log_2 ||f||) is not a finite real number for these inputs. Taking a maximum with 1 after this expression does not define an otherwise undefined logarithm. Both the depth and parameter-count bounds contain this problem.",
+      "failure_location": {
+        "quote": "\\log_2 \\log_2 \\|f\\|_{C^{k,\\alpha}}",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Clamp the norm before taking logarithms, for example by replacing it with max{4,||f||}, and handle the zero function directly.",
+      "overall_effect": "The quantitative architecture guarantee is not defined for part of the stated function class.",
+      "primary_affected_tag": "thm:universal_approx",
+      "target_type": "formal_result",
+      "title": "The network-size formulas are undefined for small-norm target functions",
+      "why_classification": "This routine local normalization preserves the approximation rates and the architecture's order of growth."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\operatorname{Lip}_1^\\Theta(L,W,d) :=  \\frac{1}{4} L\\left[(2W)^2 C \\right]^{L-1} \\left(8W^2C + 2W^2 \\operatorname{Lip}_0^\\Theta+ 2W(C+1) \\right) + \\operatorname{Lip}_0^\\Theta,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Substituting L=1, d=1, W=4 into the preceding definitions gives C=sqrt(2), Lip_0=8,388,608, and Lip_1=75,497,474+34sqrt(2). The asserted upper bound is only (64sqrt(2))^4=67,108,864. Thus this intermediate inequality is false on an admitted architecture.",
+      "failure_location": {
+        "quote": "\\operatorname{Lip}_1^\\Theta(L,W,d) \\leq \\left[4W^2 C(L,W,d)\\right]^{4L}",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Restrict the intermediate estimate to L>=2 and verify the final bound separately for L=1, or enlarge the intermediate bound.",
+      "overall_effect": "The first bound in the remark is invalid; the much looser final exponential bound can still be retained.",
+      "primary_affected_tag": "rmk:lip_const_bound",
+      "target_type": "formal_result",
+      "title": "The auxiliary Lipschitz-constant bound fails at depth one",
+      "why_classification": "A local shallow-depth case correction preserves the bound actually needed for asymptotic learning."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "rmk:main_constant_L",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "rmk:main_constant_D"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "q := \\sum_{l=0}^{L} (d_l d_{l+1} + d_{l+1}).",
+          "tag": "defn:no_of_params"
+        },
+        {
+          "quote": "v^\\theta \\in \\mathcal{NN}_{2}\\big(L; (d+1, W, \\dots, W, d)\\big)",
+          "tag": "eq:hypothesis_space"
+        }
+      ],
+      "failure_explanation": "With L hidden layers, the stated architecture has q=(L-1)W^2+(L+2d+1)W+d parameters. For d=1, W=2, L=1, this is 9, whereas the asserted bound is 6. The later bound q<=2LW^2 also fails for this example, since its right side is 8.",
+      "failure_location": {
+        "quote": "where $q \\leq L(W+1)W$ denotes the total number of network parameters.",
+        "tag": "cor:c1_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Use the exact count or a valid bound such as q<=3LW^2, and adjust the numerical architecture-only constants.",
+      "overall_effect": "The stated parameter-count bounds and some all-architecture constant reductions are unjustified. The C^1 estimate expressed using the actual q is unaffected.",
+      "primary_affected_tag": "cor:c1_bound",
+      "target_type": "formal_result",
+      "title": "The architecture parameter count is underestimated",
+      "why_classification": "This is a local counting correction. It changes only numerical constants, and the eventual large architectures used in the main theorem do not require a worse asymptotic schedule."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The target class $\\mathcal{T} \\subset \\mathcal{M}_1^+([0,1]^d)$ consists of absolutely continuous measures with densities $f_\\mu \\in C^k([0,1]^d)$.",
+          "tag": "main_assumptions"
+        },
+        {
+          "quote": "All densities mentioned are uniformly bounded above and below by constants $\\mathcal{K} \\geq \\kappa > 0$",
+          "tag": "main_assumptions"
+        }
+      ],
+      "failure_explanation": "Pointwise density bounds do not bound derivatives. In dimension one, f_nu=1 and f_mu,N(x)=1+a sin(2pi Nx), with fixed 0<a<1/2, satisfy the assumptions uniformly. At time one the constructed field is u_N(y,1)=y-F_mu,N(y); its first derivative has fixed-amplitude oscillations and its kth derivative grows like N^{k-1}. Dividing by eta does not remove this growth on interior subintervals. Thus the asserted uniform C^k bound is false, and a fixed compact C^1 network class cannot uniformly approximate this family arbitrarily well.",
+      "failure_location": {
+        "quote": "\\sup_{\\mu \\in \\mathcal{T}} \\|u^\\mu \\odiv \\eta_d\\|_{C^k([0,1]^{d+1}; \\mathbb{R}^d)} \\leq c_{d,k,\\kappa,\\mathcal{K}}",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Impose a fixed uniform C^k norm bound on the target densities and account for the source density's C^k norm, or weaken the result to target-dependent convergence rather than the stated uniform PAC guarantee.",
+      "overall_effect": "The uniform model-error rate and the target-independent sample threshold used for PAC learning are not established for the stated target class.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Uniform target approximation assumes a missing uniform smoothness bound",
+      "why_classification": "The supported repairs either exclude the admitted unbounded-smoothness regime or relinquish the central uniform PAC quantifier."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:sub_gaussian",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{d}{dt} y(t) = -\\tilde{v}^\\theta(y(t), 1 - t), \\ y(0) = x,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The solution of the reversed equation at intermediate time t is Phi_{1,1-t}(x), not (Phi_{0,t})^{-1}(x). They agree at the final time but generally not along the path. For v(x,t)=t x(1-x), the latter path evolves with coefficient -t, whereas the reversed terminal path evolves with coefficient -(1-t). The variational integrals therefore use the wrong trajectories.",
+      "failure_location": {
+        "quote": "D_x\\tilde{v}^\\theta({[\\Phi_t^\\theta]}^{-1}(x), 1 - t) \\cdot {(D_x\\Phi_t^\\theta)}^{-1}(x)",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "Introduce the auxiliary reverse flow Psi_t=Phi_{1,1-t} and use Psi_t and its spatial Jacobian throughout the variational arguments.",
+      "overall_effect": "The inverse-Jacobian variational equations used in the model and generalization estimates are not the equations of the objects denoted in the proof.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Partial inverse flows are confused with the reversed terminal trajectory",
+      "why_classification": "The paper already defines two-time flows; a local correction of the auxiliary path preserves endpoints, bounds, and rates."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:sub_gaussian",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left\\| D_x\\tilde{v}^\\theta({[\\Phi_t^\\theta]}^{-1}(x), 1 - t) - D_x u^\\mu({[\\Phi_t^{\\mu}]}^{-1}(x), 1 - t) \\right\\|_2",
+          "tag": null
+        },
+        {
+          "quote": "\\left\\| D_x\\tilde{v}^\\theta({[\\Phi_t^\\theta]}^{-1}(x), 1 - t) - D_x\\tilde{v}^{\\theta'}({[\\Phi_t^{\\theta'}]}^{-1}(x), 1 - t) \\right\\|_2 \\leq \\operatorname{Lip}_1^\\Theta \\|\\theta - \\theta'\\|_2,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A difference Dv(a)-Du(b) cannot be bounded just by the same-point norm ||D(v-u)|| when a and b are different trajectories. One must also bound Du(a)-Du(b), using spatial regularity of Du and the trajectory displacement. The sub-Gaussian proof repeats the error by applying a parameter-Lipschitz estimate at two different spatial arguments.",
+      "failure_location": {
+        "quote": "\\leq  \\sqrt{d} \\sup_{(x,t)\\in [0,1]^{d+1}} \\|D_x(\\tilde{v}_t^\\theta -u_t^\\mu)(x)\\|_2 e^{\\left( \\sqrt{d}\\|\\tilde{v}^\\theta\\|_{C^1} \\right)}",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-015",
+      "least_adequate_overall_repair": "Retain the spatial displacement term, establish the needed target and network C^{1,1} bounds, and redo the Jacobian stability estimates with their constants.",
+      "overall_effect": "The C^1 flow sensitivity and resulting log-density parameter sensitivity have not been proved.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Jacobian stability drops the displacement between trajectories",
+      "why_classification": "A contained but nontrivial flow-stability argument and architecture-dependent derivative bounds are needed; the overall learning strategy can remain unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:sub_gaussian",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, the determinant sensitivity estimate from~\\cite[Cor.~2.14]{ipsen2008} yields",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed log-determinant bound is false without conditioning factors. In dimension one, A=0.1 and B=0.2 give |log A-log B|=log 2>2|A-B|. Positivity of flow Jacobians does not provide the universal lower bound needed for the factor 2. The same invalid estimate is reused in the sub-Gaussian and concentration proofs.",
+      "failure_location": {
+        "quote": "&\\left| \\log \\left| \\det \\left({D_x[\\Phi^\\theta]}^{-1}(x)\\right) \\right| - \\log \\left| \\det \\left({D_x[\\Phi^{\\mu}]}^{-1}(x)\\right) \\right| \\right| \\nonumber\\\\\n&\\quad \\leq \\sum_{k=1}^d \\binom{d}{k} 2^k \\left\\| {D_x[\\Phi^\\theta]}^{-1}(x) - {D_x[\\Phi^{\\mu}]}^{-1}(x) \\right\\|_2^k",
+        "tag": "model_error_smnd_2_estimated"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-016",
+      "least_adequate_overall_repair": "Use a valid log-determinant estimate incorporating flow-dependent lower singular-value bounds, or work directly with the correct Liouville integral, and recalculate the affected constants and growth envelopes.",
+      "overall_effect": "The KL, log-density increment, and bounded-difference constants are not justified by the supplied determinant argument.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "An unconditioned determinant estimate is incorrectly used for log determinants",
+      "why_classification": "Repair needs a substantive conditioning estimate and coordinated recalculation, but not a different global statistical argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\sqrt{d}\\exp(2\\sqrt{d} \\sqrt{q} \\operatorname{Lip_1^\\Theta}) \\operatorname{Lip}_1^\\Theta \\| \\theta - \\theta'\\|_2.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Even granting the preceding Jacobian estimate, its kth power contains (Lip_1^Theta)^k. These factors disappear in subg_est_2 and consequently in the stated bar L. Lip_1^Theta is not bounded by one; its preceding explicit definition grows rapidly with the architecture. This substitution defect is independent of the validity of the determinant estimate itself.",
+      "failure_location": {
+        "quote": "\\quad \\leq d! 2^{d+1} \\sqrt{d}^d \\exp(2d\\sqrt{d} \\sqrt{q} \\operatorname{Lip_1^\\Theta}) \\sum_{k=1}^d \\| \\theta - \\theta'\\|_2^k",
+        "tag": "subg_est_2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-017",
+      "least_adequate_overall_repair": "Retain the missing powers, for example by multiplying the determinant contribution by max{1,Lip_1^Theta}^d, and propagate the corrected constants.",
+      "overall_effect": "The explicit variogram proxy does not follow from the proof's own sensitivity bound.",
+      "primary_affected_tag": "lem:sub_gaussian",
+      "target_type": "formal_result",
+      "title": "The sub-Gaussian constant loses powers of the parameter sensitivity",
+      "why_classification": "The missing architecture factor can be absorbed into the same exponential growth envelope by a local constant correction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\varepsilon^{\\mathrm{gen}}_n = \\sup_{\\theta \\in \\Theta_n} \\left| \\mathbb{E}_{X \\sim \\mu} \\left[ -\\log(f_{\\mu_\\theta}(X)) \\right] - \\widehat{L}_n(\\mu_\\theta, \\chi_n) \\right|.",
+          "tag": null
+        },
+        {
+          "quote": "Note that the mapping $v \\equiv 0$ corresponds to the parameter $0 = \\theta \\in [-1,1]^q$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The generalization error is sup |Z|, not sup Z, and no symmetry identifying them is established. Moreover, an increment-only entropy bound does not control a common random offset. At theta=0 that offset is the empirical fluctuation of -log f_nu, which is not identically zero for a nonuniform source.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\varepsilon_{n}^{\\mathrm{gen}} \\right] \n&= \\mathbb{E}\\left[\\sup_{\\theta \\in \\Theta} Z_{\\theta,n}\\right]",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-018",
+      "least_adequate_overall_repair": "Anchor at theta=0, bound E|Z_0,n| using the bounded oscillation of log f_nu, apply Dudley to both signs of the anchored increments, and propagate a corrected numerical prefactor.",
+      "overall_effect": "The stated expected absolute generalization bound is not obtained by the displayed Dudley calculation.",
+      "primary_affected_tag": "thm:dudley",
+      "target_type": "formal_result",
+      "title": "Dudley's argument controls a signed supremum instead of the absolute discrepancy",
+      "why_classification": "A short standard anchoring argument preserves the n^{-1/2} rate and the architecture schedule."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "if for $n \\in \\N$",
+          "tag": "thm:learnability_sparse_grid"
+        },
+        {
+          "quote": "where we assume w.l.o.g., that $W \\geq d+1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At n=1 the first expression is undefined. For other small n, W_n can be nonpositive or below d+1, the logarithm base can be invalid, and L_n can fail to be a positive integer. Thus the theorem does not define the estimator family it prescribes for all natural n.",
+      "failure_location": {
+        "quote": "W_n = \\left\\lfloor \\log \\log n \\right\\rfloor \\quad \\text{and} \\quad  L_n = \\left\\lfloor \\frac{1}{2} \\log_2 \\log_{c_d W_n} \\log (n^{\\beta}) - 3 \\right\\rfloor,",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-019",
+      "least_adequate_overall_repair": "Use any fixed admissible architecture below a sufficiently large deterministic cutoff, and apply the displayed formulas only beyond that cutoff.",
+      "overall_effect": "The all-n architecture construction has missing initial cases.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "The prescribed architecture sequence is undefined for initial sample sizes",
+      "why_classification": "Changing finitely many initial architectures leaves the PAC and asymptotic guarantees unchanged."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "it is possible to choose a threshold $m(n)$ for the number of quadrature points",
+          "tag": null
+        },
+        {
+          "quote": "\\tilde{c}_d\\cdot m^{-{1}/d} \\cdot (\\log m)^{(d-1)(1/d+1)} \\cdot \\|\\qoi\\|_{C^1} \\left(1 + \\sqrt{d} \\, e^{\\sqrt{d} \\sqrt{q} \\operatorname{Lip}_1^\\Theta}\\right) \\leq \\frac{\\varepsilon}{2},",
+          "tag": "eq:main_thm_sg_error_bd"
+        },
+        {
+          "quote": "a threshold $m(\\varepsilon, \\delta) := m(n(\\varepsilon, \\delta))$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The quadrature prefactor grows with the learned architecture and hence with n. The argument establishes control only when m>=m(n). Evaluating this threshold at the initial sample size does not make it valid for every later n. No n-uniform regularity bound or selection property for the learned flows is proved.",
+      "failure_location": {
+        "quote": "such that for all sample sizes $n,m \\geq n(\\varepsilon,\\delta), m(\\varepsilon,\\delta)$",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-020",
+      "least_adequate_overall_repair": "Replace the conclusion and associated scope claims by coupled convergence requiring m>=m(n,epsilon), as supported by the proof. Retaining the stated rectangular PAC guarantee would require a new uniform-control argument for learned flows.",
+      "overall_effect": "The paper does not establish PAC learnability under its definition requiring independent lower thresholds for all larger sample sizes and quadrature levels.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "The proof provides a sample-dependent quadrature threshold, not rectangular PAC thresholds",
+      "why_classification": "The source-supported repair changes a central quantifier and guarantee type; preserving the original claim needs essentially new uniform-control architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\mu \\| \\mu_{\\hat{\\theta}_n}) \\leq \\varepsilon_n^{\\mathrm{model}} + 2 \\varepsilon_n^{\\mathrm{gen}},",
+          "tag": "empirical_error_decomp"
+        }
+      ],
+      "failure_explanation": "The generalization error retains its original definition, so the previously derived factor two cannot be removed. The subsequent event inclusions and confidence constants use the stronger, unjustified decomposition. With the displayed model-error allocation, the relevant generalization threshold is epsilon^2/(32||qoi||_infinity^2), not epsilon^2/(16||qoi||_infinity^2).",
+      "failure_location": {
+        "quote": "\\KL(\\mu\\| \\Phi^{\\hat{\\theta}_n}_* \\nu) \\leq \\varepsilon_n^{\\mathrm{model}} + \\varepsilon_n^{\\mathrm{gen}}.",
+        "tag": "main_thm_emp_error_decomp"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-021",
+      "least_adequate_overall_repair": "Restore 2 epsilon_gen and rescale the subsequent error allocations and numerical constants consistently.",
+      "overall_effect": "The numerical confidence and sample-threshold calculation in the main proof is not justified as written.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "The main probability argument drops the factor two in the ERM decomposition",
+      "why_classification": "This local correction changes only constants, not rates, regimes, or the intended convergence statement."
+    }
+  ],
+  "issues_found": 21,
+  "paper_id": "2507.01533",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4061c0fabc84b846272339b854b6a82a9cfd5d1ef91d57be1f2279301753237e",
+  "status": "ok"
+}

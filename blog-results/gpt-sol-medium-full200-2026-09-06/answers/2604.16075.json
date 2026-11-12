@@ -1,0 +1,142 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "c:minberr"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\x_{k} :=   \\argmin_{\\x\\in \\Kc_{k}(\\A,\\b)}\\berr_{\\A,\\b}(\\x).",
+          "tag": "eq:minberr"
+        },
+        {
+          "quote": "Once $k=\\tilde n$, $\\Q_k$ contains a null vector of $\\A$, \nwhich can be scaled arbitrarily large to yield an arbitrarily small backward error.",
+          "tag": null
+        },
+        {
+          "quote": "We note that inverse iteration would then break down in exact arithmetic",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For example, if nonzero $\\b\\in\\ker(\\A)$, then every nonzero Krylov vector is $\\x=t\\b$ and its backward error is $1/(\\|\\A\\|_2|t|)$, whose infimum is zero but which has no finite minimizer. Thus the argmin defining $\\x_k$ does not exist in an allowed PSD case. The source itself acknowledges the unbounded scaling and exact-arithmetic breakdown.",
+      "failure_location": {
+        "quote": "For any $n\\times n$ PSD matrix $\\A$, vector $\\b\\in\\R^n$ and $k \\ge 2$, the MINBERR iterate sequence \\eqref{eq:minberr} satisfies:",
+        "tag": "t:minberr"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Use the source's suggested regularization $\\A+\\epsilon\\|\\A\\|_2\\I$, together with the composition lemma, and supply the resulting convergence and complexity argument for singular PSD inputs; alternatively restrict the results and algorithm to positive-definite matrices.",
+      "overall_effect": "The claimed MINBERR iterate sequence is undefined on part of the advertised singular-PSD regime, and the corollary's PSD-wide algorithmic guarantee does not follow from the positive-definite complexity theorem.",
+      "primary_affected_tag": "t:minberr",
+      "target_type": "formal_result",
+      "title": "MINBERR minimizer need not exist for singular PSD systems",
+      "why_classification": "Preserving the advertised singular-PSD scope requires modifying the construction and adding a contained regularization argument; merely editing notation does not make the stated argmin exist."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:minberrcost",
+        "c:minberr",
+        "prop:minberrNE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\M^\\top \\M\n\\begin{bmatrix}\n-1 \\\\y\n\\end{bmatrix}",
+          "tag": "eq:MM"
+        },
+        {
+          "quote": "Now since $\\W \n\\begin{bmatrix}\n0 \\\\ \\v_{\\min}    \n\\end{bmatrix} = \\begin{bmatrix}\n\\alpha \\\\ \\v_{\\min}    \n\\end{bmatrix}$",
+          "tag": "l:quotient"
+        },
+        {
+          "quote": "= \\ \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+          "tag": "prop:minberrNE"
+        }
+      ],
+      "failure_explanation": "The transformed finite eigenvector is $[\\alpha;\\v_{\\min}]$. Scaling its first coordinate to the required value $-1$ gives $[-1;-\\v_{\\min}/\\alpha]$, so the coefficient vector is $-\\v_{\\min}/\\alpha$, not $\\v_{\\min}/\\alpha$. For the scalar system $A=b=1$, the stated formula returns $x=-1$ instead of the exact solution $x=1$. The same sign error appears in both algorithms and in the normal-equations proposition.",
+      "failure_location": {
+        "quote": "\\x_k = \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace every reconstruction $\\Q_k\\v/\\alpha$ by $-\\Q_k\\v/\\alpha$ and make the corresponding sign correction throughout the two proofs and algorithms.",
+      "overall_effect": "As written, both executable algorithms generally return the negative of the intended minimizer, invalidating their backward-error output guarantees and the downstream complexity guarantee.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "The reconstructed MINBERR solution has the wrong sign",
+      "why_classification": "A uniform local sign correction restores the intended minimizer without changing the method, convergence rate, complexity, or scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\argmin_{\\y \\in \\R^k} \\frac{\\|\\A\\Q_k\\y-\\b\\|_2}{\\|\\Q_k\\y\\|_2}",
+          "tag": "eq:GRQ"
+        },
+        {
+          "quote": "\\berr_{\\A,\\b}(\\x) = \\frac{\\|\\A\\x-\\b\\|_2}{\\|\\A\\|_2\\|\\x\\|_2}.",
+          "tag": "l:berr-formula"
+        },
+        {
+          "quote": "\\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+          "tag": "prop:minberrNE"
+        }
+      ],
+      "failure_explanation": "The generalized Rayleigh quotient and the reduced singular value equal $\\|A x-b\\|_2/\\|x\\|_2$. By the paper's own definition, relative backward error is this quantity divided by $\\|A\\|_2$. Hence the correct identity is $\\berr_{A,b}(x_k)=\\sigma_{\\min}/\\|A\\|_2$. The algorithms likewise compare $\\sigma_{\\min}$ directly with the dimensionless tolerance $\\epsilon$, so their stopping tests are not invariant under scaling $A$ and $b$.",
+      "failure_location": {
+        "quote": "\\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Normalize $A$ and $b$ before the reductions, or divide all reported singular values by $\\|A\\|_2$ and test against $\\epsilon\\|A\\|_2$.",
+      "overall_effect": "The singular-value identities and both tolerance-based stopping guarantees are false unless $\\|A\\|_2=1$; rescaling an equivalent linear system can change when the algorithms stop.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Implementation confuses residual quotient with relative backward error",
+      "why_classification": "A standard scaling correction preserves the minimizers, rates, and asymptotic complexity and requires no new mathematical argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "c:minberr"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "If \n$\\ell\\geq \\frac{1}{2} \\Big[ 1 + \\frac{\\ln\\left( \\frac{32n \\ln(2/\\delta)}{\\pi \\delta^2 \\Delta} \\right)}{\\ln(1 + \\Delta/2)} \\Big]$ for $\\Delta\\in(0,1)$,\nthen with probability $1-\\delta$",
+          "tag": "lemma:invit"
+        },
+        {
+          "quote": "In particular, for a $1/2$-relative error ($\\Delta = 0.5$), we require $\\ell \\geq 2.23 \\ln(n/\\delta^2)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Substituting $\\Delta=1/2$ into the proved lemma gives $\\frac12[1+\\ln(64n\\ln(2/\\delta)/(\\pi\\delta^2))/\\ln(1.25)]$. This is not bounded by $2.23\\ln(n/\\delta^2)$ as claimed: even the leading coefficient $1/(2\\ln 1.25)$ is about $2.2407>2.23$, and the omitted additive constant and $\\ln\\ln(2/\\delta)$ term further increase the requirement. Thus the algorithm's iteration count does not establish its stated success probability.",
+      "failure_location": {
+        "quote": "Applying Lemma \\ref{lemma:invit} to $\\tilde \\T^\\top\\tilde\\T$ shows that $\\ell \\geq 2.23 \\ln(k / \\delta^2)$\n steps of inverse iteration suffice to get $\\Delta=1/2$ relative accuracy with probability at least $1-\\delta$.",
+        "tag": "thm:minberrcost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use the explicit iteration bound from Lemma \\ref{lemma:invit}, or a valid larger simplified bound including its constants and logarithmic terms; this leaves the asymptotic complexity unchanged.",
+      "overall_effect": "The high-probability approximation and complexity guarantees are unsupported for the exact inverse-iteration count used by the algorithms.",
+      "primary_affected_tag": "thm:minberrcost",
+      "target_type": "formal_result",
+      "title": "The stated inverse-iteration count does not follow from the proved bound",
+      "why_classification": "Increasing the inverse-iteration count by a local constant/additive-log correction restores the probability guarantee without changing the algorithmic rate or advertised asymptotic complexity."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2604.16075",
+  "question_id": "Q1",
+  "run_name": "gpt-sol-medium-2026-09-06-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e8809ffebe5951ca04910fb6d942792c2e647636a18f4a3772a38aab1b066ff9",
+  "status": "ok"
+}

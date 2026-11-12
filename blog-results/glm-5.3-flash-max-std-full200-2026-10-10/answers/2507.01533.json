@@ -1,0 +1,292 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Liouville’s formula provides an efficient integral representation for the log-determinant of the Jacobian, which leads to the identity",
+          "tag": null
+        },
+        {
+          "quote": "we abbreviate $\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Change of variables gives f_{Phi_*nu}(y) = f_nu(Phi^{-1}(y))|det D Phi^{-1}(y)|, and d/dt log det D_x Phi_t(x_t) = div v(x_t,t) along the trajectory started at Phi^{-1}(y) with Phi_0 = id. Hence the correct identity is log f_{Phi_*nu}(y) = log f_nu(Phi^{-1}(y)) - INT_0^1 div v(Phi_t(Phi^{-1}(y)),t) dt. As displayed, the sign is wrong and the divergence is integrated along the forward orbit of y instead of the orbit through the preimage point; the displayed formula is the (differently signed) pullback formula. Check in d=1: v(x)=x gives f_{Phi_*nu}(y)=e^{-1}f_nu(e^{-1}y), while the displayed formula yields e^{+1}f_nu(e^{-1}y).",
+      "failure_location": {
+        "quote": "\\log f_{\\Phi_*\\nu}(y) = \\log f_\\nu(\\Phi^{-1}(y)) + \\int_0^1 \\operatorname{div}_y v(\\Phi_t(y), t) \\, dt,",
+        "tag": "eq:liouville_log_det"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the display by log f_{Phi_*nu}(y) = log f_nu(Phi^{-1}(y)) - INT_0^1 div v(Phi_t(Phi^{-1}(y)),t)dt (equivalently with the backward flow), consistent with the cited lemma; nothing else changes.",
+      "overall_effect": "Only the displayed identity is false; no theorem, lemma, or later estimate in the paper uses it (Section 5 uses the correct change-of-variables formula). The advertised justification of likelihood-based training via (eq:liouville_log_det) is wrong as written.",
+      "primary_affected_tag": "eq:liouville_log_det",
+      "target_type": "other",
+      "title": "Liouville log-density identity stated with wrong sign and along the wrong trajectory",
+      "why_classification": "A single forced local sign/argument correction of an expository display; no downstream estimate or labelled result depends on it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the nodes are chosen as the extrema of the Chebyshev polynomial $T_m(x)$--on the standard integration domain $[-1,1]$--given by",
+          "tag": null
+        },
+        {
+          "quote": "The corresponding quadrature weights $\\{w_j\\}_{j = 1}^m$ are determined such that the rule integrates all polynomials of degree less than $m$ exactly",
+          "tag": null
+        },
+        {
+          "quote": "f_{\\nu_i} \\in L^p([a,b]) \\text{ for some } p > 1,",
+          "tag": null
+        },
+        {
+          "quote": "Applying the quadrature bound to the composite function $g(x) = \\qoi(\\Phi(x))$ thus yields",
+          "tag": "thm:quadrature_error"
+        }
+      ],
+      "failure_explanation": "Clenshaw–Curtis nodes and weights are fixed (Chebyshev extrema, weights from exactness on polynomials); they form a rule for the Lebesgue weight, not for a general density. A rule 'with respect to nu' built from univariate Clenshaw–Curtis rules does not exist unless f_nu = 1 a.e. For any other product density the claimed error cannot even tend to zero: take d=1, f_nu(x)=1+c(x-1/2) with 0<c<2 (C^infinity, bounded below, trivially factorized), QoI(phi(x))=x; then the left-hand side equals |INT_0^1 x f_nu(x)dx - 1/2| = c/12 for every sparsity level, while the asserted bound decays to 0. The proof applies the Novak–Ritter estimate, which is an estimate for the Lebesgue-weighted integral, to the integral against nu; the hypothesis that the f_{nu_i} are L^p densities is never used.",
+      "failure_location": {
+        "quote": "Let $(w_j, \\xi_j)_{j=1}^{m}$ define a sparse grid quadrature rule with respect to $\\nu$, based on univariate \\hyperref[subsec:clenshaw_curtis_rule]{Clenshaw--Curtis} rules with \\hyperref[closed_non_linear_growth]{closed non-linear growth}. Then, the quadrature error satisfies",
+        "tag": "thm:quadrature_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that nu is the Lebesgue measure (f_{nu_i} = 1) to Theorem thm:quadrature_error, to Assumption~\\ref{main_assumptions}, and to the main theorem (or instead develop the sparse-grid error analysis for rules genuinely built for the weight f_nu). With f_nu = 1 all proofs apply verbatim and all rates, the adaptive schedule, and the PAC statement are unchanged.",
+      "overall_effect": "Theorem thm:quadrature_error is unsupported and false outside nu = Lebesgue measure. Since the proof of the main PAC theorem invokes it under Assumption 1 (which allows arbitrary product C^k densities bounded away from zero), the paper's headline guarantee is unsupported (and false) for every non-uniform source measure; it survives only for the uniform noise distribution.",
+      "primary_affected_tag": "thm:quadrature_error",
+      "target_type": "formal_result",
+      "title": "Sparse-grid Clenshaw–Curtis error theorem ignores the density of the source measure",
+      "why_classification": "The repair is a hypothesis-level restriction carried through unchanged, but it removes a stated regime (general product-density source measures) that the assumptions and introduction advertise; the PAC result and all rates survive for the uniform reference measure, so the loss is limited but not a routine local edit."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:sub_gaussian",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left\\| D_x\\tilde{v}^\\theta({[\\Phi_t^\\theta]}^{-1}(x), 1 - t) - D_x\\tilde{v}^{\\theta'}({[\\Phi_t^{\\theta'}]}^{-1}(x), 1 - t) \\right\\|_2 \\leq \\operatorname{Lip}_1^\\Theta \\|\\theta - \\theta'\\|_2,",
+          "tag": "lem:sub_gaussian"
+        },
+        {
+          "quote": "\\|v^\\theta \\otimes \\eta_d\\|_{C^1([0,1]^{d+1})} \\leq  \\sqrt{q}\\cdot \\operatorname{Lip}_1^\\Theta(L,W,d)",
+          "tag": "cor:c1_bound"
+        },
+        {
+          "quote": "By Corollary~\\ref{cor:c1_bound}, the first summand is bounded by \\[ 2 \\sqrt{q} \\operatorname{Lip}_1^\\Theta \\sqrt{d}e^{\\sqrt{d}\\|v\\|_{C^1([0,1]^{d+1})}} \\leq 2 \\sqrt{q} \\operatorname{Lip}_1^\\Theta \\sqrt{d} \\cdot e^{\\sqrt{d} \\sqrt{q} \\operatorname{Lip}_1^\\Theta}, \\]",
+          "tag": "thm:concentration_bound"
+        }
+      ],
+      "failure_explanation": "In the variational-equation comparison the two factors D_x v_theta and D_x u_mu are evaluated at the DIFFERENT points [Phi_t^theta]^(-1)(x) and [Phi_t^mu]^(-1)(x). The proof bounds their difference by sqrt(d)*sup||D_x(v_t^theta - u_t^mu)||, which is the sup-difference of the derivative fields at a single common point; the cross-point term ||D_x u^mu(z_theta) - D_x u^mu(z_mu)|| <= ||u^mu||_{C^2} * ||[Phi_t^theta]^(-1)(x) - [Phi_t^mu]^(-1)(x)|| is silently dropped. The same invalid step recurs in Lemma lem_sub_gaussian (bound by Lip_1^Theta*||theta-theta'||, which controls only same-point differences of the derivative maps) and in Theorem thm_concentration_bound, where for a FIXED network the difference of D_x v at two spatial points is bounded by '2*sqrt(q)*Lip_1^Theta*sqrt(d)' — the diameter of parameter space, a quantity irrelevant to a spatial shift of a fixed network. Controlling these terms needs a bound on sup_{theta,x,t} ||D_x^2(v^theta (x) tensor eta_d(x))||, i.e. C^2 (spatial-Lipschitz-of-derivative) control of the ReQU class; the paper establishes only C^1 control (Lemma lem_lip_constants, Corollary cor:c1_bound, Remark rmk_lip_const_bound) and never proves any second-derivative sensitivity estimate.",
+      "failure_location": {
+        "quote": "\\sup_{(x,t)\\in [0,1]^{d+1}} \\|D_x(\\tilde{v}_t^\\theta -u_t^\\mu)(x)\\|_2 e^{\\left( \\sqrt{d}\\|\\tilde{v}^\\theta\\|_{C^1} \\right)}",
+        "tag": "thm:learnability_target_class"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Prove the missing ingredient: a uniform second-derivative sensitivity bound sup_{theta,x,t} ||D_x^2(v^theta (x) tensor eta_d(x))|| <= C(L,W,d) by the same weight-product inductions that give Lemma lem_lip_constants and Remark rmk_lip_const_bound, then redo the three Gronwall-type comparisons with the trajectory-shift terms inserted (in Theorem thm_learnability_target_class these are already bounded two lines earlier by the Gronwall estimate plus a C^2-bound on u^mu). All constants keep their double-exponential form; only their values change.",
+      "overall_effect": "The sub-Gaussian proxy of Lemma lem_sub_gaussian and the bounded-difference constant D of Theorem thm_concentration_bound are unproven, so the Dudley bound (thm_dudley), the concentration bound, and the PAC step of Theorem thm_learnability_sparse_grid that consume them are unsupported; the KL chain in the proof of Theorem thm_learnability_target_class is also incomplete at the flagged display.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Derivative-flow comparisons evaluate fields at different points without the missing C²-class control",
+      "why_classification": "A complete resolution needs a new but contained sensitivity lemma of exactly the type already proven for C^0 and C^1 (same induction style) plus a re-run of three contained Gronwall arguments; no advertised rate, regime, or guarantee type is lost, so the issue exceeds minor but avoids major loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:sub_gaussian",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, the determinant sensitivity estimate from~\\cite[Cor.~2.14]{ipsen2008} yields",
+          "tag": null
+        },
+        {
+          "quote": "By assumption $\\|\\tilde{v}^\\theta - u^\\mu\\|_{C^1} \\leq 1$, such that $\\n\\sum_{k = 1}^d \\|\\tilde{v}^\\theta - u^\\mu\\|_{C^1}^k \\leq d \\|\\tilde{v}^\\theta - u^\\mu\\|_{C^1}$.",
+          "tag": null
+        },
+        {
+          "quote": "Inserting into the determinant sensitivity bound~\\cite[Cor.~2.14]{ipsen2008} yields",
+          "tag": "lem:sub_gaussian"
+        }
+      ],
+      "failure_explanation": "The invoked Ipsen–Rehman type bound controls |log|det A|| differences in terms of the RELATIVE perturbation ||A^dag (B-A)|| and requires it to be < 1; as displayed the inequality |log|det A|| - |log|det B|| <= SUM_k binom(d,k) 2^k ||A-B||^k is false as a general matrix statement (A = eps*Id, B = 2*eps*Id, eps -> 0, gives left side d*log 2 while the right side tends to 0). The proof verifies only the absolute bound ||(D_x Phi^theta)^(-1) - (D_x Phi^mu)^(-1)|| <= d*e^{sqrt(d)(||v_theta||+||u||)}*||v-u||_{C^1} and then uses only the assumption ||v-u||_{C^1} <= 1; smallness of the perturbation relative to the smallest singular value of the inverse-derivative matrices (roughly e^{-sqrt(d)||v||}) is never established, so the log-determinant bound does not follow as written. The same defective application recurs in Lemma lem_sub_gaussian and Theorem thm_concentration_bound.",
+      "failure_location": {
+        "quote": "\\leq \\sum_{k=1}^d \\binom{d}{k} 2^k \\left\\| {D_x[\\Phi^\\theta]}^{-1}(x) - {D_x[\\Phi^{\\mu}]}^{-1}(x) \\right\\|_2^k \\nonumber \\",
+        "tag": "thm:learnability_target_class"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use the uniform singular-value bounds that the paper's own Gronwall estimates provide (sigma_min, sigma_max of D_x[Phi^theta]^(-1) bounded by e^{+-sqrt(d)*C(L,W)}), expand |log|det A|| - |log|det B|| = |log det(I + A^{-1}(A-B))| via the Fréchet expansion, and in Theorem thm_learnability_target_class replace the hypothesis 'inf ||v tensor eta - u||_{C^1} <= 1' by 'smaller than an explicit eps_0(d,kappa,K)'; all conclusions then hold with explicit, worse constants.",
+      "overall_effect": "The KL model-error estimate (model_error_smnd_2) in Theorem thm_learnability_target_class, the sub-Gaussian proxy of Lemma lem_sub_gaussian, the concentration constant of Theorem thm_concentration_bound, and through them the PAC tail of Theorem thm_learnability_sparse_grid rest on an unproven determinant inequality.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Determinant sensitivity bound applied outside its relative-perturbation hypothesis",
+      "why_classification": "The repair is a short local re-derivation of one matrix estimate using uniform singular-value bounds the proof already establishes (plus an explicit smallness condition on the C^1-approximation error, which is satisfied in the regime the theorem is used for); every stated conclusion, rate, and guarantee survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\mu \\| \\mu_{\\hat{\\theta}_n}) \\leq \\varepsilon_n^{\\mathrm{model}} + 2 \\varepsilon_n^{\\mathrm{gen}}, \\label{empirical_error_decomp}",
+          "tag": null
+        },
+        {
+          "quote": "starting with the empirical error decomposition~\\eqref{empirical_error_decomp},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof asserts KL(mu || Phi^{theta_hat_n *} nu) <= eps_n^model + eps_n^gen while citing the decomposition (empirical_error_decomp), which states KL <= eps_n^model + 2*eps_n^gen. The asserted one-eps_gen version is strictly stronger and is not implied by the cited decomposition (in general the factor 2 is needed, since Z_{theta_hat} need not be negative); all subsequent steps of the probability chain (the event {eps_gen > eps^2/(16||QoI||^2)}, the choice of n_2, and the final constant 4096) are built on this erroneous factor.",
+      "failure_location": {
+        "quote": "\\KL(\\mu\\| \\Phi^{\\hat{\\theta}_n}_* \\nu) \\leq \\varepsilon_n^{\\mathrm{model}} + \\varepsilon_n^{\\mathrm{gen}}. \\label{main_thm_emp_error_decomp}",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Use the decomposition as cited, KL <= eps^model + 2 eps^gen, and shift the subsequent constants accordingly (model-error budget eps^2/32, generalization threshold eps^2/32, larger terminal constant in the exponent); no structural change to the proof is needed.",
+      "overall_effect": "The derivation inside the proof of Theorem thm_learnability_sparse_grid is invalid as written; the final statement survives but only after the constants in the chain (and hence the sample-size threshold n(eps,delta)) are adjusted.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "KL decomposition used in the main proof drops the factor 2 on the generalization error",
+      "why_classification": "A local, forced constant repair (carry the factor 2 through one chain of inequalities); every claim and rate of the theorem survives unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:sub_gaussian",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, the determinant sensitivity estimate from~\\cite[Cor.~2.14]{ipsen2008} yields",
+          "tag": null
+        },
+        {
+          "quote": "By assumption $\\|\\tilde{v}^\\theta - u^\\mu\\|_{C^1} \\leq 1$, such that $\\sum_{k = 1}^d \\|\\tilde{v}^\\theta - u^\\mu\\|_{C^1}^k \\leq d \\|\\tilde{v}^\\theta - u^\\mu\\|_{C^1}$.",
+          "tag": null
+        },
+        {
+          "quote": "Inserting into the determinant sensitivity bound~\\cite[Cor.~2.14]{ipsen2008} yields",
+          "tag": "lem:sub_gaussian"
+        }
+      ],
+      "failure_explanation": "The Ipsen–Rehman perturbation bounds for log-determinants are bounds in terms of the RELATIVE perturbation ||A^dagger(A-B)|| (they require this quantity < 1). The proof applies the bound knowing only the absolute estimate ||D_x[Phi^theta]^(-1) - D_x[Phi^mu]^(-1)||_2 <= d*e^{sqrt(d)(||v||+||u||)}*||v-u||_{C^1} and then only that ||v-u||_{C^1} <= 1; relative smallness (perturbation small compared to sigma_min of the inverse-flow derivatives) is never established. As an unrestricted matrix inequality the displayed estimate is false — e.g. A = eps*Id, B = 2*eps*Id gives a left side d*log 2 while the right side tends to 0 as eps -> 0 — so the step from the Gronwall bound to (model_error_smnd_2_estimated) is unsupported.",
+      "failure_location": {
+        "quote": "\\leq \\sum_{k=1}^d \\binom{d}{k} 2^k \\left\\| {D_x[\\Phi^\\theta]}^{-1}(x) - {D_x[\\Phi^{\\mu}]}^{-1}(x) \\right\\|_2^k \\nonumber \\",
+        "tag": "thm:learnability_target_class"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Bound |log|det A|| - |log|det B|| via det(I + E) with E = A^{-1}(B-A), using the uniform singular-value bounds sigma_min, sigma_max of the inverse-flow derivatives that the paper's Gronwall estimates already provide; this needs no new architecture, only inserting the missing sigma_min-normalization (and, in Theorem thm_learnability_target_class, the explicit smallness of ||v tensor eta - u||_{C^1} rather than merely <= 1).",
+      "overall_effect": "The constants in Lemma lem_sub_gaussian, Theorem thm_dudley and Theorem thm_concentration_bound, and the KL bound (kl_target_approx_thm) used by Theorem thm_learnability_sparse_grid are unestablished as written, since all three derivations rely on the same misapplied determinant inequality.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Determinant sensitivity inequality applied outside its hypothesis of relative perturbation",
+      "why_classification": "A standard local repair (uniform singular-value bounds plus an explicit smallness constant, both already available in the paper's estimates) restores the displayed chain; no rate, guarantee, or scope is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\mu \\| \\mu_{\\hat{\\theta}_n}) \\leq \\varepsilon_n^{\\mathrm{model}} + 2 \\varepsilon_n^{\\mathrm{gen}}, \\label{empirical_error_decomp}",
+          "tag": "empirical_error_decomp"
+        },
+        {
+          "quote": "&\\overset{\\eqref{eq:main_thm_model_error_bd}}{\\leq} \\mathbb{P}\\left( \\varepsilon_n^{\\mathrm{gen}} > \\frac{\\varepsilon^2}{16\\|\\qoi\\|_\\infty^2} \\right)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof's displayed inequality (main_thm_emp_error_decomp) claims KL(mu || Phi^{theta_hat_n*} nu) <= eps_n^model + eps_n^gen, citing (empirical_error_decomp); but that decomposition — and the correct argument — give KL <= eps_n^model + 2 eps_n^gen (the supremum over theta of the centered empirical process appears twice: once through L(theta_hat) <= L_hat(theta*), once through Z_{theta_hat}). The proof then propagates the too-small constant into the thresholds eps^2/16 and the final exponent 4096.",
+      "failure_location": {
+        "quote": "\\KL(\\mu\\| \\Phi^{\\hat{\\theta}_n}_* \\nu) \\leq \\varepsilon_n^{\\mathrm{model}} + \\varepsilon_n^{\\mathrm{gen}}. \\label{main_thm_emp_error_decomp}",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Carry the factor 2 through: replace the threshold eps^2/(16||QoI||^2) by eps^2/(32||QoI||^2) in the chain and enlarge the final numerical constants (e.g. 4096 -> 16384); the statement of Theorem thm_learnability_sparse_grid is unchanged.",
+      "overall_effect": "Only the internal bookkeeping of the main proof is affected; the theorem's conclusion survives with adjusted constants, but as written the chain of inequalities is not valid.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "KL risk decomposition misquoted: proof uses 'model + gen' where the cited inequality gives 'model + 2 gen'",
+      "why_classification": "A one-line constant repair confined to the proof; no hypothesis, rate, or guarantee changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\mu \\| \\mu_{\\hat{\\theta}_n}) \\leq \\varepsilon_n^{\\mathrm{model}} + 2 \\varepsilon_n^{\\mathrm{gen}}, \\label{empirical_error_decomp}",
+          "tag": "empirical_error_decomp"
+        },
+        {
+          "quote": "\\mathbb{P}\\left( \\varepsilon_n^{\\mathrm{gen}} > \\frac{\\varepsilon^2}{16\\|\\qoi\\|_\\infty^2} \\right)",
+          "tag": "thm:learnability_sparse_grid"
+        }
+      ],
+      "failure_explanation": "The decomposition (empirical_error_decomp) established in the paper reads KL <= eps_model + 2 eps_gen (both the sup-definition of eps_gen and the triangle inequality force the factor 2: E[-log f_{mu_theta_hat}] = L_hat(theta_hat) + Z_{theta_hat} <= E[-log f_{theta*}] + 2 eps_gen). The main proof instead writes KL <= eps_model + eps_gen 'by (empirical_error_decomp)' and propagates this too-strong bound through the subsequent probability estimates. The inference is unsupported; the theorem's conclusion survives only with weakened constants.",
+      "failure_location": {
+        "quote": "\\KL(\\mu\\| \\Phi^{\\hat{\\theta}_n}_* \\nu) \\leq \\varepsilon_n^{\\mathrm{model}} + \\varepsilon_n^{\\mathrm{gen}}. \\label{main_thm_emp_error_decomp}",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Insert the factor 2 (KL <= eps_model + 2 eps_gen) and adjust the constants in the PAC tail and in the definition of n(eps, delta); no other change is needed.",
+      "overall_effect": "The proof of Theorem thm_learnability_sparse_grid contains a false inference; the theorem itself remains true once the constants in the tail bound and the sample-size threshold are enlarged accordingly.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "KL bound in main proof misquotes the risk decomposition (missing factor 2)",
+      "why_classification": "A short local repair that only worsens explicit constants; every substantive claim and rate of the theorem survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tilde{c}_d\\cdot m^{-{1}/d} \\cdot (\\log m)^{(d-1)(1/d+1)} \\cdot \\|\\qoi\\|_{C^1} \\left(1 + \\sqrt{d} \\, e^{\\sqrt{d} \\sqrt{q} \\operatorname{Lip}_1^\\Theta}\\right) \\leq \\frac{\\varepsilon}{2}, \\label{eq:main_thm_sg_error_bd}",
+          "tag": "eq:main_thm_sg_error_bd"
+        },
+        {
+          "quote": "there exist sample size and sparsity level thresholds $n(\\varepsilon, \\delta),\\ \\ell(\\varepsilon, \\delta) \\in \\mathbb{N}$ such that, for all $\\mu \\in \\mathcal{T}$,",
+          "tag": "defn:pac_learnability"
+        }
+      ],
+      "failure_explanation": "The quadrature-error threshold m(n) in (main_thm_sg_error_bd) depends on n through the hypothesis-space size q = q(L_n,W_n) (via the factor 1 + sqrt(d) e^{sqrt(d) sqrt(q)} with W_n, L_n growing in n), so the level needed to make the quadrature term <= eps/2 increases with n. The proof nevertheless defines m(eps,delta) := m(n(eps,delta)) and asserts the PAC bound for ALL n >= n(eps,delta) and m >= m(eps,delta) independently, i.e. the product-of-thresholds formulation of (defn:pac_learnability). For any fixed quadrature level and n large, the left side of (main_thm_sg_error_bd) diverges (q_n -> infinity), so no fixed m works for all n and the stated guarantee is not established; only the coupled version (level chosen depending on n) is proved.",
+      "failure_location": {
+        "quote": "and a threshold $m(\\varepsilon, \\delta) := m(n(\\varepsilon, \\delta))$ on the number of quadrature points such that \\eqref{eq:main_thm_sg_error_bd} holds, for all $n \\geq n(\\varepsilon,\\delta)$ and all $m \\geq m(\\varepsilon,\\delta)$, the total error of the integration scheme satisfies",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Weaken the guarantee to the coupled form the proof supports: for every eps, delta and every n >= n(eps,delta) there is a sparsity level l(n,eps,delta) (equivalently a node count m(n,eps,delta)) such that P(eps_total > eps) <= delta; restate (defn:pac_learnability) and Theorem thm_learnability_sparse_grid accordingly. All rates and the qualitative consistency statement survive.",
+      "overall_effect": "The main theorem's PAC-learnability statement, in the sense of the paper's own definition (defn:pac_learnability) with independent sample-size and sparsity thresholds, is unsupported; only the weaker coupled-threshold statement is proved, and the abstract/introduction's consistency claim inherits this gap.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Advertised PAC guarantee with a quadrature threshold independent of n is not established",
+      "why_classification": "The repair changes the type of the advertised quantifier structure (independent thresholds become n-coupled ones) but leaves a recognizably equivalent PAC-consistency result with the same rates; it is more than a local fix, yet no advertised regime or rate is lost."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2507.01533",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4061c0fabc84b846272339b854b6a82a9cfd5d1ef91d57be1f2279301753237e",
+  "status": "ok"
+}

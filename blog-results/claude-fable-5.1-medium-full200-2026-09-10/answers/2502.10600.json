@@ -1,0 +1,149 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The kernel $\\kappa$ is differentiable, and there exists a symmetric kernel $\\bar{\\kappa}: \\mathcal{X} \\times \\mathcal{X} \\rightarrow \\mathbb{R}$ satisfying",
+          "tag": "assumption:gradient_kappa"
+        }
+      ],
+      "failure_explanation": "Assumption 1 requires κ to be differentiable everywhere with ∇₂κ(x,y)=(x−y)κ̄(x,y). For κ(x,y)=φ(‖x−y‖) this needs φ differentiable at 0 with φ'(0)=0 (so that κ is differentiable on the diagonal and κ̄(x,x)=−lim φ'(r)/r exists). A φ that is merely continuously differentiable almost everywhere does not guarantee this: e.g. the Matérn kernel with ν=1/2 (φ(r)=e^{−r/σ}) is not differentiable at x=y, so 'Matérn kernels' in general do not satisfy the assumption, only those with ν>1/2 (and IMQ/Gaussian).",
+      "failure_location": {
+        "quote": "\\Cref{assumption:gradient_kappa} is satisfied by many distance-based kernels defined as $\\kappa(x,y) = \\varphi(\\|x-y\\|)$ for some function $\\varphi:\\mathbb{R}^+\\to\\mathbb{R}^+$ that is continuously differentiable almost everywhere. This includes the Gaussian kernel, the inverse multiquadric kernel (IMQ) and Matérn kernels.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the condition by: φ differentiable on [0,∞) with φ'(0)=0 and φ'(r)/r extending continuously to r=0; restrict 'Matérn kernels' to ν>1/2.",
+      "overall_effect": "The advertised class of kernels covered by the theory (Props 3.2, Thm 3.3, Cor 3.4 and the MSIP map) is overstated; results do not apply to non-smooth radial kernels such as Matérn ν=1/2. The kernels actually used (Gaussian, Matérn ν=1.5) are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Scope claim for Assumption 1 (a.e.-differentiable radial profiles, all Matérn kernels) is not supported",
+      "why_classification": "A local restatement of the scope condition fixes it; all results and experiments survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Under the assumption that the kernel matrices $\\bm{K}(\\yt)$ and $\\bm{\\bar{K}}(\\yt)$ are non-singular, the relationship \\eqref{eq:msip_fixed_point_def} is expressed as a fixed-point iteration",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Ψ_MSIP inverts the diagonal matrix W(Y)=diag(ŵ(Y)), ŵ(Y)=K(Y)^{-1}v₀(Y). Nonsingularity of K(Y) and K̄(Y) does not imply ŵ_i(Y)≠0 for all i (optimal kernel quadrature weights can vanish or change sign), so the stated hypotheses do not make the fixed-point iteration well defined; the linear system (eq:msip_fixed_point_def) is then singular and Y^{(t+1)} is not determined.",
+      "failure_location": {
+        "quote": "\\bm{\\Psi}_{\\MSIP}(\\Y): = \\bm{W}(\\Y)^{-1} \\bm{\\bar{K}}(\\Y)^{-1} \\hvonem(\\Y).",
+        "tag": "eq:fixed_point_general_case"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that all ŵ_i(Y^{(t)})≠0 (equivalently W(Y^{(t)}) nonsingular), as is already done implicitly in Theorem 3.3's second equality, and note how the iteration handles a particle with zero weight.",
+      "overall_effect": "The fixed-point iteration and its rewriting as preconditioned gradient descent (eq:fixed_point_as_precond_grad_descent) are only defined on configurations where every ŵ_i(Y^{(t)})≠0; the paper's stated well-definedness condition is incomplete.",
+      "primary_affected_tag": "eq:fixed_point_general_case",
+      "target_type": "algorithm",
+      "title": "MSIP map Ψ_MSIP requires nonzero optimal weights, not only nonsingular K and K̄",
+      "why_classification": "Adding the missing local non-degeneracy condition restores every stated guarantee without new arguments."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:ms_as_MSIP"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For $m \\in [M]$, we recall that $\\nabla\\kappa$ is bounded on $\\X\\times\\X$ to find",
+          "tag": null
+        },
+        {
+          "quote": "Since $\\what = \\Ky^{-1}\\vzerov(\\Y) $, we get",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem assumes only Assumption 1, but the proof (i) writes F_M via ŵ(Y)=K(Y)^{-1}v₀(Y) and differentiates K(Y)^{-1}, which requires K(Y) invertible on X^M_≠ (true for strictly positive definite kernels but not assumed), and (ii) differentiates v₀ under the integral by 'recalling' that ∇κ is bounded, a hypothesis stated only in Proposition 3.2 and absent from the theorem.",
+      "failure_location": {
+        "quote": "Under \\Cref{assumption:gradient_kappa}, the gradient of $F$, seen as an $M \\times d$ matrix, is given by",
+        "tag": "thm:gradient_opt_mmd"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add to the theorem: κ strictly positive definite (so K(Y) is invertible on X^M_≠ and F_M is differentiable there) and ∇κ bounded (or another domination condition permitting differentiation under the integral).",
+      "overall_effect": "As stated, the gradient formula and the preconditioned-gradient-descent interpretation are not established for kernels with singular Gram matrices or unbounded gradients; the corollary inherits the same gap.",
+      "primary_affected_tag": "thm:gradient_opt_mmd",
+      "target_type": "formal_result",
+      "title": "Theorem 3.3 omits hypotheses its proof relies on (invertibility of K(Y), bounded ∇κ for differentiating v₀)",
+      "why_classification": "Standard hypotheses, already used elsewhere in the paper, close the gap with no change to the conclusion."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "F_{M}(\\Y) = \\frac{1}{2} \\bigg( C_\\pi + 2 \\langle \\what, \\vzerov(\\Y) \\rangle + \\langle \\what, \\Ky \\what \\rangle  \\bigg),",
+          "tag": null
+        },
+        {
+          "quote": "&= 2\\langle \\what,\\,\\Dij \\bm{v}_0(\\Y)\\rangle - \\langle\\what,\\,(\\Dij\\Ky)\\,\\what\\rangle.",
+          "tag": "eq:grad_F_pi_first"
+        },
+        {
+          "quote": "2\\Dij F_{M}(\\Y) &= -2\\whati\\left([\\bvonev(\\yi)]_{j}  - \\yij\\bvzero(\\yi)- \\langle\\what,\\, \\Y_{j}\\odot\\Ki\\rangle + \\yij\\langle\\what,\\,\\Ki\\rangle",
+          "tag": "eq:2times_gradient_FM"
+        }
+      ],
+      "failure_explanation": "Since F_M(Y)=½(C_π − ⟨ŵ,Kŵ⟩), one has 2∇_{ij}F_M = −2⟨ŵ,K∇ŵ⟩ − ⟨ŵ,∇Kŵ⟩, but (eq:gradient_optimal_mmd_identity) drops the minus sign (and the initial expansion of F_M has +2⟨ŵ,v₀⟩ instead of −2⟨ŵ,v₀⟩). Consequently (eq:grad_F_pi_first) is the negative of the true gradient. Combining (eq:grad_F_pi_first), (eq:w_hat_grad_K_w_hat_final) and (eq:w_hat_grad_v_final) as the proof says would give +2ŵ_i(...), yet (eq:2times_gradient_FM) writes −2ŵ_i(...) with no justification. Two compensating sign errors make the chain of equalities invalid as written, although the final formula is correct (it is confirmed for M=1 with a Gaussian kernel by direct computation of ∇F₁).",
+      "failure_location": {
+        "quote": "2\\Dij F_{M}(\\Y) = 2\\langle \\what,\\,\\Ky\\Dij\\what\\rangle + \\langle \\what,\\,\\Dij\\Ky\\,\\what \\rangle .",
+        "tag": "eq:gradient_optimal_mmd_identity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Insert the missing minus signs in the F_M expansion and in (eq:gradient_optimal_mmd_identity)/(eq:grad_F_pi_first) so that 2∇_{ij}F_M = −2⟨ŵ,∇_{ij}v₀⟩ + ⟨ŵ,∇_{ij}Kŵ⟩, which then consistently yields (eq:2times_gradient_FM).",
+      "overall_effect": "The proof of the main gradient identity contains an invalid step; the theorem's conclusion itself is correct, so downstream uses are not affected once the proof is corrected.",
+      "primary_affected_tag": "thm:gradient_opt_mmd",
+      "target_type": "formal_result",
+      "title": "Sign inconsistency in the proof of Theorem 3.3 (compensating errors)",
+      "why_classification": "Purely local sign corrections restore a valid derivation of an already-correct statement."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{\\Psi}_{\\MSIP}(\\Y): = \\bm{W}(\\Y)^{-1} \\bm{\\bar{K}}(\\Y)^{-1} \\hvonem(\\Y).",
+          "tag": "eq:fixed_point_general_case"
+        },
+        {
+          "quote": "\\bar{u}(y) = \\left( \\frac{v_{0}(y)}{\\kappa(y,y)} \\bar{\\kappa}(y,y) - \\bar{v}_{0}(y) \\right) y.",
+          "tag": "eq:app_ubar_def"
+        },
+        {
+          "quote": "y_{\\star} = \\bm{\\Psi}_{\\mathrm{MS}}(y_{\\star}):= \\frac{\\sum_{\\ell=1}^N \\xell \\, \\bar{\\kappa}(\\xell,y_{\\star})}{\\sum_{\\ell=1}^N \\bar{\\kappa}(\\xell,y_{\\star})}.",
+          "tag": "eq:ms_equation"
+        }
+      ],
+      "failure_explanation": "For M=1, Ψ_MSIP(y) = (κ(y,y)/(v₀(y)κ̄(y,y)))(v̄₁(y)+ū(y)) = y + (κ(y,y)/(v₀(y)κ̄(y,y)))(v̄₁(y) − v̄₀(y)y), whereas Ψ_MS(y) = v̄₁/v̄₀ = y + (1/v̄₀(y))(v̄₁(y) − v̄₀(y)y). These maps coincide only when κ(y,y)v̄₀(y)=v₀(y)κ̄(y,y), which holds for the Gaussian kernel (κ̄=λκ) but not for general kernels satisfying Assumption 1 (e.g. IMQ, Matérn). The paper's argument only shows the two maps share fixed points (critical points of F₁), which does not make mean shift a special case of the MSIP iteration; the claim (echoed in the abstract's 'MSIP extends the (non-interacting) mean shift algorithm') is established only for the Gaussian kernel.",
+      "failure_location": {
+        "quote": "Then, the mean shift algorithm becomes a special case of the fixed-point iteration defined in \\Cref{sec:msip} when $M = 1$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the special-case statement to the Gaussian (squared-exponential) kernel, and for general kernels state only that mean shift and M=1 MSIP have the same fixed points (critical points of F₁).",
+      "overall_effect": "The general 'mean shift is MSIP with M=1' identification is overstated; for non-Gaussian kernels MSIP with M=1 is a differently scaled iteration with the same fixed points.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Mean shift is claimed to be a special case of MSIP for M=1, but for non-Gaussian kernels only the fixed points coincide",
+      "why_classification": "A precise restatement of scope suffices; the Gaussian case and the fixed-point correspondence, which carry the conceptual content, remain valid."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2502.10600",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f1c59990d7e8e7d1c4127b865c8a6252d6e282b546fc6c81dbd5e352ececfc2f",
+  "status": "ok"
+}

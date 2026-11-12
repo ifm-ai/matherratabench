@@ -1,0 +1,103 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:msgfem:iteration"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Using the coercivity and continuity of the bilinear form, we obtain",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "\\big\\{ \\fwp \\in H^{1}(\\osdomain_\\ddindex) : \\fwp = 0 \\text{ on } (\\osbdry \\cap \\bdryD) \\cup (\\osbdry \\cap \\domain) \\big\\}",
+          "tag": null
+        },
+        {
+          "quote": "\\left(1 + C_{\\osdomain_\\ddindex} H_\\ddindex^* \\diffMin^{-1} \\norm{\\velField}_{\\Lpd{\\infty}}\\right)",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "where $C_B \\sim 1 + \\diffMin^{-1}\\left(\\norm{\\divergence \\velField}_{\\Lp{\\infty}} + \\norm{\\velField}_{\\Lpd{\\infty}}\\right)$ is the operator norm of the bilinear form $\\bilWF{\\cdot}{\\cdot}{}$ up to coefficient-independent constants.",
+          "tag": "th:msgfem:global"
+        }
+      ],
+      "failure_explanation": "The step bounds the local error norm by |B(w,w)| 'using the coercivity ... of the bilinear form'. For divergence-free b, B(.,.)_{D*} is coercive only on H^1_{D,0}(D*), i.e. for functions that also vanish on the interior boundary (as the paper's own definition of the local test space shows: u = 0 on (boundary(D*)∩Γ_D) ∪ (boundary(D*)∩Ω)). The function w = u^e|_{D*} − u^p_j does not lie in this class: u^p_j vanishes on boundary(D*)∩Ω but u^e does not, so the convective flux term −(1/2)∫_{boundary(D*)∩Ω} w^2 (b·n) is uncontrolled and B(w,w) can be smaller than ||w||_a^2. Likewise, the subsequent continuity estimate with constant (1 + C_{D*_j}H*_j a_min^{-1}||b||_∞) implicitly uses a Poincaré inequality for w on D*_j, which fails for oversampling domains not touching Γ_D. Finally, the stated constant (1 + C Pe_H)^2 cannot absorb the global operator norm C_B entering Theorem th:msgfem:global, which is governed by the global (not subdomain) Péclet scale.",
+      "failure_location": {
+        "quote": "\\norm{\\fwpSol - \\fwpiPart}_{a,\\osdomain_\\ddindex}^2 &\\leq \\abs{\\bilWF{\\fwpSol - \\fwpiPart}{\\fwpSol - \\fwpiPart}{\\osdomain_\\ddindex}}",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the coercivity step by a contained well-posedness argument for the local subproblem: from the harmonicity orthogonality B(u^e - u^p_j, u^p_j)_{D*_j} = 0 and the global weak equation one gets F_{D*}(xi) = B(u^e, xi)_{D*}, whence a bound of the form ||u^e - u^p_j||_{a,D*} <= C(1 + Pe_{H*_j}) ||u^e||_{a,D*} follows from continuity/coercivity on H^1_{D,0}(D*); restate the global simplification with the constant actually delivered by Theorem th:msgfem:global (including the global-continuity contribution).",
+      "overall_effect": "The quasi-optimal bound (eq:msgfem:global:coercive) with its explicit constant is not established; since Theorem th:msgfem:iteration derives the existence of coarse spaces with any prescribed contraction factor from this corollary, that convergence guarantee is also left unsupported.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Coercivity invoked outside its valid class in the proof of Corollary cor:added-1",
+      "why_classification": "The repair is a contained, nontrivial re-derivation of one estimate using tools the paper already assumes (well-posedness of subdomain problems, continuity of B); no new proof architecture is needed and a comparable quasi-optimality statement with a correspondingly adjusted constant survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "converges for any initial guess $\\fwp^{(0)} \\in \\Hone$ strictly monotonically:",
+          "tag": "th:msgfem:iteration"
+        },
+        {
+          "quote": "The existence of $\\locDim_1, \\ldots, \\locDim_\\nDoms \\in \\N$ such that \\cref{eq:msgfem:iteration:1} holds follows from \\cref{eq:msgfem:global:coercive} and \\cref{th:msgfem:evaldecay}.",
+          "tag": "th:msgfem:iteration"
+        },
+        {
+          "quote": "Then, the following holds for all $\\fwp$, $\\fwpTest \\in H_B(D^*)$:",
+          "tag": "th:caccioppoli"
+        }
+      ],
+      "failure_explanation": "Estimate (msgfem:iteration:1) bounds ||u^e - G u^e|| at the single input u^e; an operator-norm bound ||(I-G)v|| <= vartheta ||v|| for all v cannot be inferred from it. Establishing such a bound requires rerunning the local approximation theory (Caccioppoli inequality, weak approximation property, eigenfunction expansion in the B-harmonic space) with v replaced by an arbitrary error function. All of these ingredients are stated only for the class H_B(D*_j) of functions vanishing on the Dirichlet part of the boundary, and the iterated errors (I-G)^k(u^{(0)} - u^e) for general u^{(0)} in H^1(Omega) do not belong to that class; the paper neither proves the operator bound nor shows the relevant function class is invariant under I - G. The displayed estimate is also written in the oversampling-domain norm while the theorem's contraction claim is in the global norm.",
+      "failure_location": {
+        "quote": "\\norm{(I - \\msgfemOperator)\\fwpTest}_{a,\\osdomain_\\ddindex} \\leq \\vartheta \\norm{\\fwpTest}_{a,\\osdomain_\\ddindex} \\quad \\text{for all $\\fwpTest \\in \\Hone$,}",
+        "tag": "th:msgfem:iteration"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Weaken the statement to initial guesses whose errors lie in the Dirichlet trace class covered by the local theory, and supply the missing operator-norm step by applying Theorems th:msgfem:local and th:msgfem:global (with Corollary cor:added-1) to an arbitrary such error function rather than only to u^e; alternatively reformulate the iteration on the homogeneous correction problem, as the discrete iteration (eq:msgfem:iteration:discrete) effectively does, and prove contraction there.",
+      "overall_effect": "The paper's main theoretical convergence guarantee for the proposed iteration (and, by the paper's own motivation, the anticipated transfer to the discrete two-level RAS/GMRES setting) is unsupported as stated; the 'for any initial guess in H^1(Omega)' quantifier is not covered by any argument in the source.",
+      "primary_affected_tag": "th:msgfem:iteration",
+      "target_type": "formal_result",
+      "title": "Convergence proof of the MS-GFEM iteration asserts an operator estimate that was never established",
+      "why_classification": "A contained, nontrivial reformulation (restricting the initial-data quantifier and rerunning the paper's own estimates on the appropriate error class) restores a recognizably comparable convergence theorem; the loss is limited to the 'any initial guess in H^1' quantifier, not to the method or its rate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "20(x_2 - 0.5)[1 - (x_1 - 0.5)^2] - 1.5(x_1 - 0.5)\\\\",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the displayed velocity field, div b = d/dx1[20(x2-0.5)(1-(x1-0.5)^2) - 1.5(x1-0.5)] + d/dx2[20(x1-0.5)[1-(x2-0.5)^2] - 1.5(x2-0.5)] = -80(x1-0.5)(x2-0.5) - 3, which equals +17 at (x1,x2)=(0,1) and (1,0): the divergence is positive on part of the domain, contradicting 'has negative divergence'. (The reported grid Peclet number is also inconsistent: with h = 1/5120 and ||b||_{L^infty} about 10, Pe_h is about 2x10^3, not 3x10^3.) The indefiniteness conclusion only requires div b not vanishing identically, so the experiment itself is unaffected, but the stated mathematical property of the constructed field is false as written.",
+      "failure_location": {
+        "quote": "which has negative divergence and yields an indefinite problem with a grid P\\'{e}clet number of approximately $3\\,000$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace 'has negative divergence' by 'has non-vanishing (sign-changing) divergence' and correct the reported grid Peclet value (approximately 2x10^3 for the stated mesh and field).",
+      "overall_effect": "Only the prose characterization of the large-scale test problem is affected; no formal result or algorithm depends on this sentence.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Large-scale example's velocity field does not have negative divergence",
+      "why_classification": "A short local correction of one descriptive sentence preserves every substantive claim, guarantee, and experimental conclusion; no downstream result depends on the misstated sign."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2509.17531",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "10d5e7cc895eb71bc1c68a4a297aef9c190ad8b22b3542cc47b43a3abea14ccf",
+  "status": "ok"
+}

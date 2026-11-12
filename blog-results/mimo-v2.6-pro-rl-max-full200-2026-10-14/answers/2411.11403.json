@@ -1,0 +1,207 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tilde \\pi(x,\\eta) \\propto \\frac{1}{\\prod_{i=1}^d \\sqrt{\\eta_i}} \\exp\\Biggl( - \\sum_{i=1}^d\\pa{\\frac{x_i^2}{2\\eta_i} + \\frac{\\beta^2 \\lambda^2 \\eta_i }{2 }} - \\beta \\,G(x)\\Biggr)",
+          "tag": null
+        },
+        {
+          "quote": "\\pi(u,v)=\\frac{1}{Z_\\pi} \\prod_{i=1}^d  u_i\\, \\exp\\pp{-\\beta\\, \\pp{\\frac12\\lambda \\|(u,v)\\|^2+G(u\\odot v)} }",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Substituting η_i = u_i²/2 and x_i = u_i v_i into the Gibbs density yields the quadratic terms v_i² + β²λ²u_i²/4, which equal (βλ/2)(u_i²+v_i²) (the terms in the claimed π) only when βλ = 2. The correct change of variables is η = u⊙u/(βλ), which does produce the stated π. The stated derivation therefore does not prove Theorem thm:overparam, though the theorem's conclusion is independently correct.",
+      "failure_location": {
+        "quote": "By applying a change of variables of $x = u \\odot v$ and $\\eta = u \\odot u/2$ to \\eqref{eq:gibbs}, we obtain the following probability distribution",
+        "tag": "thm:overparam"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the change of variables with η = u⊙u/(βλ) and recompute the Jacobian to re-derive π, confirming the stated density and normalization constant.",
+      "overall_effect": "The derivation/proof of Theorem thm:overparam is invalid as written. The theorem's statement (that u⊙v has law ρ, with the stated normalization) is correct and recoverable via the corrected change of variables, so no downstream results are invalidated.",
+      "primary_affected_tag": "thm:overparam",
+      "target_type": "formal_result",
+      "title": "Wrong change of variables in derivation of overparameterized density",
+      "why_classification": "The result is correct and the fix is a short, local correction to a single formula (the relation between η and u), requiring only routine algebra to verify. All claims and guarantees survive unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "timeregbnd"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "By the Burkholder--Gundy--Davis inequality \\cite[Theorem 3.28]{Karatzas1991-xr}, for a constant $c$, \\[ \\mean{\\abs{\\int_0^T u_{1,t}^{\\epsilon-1}\\,dW^{1,1}_t}^q} \\le c\\, \\pp{\\int_0^T \\mean{u_{1,t}^{2\\epsilon-2}}\\,dt}^{q/2}. \\]",
+          "tag": "cor"
+        },
+        {
+          "quote": "The integrand on the right-hand side is bounded for $\\epsilon>0$ by part 1 with $r=2-2\\epsilon<2$.",
+          "tag": "cor"
+        }
+      ],
+      "failure_explanation": "The BGD inequality gives E[|∫u^{ε-1}dW|^q] ≤ c_q E[(∫u^{2ε-2}dt)^{q/2}], not c(∫E[u^{2ε-2}]dt)^{q/2}. For q > 2 the function x^{q/2} is convex so Jensen's inequality goes the opposite direction: E[(∫f dt)^{q/2}] ≥ (∫E[f]dt)^{q/2}. Part 1 only yields E[u^{-r}] < ∞ for r < 2, bounding E[u^{2ε-2}] but not E[u^{q(ε-1)}] needed for q > 2/(1−ε). A bootstrap argument iterating Itô with reduced ε and power could plausibly close the gap but is not supplied.",
+      "failure_location": {
+        "quote": "\\mean{\\pp{\\int_0^T \\frac{1}{u_{i,s}^{2-\\epsilon}}\\,ds}^q} <\\infty \\text{\\quad for all $q\\ge 1$.}",
+        "tag": "cor"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Either supply a bootstrap/iteration argument handling arbitrary q, or restrict the corollary (and dependent Proposition timeregbnd Part 1) to q < 2/(1−ε), noting that downstream uses require only moderate q.",
+      "overall_effect": "Part 2 of Corollary cor is unproved for q ≥ 2/(1−ε). Proposition timeregbnd (Part 1) inherits this gap for large q. Downstream discretization results that use only moderate moments remain supported.",
+      "primary_affected_tag": "cor",
+      "target_type": "formal_result",
+      "title": "Corollary inverse-integral moment bound unproved for large q",
+      "why_classification": "The proof gap requires a contained nontrivial argument (a bootstrap of moment bounds) or a limited weakening of the quantifier on q. The qualitative conclusion and downstream uses at moderate q survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$2\\kappa\\lambda = \\theta^2$, which satisfies the Feller positivity condition $2\\kappa\\lambda\\geq \\theta^2$.",
+          "tag": "lem:novikov"
+        },
+        {
+          "quote": "By the Borel--Cantelli lemma, there are only finitely many $T$ for which the event $\\{\\exists t\\in [0,T], \\; u_t=0\\}$ occurs so $\\PP(u_t>0, t>0) = 1$.",
+          "tag": "lem:novikov"
+        }
+      ],
+      "failure_explanation": "The displayed M_T uses dt instead of dW and has wrong coefficients for noise scaling √(2/β); the correct Girsanov density is exp(−√(β/2)∫b·dW − (β/4)∫‖b‖²dt). The formula as written is not a martingale. Separately, the CIR identification substitutes λ for μ: the Feller condition is 2κμ ≥ θ² (with μ = 2/(βλ)), not 2κλ ≥ θ². Finally, the Borel–Cantelli invocation is unnecessary and incorrect; monotone convergence suffices. The conclusion (u_t > 0 a.s.) is nevertheless correct and recoverable with the standard Girsanov density.",
+      "failure_location": {
+        "quote": "with the martingale defined by $M_T = \\exp(-\\int_0^T b(z_t) dt - \\frac12 \\int_0^T b(z_t)^2 dt)$",
+        "tag": "lem:novikov"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace M_T with the correct Girsanov density for noise level √(2/β), replace λ with μ in the CIR parameter identification, and replace the Borel–Cantelli step with a simple union-of-null-sets argument.",
+      "overall_effect": "The proof of Lemma lem:novikov is invalid as written. Its two conclusions (Novikov condition and positivity of u_t) are correct and recoverable with standard corrections. No downstream results are invalidated since Theorem wp proves well-posedness independently via cylindrical coordinates.",
+      "primary_affected_tag": "lem:novikov",
+      "target_type": "formal_result",
+      "title": "Invalid Girsanov density and misapplied positivity argument in Novikov lemma",
+      "why_classification": "Each error has a forced, standard correction (correct Girsanov density, correct CIR parameter, simpler positivity argument) requiring no new lemma or construction. All substantive claims survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathrm{div}_{M(\\mathbf{z}_t)^{-1}}\\pa{  M(\\mathbf{z}_t)}\\, dt",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "$\\mu(z) = -M(\\mathbf{z})\\nabla H(\\mathbf{z}) + \\frac12 \\binom{1}{x/\\eta } =-M(\\mathbf{z})\\nabla H(\\mathbf{z})  +\\mathrm{div}_{M(\\mathbf{z})^{-1}}(M(\\mathbf{z})) $",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Direct computation of the Riemannian divergence gives div_{M^{-1}}(M) = (1/2, 0)^T (the x-component vanishes by cancellation). The correct correction drift from Itô's formula is div_j M = (3/2, x/(2η))^T. These differ by (1, x/(2η))^T. Consequently the SDE is not Riemannian Langevin dynamics with metric M^{-1}: the correction drift in the standard Riemannian Langevin formula does not match the actual drift of the transformed process. The Fokker–Planck equation stated in the proposition is nevertheless correct (verified independently from the Itô computation).",
+      "failure_location": {
+        "quote": "d\\mathbf{z}_t = - M(\\mathbf{z}_t) \\nabla H(\\mathbf{z}_t)\\, dt +\\mathrm{div}_{M(\\mathbf{z}_t)^{-1}}\\pa{  M(\\mathbf{z}_t)}\\, dt  + \\sqrt{2} S(\\mathbf{z}_t) dW_t,",
+        "tag": "prop:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the correction drift div_{M^{-1}}(M) with div_j M = (3/2, x/(2η))^T, and either drop or requalify the claim that the dynamics is Riemannian Langevin with metric M^{-1}.",
+      "overall_effect": "The claim that the transformed dynamics is Riemannian Langevin with metric M^{-1} is false. The Fokker–Planck equation in the proposition remains correct. No main results depend on the Riemannian interpretation.",
+      "primary_affected_tag": "prop:added-2",
+      "target_type": "formal_result",
+      "title": "SDE in Riemannian Langevin proposition has wrong correction drift",
+      "why_classification": "Fixing the drift formula is local, but the Riemannian interpretation (a central claim of the proposition) is false and must be withdrawn or substantially reworked. The Fokker–Planck equation survives, leaving a recognizably comparable result but with a lost structural insight."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "standard theory (Bakry--Emery criterion, Holley--Stroock theorem) applies to the potential $\\frac 12 \\lambda \\|\\vec x \\|^2+G_3(\\vec x)$, as it is a bounded perturbation (given by $G$) of a convex potential (given by $\\frac12\\lambda\\|\\vec x\\|^2$).",
+          "tag": "thm_bndd_G"
+        },
+        {
+          "quote": "\\mathcal H(\\rho(t,\\cdot) \\mid \\pi)\\le \\exp(-2\\,R\\,t/\\beta)\\, \\mathcal H(\\rho_0 \\mid \\pi),\\quad t>0,",
+          "tag": "thm_bndd_G"
+        }
+      ],
+      "failure_explanation": "The invariant measure π ∝ exp(−βH) corresponds to potential V = βH = (βλ/2)‖x‖² + βG₃(x). Holley–Stroock applied to V gives LSI constant R = βλ · exp(−β(sup G − inf G)) = βλ e^{β(inf G − sup G)}, not βλ e^{inf G − sup G}. The proof applies Holley–Stroock to the un-scaled potential (½λ‖x‖² + G₃) as if it generated π, which it does not. The missing factor of β in the exponent makes the claimed rate wrong for β ≠ 1.",
+      "failure_location": {
+        "quote": "for $R=\\beta\\, \\lambda\\,e^{\\inf G-\\sup G}$.",
+        "tag": "thm_bndd_G"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Apply Holley–Stroock to the potential βH = (βλ/2)‖x‖² + βG₃, obtaining R = βλ e^{β(inf G − sup G)}, and update the stated rate accordingly.",
+      "overall_effect": "The specific entropy decay rate exp(−2λ e^{inf G − sup G} t) is wrong (the correct rate is exp(−2λ e^{β(inf G − sup G)} t)). The qualitative conclusion of geometric convergence survives. No subsequent results use the specific rate.",
+      "primary_affected_tag": "thm_bndd_G",
+      "target_type": "formal_result",
+      "title": "Wrong entropy decay rate in bounded-G ergodicity theorem",
+      "why_classification": "The fix is a local correction to the exponent (adding a factor of β), but the quantitative rate necessarily changes, losing the stated bound for β ≠ 1. The qualitative geometric convergence and scope survive, leaving a recognizably comparable result."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "E_{1,T}(\\tstep)\\eqdef \\tilde\\pi_{\\tstep}(P_{T}(\\phi))-\\pi_\\tstep(\\phi)+(\\pi_\\tstep-\\tilde\\pi_\\tstep)(\\phi),\\qquad T=\\tstep\\,k.",
+          "tag": "thm_convergence_to_invariant"
+        },
+        {
+          "quote": "E_{2}(T)\\eqdef \\tilde\\pi_\\tstep(P_T(\\phi)) - \\pi(\\phi).",
+          "tag": "thm_convergence_to_invariant"
+        }
+      ],
+      "failure_explanation": "Expanding E₁,ₜ + E₂ gives 2π̃_{Δt}(P_T(φ)) − π̃_{Δt}(φ) − π(φ), which is not π_{Δt}(φ) − π(φ) in general. The correct decomposition requires three terms: [π_{Δt} − π̃_{Δt}](φ) − E₁,ₜ(Δt) + E₂(T). Additionally, the proof never establishes the uniform boundedness of π̃_{Δt}/π needed to apply Theorem thm:num_conv with initial law π̃_{Δt}, leaving a hypothesis gap.",
+      "failure_location": {
+        "quote": "\\pi_{\\tstep}(\\phi)- \\pi(\\phi)= E_{1,T}(\\tstep)+E_2(T).",
+        "tag": "thm_convergence_to_invariant"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Redo the decomposition with the correct three-term identity, and verify (or assume with justification) that π_{Δt}/π or π̃_{Δt}/π is uniformly bounded in Δt to apply finite-time convergence with the invariant initial law.",
+      "overall_effect": "The convergence π_{Δt}(φ) → π(φ) is not established by the given proof. The theorem is likely true (a corrected decomposition with verified bounded density ratio would work), but the argument as written is invalid.",
+      "primary_affected_tag": "thm_convergence_to_invariant",
+      "target_type": "formal_result",
+      "title": "Invalid algebraic decomposition in convergence-to-invariant proof",
+      "why_classification": "The proof needs restructuring (a corrected decomposition) and a nontrivial verification of the bounded density ratio hypothesis. The theorem's conclusion is plausible and likely provable with these corrections, avoiding major loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$ \\exp(-a\\norm{x}_{1,2}) = \\frac{a}{\\sqrt{2\\pi}} \\int_0^\\infty \\frac{1}{\\sqrt{\\eta}} \\exp\\pa{-\\frac{\\norm{x}^2}{2\\eta} - \\frac{a^2 \\eta}{2}} d\\eta, $$",
+          "tag": null
+        },
+        {
+          "quote": "$$ \\pi(u,v) \\propto \\prod_{i=1}^K u_i \\exp\\pa{-\\beta\\pa{\\frac{\\lambda}{2}\\norm{(u,v)}^2 + G(u\\odot v)  }}, $$",
+          "tag": null
+        },
+        {
+          "quote": "Likewise, the Langevin dynamics are identical to the $\\ell_1$ setting, except $\\odot$ and the different dimensions of $u$ and $v$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Three errors: (1) ‖x‖_{1,2} = Σ‖x_{b_j}‖² is just ‖x‖₂² (not the group Lasso penalty Σ‖x_{b_j}‖₂); (2) the displayed Gaussian mixture with a single η and ‖x‖² in the integrand evaluates to exp(−a‖x‖₂), not exp(−a‖x‖_{1,2}) for either definition; (3) the Hadamard reparameterization for groups of size |b_i| > 1 requires Jacobian factor ∏u_i^{|b_i|}, not ∏u_i, so the Langevin dynamics are not identical to the ℓ₁ case—the log-potential coefficient of log u_i becomes |b_i| instead of 1.",
+      "failure_location": {
+        "quote": "One trivial extension is to   the group $\\ell_1$ prior: $\\norm{x}_{1,2}\\eqdef \\sum_{j=1}^K \\norm{x_{\\mathbf b_j}}^2$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Correct the definition to Σ‖x_{b_j}‖₂, use per-group Laplace integrals with separate η_j, derive the correct Jacobian factor ∏u_i^{|b_i|}, and modify the Langevin dynamics accordingly (the 1/u_i drift becomes |b_i|/u_i).",
+      "overall_effect": "The claimed group ℓ₁ extension is mathematically wrong: the definition, the Gaussian mixture formula, the marginal claim, the reparameterized density, and the claim of identical dynamics are all incorrect. No main results depend on this extension.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Wrong group ℓ₁ definition and Gaussian mixture formula in conclusion",
+      "why_classification": "The correct extension is straightforward to write down (per-group Laplace integrals with modified Jacobian and drift). All main results survive; only the speculative future-work claim changes."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2411.11403",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6784ba6dc605cc8eefc0c8ea7f8b1fcff2d4adc0502277ef42f1334736e81db5",
+  "status": "ok"
+}

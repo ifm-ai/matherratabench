@@ -1,0 +1,101 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then there exists a constant $\\zeta > 0$ such that for every $z \\in \\cS$, one can find a point $y \\in \\cY$ (possibly depending on $z$) satisfying $\\bc(y, z) \\leq -\\zeta$.",
+          "tag": "thm:UniSlater"
+        },
+        {
+          "quote": "Using this and \\eqref{direct-deriv}, we obtain $\\bc_{j}(y(t), z) < 0$ with $y(t) \\in \\cY$ for all sufficiently small $t > 0$, which contradicts \\eqref{bc-ineq2}.",
+          "tag": "thm:UniSlater"
+        }
+      ],
+      "failure_explanation": "The negation of the theorem's conclusion yields, for each k, a point z^k in the compact set S such that for every y in Y there exists some index j (depending on y) with \\bc_j(y,z^k) > -\\zeta_k; i.e., the m open sets {y: \\bc_j(y,z^k) > -\\zeta_k} cover Y. It does NOT yield a single index j with \\bc_j(y,z^k) > -\\zeta_k for all y in Y. The proof derives its contradiction only under this stronger single-index hypothesis, so the proof is invalid as written. The conclusion is nonetheless true: a correct proof passes to z^k -> z, notes that psi(y) := max_j \\bc_j(y,z) is convex (each \\bc_j(.,z) is a convex quadratic), satisfies psi >= 0 on Y with psi(z) = max_j c_j(z) = 0, so z minimizes psi over Y; the first-order condition gives v in conv{grad c_j(z): j in I(z)} with <v, y~ - z> >= 0 for all y~ in Y, while MFCQ gives <grad c_j(z), y~ - z> < 0 for all j in I(z), a contradiction.",
+      "failure_location": {
+        "quote": "Then there exist a positive sequence $\\{\\zeta_k\\}$, a sequence $\\{z^k\\} \\subset \\cS$, and some $j \\in \\{1,...,m\\}$ such that $\\lim_{k\\to\\infty }\\zeta_k = 0$ and  \\beq \\label{bc-ineq1} \\bc_{j}(y, z^k) > -\\zeta_k \\quad  \\forall y\\in\\cY, \\, \\forall k.",
+        "tag": "thm:UniSlater"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the proof's case analysis with the compactness/convexity argument: from the failure of the conclusion obtain z^k -> z in S with psi(y) := max_j \\bc_j(y,z) >= 0 on Y and psi(z) = 0; since psi is convex and MFCQ supplies a strict descent direction at z against every active gradient grad c_j(z), z cannot minimize psi over Y, giving the contradiction.",
+      "overall_effect": "The stated proof of the uniform Slater property (thm:UniSlater) is invalid; however the theorem's conclusion is true, so its uses — the Slater condition and multiplier existence in thm:sub_well, and the multiplier bounds in lambda-bound and lambda-uniform-bound — are not mathematically invalidated once the proof is repaired.",
+      "primary_affected_tag": "thm:UniSlater",
+      "target_type": "formal_result",
+      "title": "thm:UniSlater proof uses an unjustified single-index contradiction hypothesis",
+      "why_classification": "No mathematical content is lost (the theorem is true and all downstream results stand), but the written proof's core reduction is unjustified and cannot be patched locally; a contained but nontrivial replacement argument (convexity of the max function plus the first-order optimality condition against MFCQ) is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\phi(z^{k+1}) = \\widetilde{L}(z^{k+1}, \\lambda^k)= \\min_z \\widetilde{L}(z, \\lambda^k) \\leq \\widetilde{L}(\\hat{y}^k, \\lambda^k) = \\phi(\\hat{y}^k) + \\langle \\lambda^k, \\bc(\\hat{y}^k, z^k) \\rangle \\leq \\phi(\\hat{y}^k) - \\zeta \\|\\lambda^k\\|_1.",
+          "tag": "lambda-bound"
+        },
+        {
+          "quote": "\\|\\lambda^k\\|_1 \\leq \\zeta^{-1} \\big(\\phi(\\hat{y}^k) - \\phi(z^{k+1})\\big) \\leq \\zeta^{-1} \\Big(\\langle \\nabla g(z^k), \\hat{y}^k-z^{k+1} \\rangle + \\frac{L_k}{2}\\|\\hat{y}^k-z^{k+1}\\|^2 + q(\\hat{y}^k) - q(z^{k+1})\\Big).",
+          "tag": "lambda-bound"
+        },
+        {
+          "quote": "z^{k+1, i} = &\\mathop{\\arg\\min}_z \\Big\\{ \\langle \\nabla g(z^k), z \\rangle + \\frac{L_{k, i}}{2}\\|z - z^k\\|^2 + q(z) \\Big\\}",
+          "tag": "algo_implement:subsolver"
+        }
+      ],
+      "failure_explanation": "The subproblem solved in the k-th outer iteration includes +q(z) in its objective, so its Lagrangian is phi(z) + q(z) + <lambda, \\bc(z,z^k)>, not phi(z) + <lambda, \\bc(z,z^k)> as defined; hence z^{k+1} = argmin \\widetilde L(.,lambda^k) is false and the displayed chain does not follow. Moreover, the second displayed inequality requires (L_k/2)(||y^- - z^k||^2 - ||z^{k+1}-z^k||^2) <= (L_k/2)||y^- - z^{k+1}||^2, i.e. <y^- - z^{k+1}, z^{k+1} - z^k> <= 0, which fails in general (e.g., z^k=0, z^{k+1}=1, y^-=3). The bound \\eqref{prop1_explicitBound} is nonetheless correct: the valid chain is zeta||lambda^k||_1 <= phi(y^-) - phi(z^{k+1}) + q(y^-) - q(z^{k+1}) <= G D_Y + (bar L /2) D_Y^2 + M_q, using (L_k/2)(||y^- - z^k||^2 - ||z^{k+1}-z^k||^2) <= (L_k/2)||y^- - z^k||^2 <= (bar L/2) D_Y^2.",
+      "failure_location": {
+        "quote": "z^{k+1} = \\mathop{\\arg\\min}_z \\widetilde{L}(z, \\lambda^k), \\] where \\[\n\\widetilde{L}(z, \\lambda) =\\phi(z) + \\langle \\lambda, \\bc(z, z^k) \\rangle \\ \\ \\text{with} \\ \\ \\phi(z)= \\langle \\nabla g(z^k), z \\rangle + \\frac{L_k}{2}\\|z - z^k\\|^2.",
+        "tag": "lambda-bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redefine the Lagrangian to include q(z), i.e., \\widetilde L(z,lambda) = phi(z) + q(z) + <lambda, \\bc(z,z^k)>, and bound the quadratic term by (L_k/2)||y^- - z^k||^2 <= (bar L/2) D_Y^2 instead of (L_k/2)||y^- - z^{k+1}||^2; the final bound and all constants are preserved.",
+      "overall_effect": "The proof of the multiplier bound in Lemma lambda-bound is defective in two spots, but the stated bound (with its constant 1/2 on the bar L D_Y^2 term) is correct, so lem:added-1, Theorem thm:sub_iters (via A), and Lemma lambda-uniform-bound (via A_f) are unaffected.",
+      "primary_affected_tag": "lambda-bound",
+      "target_type": "formal_result",
+      "title": "Proof of Lemma lambda-bound uses a Lagrangian that omits q(z) and an invalid quadratic inequality",
+      "why_classification": "Both defects are confined to one displayed inequality chain; the repair (add q(z) to the Lagrangian and use the trivial bound (L_k/2)||y^- - z^k||^2 <= (bar L/2) D_Y^2) is short, routine, and preserves the bound, its constants, and every downstream result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|z^{\\ell+1}-z^\\ell\\| \\leq \\sqrt{\\frac{2(r_\\ell - r_{\\ell+1})}{\\beta}} \\leq (2/\\beta)^{\\frac{1}{2}} r_{\\ell}^{\\frac{1}{2}} \\leq \\tau/\\omega.",
+          "tag": "thm:sub_iters"
+        },
+        {
+          "quote": "Case a): $\\theta = 1/2$. By this, \\eqref{thm3:overK}, and $\\ell \\geq \\overline{K}_\\theta - 1$, one has $\\ell \\geq \\log_{1+\\alpha}\\big(\\frac{2\\omega^2\\eta}{\\beta \\tau^2}\\big)$.",
+          "tag": "thm:sub_iters"
+        },
+        {
+          "quote": "\\|\\nabla g(z^{k+1}) - \\nabla g(z^k) - L_k(z^{k+1}-z^k)\\|^2 + 4 \\Big(\\sum_{j=1}^m \\lambda^k_j L_{c_j} \\Big)^2 \\|z^{k+1}-z^k\\|^2 \\leq \\tau^2.",
+          "tag": "algo_implement:subsolver"
+        }
+      ],
+      "failure_explanation": "The step bound ||z^{k+1}-z^k|| <= tau/omega is derived 'by similar arguments as above', but the argument above obtains it from r_ell <= beta tau^2/(2 omega^2), which is only established for ell >= \\overline K_theta - 1 via the convergence-rate bounds; the algorithm may terminate at an earlier outer iteration, where this bound on r_k is unavailable, and the claim can fail (e.g., when the model curvature L_k matches the local curvature of g and no constraint is active, the termination test passes with a step larger than tau/omega). The output guarantee is nevertheless correct: writing a = ||grad g(z^{k+1}) - grad g(z^k) - L_k(z^{k+1}-z^k)|| and b = 2(sum_j lambda^k_j L_{c_j})||z^{k+1}-z^k||, the element v of \\partial \\bh(z^{k+1},z^k) exhibited in \\eqref{lem3_subdiffElem} satisfies ||v|| <= sqrt(a^2 + b^2) <= tau by the termination test, so dist(0, \\partial \\bh(z^{k+1},z^k)) <= tau and the KL condition yields \\eqref{thm3:output}.",
+      "failure_location": {
+        "quote": "By similar arguments as above, one has that $0<L_k\\le\\bar L$, $\\|\\lambda^k\\|_\\infty\\le A$, and $\\|z^{k+1}-z^k\\|\\le  \\tau/\\omega$.",
+        "tag": "thm:sub_iters"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the claimed step bound with the direct estimate dist(0, \\partial \\bh(z^{k+1},z^k)) <= ||v|| <= sqrt(a^2 + b^2) <= tau, where v is the subdifferential element of \\eqref{lem3_subdiffElem} and a, b are the two terms of the termination test; the KL inequality then gives the stated output bound.",
+      "overall_effect": "One intermediate step in the output-guarantee part of the proof of thm:sub_iters is unjustified (and false in general), but the claimed guarantee h(z^{k+1}) - h^* <= (C^{-1} tau)^{1/theta} is correct via the direct termination-condition estimate, so thm:sub_iters and its uses in thm:operations are unaffected.",
+      "primary_affected_tag": "thm:sub_iters",
+      "target_type": "formal_result",
+      "title": "thm:sub_iters output-guarantee proof claims an unjustified step bound at the output iteration",
+      "why_classification": "The conclusion is correct and the single defective intermediate claim is replaced by a one-line direct estimate from the termination test, with no loss of any guarantee, rate, or downstream result."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2510.01168",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d17b6d2db9f9f8947adf6598ba23ac99b5546b1c478249f69c37b19e3c5cf5a5",
+  "status": "ok"
+}

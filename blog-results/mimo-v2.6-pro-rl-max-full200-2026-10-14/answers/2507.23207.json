@@ -1,0 +1,212 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Compute MTTKRP $\\M{Y}_{(i)} \\leftarrow \\M{G}_{(i)}( \\M{\\Omega}^{(d)} \\odot \\dots \\odot \\M{\\Omega}^{(i+1)} \\odot \\M{\\Omega}^{(i-1)} \\odot \\dots \\odot \\M{\\Omega}^{(1)})$",
+          "tag": "alg:rst_krp"
+        },
+        {
+          "quote": "ST-HOSVD performs the truncation sequentially across modes by projecting the tensor onto lower-dimensional subspaces one mode at a time.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Sequential truncation requires the mode-i factor to be taken from the mode-i unfolding of the partially truncated core G^(i-1); taking it from X_(i) makes the loop reproduce HOSVD's factors (with a sequential core update), which is not the ST-HOSVD of the cited reference and is inconsistent with its randomized counterpart alg:rst_krp (and with the analysis in thm:added-2, which needs Q_i to come from G^(i-1)).",
+      "failure_location": {
+        "quote": "Compute $\\M{Q}_i$, $\\M{Q}_i$ =  leading $r_i$ left singular vectors of $\\M{X}_{(i)}$",
+        "tag": "alg:sthosvd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace X_(i) by the current core unfolding G_(i) in the factor computation of alg:sthosvd.",
+      "overall_effect": "Algorithm alg:sthosvd does not compute the ST-HOSVD approximation it is presented as; the error behavior advertised for the ST-HOSVD baseline is not delivered.",
+      "primary_affected_tag": "alg:sthosvd",
+      "target_type": "algorithm",
+      "title": "ST-HOSVD computes Q_i from the full tensor unfolding instead of the current core",
+      "why_classification": "A one-token, forced local correction restores exactly the stated algorithm and all downstream comparisons, with no change to any theorem, rate or scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2",
+        "thm:subspaceembed"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, $\\mu_{\\min} = \\ell$.",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "we define the event $\\mc{E} = \\left\\{  \\max_{1 \\leq k \\leq \\ell}\\|\\M{W}\\t\\M{\\Omega}(:,k)\\|_2^2 \\leq \\Delta \\right\\}$",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "define the parameters\n\\[ \\mu_{\\min} = \\lambda_{\\min} (\\expect \\M{Y})",
+          "tag": "thm:chernoff"
+        }
+      ],
+      "failure_explanation": "The value mu_min = ell is lambda_min(E[Y]) for the unconditional sum. The bound is then asserted conditional on E = {max_k ||S_k|| <= Delta}; under that conditioning each summand is truncated and E[S_k | E] != W^T W, so lambda_min(E[Y | E]) < ell in general and Theorem thm:chernoff cannot be invoked with mu_min = ell (likewise mu_max = ell||Z||_2^2 in Step 2). The claimed conditional Chernoff bound therefore does not follow.",
+      "failure_location": {
+        "quote": "\\prob\\{\\lambda_{\\min}(\\M{Y}) \\leq (1-\\epsilon)\\ell \\left| \\mc{E} \\right. \\} \\leq  r \\left[ \\frac{e^{-\\epsilon}}{(1-\\epsilon)^{1-\\epsilon}} \\right]^{\\ell/\\Delta}",
+        "tag": "thm:tantheta"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the conditioning step by a truncation argument: apply matrix Chernoff to the independent truncated summands and bound the truncation bias E[S_k 1_{||S_k||>Delta}] (e.g. via a fourth-moment estimate obtainable from the paper's own L^p bound) to get mu_min >= (1-eta)ell with an explicit small eta, then absorb eta into epsilon/the sample-size constant.",
+      "overall_effect": "The central concentration lemma and every result built on it (randomized range finder bound, single-view bound, RHOSVD-KRP/RSTHOSVD-KRP error bounds, subspace embedding) lose their stated probability guarantees as written.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "Matrix Chernoff applied after conditioning with the unconditional mu_min",
+      "why_classification": "The repair needs a new contained moment/truncation lemma and slightly enlarges constants in the sample-size conditions, but no new proof architecture and no loss of rate, regime, or scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We can bound $f(\\varepsilon) \\leq e^{-\\varepsilon^2/(2+\\varepsilon)}$ for $\\varepsilon \\geq 0$.",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "\\Gamma = \\frac{\\strank(\\M{Z}) }{\\ell } \\left(1 +  C_{K,d} \\ln^d(8\\ell/\\delta)\\right)\\ln\\left(\\frac{4(N-r)}{\\delta}\\right)",
+          "tag": "thm:tantheta"
+        }
+      ],
+      "failure_explanation": "Setting the exponent equal to the failure level gives eps^2/(2+eps) = Gamma, i.e. eps^2 - Gamma*eps - 2*Gamma = 0, whose positive root is (Gamma + sqrt(Gamma^2+8*Gamma))/2. Substituting eps = 2*Gamma gives 2*Gamma^2/(1+Gamma) >= Gamma only when Gamma >= 1; for Gamma < 1 (which occurs whenever ell is large relative to strank(Z)*log factors) 2*Gamma is below the threshold and the claimed tail bound at (1+2*Gamma) is not obtained.",
+      "failure_location": {
+        "quote": "choose the positive root to get $\\varepsilon = 2 \\Gamma$",
+        "tag": "thm:tantheta"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Take eps = 2*Gamma + 1/2 (which satisfies eps^2/(2+eps) >= Gamma for all Gamma >= 0) or the exact positive root, and propagate the resulting slightly larger constant into the statements of thm:tantheta and its dependents.",
+      "overall_effect": "The constants (1+2*Gamma) in the upper-spectrum bound of thm:tantheta and the corresponding factors in thm:rrf, thm:added-1, thm:rhsovd_krp and thm:added-2 are unsupported in the regime Gamma < 1.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "Positive root of the Chernoff quadratic is not 2*Gamma",
+      "why_classification": "A one-line change of the chosen eps, giving only a small constant enlargement (e.g. 2+4*Gamma becomes 3+4*Gamma), preserves every method, rate, regime and guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Q\\equiv \\min\\{M,N\\} \\geq \\ell \\geq  8(r + rC_{K,d}\\ln^d(8\\ell/\\delta))\\ln(4r/\\delta)",
+          "tag": "thm:rrf"
+        },
+        {
+          "quote": "The assumptions on $\\ell_r$ ensure that, by \\cref{thm:rrf}, $\\prob\\{\\mc{E}^c\\}\\le \\delta/2$.",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "thm:rrf (and thm:tantheta, which inherits the same condition) require ell >= 8(r + r C ln^d(8 ell/delta)) ln(4r/delta). Replacing delta by delta/2 gives 8(r + r C ln^d(16 ell/delta)) ln(8r/delta). The stated hypotheses of thm:added-1 drop the leading factor 8 both for ell_r and for ell_l, so the invoked results are applied outside their hypotheses and the asserted failure probability 1-delta does not follow.",
+      "failure_location": {
+        "quote": "q  \\ge \\ell_r \\ge & \\> r (1 + C_{K,d}\\ln^d(16\\ell_r/\\delta))\\ln(8r/\\delta)",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Multiply the two lower bounds for ell_r and ell_l by 8 (i.e. require ell_r >= 8r(1+C_{K,d} ln^d(16 ell_r/delta)) ln(8r/delta) and analogously for ell_l).",
+      "overall_effect": "The high-probability error bound of thm:added-1 is unproved for the advertised range of sketch sizes (those satisfying the stated but too-weak lower bounds).",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Single-view theorem's sketch-size hypotheses are a factor 8 too weak",
+      "why_classification": "Adding a constant factor to a standard local sample-size condition preserves the conclusion, the rate and the scope of the theorem unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\M{Y}_{(i)} = \\M{A}_i \\M{X}_{(i)} (\\M{A}_d \\kron \\cdots \\kron \\M{A}_{i+1} \\kron \\M{A}_{i-1} \\kron \\cdots \\kron \\M{A}_1)",
+          "tag": null
+        },
+        {
+          "quote": "where the inequality comes as each $ \\M{Q}_i$ has orthonormal columns",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "G^(i-1)_(i) has prod_{k<i} ell_k prod_{k>i} n_k columns, while I (x)...(x) Q_{i-1} (x)...(x) Q_1 has prod_{k<i} n_k prod_{k>i} n_k rows; the product is undefined unless prod_{k<i} ell_k = prod_{k<i} n_k. The stated identity in the Notation section is likewise dimensionally impossible (it lacks the transpose of the Kronecker factor). With the transposed factor the product has orthonormal rows and the norm identity holds with equality, so the given justification (orthonormal columns) is also the wrong one.",
+      "failure_location": {
+        "quote": "\\| (\\M{I}- \\M{Q}_i\\M{Q}_i^\\top ) \\M{G}_{(i)}^{(i-1)} (\\underbrace{\\M{I} \\kron \\dots \\kron \\M{I}}_{d-i} \\kron \\M{Q}_{i-1} \\kron \\dots \\kron \\M{Q}_1) \\|_F^2",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Transpose the Kronecker factor (I (x)...(x) Q_{i-1} (x)...(x) Q_1)^T = Q_1^T (x)...(x) Q_{i-1}^T (x) I (x)...(x) I and justify the norm bound by the orthonormal rows of that factor (in fact equality holds).",
+      "overall_effect": "The error decomposition display in the proof of thm:added-2 is not a valid identity; the Frobenius-norm inequality that follows from it is asserted for the wrong reason.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "Mode-unfolding identity for multilinear transforms is dimensionally invalid",
+      "why_classification": "The corrected display yields the same inequality (indeed equality), so the theorem statement, its rate and its scope survive with a purely local repair of the identity and its justification."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mc{E}_t = \\left\\{ \\sum_{i=1}^t\\| (\\M{I}- \\M{Q}_i\\M{Q}_i^\\top ) \\M{G}_{(i)}^{(i-1)} \\|_F^2 \\le \\sum_{i=1}^t(1 + 2r_i(1+2\\Gamma_i)) \\sum_{j=r_i+1}^{n_i} \\sigma_j^2 (\\M{X}_{(i)})\\right\\}",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "E_t says only that the cumulative error S_t = sum_{i<=t} e_i does not exceed the cumulative bound B_t = sum_{i<=t} b_i. From S_t <= B_t one cannot conclude S_t + e_{t+1} <= B_t + b_{t+1}; that needs the separate event e_{t+1} <= b_{t+1}. Hence the asserted chain of inclusions is false, and the conditional recursion that is built on this family of events cannot rely on it.",
+      "failure_location": {
+        "quote": "note that $ \\mc{E}_1 \\subseteq \\dots \\subseteq \\mc{E}_t \\subseteq \\mc{E}_{t+1} \\subseteq \\dots \\subseteq \\mc{E}_d$",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Redefine E_t as the intersection of the first t per-mode events (which is nested), or delete the nesting claim and run the recursion directly on the per-mode events using fresh randomness at each mode.",
+      "overall_effect": "A stated justification inside the proof of thm:added-2 is false; the probability recursion must instead be run on the per-mode events.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "False nesting claim for the cumulative error events in RSTHOSVD-KRP proof",
+      "why_classification": "A local redefinition/deletion restores the (already available) conditional bound and yields exactly the same conclusion and probability 1-delta."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\ENSURE  $\\T{X}\\hada \\T{Y} \\approx \\T{Z}=\\T{H}\\times_1 \\M{U}_1 \\times_2 \\M{U}_2 \\times_3 \\M{U}_3$",
+          "tag": "alg:randHadaTucker"
+        },
+        {
+          "quote": "$\\M{U}_1 = \\text{orth}(\\M[\\hat]{X})$",
+          "tag": "alg:randHadaTucker"
+        }
+      ],
+      "failure_explanation": "The matrices M{X}, M{Y}, M{Z} in the truncation line are never defined (the algorithm defines only the sketches hat X, hat Y, hat Z and the orthonormal factors U_1, U_2, U_3). Read as the sketches, the line gives H = Z x_1 hatX^T x_2 hatY^T x_3 hatZ^T, so the output equals Z x_1 (U_1 hatX^T) x_2 (U_2 hatY^T) x_3 (U_3 hatZ^T) = Z x_1 (U_1 R_1^T U_1^T) ..., which is not the projection of Z onto the computed bases (that requires H = Z x_1 U_1^T x_2 U_2^T x_3 U_3^T) and is not the promised Tucker approximation.",
+      "failure_location": {
+        "quote": "\\T{H} = (\\T{F}\\kron\\T{G}) \\times_1 \\M{X}^{\\t}(\\M{A}\\krt \\M{U}) \\times_2 \\M{Y}^{\\t}(\\M{B}\\krt \\M{V}) \\times_3 \\M{Z}^{\\t}(\\M{C}\\krt \\M{W})",
+        "tag": "alg:randHadaTucker"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "In the truncation line replace M{X}^T, M{Y}^T, M{Z}^T by U_1^T, U_2^T, U_3^T so that H = (X hadamard Y) x_1 U_1^T x_2 U_2^T x_3 U_3^T and the ENSURE statement holds.",
+      "overall_effect": "As written, Algorithm alg:randHadaTucker is not executable and, under the natural reading of its undefined symbols, does not return the approximation stated in its output contract; the claimed theoretical justification of the Kressner-Perisa recompression via thm:rhsovd_krp is not delivered by the stated procedure.",
+      "primary_affected_tag": "alg:randHadaTucker",
+      "target_type": "algorithm",
+      "title": "Core-truncation step of randomized Hadamard recompression uses undefined matrices",
+      "why_classification": "The correction is confined to three symbols in one line and leaves the sketches, the structured evaluation, the output format and all guarantees intact; no new construction or argument is needed."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2507.23207",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n01",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "35f9666b0e59513382f1e39876245c9aa4f2c7bded3e783f01beb294b5f7ba3d",
+  "status": "ok"
+}

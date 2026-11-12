@@ -1,0 +1,285 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Unlike HOSVD, sequentially truncated HOSVD (ST-HOSVD) performs the truncation sequentially across modes by projecting the tensor onto lower-dimensional subspaces one mode at a time.",
+          "tag": null
+        },
+        {
+          "quote": "\\STATE Update core $\\T{G} \\leftarrow \\T{G} \\times_i \\M{Q}_i^\\top$",
+          "tag": "alg:sthosvd"
+        }
+      ],
+      "failure_explanation": "Every factor is computed from the unchanged original unfolding, rather than from the current compressed core. Thus the executable algorithm is HOSVD with sequential core formation, not ST-HOSVD. In particular, its later SVDs do not benefit from the progressively reduced dimensions assumed in the ST-HOSVD cost comparison.",
+      "failure_location": {
+        "quote": "\\STATE Compute $\\M{Q}_i$, $\\M{Q}_i$ =  leading $r_i$ left singular vectors of $\\M{X}_{(i)}$",
+        "tag": "alg:sthosvd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Compute the leading left singular vectors of the current core unfolding G_(i) before performing each core update.",
+      "overall_effect": "The deterministic ST-HOSVD procedure and its claimed computational distinction from HOSVD are not implemented as stated.",
+      "primary_affected_tag": "alg:sthosvd",
+      "target_type": "algorithm",
+      "title": "The stated ST-HOSVD algorithm computes factors from the original tensor",
+      "why_classification": "This is a local change to one executable step, using the current core already maintained by the algorithm; no new method or analysis is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "rem:lowbound",
+        "lem:kronrank1",
+        "lem:kronrankell",
+        "thm:tantheta",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2",
+        "thm:subspaceembed"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "are independent random matrices whose entries are mean zero, unit variance,  subgaussian random variables, with subgaussian norm  bounded by $K \\geq 1$.",
+          "tag": "def:subgauss"
+        },
+        {
+          "quote": "where $\\{\\V{\\omega}_j\\}_{j=1}^d$ are independent, and have independent entries with zero mean and unit variance.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Independence of the factor matrices does not imply independence of entries within a factor or independence of its columns. For example, take each factor to be an all-ones matrix multiplied by one Rademacher variable, independently across factors. This satisfies the definition, but all KRP columns coincide and their covariance is the all-ones matrix, not the identity. The proof introduces an additional independence premise.",
+      "failure_location": {
+        "quote": "The random matrix has independent and isotropic columns, i.e., $\\expect[\\V{\\Omega}(:,k)] = \\V{0}$ and $\\expect[\\V{\\Omega}(:,k)\\V{\\Omega}(:,k)\\t]  = \\M{I}_{N}$ for $1 \\leq k \\leq \\ell$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Explicitly require mutual independence of the entries within each factor matrix, in addition to independence among factors, as already assumed in the proofs.",
+      "overall_effect": "The isotropy, independent-sample concentration, and subsequent guarantees do not hold for the full class admitted by Definition def:subgauss.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "The KRP definition does not supply the entrywise independence used throughout",
+      "why_classification": "Making this standard sampling hypothesis explicit is a local repair that preserves the independent-entry sketching methods, distribution choices, and rates analyzed in the paper."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Without any loss of generality, assume that $\\M{V}$ is nonzero.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The statement allows V=0. Then its event is {0≥0}, with probability one, whereas the right side is less than one for t>C_{K,d}(ln 2)^d. Consequently, excluding V=0 in the proof is not without loss of generality for the stated non-strict tail event.",
+      "failure_location": {
+        "quote": "\\prob\\{\\|\\M{V}\\t \\V{\\omega}\\|_2^2 \\ge \\|\\M{V}\\|_F^2+ \\|\\M{V}\\|_F^2t  \\} \\le  2\\exp(- (t/ C_{K,d})^{1/d}) \\qquad t > 0.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "State the lemma for nonzero V and handle V=0 directly wherever needed, or formulate the tail event with a strict inequality.",
+      "overall_effect": "The tail lemma fails in an explicitly permitted degenerate case; the downstream zero-matrix norm bounds themselves are trivial.",
+      "primary_affected_tag": "lem:kronrank1",
+      "target_type": "formal_result",
+      "title": "The one-column tail lemma is false for the zero matrix",
+      "why_classification": "A routine boundary-case correction preserves the substantive concentration and approximation guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "rem:lowbound",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2",
+        "thm:subspaceembed"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Furthermore,  $\\expect[\\M{Y}] = \\sum_{k=1}^\\ell\\M{W}\\t\\expect [\\M{\\Omega}(:,k)\\M{\\Omega}(:,k)\\t] \\M{W} = \\ell \\M{I}_r$. Therefore, $\\mu_{\\min} = \\ell$.",
+          "tag": null
+        },
+        {
+          "quote": "we define the event $\\mc{E} = \\left\\{  \\max_{1 \\leq k \\leq \\ell}\\|\\M{W}\\t\\M{\\Omega}(:,k)\\|_2^2 \\leq \\Delta \\right\\}$",
+          "tag": null
+        },
+        {
+          "quote": "\\mu_{\\min} = \\lambda_{\\min} (\\expect \\M{Y}) \\qquad \\mu_{\\max} = \\lambda_{\\max}(\\expect \\M{Y})",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Conditional Chernoff requires the conditional mean E[Y|E], not the unconditional mean ℓI. The event factors over columns, so independence can survive, but isotropy generally does not. Already for a scalar Gaussian projection, conditioning every squared entry to be at most a finite cutoff reduces its mean below one. The analogous conditional application in Step 2 has the same unaddressed change of mean.",
+      "failure_location": {
+        "quote": "\\prob\\{\\lambda_{\\min}(\\M{Y}) \\leq (1-\\epsilon)\\ell \\left| \\mc{E} \\right. \\} \\leq  r \\left[ \\frac{e^{-\\epsilon}}{(1-\\epsilon)^{1-\\epsilon}} \\right]^{\\ell/\\Delta}  \\qquad \\epsilon \\in [0,1).",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use independent zero-truncated summands and bound the lost covariance by integrating the available column-norm tail bound. A larger cutoff, such as one with a doubled logarithm, supplies room to control this bias; rerun Chernoff with the truncated mean and propagate the resulting safety constants through the dependent results.",
+      "overall_effect": "The principal singular-value concentration argument, and hence the range-finding, tensor-compression, single-view, and subspace-embedding proofs, are not established as written.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "Conditioning on bounded column norms changes the mean used in matrix Chernoff",
+      "why_classification": "The supplied tail estimates support a contained truncation-and-bias argument with comparable asymptotic bounds, but a nontrivial additional lemma and revised constants are required."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "(N-r)(f(\\varepsilon))^{\\mu_{\\max}/\\Delta} \\leq (N-r)e^{-\\varepsilon^2\\mu_{\\max}/((2+\\varepsilon)\\Delta) }.",
+          "tag": null
+        },
+        {
+          "quote": "\\prob\\left\\{  \\|\\M{Z}\\t\\M{\\Omega}\\|_2^2 \\geq (1+2 \\Gamma)\\ell \\|\\M{Z}\\|_2^2  \\right\\} \\leq \\delta/2",
+          "tag": "eqn:interupper2"
+        }
+      ],
+      "failure_explanation": "The required equation is ε²/(2+ε)=Γ, whose positive root is (Γ+sqrt(Γ²+8Γ))/2. Substituting ε=2Γ meets the required inequality only when Γ≥1. No such lower bound is assumed; rank-one Z and sufficiently large ℓ allow Γ to approach zero. Thus the asserted upper-tail estimate does not follow even if the conditioning problem is independently repaired.",
+      "failure_location": {
+        "quote": "Set the upper bound equal to $\\delta/4$, solve the quadratic equation for $\\varepsilon$,  and choose the positive root to get $\\varepsilon = 2 \\Gamma$, where $\\Gamma$ is defined in the statement of the theorem.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Use the actual positive root and propagate its factor, or use ε=1+2Γ, which gives a valid comparable bound with product factor 4(1+Γ) instead of 2(1+2Γ).",
+      "overall_effect": "The small-Gamma upper-tail estimate and the approximation-error factors obtained from it are unsupported.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "The upper-tail quadratic is solved incorrectly when Gamma is small",
+      "why_classification": "A contained reoptimization and limited weakening of the explicit error constants suffice; no new global argument or approximation regime is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "q  \\ge \\ell_r \\ge & \\> r (1 + C_{K,d}\\ln^d(16\\ell_r/\\delta))\\ln(8r/\\delta)",
+          "tag": null
+        },
+        {
+          "quote": "q \\ge \\ell_l \\ge & \\> \\ell_r (1 + C_{K,d}\\ln^d(16\\ell_l/\\delta))\\ln(8\\ell_r/\\delta)",
+          "tag": null
+        },
+        {
+          "quote": "Q\\equiv \\min\\{M,N\\} \\geq \\ell \\geq  8(r + rC_{K,d}\\ln^d(8\\ell/\\delta))\\ln(4r/\\delta)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Applying thm:rrf with failure probability δ/2 requires eight times the stated right-hand side for ℓ_r. Applying the corresponding lower-singular-value argument to the left sketch requires the same missing factor for ℓ_l. The displayed hypotheses therefore do not meet the hypotheses invoked in either stage.",
+      "failure_location": {
+        "quote": "The assumptions on $\\ell_r$ ensure that, by \\cref{thm:rrf}, $\\prob\\{\\mc{E}^c\\}\\le \\delta/2$.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restore the factor 8 in both sketch-size lower bounds, independently of any further changes needed to repair the underlying concentration result.",
+      "overall_effect": "The claimed single-view failure probability is not justified for the advertised sketch-size range.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "The single-view sketch sizes omit the factor required by the cited theorem",
+      "why_classification": "This directly reinstates an available numerical hypothesis, preserving the method, error-bound form, and asymptotic sketch-size regimes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\M{M}-\\M{QQ}\\t\\M{M}\\|_F^2 \\le (1 + 2r(1+\\Gamma_r))\\|\\M\\Sigma_\\perp\\|_F^2.",
+          "tag": null
+        },
+        {
+          "quote": "\\|\\M{M} - \\M{QQ}\\t\\M{M}\\|_F^2   +\\ell_r \\|\\M{Z}\\t\\M{\\Psi}\\|_2^2 \\| (\\M{\\Psi}\\t\\M{Q})^\\dagger\\|_2^2",
+          "tag": "eqn:twosided"
+        },
+        {
+          "quote": "2\\left(1 + 2\\Gamma_l\\right)\\|\\M{Z}\\|_F^2",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Even granting the cited concentration results, thm:rrf supplies 1+2r(1+2Γ_r), not the smaller event factor used in this proof. Equation eqn:twosided then requires multiplying that range-error factor by 1+2ℓ_r(1+2Γ_l). The stated multiplier omits part of this product and reduces the left-sketch correction. These reductions are not justified by any inequality; this is independent of the sketch-size defect.",
+      "failure_location": {
+        "quote": "\\|\\M{M} - \\M{Q}(\\M{\\Psi}\\t\\M{Q})^\\dagger\\M{\\Psi}\\t\\M{M}\\|_F^2 \\le (1+2r(1+2\\Gamma_r) ( 1 + 2\\ell_r(1+\\Gamma_l) ) \\|\\M\\Sigma_F\\|_2^2",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Consistently retain the cited correction factors and state the resulting bound as (1+2r(1+2Γ_r))(1+2ℓ_r(1+2Γ_l)) times ||Σ_perp||_F², with corresponding corrections to the event and intermediate estimates.",
+      "overall_effect": "The explicit single-view approximation bound is not obtained by the two-stage argument.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "The single-view error factors are not propagated consistently",
+      "why_classification": "A comparable two-stage bound survives, but the claimed quantitative guarantee must be weakened rather than merely supplied with omitted exposition."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mc{E}_t = \\left\\{ \\sum_{i=1}^t\\| (\\M{I}- \\M{Q}_i\\M{Q}_i^\\top ) \\M{G}_{(i)}^{(i-1)} \\|_F^2 \\le \\sum_{i=1}^t(1 + 2r_i(1+2\\Gamma_i)) \\sum_{j=r_i+1}^{n_i} \\sigma_j^2 (\\M{X}_{(i)})\\right\\}.",
+          "tag": null
+        },
+        {
+          "quote": "Thus, for $1\\leq t \\leq  d-1$, we have $\\prob\\{ \\mc{E}_{t+1} | \\mc{E}_t \\} \\geq 1 - \\delta/d$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A bound on a prefix sum does not imply the next prefix-sum bound: a successful first t stages can be followed by a sufficiently large next-stage error. Nor are these events generally nested in the reverse direction. The subsequent total-probability recursion needs conditional transition bounds, not the asserted inclusions.",
+      "failure_location": {
+        "quote": "note that $ \\mc{E}_1 \\subseteq \\dots \\subseteq \\mc{E}_t \\subseteq \\mc{E}_{t+1} \\subseteq \\dots \\subseteq \\mc{E}_d$.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Delete the nesting assertion and justify each transition by conditioning on the complete preceding history and using the fresh independent sketch at the next stage. The existing total-probability recursion then applies.",
+      "overall_effect": "The stated event relation in the sequential probability argument is false, although the final probability estimate can be retained.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "The cumulative-error events in the sequential proof are not nested",
+      "why_classification": "This is a routine local bypass using the independence already specified by the algorithm; no approximation or probability guarantee needs to change."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "N  \\geq \\ell \\geq  2.6\\epsilon^{-2} (r + rC_{K,d}\\ln^d(8N/\\delta))\\ln(4r/\\delta).",
+          "tag": "cor:subspaceembed"
+        },
+        {
+          "quote": "our result which predicts $\\ell = \\mc{O}(r\\ln^2(N/\\delta))$ for $d=2$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The cited sufficient sample size contains the additional factor ln(4r/δ). Suppressing dependence only on fixed ε, d, and K cannot remove it. For example, with fixed δ and r=N^(1/2), the displayed sufficient bound grows as r(ln N)^(d+1), not r(ln N)^d. The d=2 comparison repeats the same overstatement.",
+      "failure_location": {
+        "quote": "we use the bound in \\cref{cor:subspaceembed} which predicts the number of samples to be $\\mc{O}( r \\ln^d (N/\\delta))$, where we have suppressed dependence on $d$ and $K$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Retain the ln(r/δ) factor in the stated asymptotic bound and update the comparisons that use the shortened expression.",
+      "overall_effect": "The prose overstates the established sample complexity and consequently misstates the quantitative comparison with other embedding results.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The subspace-embedding comparison drops a logarithmic sample-size factor",
+      "why_classification": "The correction withdraws an unsupported logarithmic improvement, while retaining a comparable near-linear-in-r bound already supported by the displayed result."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2507.23207",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "35f9666b0e59513382f1e39876245c9aa4f2c7bded3e783f01beb294b5f7ba3d",
+  "status": "ok"
+}

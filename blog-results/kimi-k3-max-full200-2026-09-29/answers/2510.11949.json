@@ -1,0 +1,213 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:amb2D",
+        "thm:amb2D",
+        "cor:coeff_count"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For each subset of indices $T \\subseteq \\set{1, \\ldots, \\omega}$, define $n_T = N\\sum_{t \\in T} \\frac{1}{p_t}$.",
+          "tag": "lem:amb1D"
+        },
+        {
+          "quote": "Note that this construction is well defined.",
+          "tag": "lem:amb1D"
+        }
+      ],
+      "failure_explanation": "The proof builds the length-N signal by setting x_{n_T} = (-1)^{|T|} with n_T = N*sum_{t in T} 1/p_t, and justifies well-definedness only by showing the integers n_T are pairwise distinct (via lowest-terms denominators). But n_T need not lie in {0,...,N-1}: whenever sum_t 1/p_t > 1 the construction writes an entry outside the signal. For N = 30 (the paper's running example), n_{{1,2,3}} = 30*(1/2+1/3+1/5) = 31, so a length-30 signal has no 31st entry and the construction does not produce the claimed object. The lemma is true (reducing n_T mod N leaves every exponential exp(-2 pi i n_T k/N) unchanged, and the residues stay distinct), but the reduction and the required distinctness-mod-N verification are absent from the source; the displayed argument proves distinctness as integers, which does not imply distinct residues mod N.",
+      "failure_location": {
+        "quote": "For every possible value of $n_T$, let $x_{n_T} = (-1)^{\\abs{T}}$,",
+        "tag": "lem:amb1D"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Interpret all indices n_T modulo N and add the missing verification that the residues are distinct: n_{T_1} = n_{T_2} (mod N) would make sum_{T_1} 1/p_t - sum_{T_2} 1/p_t an integer, which the proof's own lowest-terms computation rules out for T_1 != T_2 (the difference keeps a prime of the symmetric difference in its reduced denominator). The lemma and all downstream statements then stand unchanged.",
+      "overall_effect": "The only proof of lem:amb1D is invalid for infinitely many N (all N whose distinct prime factors satisfy sum 1/p_t > 1, e.g. every multiple of 30). The 2D lower-bound chain that reuses this length-D signal (lem:amb2D, then thm:amb2D, then the minimal-count cor:coeff_count) is unsupported precisely in those cases, e.g. the class (k,l) = (1,1) of a 30x30 matrix has D = 30.",
+      "primary_affected_tag": "lem:amb1D",
+      "target_type": "formal_result",
+      "title": "lem:amb1D construction assigns signal entries outside the index range whenever sum_t 1/p_t > 1 (e.g. N = 30)",
+      "why_classification": "A complete repair exists and is contained in the same proof, so no statement is lost; however the central construction must be altered and a new, non-immediate distinctness-mod-N argument added, and the defective construction underlies the paper's lower bound for infinitely many parameter values, which is more than a routine local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:amb2D",
+        "thm:amb2D",
+        "cor:coeff_count"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, set $m_j = j(k/d_1)^{-1}p \\bmod{N_1}$ for the row index,",
+          "tag": "lem:subsig"
+        },
+        {
+          "quote": "m_j(k/d_1) &= jp \\pmod{N_1}",
+          "tag": "lem:subsig"
+        }
+      ],
+      "failure_explanation": "The existence part of the proof asserts that k/d_1 (with d_1 = gcd(k, N_1)) must be invertible modulo N_1 and defines m_j = j(k/d_1)^{-1} p mod N_1. This is false: k/d_1 is only guaranteed coprime to N_1/d_1 = D_1. Counterexample: N_1 = 12, k = 8 gives d_1 = 4, k/d_1 = 2 with gcd(2, 12) = 2 != 1, so the inverse mod N_1 does not exist and the first congruence m_j(k/d_1) = jp (mod N_1) of the displayed chain fails as written. With the inverse taken modulo D_1, m_j(k/d_1) = jp (mod D_1) multiplied by d_1 gives m_j k = jp d_1 (mod N_1), and the rest of the chain is valid, so the lemma's conclusion survives.",
+      "failure_location": {
+        "quote": "Since $d_1 = \\gcd(k, N_1)$ and $d_2 = \\gcd(l, N_2)$, $k/d_1$ and $l/d_2$ must have multiplicative inverses modulo $N_1$ and $N_2$, respectively.",
+        "tag": "lem:subsig"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace 'modulo N_1 and N_2' by 'modulo D_1 = N_1/d_1 and D_2 = N_2/d_2' in the invertibility claim and in the definitions of m_j, n_j; then m_j(k/d_1) = jp (mod D_1) implies m_j k = jp d_1 (mod d_1 D_1 = N_1), restoring the displayed chain verbatim with no other changes.",
+      "overall_effect": "Existence of a solution (m_j, n_j) to eq:to_satisfy for every 0 <= j < D is used to define the matrix in lem:amb2D (eq:lemma3.5) and to count the M = N_1N_2/D entries per subsignal element in lem:amb2D (and hence thm:amb2D, cor:coeff_count), as well as in the subsignal value bounds of Sections 4.5 and 5.3; as written, that existence step rests on a false claim.",
+      "primary_affected_tag": "lem:subsig",
+      "target_type": "formal_result",
+      "title": "False claim in lem:subsig proof that k/d_1 (resp. l/d_2) is invertible modulo N_1 (resp. N_2)",
+      "why_classification": "The false step has a forced, local correction (change the modulus to D_1, D_2), after which the same derivation proves the same lemma; no conclusion, guarantee, or advertised scope is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that as both ${\\bf x}$ and ${\\bf y}$ are real-valued, this last row also implies that $\\tilde{y}_{-1}=\\tilde{x}_{-1}$, as these DFT coefficients are the complex conjugates of $\\tilde{y}_1$ and $\\tilde{x}_1$.",
+          "tag": null
+        },
+        {
+          "quote": "Thus, the dimension of the search space of \\Cref{eq:ip_better} is $N-(N-\\phi(N)+2)=\\phi(N)-2$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The text asserts the conjugate last row always fixes 2 additional DFT coefficients, giving rank N - phi(N) + 2 and search-space dimension phi(N) - 2 for the system in eq:ip_better. For N = 2, -1 = 1 (mod 2), so the conjugate of the frequency-1 row coincides with it; the actual system (the p = 2 decimation row [1, 1] and the row [1, -1]) has rank 2 and nullity 0, not rank 3 and nullity -1. The formulas are therefore false at N = 2 (and the count 'N - phi(N) + 2 fixed coefficients' double-counts frequency 1 there).",
+      "failure_location": {
+        "quote": "the rank of the matrix in \\Cref{eq:ip_better} is $N - \\phi(N) + 2$ (where we have included the implicit conjugate last row).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Qualify the claims with N > 2 (frequency 1 is self-conjugate exactly when N <= 2), or state the N = 2 exception explicitly.",
+      "overall_effect": "The general rank/nullity statements for eq:ip_better fail in the degenerate case N = 2. No application of these formulas in the paper uses N = 2 (the complexity examples use N >= 5, and alg:svp treats N in {1,2,3,4,6} via the exact guess), so the impact is confined to these prose assertions.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Rank and nullity formulas for the improved ILP (eq:ip_better) fail at N = 2",
+      "why_classification": "A single added condition repairs the degenerate case and every use of the formulas in the paper already lies in the valid range, so all substantive content survives with a local edit."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Require a representative DFT coefficient $\\tilde{X}_{k, l}$ for each coefficient class",
+          "tag": "alg:2D"
+        },
+        {
+          "quote": "$\\tilde{X}_{\\lambda k, \\lambda l} \\gets \\tilde{x}_\\lambda^{(k, l)}$",
+          "tag": "alg:2D"
+        }
+      ],
+      "failure_explanation": "The algorithm receives one representative coefficient per equivalence class, but the Invert1D call uses the full divisor set {X~_{lambda k, lambda l} : lambda | D}. For lambda | D with lambda > 1, the frequency (lambda k, lambda l) lies in a different equivalence class (of order D/lambda < D), whose coefficient is neither measured nor yet computed unless that class (or one whose cyclic subgroup contains it) was processed earlier and wrote the value via the fill-in step. The loop over RepCoeffs specifies no order, so the procedure can reference undefined DFT values: e.g. for a 2x3 matrix, processing the order-6 class (1,1) first requires X~_{0,2} and X~_{1,0}, which exist only after the order-3 and order-2 classes have been inverted. The paper supplies the required ordering only later, for alg:memo_2D.",
+      "failure_location": {
+        "quote": "${\\bf x}^{(k, l)} \\gets \\Call{Invert1D}{\\set{\\tilde{X}_{\\lambda k, \\lambda l} : \\lambda \\divs D}}$",
+        "tag": "alg:2D"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Process the classes in any order consistent with the subproblem lattice (e.g. increasing subsignal length D); then every input X~_{lambda k, lambda l} with lambda | D, lambda > 1 has been filled in by the class of order D/lambda processed earlier, and correctness follows by the same argument later given for alg:memo_2D.",
+      "overall_effect": "As written, the high-level 2D inversion procedure is not well defined for arbitrary iteration orders and does not by itself guarantee exact recovery from a minimal sampled spectrum.",
+      "primary_affected_tag": "alg:2D",
+      "target_type": "algorithm",
+      "title": "alg:2D does not specify the class-processing order needed to make Invert1D's inputs available",
+      "why_classification": "The design is sound; the missing ingredient is a one-line ordering specification whose availability justification is short and already present (for the memoized variant) in the paper, so the algorithm's guarantee survives with a short local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $p \\ndivs N_1$, then $\\gcd(pk, N_1) = \\gcd(k, N_1)$.",
+          "tag": null
+        },
+        {
+          "quote": "Note that since $D \\divs \\lcm(N_1, N_2)$, its prime factor $p$ must divide $N_1$ or $N_2$, so this argument shows that each required decimated subsignal is available.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The argument that alg:memo_2D's traversal makes each decimated subsignal x^{(pk,pl)} available splits on p | N_1 versus p not-dividing N_1. The first case claims gcd(pk, N_1) = p*gcd(k, N_1) = N_1/(D_1/p), which is valid only when p | D_1. When p | N_1 but p not-dividing D_1 (i.e. v_p(k) >= v_p(N_1), which occurs since a prime of D may enter through D_2 when p divides both dimensions), the claim is false - e.g. N_1 = 12, k = 4, p = 2: gcd(8, 12) = 4 != 8 = 2*gcd(4, 12), and D_1/p = 3/2 is not an integer. In that sub-case the needed subsignal is in fact available from an earlier iteration of the inner loop (same D_1, smaller D_2), not from a previous outer iteration as stated, so the case analysis contains a false computation and fails to cover this situation. The correct split is p | D_1 (previous outer iteration) versus p not-dividing D_1, which forces p | D_2 (previous inner iteration).",
+      "failure_location": {
+        "quote": "If $p \\divs N_1$, then $\\gcd(pk, N_1) = p\\gcd(k, N_1) = N_1/(D_1/p)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Change the case conditions to p | D_1 (then gcd(pk, N_1) = p*gcd(k, N_1), handled by a previous outer-loop iteration) and p not-dividing D_1, which forces p | D_2 (then gcd(pl, N_2) = p*gcd(l, N_2), handled by a previous inner-loop iteration), and replace the closing justification 'prime factor of D must divide N_1 or N_2' by 'p | lcm(D_1, D_2) forces p | D_1 or p | D_2'.",
+      "overall_effect": "The prose verification of the dynamic-programming order of alg:memo_2D is incorrect as written; the algorithm itself remains correct because the repaired case split restores availability in all cases.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Incorrect case split (p | N_1 versus p | D_1) in the alg:memo_2D ordering-correctness argument",
+      "why_classification": "The correction is forced and confined to the case split of one proof paragraph; the verified claim (correctness of alg:memo_2D) is unchanged, so this is a short local repair of an inference with no loss of content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\beta_1 \\idmat{N/p_1} & \\cdots & \\beta_1 \\idmat{N/p_1} & -\\beta_1 {\\bf x}^{N/p_1}$",
+          "tag": "eq:lattice_basis"
+        },
+        {
+          "quote": "$\\beta_1 \\idmat{N/p_\\omega} & \\cdots & \\beta_1 \\idmat{N/p_\\omega} & -\\beta_1 {\\bf x}^{N/p_\\omega}$",
+          "tag": "eq:lattice_basis"
+        }
+      ],
+      "failure_explanation": "The runtime derivation states that the lattice of eq:lattice_basis sits in R^{N + phi(N) + 2M}. Counting the rows of the displayed basis gives N rows for the A block, 1 row for B_0, sum_{j=1}^{omega} N/p_j rows for B_1, and 2M real rows for B_2, i.e. ambient dimension N + 1 + sum_j N/p_j + 2M, which generally differs from N + phi(N) + 2M (e.g. N = 30: 62 + 2M versus 38 + 2M; N prime: N + 2 + 2M versus 2N - 1 + 2M).",
+      "failure_location": {
+        "quote": "Since ${\\tt B}$ is an $(N+1)$-dimensional lattice in $\\R^{N + \\phi(N) + 2M}$,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the ambient dimension by N + 1 + sum_j N/p_j + 2M = O(N log log log N); the runtime bound then reads O(N^7 log log log N * log^2 MNL), qualitatively unchanged.",
+      "overall_effect": "A false statement inside the complexity analysis; since sum_{p | N} 1/p = O(log log log N), the corrected ambient dimension leaves the final pseudo-polynomial bound O(N^7 log^2 MNL) intact up to a negligible factor.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Ambient dimension of the SVP lattice misstated in the runtime analysis",
+      "why_classification": "The claim is concretely false, but the correction changes only a negligible factor in the final bound and no result, rate class, or guarantee is lost, so the fix is local and minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": " &  & 5\\phantom{\\textsuperscript{*}} & 16 & 1.22e05 & 100 &  3.01 & {--}\\\\",
+          "tag": "tab:rect"
+        },
+        {
+          "quote": "The $60 \\times 60$ matrix required $350 / 3600 \\approx 9.7\\%$ of DFT coefficients,",
+          "tag": null
+        },
+        {
+          "quote": "they were still inverted from a relatively smaller sampled spectrum than the $60 \\times 60$ matrices.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose reports that 11x13 binary matrices were reliably inverted (at M = 5) from 8/143 ≈ 5.6% of the DFT coefficients, and concludes this is a smaller sampled spectrum than the 350/3600 ≈ 9.7% used for 60x60. tab:rect instead records 16 supplied coefficients for the same 11x13, M = 5 experiment (successive rows show 4, 7, 10, 13, 16 coefficients for M = 1..5, i.e. increments of 3 per extra M, consistent with extra coefficients on all three non-trivial classes rather than only the longest one), giving 16/143 ≈ 11.2%. The two counts are mutually inconsistent, and under the table's count the conclusion 'relatively smaller sampled spectrum than the 60x60 matrices' is false.",
+      "failure_location": {
+        "quote": "whereas the $11 \\times 13$ matrix required $8 / 143 \\approx 5.6\\%$ of DFT coefficients for reliable inversion.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Make the numbers consistent - most plausibly correct the prose to 16/143 ≈ 11.2% and reword the comparison to 'comparable' rather than 'smaller' (or correct the table if extra coefficients were in fact given only to the longest class).",
+      "overall_effect": "A reported experimental quantity and the comparative conclusion drawn from it are unreliable; the primary experimental facts (100% recovery of 11x13 matrices at M = 5, and all tested sizes recovered from under 15% of the spectrum) are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Prose and tab:rect disagree on the 11x13 coefficient count, and the derived sampling-fraction comparison fails",
+      "why_classification": "Either repair is a small local edit; one comparative sentence loses its strict inequality, but the section's substantive conclusions (recovery rates and coefficient budgets under 15%) all survive."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2510.11949",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p2-retry",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "029d5f1f6eba9f20a58493649f3903cdd4294653c70bc63ac2e6f7768fdc7ef5",
+  "status": "ok"
+}

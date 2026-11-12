@@ -1,0 +1,422 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "k_2 :=f(t_{T+1})-|T| A\\big(\\frac34 k_1{+}\\frac14 k_2\\big).",
+          "tag": null
+        },
+        {
+          "quote": "u_\\TT(t_{T+1}) &= u_\\TT(t_T) + |T|\\big(\\frac34 k_1 + \\frac14 k_2\\big)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For A=λ>0 and f=0, these stage equations give k1=k2=0, so the update leaves every nonzero initial value unchanged. This does not solve the stated mean-and-endpoint scheme. Both stages are missing the term −A u_T(t_T).",
+      "failure_location": {
+        "quote": "k_1 := f(t_T+\\frac13|T|)-|T| A\\big(\\frac5{12}k_1-\\frac1{12}k_2\\big),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Insert −A u_T(t_T) into both stage right-hand sides.",
+      "overall_effect": "The advertised executable equivalent of the Radau scheme computes the wrong evolution, even for the scalar homogeneous heat equation.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The displayed Runge–Kutta implementation omits the previous solution from both stages",
+      "why_classification": "This is a local correction of the executable construction that preserves the intended scheme, order, and subsequent analysis of eq:cnscheme."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-1",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error",
+        "lem:stab_red"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$f\\in L^2(0,\\tend;V^\\star)$",
+          "tag": null
+        },
+        {
+          "quote": "Assume that $f\\in \\SS^2(\\TT;V^\\star)$.",
+          "tag": "lem:reliability"
+        },
+        {
+          "quote": "the unique function that satisfies $\\int_T \\Psi_T v\\,ds = v(t_{T+1})$ for all $v\\in \\PP^2(T)$.",
+          "tag": null
+        },
+        {
+          "quote": "\\eta_{\\TT}(T)^2&=|T|^2 \\norm{\\partial_t f-\\partial_t^2u_{\\TT} -\\partial_t Au_{\\TT}}{L^2(T,V^\\star)}^2,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The inherited assumption f∈L² supplies neither endpoint values for the scheme nor the derivative used by the estimator. Even imposing smoothness does not fix the proof: the claimed Petrov–Galerkin equivalence requires the endpoint functional to reproduce f, and estimator efficiency is proved only for elementwise polynomial f. For example, on [0,1], the displayed Ψ gives ∫Ψ(t)t³dt=17/18 rather than f(1)=1. Thus the collocation scheme is not the asserted Galerkin method for general smooth forcing, and the reliability lemma is invoked outside its hypotheses.",
+      "failure_location": {
+        "quote": "However, due to Lemma~\\ref{lem:reliability}, both quantities are equivalent.",
+        "tag": "thm:optimal_timestepping"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict the time-adaptive claims to f∈S²(T0;V*) so the condition persists under refinement. Retaining general forcing instead requires a well-defined data approximation, consistency analysis, and an estimator/optimality argument accounting for data oscillation.",
+      "overall_effect": "The adaptive algorithm is not defined on the stated data class, and its error-only rate optimality and MOR time-error consequences are unsupported for general forcing.",
+      "primary_affected_tag": "thm:optimal_timestepping",
+      "target_type": "formal_result",
+      "title": "The optimality theorem omits the forcing assumptions required by the scheme and analysis",
+      "why_classification": "The source-supported restriction excludes the advertised general forcing regime. Preserving that regime requires substantial new consistency and adaptivity analysis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:optimal_timestepping",
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:reliability"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "for an elliptic operator $A\\colon V\\to V^\\star$",
+          "tag": null
+        },
+        {
+          "quote": "Let $V$ be defined as above (infinite dimensional $V$ is allowed)",
+          "tag": "thm:infsup"
+        },
+        {
+          "quote": "let $\\{e_1,\\ldots,\\}$ be {the} eigenbasis induced by $A$, orthogonal in $V$ and orthonormal in $H$.",
+          "tag": "lem:nondegen"
+        }
+      ],
+      "failure_explanation": "Ellipticity alone does not provide the positive real eigenvalues and mutually orthogonal eigenbasis used throughout these proofs. In finite dimensions, I plus a nonzero skew-symmetric matrix is coercive but need not have real eigenvectors. Even a positive self-adjoint operator can lack an eigenbasis in infinite dimensions: multiplication by x on L²(1,2) is a direct example. Neither self-adjointness nor a pure-point spectral hypothesis is stated.",
+      "failure_location": {
+        "quote": "Let $u\\in S^2(\\TT,V)$ and consider its eigen decomposition $u=\\sum_i e_i {u}_i$ with ${u}_i \\in S^2(\\TT,\\R)$.",
+        "tag": "thm:infsup"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Explicitly assume that A is positive self-adjoint and has the asserted complete H-orthonormal eigenbasis, or supply a different operator-level proof.",
+      "overall_effect": "The general-operator inf-sup, non-degeneracy, and ensuing approximation arguments are not established under the stated abstract model assumptions.",
+      "primary_affected_tag": "thm:infsup",
+      "target_type": "formal_result",
+      "title": "The spectral proofs require assumptions not implied by ellipticity",
+      "why_classification": "A contained restriction of the operator class makes the spectral architecture applicable and retains the finite-dimensional symmetric heat-equation applications, but materially narrows the abstract claims."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:optimal_timestepping",
+        "thm:infsup",
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:infsup_lambda",
+        "lem:infsup1_lambda",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error",
+        "lem:reliability"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\int_T (\\partial_t + \\lambda)q_T\\,dt =0=(\\partial_t + \\lambda)q_T(t_{T+1}).",
+          "tag": "eq:conds"
+        },
+        {
+          "quote": "q_{T}(t_{T+1}) = 2\\,\\frac{3-|T|\\lambda}{|T|^2\\lambda^2 + 4|T|\\lambda + 6}",
+          "tag": "eq:qeval"
+        },
+        {
+          "quote": "\\norm{u}{\\XX(\\II_i)_\\lambda}^2  \\leq C_1 \\Big( |u(\\II_i^-)|^2\n+  \\norm{u_{\\rm Lin}+u_{\\rm Quad}}{\\XX(\\II_i)_\\lambda}^2 \\Big).",
+          "tag": "eq:high_esti1"
+        }
+      ],
+      "failure_explanation": "For γ=λ|T|=3, the invisible polynomial with left value one is q(x)=(1−x)² in reference coordinates. Its value and derivative at the right endpoint vanish, although both bulk norms in the asserted equivalence are nonzero. More decisively, as γ→∞, q converges to 3x²−4x+1, whose squared L² norm is 2/15. Concatenating these invisible modes over more than K equal elements gives zero pairing with every time test, initial value one, negligible final value, and X_λ norm squared growing like 2γ/15. Hence the later large-region and λ-uniform inf-sup inequalities are themselves false, not merely missing a norm-equivalence proof.",
+      "failure_location": {
+        "quote": "\\lambda^{-1}\\norm{\\partial_t u_{\\rm F}}{L^2(\\II_i)}^2\\simeq\\sum_{T\\in\\II_i}|T|\\lambda^{-1}|\\partial_t {u_F}(t_{T+1})|^2 =\n\\sum_{T\\in\\TT}|T|\\lambda|{u_{F}}(t_{T+1})|^2\\simeq \\lambda \\norm{u_{\\rm F}}{L^2(\\II_i)}^2.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, the treatment of initial values and invisible-mode bulk norms must change, or a spectral/time-step restriction or loss of dimension-uniform stability must be accepted.",
+      "overall_effect": "The claimed spectral-uniform stability fails. In infinite dimensions the inf-sup constant can be zero; in finite dimensions the argument does not justify dimension-robust Céa, discrete reliability, or optimality constants.",
+      "primary_affected_tag": "lem:infsup0_lambda",
+      "target_type": "formal_result",
+      "title": "Endpoint values do not control the invisible quadratic modes",
+      "why_classification": "The counterexample defeats a central uniform guarantee in the unrestricted large-step regime. Correcting a local constant or polynomial calculation cannot restore it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:optimal_timestepping",
+        "thm:infsup",
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:infsup_lambda",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error",
+        "lem:reliability"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "or a region of small timesteps, which contains at most $K$ consecutive elements $T\\in \\II_i$ with $|T|\\lambda>\\gamma_0$.",
+          "tag": null
+        },
+        {
+          "quote": "The mild grading assumption~\\eqref{eq:graded} implies $|T|\\lambda \\leq C_g g_0^{-K} |T'|\\lambda \\leq C_g g_0^{-K}\\gamma_0$.",
+          "tag": "lem:infsup2_lambda"
+        }
+      ],
+      "failure_explanation": "A uniform mesh consisting of at most K elements, all satisfying λ|T|>γ0, meets the definition of a small region but contains no such T′. Uniform grading does not bound λ|T| in this case. The perturbative small-step estimate therefore assumes a genuinely small element that the definition does not supply.",
+      "failure_location": {
+        "quote": "Note that each element $T\\in\\II_i$ is at most $K$ elements away from an element $T'$ with $|T'|\\lambda\\leq\\gamma_0$.",
+        "tag": "lem:infsup2_lambda"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Require each small region to contain a genuinely small element and explicitly handle the short all-large mesh case, for example by bounded initial refinement until there are more than K elements before constructing the regions.",
+      "overall_effect": "The region decomposition does not establish scalar inf-sup stability for all meshes covered by the theorem, independently of the invisible-mode defect.",
+      "primary_affected_tag": "lem:infsup2_lambda",
+      "target_type": "formal_result",
+      "title": "A region classified as small need not contain any small timestep",
+      "why_classification": "A contained partition and initialization repair can preserve the advertised parameter regime and rates, but a missing case and construction must be supplied."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$u^{\\text{(rb)}}_R \\in \\XX^{\\text{(rb)}}_R\n\\coloneqq L^2(0,\\tend;{V}^{\\text{(rb)}}_R)\\cap H^1(0,\\tend;{V}^{\\text{(rb)}\\star}_R)$",
+          "tag": null
+        },
+        {
+          "quote": "\\norm{\n        u_h - \\mathsf{P}^{\\text{(rb)}}_R u_h\n    }{L^2(0,\\tend;V_R^{\\normalfont\\text{(rb)}})}.",
+          "tag": "eq:convergence_time_approx_V_rb_R"
+        }
+      ],
+      "failure_explanation": "The defined X_R space consists of V_R-valued functions. In general, neither u_h−u_R nor u_h−P_Ru_h is V_R-valued; the latter is in the complementary spatial directions. Their displayed X_R and L²(V_R) norms are therefore undefined. Replacing X_R by X_h is not automatic: the proof controls time derivatives only in the reduced dual norm, and supplies no uniform lifting to the full dual norm.",
+      "failure_location": {
+        "quote": "\\norm{\n        u_h - \\mathsf{P}^{\\normalfont\\text{(rb)}}_R u_h\n    }{\\XX^{\\normalfont\\text{(rb)}}_R}",
+        "tag": "eq:convergence_time_approx_V_rb_R"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Define and consistently use an ambient mixed norm with L²(V_h) for the function and L²(V_R*) for its derivative restricted to V_R. The displayed proof supports that norm. A full X_h-error theorem instead needs an additional uniform dual-norm comparison.",
+      "overall_effect": "All three MOR error theorems lack a well-defined ambient error quantity as stated.",
+      "primary_affected_tag": "eq:convergence_time_approx_V_rb_R",
+      "target_type": "formal_result",
+      "title": "The MOR error is measured in a space to which it generally does not belong",
+      "why_classification": "A meaningful comparable result is available through a contained reformulation, but the ambient error guarantee must be specified and cannot simply be upgraded to the natural full-space norm."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where  $\\mathsf{P}_{V_R}: V_h \\rightarrow V_R$ denotes the $V_h$--orthogonal projection",
+          "tag": null
+        },
+        {
+          "quote": "}{{V}_h}^2",
+          "tag": "eq:eps_approx_M"
+        },
+        {
+          "quote": "\\right\\|_{{{V}^\\star_h}}^2",
+          "tag": "eq:eps_approx_M"
+        }
+      ],
+      "failure_explanation": "The objective measures solution residuals in V_h and derivative residuals in V_h*, while applying the same V_h-orthogonal projection to both. After making the V_h metric Euclidean, the derivative term has the form tr(D(I−P)C_d(I−P)) with a generally non-scalar second metric D. It contains a quadratic dependence on the unknown projector, unlike the linear trace maximization solved by ordinary snapshot POD/SVD. The source provides no construction solving this different optimization problem.",
+      "failure_location": {
+        "quote": "The practical construction of the reduced space \n${V}^{\\text{(rb)}}_{R,M}$ using the singular value decomposition\nof the so-called \\emph{snapshot matrix} is thoroughly described in \\cite[Sections 6.3.2 and 6.5]{quarteroni2015reduced}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Use a common-inner-product snapshot objective and rederive its comparison and quadrature constants; the supplied V_h estimates for the derivative support such a route. Otherwise, provide an optimizer for the mixed-norm problem and justify its complexity.",
+      "overall_effect": "The assertion that the defined minimizer is computed by snapshot SVD, and the corresponding N_h M² construction cost, are unsupported. The formal results conditional on an exact argmin do not establish the advertised implementation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A standard snapshot SVD does not solve the stated mixed-norm minimization",
+      "why_classification": "A contained change of optimization problem can retain a comparable reduced-basis method and convergence rate, but the claimed computation is not recovered by a local SVD formula correction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tau}{2\\pi}",
+          "tag": null
+        },
+        {
+          "quote": "\\omega_k = \\vartheta \\cosh(k\\vartheta),",
+          "tag": "eq:sinc_points"
+        },
+        {
+          "quote": "\\sum_{j=-M}^{M} \n\t\\omega_j",
+          "tag": "eq:eps_approx_M"
+        }
+      ],
+      "failure_explanation": "The Hardy norms defining ε use the measure dτ/(2π), but ε^(M) uses the unnormalized sinc weights for integration against dτ. Consequently, for a nonzero residual for which sinc quadrature converges, ε^(M) tends to 2π ε, not ε. The asserted difference cannot tend to zero at the claimed rate.",
+      "failure_location": {
+        "quote": "Thus, we may apply Theorem~\\ref{thm:exponential_convergence_sinc} below and obtain",
+        "tag": "lmm:quadrature_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Multiply ε^(M), or its goal-functional quadrature weights, by 1/(2π) and propagate that normalization through the proof.",
+      "overall_effect": "The quantitative comparison of the sampled and continuous objectives is false even with an otherwise well-behaved projection.",
+      "primary_affected_tag": "lmm:quadrature_error",
+      "target_type": "formal_result",
+      "title": "The discrete goal omits the Hardy-norm normalization",
+      "why_classification": "This local normalization repair leaves the minimizing subspace, sampling rate, and complexity unchanged because it scales the entire discrete objective by one positive constant."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "denotes the $V_h$-orthogonal projection onto $V_R$.",
+          "tag": null
+        },
+        {
+          "quote": "\\seminorm{F(z)}{}\n    \\leq",
+          "tag": "eq:Fbound"
+        },
+        {
+          "quote": "Another application of Lemmas \\ref{lmm:regularity_solution} and \\ref{lem:add_reg_derivative} concludes the proof.",
+          "tag": "lmm:quadrature_error"
+        }
+      ],
+      "failure_explanation": "A V_h-orthogonal projection need not be uniformly bounded in V_h*. Thus it cannot be removed from the derivative residual when bounding F. A concrete two-mode example has H-orthonormal eigenvectors with eigenvalues 1 and L, V_R=span(e1+L^(−1/2)e2), f=0, and u0=L^(−1/2)e2. The initial V_h norm stays bounded, but the projected derivative residual has an e1 component L/[2(s+L)]. Its squared Hardy norm grows like L, whereas its quadrature at any fixed finite sample set stays bounded as L→∞. This contradicts the asserted h-independent estimate. The stronger derivative-regularity lemma invoked at the end also has assumptions absent from this quadrature lemma.",
+      "failure_location": {
+        "quote": "where the implicit constant is independent of $R$\nand the discretization parameter $h>0$.",
+        "tag": "lmm:quadrature_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Include the squared V_h*-operator norm of I−P_R in the quadrature bound, use a mesh-dependent upper bound uniform over candidate spaces, and propagate it into the sampling term and sample-count calculation. Retaining the original uniformity requires a new stability theorem or a different reduced-space construction.",
+      "overall_effect": "The mesh-independent sampling-error constant, and the ensuing mesh-independent choice of M in the cost discussion, are not justified.",
+      "primary_affected_tag": "lmm:quadrature_error",
+      "target_type": "formal_result",
+      "title": "Quadrature uniformity assumes an unavailable dual-norm stability of the spatial projection",
+      "why_classification": "The counterexample loses the stated uniform guarantee by an arbitrarily large factor. The available weakening abandons the central mesh-independent sampling guarantee; preserving it requires an additional construction or stability result not supplied."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error",
+        "lem:closure"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\text{dist}(T',T)\\leq \\text{dist}(T',T'')+\\text{dist}(T'',T)",
+          "tag": null
+        },
+        {
+          "quote": "\\State If dist$(T,T')\\leq G3^{-(\\ell(T)+1)}$ and $\\ell(T')=\\ell(T)-1$",
+          "tag": "alg:trisectG"
+        }
+      ],
+      "failure_explanation": "Minimum distance between intervals does not satisfy the displayed triangle inequality; the length of the intermediate interval is missing. For example, take G=1, a level-zero interval [0,1], and the adjacent level-one target [1,4/3]. Refining the target recursively trisects [0,1], creating T′=[0,1/3]. Then dist(T′,T)=2/3, while eq:prop8 gives only 1/9.",
+      "failure_location": {
+        "quote": "\\text{dist}(T',T)\\leq \\frac{G}{3}\\sum_{i=\\ell(T')}^{\\ell(T)}3^{-i},",
+        "tag": "eq:prop8"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Include diam(T′′) in the distance estimate and repeat the geometric-sum induction with an enlarged constant depending on G and the initial mesh.",
+      "overall_effect": "The stated finite-propagation estimate and the presented deduction of mesh closure are invalid.",
+      "primary_affected_tag": "lem:closureG",
+      "target_type": "formal_result",
+      "title": "The mesh-closure propagation estimate uses a false triangle inequality for set distance",
+      "why_classification": "The omitted interval lengths form the same geometric series, so a local constant correction restores the closure argument without changing grading, rates, or complexity guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "|i-j| < G \\implies \\frac{|T_{j}|}{|T_i|} \\leq 3.",
+          "tag": "eq:graded_new"
+        },
+        {
+          "quote": "\\text{dist}(T,T') \\leq 3G|T| \\implies \\frac{|T'|}{|T|}\\leq 3.",
+          "tag": "eq:gradedGsize"
+        }
+      ],
+      "failure_explanation": "The asserted integer partition is false: with G=2, k=2, and j−i=3, every positive integer jump smaller than G has length one, so two jumps cannot span the gap. For G=1 the asserted positive jumps do not exist at all. The exponential grading constant therefore does not follow from the strict local bound used in the proof.",
+      "failure_location": {
+        "quote": "Assuming $ |i-j|<kG$, we can choose numbers\n$i_0=i<i_1<\\ldots<i_{k'}=j$ with $k'\\leq k$ and  $|i_{n+1}-i_n|<G$ for all $n=0,\\ldots,k'-1$.",
+        "tag": "lem:closure"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Extend the preceding induction to |i−j|≤G, which its distance estimate permits, and partition index gaps into jumps of length at most G.",
+      "overall_effect": "The proof does not establish the claimed value g0=3^(−1/G) for generated meshes.",
+      "primary_affected_tag": "lem:closure",
+      "target_type": "formal_result",
+      "title": "The grading proof cannot partition integer index gaps as asserted",
+      "why_classification": "This is a local endpoint-case repair preserving the stated grading constant and every downstream rate and complexity claim."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exp_conv",
+        "eq:exponential_convergence_RB",
+        "lmm:quadrature_error",
+        "thm:fully_discrete_error",
+        "thm:error_L2_sinc",
+        "prop:exp_conv_sinc_quad",
+        "thm:exponential_convergence_sinc"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the set of all functions $F$ that are analytic in $\\mathcal{D}_d$ such that",
+          "tag": null
+        },
+        {
+          "quote": "\\norm{F}{\\mathcal{N}_p(\\mathcal{D}_d;X)}\n    \\coloneqq\n    \\left(\n        \\int_{\\partial\\mathcal{D}_d}\n        \\norm{F(z)}{X}^p\n        \\seminorm{\\normalfont\\text{d}z}{}\n    \\right)^{\\frac{1}{p}}\n    <\n    \\infty.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Analyticity plus integrability on only the two boundary curves does not control growth inside the unbounded domain. Set w=φ(z) and F(z)=φ′(z)^(1/2) exp(cosh(πw/d)). On w=x±id its weighted squared boundary modulus is exp(−2cosh(πx/d)), so F belongs to the defined N2 class. On the real axis it grows super-exponentially, and the asserted sinc series does not even converge. The additional real-axis decay assumptions in the later theorems do not supply the missing interior control: weighted versions of exp(−cosh(2πnw/d)) have uniformly bounded real-axis decay and integrable boundary traces but arbitrarily narrow unresolved peaks and enormous interior growth.",
+      "failure_location": {
+        "quote": "\\Biggnorm{F-(\\phi')^{1/2}\\sum_{k \\in \\Z}\\frac{F(z_k)}{\\phi'(z_k)^{1/2}}\\normalfont\\text{Sinc}(k,\\vartheta) \\circ \\phi }{L^2(\\R,X)} \\lesssim \\frac{\\norm{F}{\\mathcal{N}_2(\\mathcal{D}_d;X)}}{|\\sinh(\\pi d/\\vartheta)|}.",
+        "tag": "prop:error_L2_sinc"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Replace the boundary-only definition by an appropriate Hardy-type condition controlling interior parallel contours or growth at infinity, strengthen the forcing assumptions accordingly, and verify membership of the conformally weighted solution transforms.",
+      "overall_effect": "The interpolation and quadrature estimates, and hence the root-exponential reduced-basis and sampling estimates derived from them, are unsupported under the source's definition of Np.",
+      "primary_affected_tag": "prop:error_L2_sinc",
+      "target_type": "formal_result",
+      "title": "The defined contour class is too weak for the sinc estimates",
+      "why_classification": "A contained but nontrivial analytic regularity correction can retain the sinc architecture and rates. The current hypotheses cannot support the quoted estimates without that correction."
+    }
+  ],
+  "issues_found": 12,
+  "paper_id": "2512.05676",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "70525655112dd5e6a4b9e036ce5bd3048782cdaa98dd74861d388a6c2188eeea",
+  "status": "ok"
+}

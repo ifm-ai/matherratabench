@@ -1,0 +1,91 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{\\sum_{i\\notin\\mathbb{O}}   \\nabla f_i(\\wsgd)} \\leq \\sum_i  \\norm{\\nabla f_i(\\wsgd)} \n\t\\leq \\sum_i  L \\norm{\\wsgd - \\ws}\n\t=(1 - \\epsilon) n L \\norm{\\wsgd - \\ws}",
+          "tag": null
+        },
+        {
+          "quote": "\\norm{ \\sum_{i\\in\\mathcal{O}} \\nabla f_i(\\wsgd)} = \\min\\left(\\epsilon n  G(\\wsgd), (1 - \\epsilon) n L \\norm{\\wsgd - \\ws}\\right)",
+          "tag": null
+        },
+        {
+          "quote": "(1 - \\epsilon)  L \\norm{\\wsgd - \\ws}\\geq \\epsilon G(\\wsgd)\n\t\\geq \\epsilon \\frac{\\lambda}{\\epsilon^2} \\norm{ \\wsm - \\ws}",
+          "tag": "theorem:relativebounds"
+        }
+      ],
+      "failure_explanation": "The proof of Lemma 3 establishes that $\\norm{\\sum_{i\\notin\\mathbb{O}} \\nabla f_i(\\wsgd)} \\leq (1 - \\epsilon) n L \\norm{\\wsgd - \\ws}$ and $\\norm{\\sum_{i\\in\\mathcal{O}} \\nabla f_i(\\wsgd)} \\leq \\epsilon n G$. Because the two sums are negatives of each other, their norms are equal. However, having two upper bounds on the same quantity only shows that the quantity is bounded by their minimum; inferring that one upper bound is less than or equal to the other is fallacious. Furthermore, the claimed lower bound $\\epsilon G \\leq (1 - \\epsilon) L \\norm{\\wsgd - \\ws}$ is false in general: for instance, if the outlier gradients cancel at $\\ws$ due to symmetry, then $\\wsgd = \\ws$, giving $\\norm{\\wsgd - \\ws} = 0$ while $\\epsilon G > 0$. Moreover, $G$ is an arbitrary upper bound on outlier gradient norms, so loosening $G$ increases the left-hand side while the right-hand side is unchanged.",
+      "failure_location": {
+        "quote": "\\epsilon G \\leq (1 - \\epsilon)  L \\norm{\\wsgd - \\ws}",
+        "tag": "lemma:sgdbound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a valid, non-trivial lower bound on $\\norm{\\wsgd - \\ws}$ under additional explicit assumptions that prevent outlier gradient cancellation at $\\ws$ and relate $\\norm{\\wsgd - \\ws}$ to the true net outlier perturbation rather than an arbitrary upper bound $G$.",
+      "overall_effect": "Lemma 3 fails, and Theorem 2 is invalidated because its proof directly relies on the false inequality $(1 - \\epsilon) L \\norm{\\wsgd - \\ws} \\geq \\epsilon G$ to upper-bound $\\norm{\\wsm - \\ws}$ in terms of $\\norm{\\wsgd - \\ws}$.",
+      "primary_affected_tag": "lemma:sgdbound",
+      "target_type": "formal_result",
+      "title": "Reversed inequality in SGD lower bound invalidates relative performance guarantee",
+      "why_classification": "Theorem 2 is a central theoretical result of the paper, promising that MKL-SGD stationary points provably outperform the SGD fixed point. Because SGD can converge arbitrarily close to $\\ws$ when outlier gradients cancel, no comparable relative bound holds without new assumptions and a new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\norm{ \\wsm - \\ws} \\leq \\epsilon^k G(\\wsgd)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Lemma 4 asserts that the bound $\\norm{\\wsm - \\ws} \\leq \\frac{\\epsilon^k G}{\\lambda}$ holds for 'any first order stationary point attained by MKL-SGD'. In its proof, the author bounds the sum of outlier selection probabilities by $\\sum_{i\\in\\mathcal{O}} p_i(\\wsm) \\leq \\epsilon^k$. However, this probability bound is only valid when $\\wsm$ lies in the basin $\\mathcal{B}_r(\\ws)$ where all clean samples have lower loss than all outliers. Outside $\\mathcal{B}_r(\\ws)$, such as near an outlier cluster $w_B$, outliers have smaller loss than clean samples, so the probability of selecting an outlier is $1 - (1-\\epsilon)^k$, which approaches 1 rather than $\\epsilon^k$. As the paper itself emphasizes in Section 4.2, spurious local minima can exist near $w_B$ at distance at least $2\\delta$ from $\\ws$, so the claim does not hold for arbitrary stationary points.",
+      "failure_location": {
+        "quote": "Let $\\wsm$ be any first order stationary point attained by \\mkl.\n\tUnder assumptions 1-3, for a given $\\epsilon <1$ and $\\lambda$ as defined in equation \\eqref{eq:lambdasc}, there exists a $k'$ such that for all $k \\geq k'$,\n\t\\begin{align*}\n\t\\norm{\\wsm -\\ws}  \\leq \\dfrac{\\epsilon^k G}{\\lambda}\n\t\\end{align*}",
+        "tag": "lemma:m2lboundstrongconvexity"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict the statement of Lemma 4 to stationary points $\\wsm \\in \\mathcal{B}_r(\\ws)$, matching the restriction already stated in Theorem 2.",
+      "overall_effect": "The claim that every stationary point of MKL-SGD is within $\\frac{\\epsilon^k G}{\\lambda}$ of $\\ws$ fails; the guarantee is unreliable for stationary points outside $\\mathcal{B}_r(\\ws)$.",
+      "primary_affected_tag": "lemma:m2lboundstrongconvexity",
+      "target_type": "formal_result",
+      "title": "Universal quantification over all stationary points in MKL distance bound",
+      "why_classification": "Adding the hypothesis $\\wsm \\in \\mathcal{B}_r(\\ws)$ resolves the mismatch and aligns Lemma 4 with its proof and Theorem 2, but requires retracting the substantive claim that all local minima of MKL-SGD satisfy the bound."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "R_t \n\t=\t& - 2  \\eta_t \\sum_{i\\in \\mathcal{G}} p_i(\\bs{w_t}) \\langle{ \\bs{w_t} - \\wg,\\nabla f_{i}( \\wg)\\rangle}\\\\\n\t& + 2\\eta_t^2\\sum_{i\\in \\mathcal{G}} p_i(\\bs{w_t}) \\norm{\\nabla f_{i}( \\wg)}^2 + \\eta_t^2\\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t})\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+2  \\eta_t \\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t}) \\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right)",
+          "tag": "lem:R"
+        }
+      ],
+      "failure_explanation": "In Theorem 3, the definition of $R_t$ places the gradient variance term $2\\eta_t\\norm{\\nabla f_{i}( \\wg)}^2$ inside the summation over outlier samples $i \\in \\mathbb{O}$ rather than good samples $i \\notin \\mathbb{O}$. Consequently, in the noisy setting without outliers (where $\\mathbb{O} = \\emptyset$), the entire second sum is empty, leaving $R_t = -2\\sum_{i\\notin \\mathbb{O}} p_i(\\bs{w_t}) \\langle \\bs{w_t} - \\wg, \\nabla f_i(\\wg) \\rangle$. At $\\bs{w_t} = \\wg$, this gives $R_t = 0$, implying $\\mathbb{E}[\\norm{\\bs{\\Delta}_{t+1}}^2 | \\bs{w_t} = \\wg] \\leq 0$, which is false because individual noisy gradients $\\nabla f_i(\\wg)$ are non-zero and yield strictly positive expected squared distance $\\eta_t^2 \\sum_i p_i(\\wg) \\norm{\\nabla f_i(\\wg)}^2 > 0$. The proof in Appendix 8.3 (Theorem 4 / lem:R) correctly associates the variance term with $\\mathcal{G}$ ($i \\notin \\mathbb{O}$), but this was miscopied in Theorem 3.",
+      "failure_location": {
+        "quote": "R_t \n\t= & - 2  \\sum_{i\\notin \\mathbb{O}} p_i(\\bs{w_t}) \\langle{ \\bs{w_t} - \\wg,\\nabla f_{i}( \\wg)\\rangle}+ \\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t}) \\left(2\\eta_t\\norm{\\nabla f_{i}( \\wg)}^2+ \\eta_t\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+2\\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\right) \\right)",
+        "tag": "thm:R"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the definition of $R_t$ in Theorem 3 to match the expression proved in Theorem 4 (lem:R), moving $2\\eta_t\\norm{\\nabla f_i(\\wg)}^2$ to the summation over good samples $i \\notin \\mathbb{O}$ and removing it from the outlier summation.",
+      "overall_effect": "Theorem 3 gives an invalid upper bound in the noisy setting without outliers, understating the asymptotic error floor by completely omitting the gradient variance of good samples.",
+      "primary_affected_tag": "thm:R",
+      "target_type": "formal_result",
+      "title": "Gradient variance term misallocated in Theorem 3 distance bound",
+      "why_classification": "The repair is a direct, local correction of a miscopied formula already proved correctly in Theorem 4 (lem:R) in the appendix, preserving the substantive convergence guarantee."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2001.03316",
+  "question_id": "Q1",
+  "run_name": "gemini-3.8-flash-medium-2026-09-09-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d10c7474fbe52751d29cd038f650e3f1381876416035c1862f7697927c71b083",
+  "status": "ok"
+}

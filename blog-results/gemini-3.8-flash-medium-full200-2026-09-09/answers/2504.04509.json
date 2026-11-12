@@ -1,0 +1,85 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Using the update rules \\eqref{updateforx_I1} and \\eqref{updateforx_I2}, it follows that \n$$ \\wvx^{(k_j + 1)}=\\wvx.$$",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "This demonstrates that $\\{(\\wvx^k,\\widehat{\\vomega}^k)\\}_k$ converges to the minimizer of model \\eqref{constrain_model} in a finite number of steps.",
+          "tag": "covgergalg1"
+        }
+      ],
+      "failure_explanation": "The proof of Theorem 3.2 contains multiple mathematical failures. First, it asserts that because $\\widehat{\\vomega}^{k_j} = \\widehat{\\vomega}$ for all $k_j > K$, the update rules imply $\\wvx^{(k_j+1)} = \\wvx$; this is invalid because $\\wvx$ is defined as the limit of $\\wvx^{k_j}$ (which were updated from $\\widehat{\\vomega}^{k_j-1}$, not $\\widehat{\\vomega}^{k_j}$), which assumes the conclusion that the limit is already a fixed point. Second, the proof invokes Theorem 2.5 to assert that the limit point is a minimizer of (1.2). However, Theorem 2.5 requires that $|\\wvx_i| \\neq \\mu$ for all $i$, an assumption never verified for the limit point. In fact, Algorithm 1 can terminate in a single step at a point where $|\\wvx_i| = \\mu$ (for example, with $A = [1, 1, 0; 0, 1, 1]$, $\\vb = [2, 1]^\\top$, $\\mu = 1$, and $\\widehat{\\vomega}^0 = \\mathbf{0}$, where $\\cQ_\\mu(\\wvx^0, \\widehat{\\vomega}^0) = 2 < \\mathrm{spark}(A) = 3$, the algorithm terminates immediately at $\\wvx = (1, 1, 0)^\\top$). By Theorem 2.3, such a boundary point is not even a local minimizer of (1.2) as feasible strict descent directions exist along $\\ker(A)$. Finally, claiming convergence to 'the minimizer' asserts convergence to the global optimum of an NP-hard problem, which coordinate descent does not achieve.",
+      "failure_location": {
+        "quote": "Theorem  \\ref{linearoptcond} establishes that $(\\wvx, \\widehat{\\vomega})$ is a minimizer of the model \\eqref{constrain_model}.",
+        "tag": "covgergalg1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish an escape or tie-breaking mechanism whenever $|\\wvx_i| = \\mu$ to avoid terminating at non-stationary points, and weaken the theorem to establish convergence of the objective/iterates only to coordinate-wise stationary points rather than to 'the minimizer'.",
+      "overall_effect": "The primary convergence guarantee for the noise-free BCD algorithm (Algorithm 1) is invalid; the algorithm is not guaranteed to converge to a global minimizer, nor even to a local minimizer of model (1.2).",
+      "primary_affected_tag": "covgergalg1",
+      "target_type": "formal_result",
+      "title": "Finite-step convergence proof of noise-free BCD fails and claim of convergence to a minimizer is false",
+      "why_classification": "Resolving the issue requires substantial new proof architecture to handle boundary points $|\\wvx_i| = \\mu$ where descent directions exist, and requires materially weakening the advertised guarantee from finding the minimizer of (1.2) to merely reaching a stationary point."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, the sequence $\\{(\\wvx^k,\\widehat\\vomega^k)\\}_k$ is bounded and converges to the minimizer of model \\eqref{obj_singleu} in a finite number of steps.",
+          "tag": "convergalg2"
+        }
+      ],
+      "failure_explanation": "Theorem 3.3 asserts that the sequence $\\{(\\wvx^k, \\widehat{\\vomega}^k)\\}$ converges in a finite number of steps to 'the minimizer' of the non-convex noisy model (1.3). The proof concludes that the limit is a minimizer by invoking Theorem 2.6. However, Theorem 2.6 explicitly requires that $|\\wvx_i| \\neq \\mu$ for all $i = 1, \\dots, n$. The proof does not prove that the limit point satisfies this condition. The discrete hard-thresholding step $\\widehat{\\vomega}^{k} = \\cH_\\mu(\\wvx^k)$ allows Algorithm 1 to terminate at a fixed point where $|\\wvx_i| = \\mu$ for some $i$. By Theorem 2.4, any point with $|\\wvx_i| = \\mu$ has a coordinate descent direction along $\\pm \\ve_i$ and thus cannot be a local or global minimizer of $\\cG_\\mu$.",
+      "failure_location": {
+        "quote": "According to Theorem \\ref{noise_optcond}, the limit point $(\\wvx,\\widehat{\\vomega})$ is a minimizer of model \\eqref{obj_singleu}.",
+        "tag": "convergalg2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must supply a perturbation or active-set mechanism ensuring iterates do not stall at non-differentiable breakpoints $|\\vx_i| = \\mu$, and weaken the stated guarantee from convergence to 'the minimizer' to convergence to a local stationary point.",
+      "overall_effect": "The theoretical convergence guarantee of Algorithm 1 for the noisy formulation (1.3) fails; iterates may terminate at non-minimizers.",
+      "primary_affected_tag": "convergalg2",
+      "target_type": "formal_result",
+      "title": "Convergence proof for noisy BCD algorithm is invalid at boundary points",
+      "why_classification": "The failure invalidates the central convergence theorem for the unconstrained noisy formulation, and repairing it requires revising the algorithm or the global proof architecture while weakening the claimed guarantee."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mu_{k+1}=\\min\\{\\max\\{c_{k+1}, \\sqrt{\\tfrac{\\sum_{i\\in\\mathcal{K}+1}(\\wvx_{k})_i^2}{m-n+\\mathrm{card}(\\mathcal{K}+1)}}\\}, \\mu_{k}\\}",
+          "tag": "updatemu"
+        }
+      ],
+      "failure_explanation": "Equation (3.11) defines the continuation update for $\\mu_{k+1}$ in Algorithm 2 using the term $\\sqrt{\\frac{\\sum_{i \\in \\mathcal{K}_{k+1}} (\\wvx_k)_i^2}{m - n + \\mathrm{card}(\\mathcal{K}_{k+1})}}$. For under-determined systems $A \\in \\mathbb{R}^{m \\times n}$, we have $m < n$, so $m - n < 0$. Whenever $\\mathrm{card}(\\mathcal{K}_{k+1}) < n - m$, the denominator $m - n + \\mathrm{card}(\\mathcal{K}_{k+1})$ is strictly negative while the numerator is non-negative. Consequently, the radicand is strictly negative, resulting in the square root of a negative quantity (a non-real complex number). The subsequent `max` and `min` operations are undefined in $\\mathbb{C}$. Moreover, the text claims that this formula is obtained from Lemma 2.2 and Lemma 3.1, but neither lemma relates to or justifies this expression.",
+      "failure_location": {
+        "quote": "\\STATE Update $\\mu_{k+1}$ by \\eqref{updatemu}",
+        "tag": "continuescheme"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the radicand formula in (3.11) with a well-defined non-negative decreasing schedule for $\\mu$ (such as standard geometric decay $\\mu_{k+1} = \\max\\{c_{k+1}, \\mu_k / \\rho\\}$).",
+      "overall_effect": "Algorithm 2 is mathematically ill-defined whenever $\\mathrm{card}(\\mathcal{K}_{k+1}) < n - m$, causing the continuation strategy for $\\mu$ to fail.",
+      "primary_affected_tag": "continuescheme",
+      "target_type": "algorithm",
+      "title": "Continuation update for mu takes square root of negative numbers",
+      "why_classification": "The source provides no derivation or valid formula to repair (3.11); any fix must abandon the stated formula and introduce an alternative continuation heuristic."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2504.04509",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "806db391bc2a12e7e296de5a289b045ed6046db853e63982b09093bf18596081",
+  "status": "ok"
+}

@@ -1,0 +1,134 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "L[j] \\gets \\Lambda_j",
+          "tag": "algo:circulant_decomposition_fft"
+        },
+        {
+          "quote": "A = \\sum_{j=0}^{n-1} \\Lambda_jC^j, \\text{ where } \\Lambda_j \\text{ are diagonal matrices containing } n \\text{ entries of the matrix in a cycle.}",
+          "tag": null
+        },
+        {
+          "quote": "W\\bm l_k \\circ W(D^k\\bm b) = W \\bm l_k \\circ WD^kW^{*}W\\bm b =  W\\bm l_k \\circ C^kW\\bm b",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In Step 5 of Algorithm 3, the algorithm multiplies $C^t \\text{FFT}(B)$ by $L_A[t]$ in the Fourier domain. However, according to Step 3 of Algorithm 2, $L_A[t]$ is set to $\\Lambda_t$, which is the diagonal matrix containing the spatial entries of $A$ along cycle $t$. By the convolution theorem, diagonalizing a circulant matrix $R_{A_t}$ in the Fourier domain requires scaling by the eigenvalues of $R_{A_t}$, which are given by the discrete Fourier transform of its first column (i.e., $W \\bm l_t$ from $R_A[t]$), not the spatial cycle entries $\\Lambda_t$. Using $\\Lambda_t$ applies the wrong operator and fails to compute the circulant product $\\tilde{A}B$.",
+      "failure_location": {
+        "quote": "{\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right))",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Modify Step 5 of Algorithm 3 to multiply by the discrete Fourier transform of the circulant vectors $R_A[t]$ and $R_B[t]$ (or store the Fourier spectra of the circulant components directly in Algorithm 2) instead of the cycle matrices $L_A[t]$ and $L_B[t]$.",
+      "overall_effect": "Algorithm 3 fails to correctly evaluate the first-order circulant approximation $\\tilde{A}B + \\Delta A \\tilde{B}$.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "Use of spatial cycle diagonal matrix instead of Fourier spectrum of circulant components in Algorithm 3",
+      "why_classification": "The repair is a routine local correction to Algorithm 2 and Algorithm 3 that points the multiplication step to the already available circulant component vectors rather than the spatial cycle list, preserving all advertised complexity and approximation guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $W(p,q) = \\frac{1}{\\sqrt{n}}e^{-i \\frac{2\\pi pq}{n}}$, with $p,q=0,1,2\\cdots n-1$.",
+          "tag": null
+        },
+        {
+          "quote": "where we have used the relations $W^*W=WW^*=I$",
+          "tag": null
+        },
+        {
+          "quote": "M = \\Tilde{F}^*(A) \\cdot F(B) + [F^*(A) - \\Tilde{F}^*(A)] \\cdot \\Tilde{F}(B)",
+          "tag": null
+        },
+        {
+          "quote": "\\tilde{B}_{\\text{approx}}\\gets \\text{Algorithm } \\ref{alg:topk}(\\tilde{B},k,p)",
+          "tag": "alg:mul_topk"
+        }
+      ],
+      "failure_explanation": "Because $W$ is explicitly defined as an orthonormal/unitary matrix with prefactor $1/\\sqrt{n}$ ($W^*W = I$), the exact product satisfies $AB = AW^* WB = \\tilde{A}\\tilde{B}$. The first-order expansion in the Fourier domain is $M = \\tilde{A}_{\\text{approx}} \\tilde{B} + \\Delta A \\tilde{B}_{\\text{approx}}$ without any factor of $1/n$ (as stated in Section 2.4). Dividing by $n$ in Step 7 erroneously scales the output matrix by $1/n$. In addition, Step 4 calls Algorithm 4 ('Top-k Matrix Approximation by Row') on $\\tilde{B} = WB$; since $\\tilde{B}$ is the column-wise FFT of $B$, the frequencies of each column of $B$ lie along the columns of $\\tilde{B}$, so row-wise truncation improperly selects top-$k$ entries across different columns rather than keeping dominant frequencies per column.",
+      "failure_location": {
+        "quote": "Return: $M \\gets \\frac{1}{n}(\\tilde{A}_{approx}\\tilde{B}+\\Delta A\\tilde{B}_{\\text{approx}})$",
+        "tag": "alg:mul_topk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Remove the factor of $1/n$ in Step 7 of Algorithm 5, and modify Step 4 to apply top-$k$ selection along the columns of $\\tilde{B}$.",
+      "overall_effect": "Algorithm 5 returns an approximation scaled down by a factor of $n$ and truncates $\\tilde{B}$ along the row axis rather than the column frequency axis.",
+      "primary_affected_tag": "alg:mul_topk",
+      "target_type": "algorithm",
+      "title": "Erroneous 1/n normalization factor and incorrect truncation axis in Algorithm 5",
+      "why_classification": "The fix is entirely local to Algorithm 5, correcting the normalization prefactor and the truncation axis without requiring new lemmas or changing the paper's framework."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\mathbf{E}[\\|AB\\|_F^2]}{\\mathbf{E}[\\|A\\|_F^2].\\mathbf{E}[\\|B\\|_F^2]}=\\frac{mpn\\frac{a^4}{9}+mpn(n-1)\\frac{a^4}{16}}{mn^2p\\frac{a^4}{9}} = \\frac{\\frac{a^4}{9n}+\\frac{(n-1)a^4}{16n}}{\\frac{a^4}{9}} \\approx \\frac{9}{16}\\text{for } n \\gg 1",
+          "tag": null
+        },
+        {
+          "quote": "When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Theorem 3.4 asserts an exact equality between a deterministic expectation $\\mathbf{E}[\\|AB\\|_F]$ and a non-degenerate random variable $\\frac{3}{4}\\|A\\|_F \\|B\\|_F$. The proof only evaluates the asymptotic ratio of expected squared Frobenius norms, showing that $\\lim_{n \\to \\infty} \\frac{\\mathbf{E}[\\|AB\\|_F^2]}{\\mathbf{E}[\\|A\\|_F^2]\\mathbf{E}[\\|B\\|_F^2]} = \\frac{9}{16}$, and then equates the square root of the ratio of second moments with the ratio of first moments and conflates expected norms with random sample realizations.",
+      "failure_location": {
+        "quote": "For two random matrices $A$ and $B$ with entries $\\sim$ $U(0,a)$, $\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$.",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate Theorem 3.4 as an asymptotic second-moment ratio $\\lim_{n \\to \\infty} \\frac{\\mathbf{E}[\\|AB\\|_F^2]}{\\mathbf{E}[\\|A\\|_F^2]\\mathbf{E}[\\|B\\|_F^2]} = \\frac{9}{16}$ or as convergence of $\\frac{\\|AB\\|_F}{\\|A\\|_F \\|B\\|_F} \\to \\frac{3}{4}$ in probability as $n \\to \\infty$.",
+      "overall_effect": "The exact equality in Theorem 3.4 is false as stated; only an asymptotic relation between second moments (or convergence of the ratio of norms in probability) is supported.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Exact equality claimed between deterministic expectation and random variables in Theorem 3.4",
+      "why_classification": "The claim must be weakened from an exact equality involving random variables to an asymptotic second-moment or in-probability statement, which preserves its subsequent heuristic use in Proposition 3.5 without disrupting the rest of the paper."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbf{E}[S^2] = \\frac{1}{n(n+1)} (\\beta_1 \\beta_2 + \\alpha_1^2 \\alpha_2^2).",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\text{Var}(S) = \\mathbf{E}[S^2] - \\mathbf{E}[S]^2 = \\frac{1}{n(n+1)} \\left( \\beta_1 \\beta_2 - \\frac{\\alpha_1^2 \\alpha_2^2}{n} \\right).",
+          "tag": "lem:added-2"
+        }
+      ],
+      "failure_explanation": "The proof of Lemma B.1 asserts that $\\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2] = \\frac{1}{n(n+1)}$ for all $(i,j) \\neq (k,l)$. This is false: for Haar-distributed unitary matrices, when both index pairs differ ($i \\neq k$ and $j \\neq l$), the joint moment is $\\frac{1}{n^2 - 1}$. Consequently, the formula for $\\mathbf{E}[S^2]$ in Lemma B.1 is incorrect, and the variance formula in Lemma B.2 produces strictly negative values whenever singular values are uniform: for $D_1 = D_2 = I_n$, $\\alpha_1 = \\alpha_2 = n$ and $\\beta_1 = \\beta_2 = n$, which gives $\\text{Var}(S) = \\frac{1}{n(n+1)}(n^2 - n^3) = \\frac{n(1-n)}{n+1} < 0$ for all $n \\geq 2$, violating the non-negativity of variance.",
+      "failure_location": {
+        "quote": "Now using the fact that for Haar distributed matrices we have $\\mathbf{E}[|Q_{i,j}|^4]  = \\frac{2}{n(n+1)}$ and $\\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2]  = \\frac{1}{n(n+1)}$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must split the summation into the four distinct index cases and apply the correct 4th-order Weingarten formulas for Haar-distributed unitary (or orthogonal) matrices to re-evaluate $\\mathbf{E}[S^2]$ and $\\text{Var}(S)$.",
+      "overall_effect": "Lemma B.1 and Lemma B.2 are invalidated, as is the downstream Taylor expansion for the expected Frobenius norm $\\mathbf{E}[\\sqrt{S}]$ in Appendix B.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "False Haar moment formula yielding negative variance in Lemma B.1 and Lemma B.2",
+      "why_classification": "The source contains no valid moments or Weingarten calculus to support a repair, and the resulting formula produces negative variances, invalidating the primary results of Appendix B."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

@@ -1,0 +1,216 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(B\\) is the \\(N \\times N\\) diagonal random sampling matrix with i.i.d. Bernoulli random variables with success probability \\(m/N\\)",
+          "tag": null
+        },
+        {
+          "quote": "the data $(S_iX, S_iY)$ can be easily extracted from the data $(S_{i+1}X, S_{i+1}Y)$, and the sketch sizes satisfy \\(m_2/m_1 = \\cdots = m_K/m_{K-1}\\)",
+          "tag": null
+        },
+        {
+          "quote": "$\\sum_{i=1}^{K} m_i = (1-2^{-K})N$",
+          "tag": "cmpxtyAlgSLSEPrf"
+        }
+      ],
+      "failure_explanation": "B is an N×N diagonal matrix with i.i.d. Bernoulli(m/N) entries, so its number of non-zero rows is a Binomial(N, m/N) random variable, not a fixed integer; hence a matrix B_i ∈ R^{m_i×N} 'consisted of the m_i non-zero rows of B' need not exist, and one fixed B cannot supply the nested row sets of all sizes m_1 < ... < m_K that the claimed extraction of (S_iX,S_iY) from (S_{i+1}X,S_{i+1}Y) requires. The subsequent theory treats the sketch sizes as exact (Theorem thm:bigtheorem posits an m×N matrix; Theorem cmpxtyAlgSLSE uses m_K = N/2 and Σm_i = (1-2^{-K})N), which the Bernoulli construction does not deliver.",
+      "failure_location": {
+        "quote": "namely by left-multiplying the random matrix \\(B_i \\in \\mathbb{R}^{m_i \\times N}\\), which is consisted of the \\(m_i\\) non-zero rows of \\(B\\)",
+        "tag": "Alg-SRHT"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Specify the standard nested exact-size subsampling of the rows of (HDPX, HDPY) (as in the cited IDS construction of wang2022iterative), or generate the row sets by nested Bernoulli thresholds and work with the concentrated random sizes; all embedding, convergence, and complexity statements then go through unchanged.",
+      "overall_effect": "The one-pass construction that is supposed to produce the nested sketched datasets (S_iX,S_iY) of exact sizes m_1 < ... < m_K feeding Algorithm Alg-SRHT within O(Nd log_2 N) time is not well-defined as written; the exact-size identities used later (m_K = N/2, Σm_i = (1-2^{-K})N, the fixed size m in Theorem thm:bigtheorem) do not follow from the stated Bernoulli-row description.",
+      "primary_affected_tag": "Alg-SRHT",
+      "target_type": "algorithm",
+      "title": "Sketch construction delivering nested exact-size sketches is ill-defined as written",
+      "why_classification": "The fix is a local, standard restatement of the sampling construction; every guarantee, rate, and complexity claim survives unchanged, and no new lemma or altered conclusion is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(W_i = I_d - \\mu (U_{X}^{\\top}\\hat{S}^{\\top}\\hat{S}U_{X})^{-1}U_{X}^{\\top}S_{i}^{\\top}S_{i}U_{X}\\)",
+          "tag": null
+        },
+        {
+          "quote": "both eigenvalues of \\(L_k^{(i)}\\) are imaginary and have a magnitude of \\(\\sqrt{\\eta}\\)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "W_i = I_d - μ(U_X^TŜ^TŜU_X)^{-1}U_X^TS_i^TS_iU_X is the identity minus μ times a product of two symmetric positive-definite matrices that do not commute in general, so W_i is not symmetric and admits no orthogonal eigendecomposition W_i = Ũ_iΛ_iŨ_i^T as claimed; the reality of the eigenvalues λ_k^{(i)}—which the discriminant condition (η+λ_k^{(i)})² ≤ 4η and the conclusion that the eigenvalues of L_k^{(i)} have modulus √η require—is never established. The similarity transformation P built from Ũ_i, and the resulting block factorization of L^{(i)}, are therefore unsupported as written.",
+      "failure_location": {
+        "quote": "Let the eigenvalue decomposition of \\(W_i\\) be \\(W_i = \\tilde{U}_i \\Lambda_i \\tilde{U}_i^{\\top}\\), where \\(\\Lambda_i\\) is a real diagonal matrix with its $k$-th diagonal \\(\\lambda_k^{(i)}\\) being the \\(k\\)-th eigenvalue of \\(W_i\\).",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the orthogonal eigendecomposition by (i) the observation that W_i has real spectrum and is diagonalizable via the similarity A^{-1}B ~ A^{-1/2}BA^{-1/2}, and (ii) a direct factorization of the characteristic polynomial of the companion matrix L^{(i)}; the rest of the proof, including Gelfand's formula, is untouched.",
+      "overall_effect": "One step of the proof of Theorem thm:convergence_theorem1 is invalid as written. No conclusion changes: W_i = I - μA^{-1}B with A, B SPD is always diagonalizable with real eigenvalues (similar to the symmetric matrix I - μA^{-1/2}BA^{-1/2}), and det(uI_{2d} - L^{(i)}) = Π_k (u² - (η+λ_k)u + η) holds independently of any diagonalization, so the spectral radius √η_min < 1/3 and the remainder of the proof stand.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "Non-symmetric W_i is given an orthogonal eigendecomposition in the proof of Theorem thm:convergence_theorem1",
+      "why_classification": "A short, standard bypass repairs the step without altering any hypothesis, conclusion, or rate of the theorem or of the results that depend on it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}} \\geq \\frac{\\mathbb{E}\\|X({\\tilde{\\beta}^{i-1}} - {\\beta})\\|}{\\mathbb{E}\\|X({\\tilde{\\beta}^{i}} - {\\beta})\\|}",
+          "tag": null
+        },
+        {
+          "quote": "Theorem \\ref{lowerBoundai} implies that the sequence $\\{a_i\\}_{i=2}^K$ are monotonically increasing with respect to $i$, namely \\(a_2<\\ldots<a_K\\)",
+          "tag": null
+        },
+        {
+          "quote": "$r(i-1,i)=\\sqrt{(1-2^{K+2-i}\\gamma)/(2-2^{K+2-i}\\gamma)}$ ($i=2,\\ldots,K$)",
+          "tag": "cmpxtyAlgSLSEPrf"
+        },
+        {
+          "quote": "$\\alpha=\\log_3\\{[1+(1+\\omega)/\\sqrt{2}]/\\omega\\}$",
+          "tag": "cmpxtyAlgSLSE"
+        }
+      ],
+      "failure_explanation": "The statement's r(i-1,i) = √(m_{i-1} - d/m_i - d), read downstream as √((m_{i-1}-d)/(m_i-d)) < 1 (cf. the proof of Theorem cmpxtyAlgSLSE, where r(i-1,i) = √((1-2^{K+2-i}γ)/(2-2^{K+2-i}γ)) = √((m_{i-1}-d)/(m_i-d))), is the reciprocal of the quantity the proof of Theorem lowerBoundai actually establishes and needs, namely r(i-1,i) = √((m_i-d)/(m_{i-1}-d)) > 1, the only choice for which E‖X(β̃^{i-1}-β)‖ ≤ r(i-1,i) E‖X(β̃^i-β)‖ can hold (the (i-1)-th sketched estimator, built from fewer samples, is the less accurate one). With the ratio required by the proof, r(i-1,i) = √((2m_{i-1}-d)/(m_{i-1}-d)) is strictly decreasing in i under doubling sketch sizes, so the valid lower bounds satisfy a_2 > ... > a_K—the opposite of the claimed a_2 < ... < a_K—and in Theorem cmpxtyAlgSLSE's regime the valid a_K tends to log_3([1+(1+ω)√((2-4γ)/(1-4γ))]/ω) > log_3([1+(1+ω)√2]/ω) > α, while the valid a_2 → ∞ as γ → 2^{-K}, so the uniform bound a_i < α fails and the stage-1 cost 4αNd is under-counted.",
+      "failure_location": {
+        "quote": "where \\( r(i-1,i) = \\sqrt{m_{i-1} - d / m_{i} - d} \\)",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Define r(i-1,i) = √((m_i-d)/(m_{i-1}-d)) in Theorem lowerBoundai to match its proof; reverse the monotonicity claim (the valid lower bounds decrease in i); and replace α in Theorem cmpxtyAlgSLSE by the supremum of log_3([1+(1+ω)r(i-1,i)]/ω) over the regime (e.g., α' = log_3([1+(1+ω)√2]/ω) in the small-γ limit, with γ bounded away from 2^{-K}), changing the stage-1 cost to 4α'Nd; the headline Nd log_2 N total complexity is unchanged.",
+      "overall_effect": "The lower-bound formula for the subproblem iteration counts is stated with the wrong (reciprocal) ratio, and the consequences drawn from the stated ratio are false for the valid bounds: the asserted monotonicity a_2 < ... < a_K is reversed, Theorem cmpxtyAlgSLSE's uniform bound a_i < α and its stage-1 cost 4αNd are invalid (no uniform α exists over the full stated regime γ ∈ (0,2^{-K})), and the experimental guidance of Section 5.1 built on the monotonicity inherits the reversed order.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "Theorem lowerBoundai states the reciprocal of the ratio its proof establishes, falsifying the claimed monotonicity and the complexity constant α",
+      "why_classification": "The repair requires correcting the theorem's ratio, reversing a stated monotonicity result, and recomputing the complexity constant—a contained re-derivation whose conclusions change content (not a pure typo), while the order of all stage costs and the dominant Nd log_2 N total survive, so no major loss or new proof architecture is involved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let the positive integer $K=O(1)$, and the sketch sizes satisfy \\(m_{i+1}/m_i=2\\), $i=1,\\ldots,K-1$, and $m_K=N/2$.",
+          "tag": "cmpxtyAlgSLSE"
+        },
+        {
+          "quote": "\\( r \\geq c\\epsilon^{-2}\\left[d + \\log\\left(\\frac{N}{\\delta}\\right)\\right]\\log\\left(\\frac{ed}{\\delta}\\right), \\quad m_1 \\textgreater r,\\)",
+          "tag": null
+        },
+        {
+          "quote": "The conditions \\(m_{i+1}/m_i=2\\) and $m_K=N/2$ lead to $m_i=2^{-(K+1-i)}N$",
+          "tag": null
+        },
+        {
+          "quote": "According to (\\ref{convergetolssolution}) in the proof of Theorem \\ref{thm:convergence_theorem1}, it follows that",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the theorem's regime—K = O(1), m_{i+1}/m_i = 2, m_K = N/2, d/N → γ ∈ (0,2^{-K})—the smallest sketch size is m_1 = 2^{-K}N = Θ(N) and d = Θ(N). But the a_i lower bounds the theorem tabulates are derived (via (convergetolssolution)) from Theorem thm:convergence_theorem1, whose hypotheses demand m_1 > r with r ≥ cε^{-2}(d + log(N/δ))log(ed/δ) and ε < 1/10; with d ~ γN this requires m_1 = Ω(N log N), so m_1 > r fails for all sufficiently large N in the stated regime, and the rate-1/3 contraction underpinning the a_i bounds is unavailable there. The theorem's quantitative claims are therefore asserted in an asymptotic regime where the results they rely on do not apply.",
+      "failure_location": {
+        "quote": "let $d/N\\rightarrow\\gamma\\in(0,2^{-K})$ as $N\\rightarrow+\\infty$",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restrict the asymptotic statement to regimes with d log d = o(N) (equivalently γ → 0 fast enough that m_1 = 2^{-K}N > r and the ε < 1/10 subspace embeddings exist); the cost accounting then goes through with γ → 0 and the bottom line—total complexity dominated by the Nd log_2 N initialization—survives. Retaining the proportional-d regime γ ∈ (0,2^{-K}) would require sharper (Marchenko–Pastur-type, data-independent) embedding and rate analyses that the source does not provide.",
+      "overall_effect": "Theorem cmpxtyAlgSLSE's advertised asymptotics (the bounds log_3(1/ω) < a_i < α and the stage-cost table: initialization Nd log_2 N, 1st stage 4αNd, 2nd stage 4[log_3(ω^K/σ)]Nd) are unsupported in their stated regime d/N → γ ∈ (0,2^{-K}) with K = O(1), because that regime contradicts the sketch-size hypothesis m_1 > r (with r = Ω(d log d)) that the convergence theorems behind the a_i formulas require.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "Complexity theorem's asymptotic regime violates the standing sketch-size hypothesis m_1 > r required by the underlying convergence theory",
+      "why_classification": "The least source-supported resolution narrows the theorem's asymptotic regime to d log d = o(N), a limited weakening under which every cost formula and the O(Nd log_2 N) bottom line survive; only the proportional-d asymptotic framing is lost, and keeping it would need essentially new analysis, so the issue exceeds a local fix but does not force abandonment of the theorem's deliverables."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_theorem1",
+        "finalerror",
+        "Thf"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Pr\\left\\{\\left\\|{U}^{\\top} {S}_i^{\\top} {S}_i {U} - {I}_d \\right\\| > \\epsilon\\right\\} \\leq \\frac{\\delta}{K}, \\quad i = 1, \\ldots, K.",
+          "tag": null
+        },
+        {
+          "quote": "m \\geq c\\epsilon^{-2}\\left(d + \\log\\left(\\frac{N}{\\delta}\\right)\\right)\\log\\left(\\frac{ed}{\\delta}\\right),",
+          "tag": "thm:bigtheorem"
+        },
+        {
+          "quote": "Since we have \\(K\\) sketched LS subproblems, by applying the union bound to the above \\(K\\) events, the first conclusion follows.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof needs Pr{‖U^TS_i^TS_iU - I_d‖ > ε} ≤ δ/K for each i to union-bound the K events by δ. Under the standing hypothesis m_i > r with r ≥ cε^{-2}(d + log(N/δ))log(ed/δ), Theorem thm:bigtheorem only delivers failure probability δ per event, not δ/K; obtaining δ/K requires the stronger size r ≥ cε^{-2}(d + log(NK/δ))log(eKd/δ). No choice of the constant c bridges this gap in general: when d and δ are fixed, the stated bound has second factor log(ed/δ) = O(1) while the needed one is log(eKd/δ) = Θ(log K) = Θ(log log N), which grows with N. The union bound therefore yields failure probability (K+1)δ (K sketches plus Ŝ), not 2δ.",
+      "failure_location": {
+        "quote": "For a sufficiently large constant \\(c\\), Theorem \\ref{thm:bigtheorem} ensures the following condition",
+        "tag": "lemma1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restate the size requirement as r ≥ cε^{-2}(d + log(NK/δ))log(eKd/δ) (equivalently, apply Theorem thm:bigtheorem with failure probability δ/K), or relax the claimed success probability to 1-(K+1)δ; since K = O(log N), the strengthened size is of the same order, and all convergence rates and precision conclusions are preserved.",
+      "overall_effect": "The success probability 1-2δ claimed in Theorem thm:convergence_theorem1, Lemma finalerror and Theorem Thf is not established under the stated sketch-size requirement on r; as written, the argument supports only 1-(K+1)δ (with K = log_2(N/m_1)).",
+      "primary_affected_tag": "lemma1",
+      "target_type": "formal_result",
+      "title": "Union bound over K sketches requires per-event failure δ/K that the stated sketch size does not deliver",
+      "why_classification": "The repair is a local parameter change (δ replaced by δ/K inside logarithmic factors, or a K-dependent relaxation of the probability); every rate, precision guarantee, and regime survives, with no new lemma or content loss."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\operatorname{Var}(\\|X\\tilde{\\beta}^i - X\\beta\\|) \\geq \\operatorname{Var}(\\sqrt{\\frac{N - d}{m_i - d}}\\|X\\hat{\\beta} - X\\beta\\|),",
+          "tag": "remarkA7"
+        },
+        {
+          "quote": "Therefore, the subsequent discussions are based on the following conditions:",
+          "tag": "remarkA7"
+        },
+        {
+          "quote": "\\mathrm{PE}(i) = \\frac{\\mathbb{E}\\|X\\tilde{\\beta}^i - X\\beta\\|^2}{\\mathbb{E}\\|X\\hat{\\beta} - X\\beta\\|^2} = \\frac{1 - \\gamma}{\\xi - \\gamma}.",
+          "tag": "lemma:lemma3"
+        },
+        {
+          "quote": "In Algorithm \\ref{Alg-SRHT}, let \\(N,m_1\\) be powers of 2, \\(T^\\dagger = \\sum_{i=1}^{K} a_i\\), \\(\\delta \\in (0, 1)\\), \\(\\epsilon \\in (0, 1/10)\\), \\(|\\mu-1| \\leq 1/4\\), and \\(\\eta = 53/36 - \\sqrt{17}/3\\).",
+          "tag": "Thf"
+        }
+      ],
+      "failure_explanation": "Lemma finalerror's proof replaces δ_i = E‖X(β̃^i-β)‖ (a first moment) by √((N-d)/(m_i-d)) E‖X(β̂-β)‖, citing Lemma lemma:lemma3. But lemma:lemma3 only gives the N→∞ limit of the second-moment ratio PE(i), and Remark remarkA7 derives the needed first-moment inequality solely under the extra condition Var(‖Xβ̃^i-Xβ‖) ≥ Var(√((N-d)/(m_i-d))‖Xβ̂-Xβ‖), adding that 'the subsequent discussions are based on' it. That condition appears in the hypotheses of no labelled result (not in Lemma finalerror, Theorem Thf, Theorem lowerBoundai, or Theorem cmpxtyAlgSLSE) and is never verified; it cannot follow from the stated assumptions, since the noise is only assumed zero-mean with covariance σ²I, leaving the fourth moments that determine these variances unconstrained. Likewise, the PE limit is used as a finite-sample one-sided inequality: in the proof of Theorem lowerBoundai, the ratio bound E‖Xβ̃^{i-1}-β‖ ≤ r(i-1,i) E‖Xβ̃^i-β‖ (26) is inferred although only upper bounds on both errors are available (a matching lower bound on the denominator exists only as asymptotic equality).",
+      "failure_location": {
+        "quote": "According to Theorem \\ref{thm:convergence_theorem1} and Lemma \\ref{lemma:lemma3}, there exists a constant \\({M_1} >0\\), such that if \\(a_1 > M_1\\), it holds that",
+        "tag": "finalerror"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Either (a) add the variance condition Var(‖Xβ̃^i-Xβ‖) ≥ Var(√((N-d)/(m_i-d))‖Xβ̂-Xβ‖)—or Gaussianity of the noise, under which it can be proved by an effective-dimension/delta-method comparison—as an explicit hypothesis of Lemma finalerror, Theorem Thf, Theorem lowerBoundai and Theorem cmpxtyAlgSLSE, with explicit o(1) qualifiers for the PE limits; or (b) restate the whole chain in root-mean-square form by squaring the already-established pathwise contraction (convergetolssolution) and applying the second-moment PE bound of Lemma lemma:lemma3 directly, which needs no extra distributional hypothesis and keeps the 1/3 per-iteration rate.",
+      "overall_effect": "The paper's headline guarantee, Theorem Thf's bound E‖X(β_T-β)‖ ≤ (1/3)^T E‖X(β_0-β)‖ + [1+o(1)]E‖X(β̂-β)‖, together with Lemma finalerror and the iteration-count lower bounds of Theorem lowerBoundai used by Theorem cmpxtyAlgSLSE, rest on an unstated, unverified variance comparison and on reading N→∞ second-moment limits as finite-sample first-moment inequalities; as stated, these results are missing a hypothesis their proofs need.",
+      "primary_affected_tag": "finalerror",
+      "target_type": "formal_result",
+      "title": "First-moment sketched-error bounds rest on an unverified variance condition and on asymptotic PE limits read as finite-sample inequalities",
+      "why_classification": "The repair is contained: either an added explicit hypothesis (a limited weakening that preserves the stated first-moment guarantee) or a re-derivation in second moments from ingredients already in the source with the same rate; it does not require new global architecture or sacrifice the main guarantee, but it is more than a local or typographical fix since the main theorem's hypothesis list and proof inputs are affected."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2509.06856",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p2-retry",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "981b8984cdca82ea93a1c8e2f7a3a3ff16d853374c7f5e11ece8d6b29bfd4d2f",
+  "status": "ok"
+}

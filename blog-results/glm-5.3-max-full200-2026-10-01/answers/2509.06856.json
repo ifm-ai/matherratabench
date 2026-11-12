@@ -1,0 +1,226 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(B\\) is the \\(N \\times N\\) diagonal random sampling matrix with i.i.d. Bernoulli random variables with success probability \\(m/N\\), \\(H\\) is a normalized Hadamard matrix,",
+          "tag": null
+        },
+        {
+          "quote": "Lastly, We retain the non-zero rows of the matrix \\(S\\), which forms the SRHT matrix, and still denote it as \\(S\\).",
+          "tag": null
+        },
+        {
+          "quote": "Let \\( S \\) be a SRHT sketching matrix of size \\( m \\times N \\) .",
+          "tag": "thm:bigtheorem"
+        }
+      ],
+      "failure_explanation": "The number of non-zero rows of B is random (binomial with mean m), so a matrix B_i 'consisted of the m_i non-zero rows of B' is undefined whenever that count does not supply the needed rows: the construction must deliver nested exact sizes m_1 < ... < m_K from a single B whose Bernoulli parameter is tied to one unspecified m; with any parameter m_K/N the row count falls below m_K with probability about 1/2, so B_K often cannot be formed, and when the count exceeds m_i the selection rule is unspecified. Moreover, if e.g. the first m_i non-zero rows are taken, the selected row set is not uniformly distributed, so S_i is not a size-m_i SRHT matrix of the kind to which Theorem thm:bigtheorem (and hence Lemma lemma1) applies, and the embedding event used throughout the convergence analysis is not certified for the constructed sketches.",
+      "failure_location": {
+        "quote": "namely by left-multiplying the random matrix \\(B_i \\in \\mathbb{R}^{m_i \\times N}\\), which is consisted of the \\(m_i\\) non-zero rows of \\(B\\).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the sampling with a well-defined nested rule: draw B with success probability (1+eps)m_K/N (or use exact-size sampling), uniformly permute the retained rows and let B_i be the first m_i of them; by exchangeability each S_i is marginally a size-m_i SRHT and the sequence remains nested.",
+      "overall_effect": "Algorithm Alg-SRHT's inputs {B_i} — the sketched subproblems on which the whole method runs — are not well defined as described, and the subspace-embedding guarantees underlying Theorems thm:convergence_theorem1 and Thf do not apply to the sketches this construction produces.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Nested SRHT sketch-sequence construction from a single Bernoulli matrix is ill-defined",
+      "why_classification": "A short, local change to the sampling rule (oversampling plus uniform nested prefixes) makes the construction well defined and preserves all guarantees, sketch sizes, and costs."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf",
+        "finalerror",
+        "M-IHS converging rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\beta_{t+1} \\leftarrow \\beta_t - \\mu \\hat{H}^{-1} \\nabla f(\\beta_t; S_i X, S_i Y) + \\eta (\\beta_t - \\beta_{t-1})$",
+          "tag": "Alg-SRHT"
+        },
+        {
+          "quote": "Together with \\({\\beta_{-1}^{i}} = {\\beta_{0}^{i}} = {\\beta_{a_{i-1}}^{i-1}}\\), we obtain",
+          "tag": "thm:convergence_theorem1"
+        },
+        {
+          "quote": "By adopting a similar argument as in the proof of Theorem \\ref{thm:convergence_theorem1}, we obtain that,",
+          "tag": "M-IHS converging rate"
+        },
+        {
+          "quote": "{\\bfseries Input:} $X \\in \\mathbb{R}^{N \\times d}, Y \\in \\mathbb{R}^{d}, \\hat{H}, \\mu, \\eta, (S_0X,S_0Y)$,",
+          "tag": "Alg-SRHT"
+        }
+      ],
+      "failure_explanation": "The M-IHS update is a two-step scheme: at the first step of subproblem i, Algorithm Alg-SRHT uses the carried-over predecessor beta_{a_{i-1}-1}^{i-1} (and at the first 2nd-stage step beta_{T^dagger-1}), not beta_{a_{i-1}}^{i-1}. The proof of Theorem thm:convergence_theorem1 instead restarts with beta_{-1}^i = beta_0^i (zero momentum) at every boundary — the sqrt(2)-factor step explicitly uses this equality — so it establishes the stated bound for a different iteration than Algorithm Alg-SRHT executes (whose pseudocode also never initializes beta_0 or beta_{-1}). Correspondingly, the 'similar argument' in Lemma M-IHS converging rate cannot be carried out: the stage-2 initial pair (beta_{T^dagger-1}, beta_{T^dagger}) is unequal and its second component is never bounded.",
+      "failure_location": {
+        "quote": "In the case \\(i > 1\\), we set the initial iterates \\({\\beta_{-1}^{i}} = {\\beta_{0}^{i}} = {\\beta_{a_{i-1}}^{i-1}}\\) based on the iterates from the previous sketched LS subproblem.",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add momentum resets to Algorithm Alg-SRHT (set beta_{t-1} <- beta_t when entering each sketched subproblem and the 2nd stage, matching beta_{-1}^i = beta_0^i, and include beta_0 in the input with beta_{-1} = beta_0), or extend the existing two-step recursion bounds to the carried initial pair.",
+      "overall_effect": "The convergence guarantees of Theorem thm:convergence_theorem1 (for i >= 2), Lemma finalerror, Lemma M-IHS converging rate, and Theorem Thf are not established for Algorithm Alg-SRHT as specified.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "Convergence analysis assumes momentum resets at subproblem/stage boundaries that Algorithm 2 does not perform",
+      "why_classification": "A one-line algorithm change (or a contained local extension of the existing two-step analysis) makes every stated guarantee, rate, and cost valid; nothing substantive is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(W_i = I_d - \\mu (U_{X}^{\\top}\\hat{S}^{\\top}\\hat{S}U_{X})^{-1}U_{X}^{\\top}S_{i}^{\\top}S_{i}U_{X}\\).",
+          "tag": "thm:convergence_theorem1"
+        },
+        {
+          "quote": "The construction of \\(\\hat{{S}}\\) is independent of \\({S}_i\\) for \\(i = 1, \\ldots, K\\).",
+          "tag": "lemma1"
+        },
+        {
+          "quote": "1 & \\text{if } i \\text{ is even and } j = d + i,",
+          "tag": "thm:convergence_theorem1"
+        }
+      ],
+      "failure_explanation": "W_i = I_d - mu*A^{-1}B with A = U_X^T S_hat^T S_hat U_X and B = U_X^T S_i^T S_i U_X two independent symmetric positive-definite matrices; a product of two distinct SPD matrices is not symmetric and not orthogonally diagonalizable in general, so W_i = U_tilde_i Lambda_i U_tilde_i^T with orthogonal U_tilde_i (and the similarity P built from it) does not exist as claimed, and the realness of the eigenvalues lambda_k^{(i)} is never established. The displayed permutation Pi is also not a valid 2d x 2d permutation (for even i > d, j = d + i exceeds 2d). The conclusion survives — A^{-1}B is similar to the symmetric A^{-1/2}BA^{-1/2}, so W_i has real eigenvalues and a non-orthogonal diagonalization, the block factorization only needs an invertible transformation, and Gelfand's formula needs no orthogonality — but the stated spectral argument is false as written.",
+      "failure_location": {
+        "quote": "Let the eigenvalue decomposition of \\(W_i\\) be \\(W_i = \\tilde{U}_i \\Lambda_i \\tilde{U}_i^{\\top}\\), where \\(\\Lambda_i\\) is a real diagonal matrix with its $k$-th diagonal \\(\\lambda_k^{(i)}\\) being the \\(k\\)-th eigenvalue of \\(W_i\\).",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the orthogonal eigendecomposition by the similarity of W_i to the symmetric I_d - mu*A^{-1/2}BA^{-1/2} (real spectrum; diagonalization W_i = U_tilde*Lambda*U_tilde^{-1} with invertible U_tilde), correct Pi to the interleaving permutation (j = (i+1)/2 for odd i, j = d + i/2 for even i), and note that the block diagonalization and Gelfand's formula hold without orthogonality.",
+      "overall_effect": "The central spectral step of the proof of Theorem thm:convergence_theorem1 (whose strategy is reused in Lemma M-IHS converging rate) is unsupported as written; with the standard similarity repair all stated conclusions remain valid, so no downstream claim is lost.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "Orthogonal eigendecomposition asserted for the non-symmetric iteration matrix W_i",
+      "why_classification": "A standard local repair (a one-line similarity argument plus a corrected permutation index) preserves every claim, bound, and rate of the theorem."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf",
+        "cmpxtyAlgSLSE",
+        "finalerror"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then as \\( N \\) tends to infinity, while \\( d/N \\rightarrow \\gamma \\in (0,1) \\), \\( m_i/N \\rightarrow \\xi \\in (\\gamma, 1) \\), the \\(i\\)-th relative prediction efficiency $\\mathrm{PE}(i)$ has the limit",
+          "tag": "lemma:lemma3"
+        },
+        {
+          "quote": "\\(\\operatorname{Var}(\\|X\\tilde{\\beta}^i - X\\beta\\|) \\geq \\operatorname{Var}(\\sqrt{(N - d)/(m_i - d)}\\|X\\hat{\\beta} - X\\beta\\|)\\).",
+          "tag": "remarkA7"
+        },
+        {
+          "quote": "According to Theorem \\ref{thm:convergence_theorem1} and Lemma \\ref{lemma:lemma3}, there exists a constant \\({M_1} >0\\), such that if \\(a_1 > M_1\\), it holds that",
+          "tag": "finalerror"
+        },
+        {
+          "quote": "r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}} \\geq \\frac{\\mathbb{E}\\|X({\\tilde{\\beta}^{i-1}} - {\\beta})\\|}{\\mathbb{E}\\|X({\\tilde{\\beta}^{i}} - {\\beta})\\|},",
+          "tag": "lowerBoundai"
+        },
+        {
+          "quote": "In Algorithm \\ref{Alg-SRHT}, for a prescribed tolerance \\(\\omega \\in (0,1)\\), the iteration count \\(a_i\\) needed for the \\(i\\)-th sketched LS subproblem to full fill (\\ref{14}) satisfies",
+          "tag": "lowerBoundai"
+        }
+      ],
+      "failure_explanation": "Lemma lemma:lemma3 is an N -> infinity limit theorem, and Remark remarkA7 converts it to the bound E||X*beta_tilde^i - X*beta|| <= sqrt((N-d)/(m_i-d)) E||X*beta_hat - X*beta|| only under two extra conditions (including a variance comparison) that appear in no hypothesis of Theorem lowerBoundai, Lemma finalerror, or Theorem Thf, all stated for finite N. The proofs silently use the limit formula as a finite-N inequality (equation (21) in finalerror's proof; the r(i-1,i) step in lowerBoundai's proof). Moreover, lowerBoundai's ratio step needs a lower bound on E||X(beta_tilde^{i-1} - beta)|| (or asymptotic equality), while Remark remarkA7 supplies only upper bounds, so the displayed ratio inequality is not derived even inside the asymptotic regime.",
+      "failure_location": {
+        "quote": "In a similar fashion of Lemma \\ref{lemma:lemma3} and Remark \\ref{remarkA7}, as \\( N \\) tends to infinity, we let \\( d/N \\rightarrow \\gamma \\in (0,1) \\),  \\( m_i/N \\rightarrow \\xi_i \\in (\\gamma, 1) \\).",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the asymptotic regime and the Remark remarkA7 conditions to the hypotheses of Theorem lowerBoundai, Lemma finalerror, and Theorem Thf and restate their conclusions asymptotically (invoking the PE limit equality for the ratio step), or restate the results in squared norms to remove the variance condition; a finite-N two-sided PE bound, which the source does not provide, would otherwise be needed.",
+      "overall_effect": "The precision-loss constants in Lemma finalerror and Theorem Thf (the [1+o(1)] OLS-level guarantee) and the a_i lower bounds of Theorem lowerBoundai (hence the cost analysis of Theorem cmpxtyAlgSLSE) are not established for the stated finite-N settings; they hold at best asymptotically and under the unlisted variance condition.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "Asymptotic, conditional prediction-efficiency bounds used as finite-N facts in the precision theorems",
+      "why_classification": "The least source-supported repair adds substantive hypotheses (an asymptotic regime plus an unverified variance condition, or a change of the guarantee form to squared norms) and weakens unconditional finite-N statements to conditional/asymptotic ones — a limited weakening that still requires more than a routine local fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}} \\geq \\frac{\\mathbb{E}\\|X({\\tilde{\\beta}^{i-1}} - {\\beta})\\|}{\\mathbb{E}\\|X({\\tilde{\\beta}^{i}} - {\\beta})\\|},",
+          "tag": "lowerBoundai"
+        },
+        {
+          "quote": "\\mathbb{E}\\|X\\tilde{\\beta}^i - X\\beta\\| \\leq \\sqrt{\\frac{N - d}{m_i - d}}{\\mathbb{E}\\|X\\hat{\\beta} - X\\beta\\|}.",
+          "tag": "remarkA7"
+        },
+        {
+          "quote": "it holds that $\\log_3(1/\\omega)<a_i<\\alpha$ ($i=1,\\ldots,K$) with $\\alpha=\\log_3\\{[1+(1+\\omega)/\\sqrt{2}]/\\omega\\}$",
+          "tag": "cmpxtyAlgSLSE"
+        },
+        {
+          "quote": "Theorem \\ref{lowerBoundai} implies that the sequence $\\{a_i\\}_{i=2}^K$ are monotonically increasing with respect to $i$, namely \\(a_2<\\ldots<a_K\\) (refer to Appendix \\ref{cmpxtyAlgSLSEPrf}), which can serve as a guidance for determining \\(a_i\\) in Algorithm \\ref{Alg-SRHT}.",
+          "tag": null
+        },
+        {
+          "quote": "where \\( r(i-1,i) = \\sqrt{m_{i-1} - d / m_{i} - d} \\) .",
+          "tag": "lowerBoundai"
+        }
+      ],
+      "failure_explanation": "By the PE scaling E||X(beta_tilde^i - beta)|| ~ sqrt((N-d)/(m_i-d)) E||X(beta_hat - beta)||, the ratio of consecutive precisions is sqrt((m_i-d)/(m_{i-1}-d)) = sqrt((2-x)/(1-x)) with x = 2^{K+2-i}*gamma — exactly what the proof of Theorem lowerBoundai uses and what its ratio inequality requires (> 1). The proof of Theorem cmpxtyAlgSLSE computes the reciprocal sqrt((1-x)/(2-x)) = sqrt((m_{i-1}-d)/(m_i-d)) (the same reversal suggested by the garbled formula in the statement of Theorem lowerBoundai), a number < 1 that cannot upper-bound an error ratio > 1. Consequently the monotonicity is reversed (a_i at its lower bound decreases with i: a_2 > ... > a_K, not a_2 < ... < a_K); the claimed upper bound a_i < alpha with alpha = log_3{[1+(1+omega)/sqrt(2)]/omega} is false, since the correct lower bound log_3{[1+(1+omega)sqrt(2)]/omega} already exceeds alpha; and the first-stage cost constant 4*alpha*Nd and the 2nd-stage positivity condition omega > sigma^{1/K} are miscalibrated.",
+      "failure_location": {
+        "quote": "it follows that $r(i-1,i)=\\sqrt{(1-2^{K+2-i}\\gamma)/(2-2^{K+2-i}\\gamma)}$ ($i=2,\\ldots,K$).",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Use r(i-1,i) = sqrt((m_i-d)/(m_{i-1}-d)) consistently (fixing the garbled formula in the statement of Theorem lowerBoundai and the computation in the proof of Theorem cmpxtyAlgSLSE), reverse the monotonicity conclusion to a_2 > ... > a_K, and restate the a_i bounds and stage-cost constants with the corrected ratio.",
+      "overall_effect": "The iteration-count interval, the monotonicity claim (restated in the Section 4 prose and used to design the Section 5 experiment), the constant alpha in the claimed first-stage cost 4*alpha*Nd, and the condition omega > sigma^{1/K} of Theorem cmpxtyAlgSLSE are unreliable; only the qualitative conclusion that the initialization stage dominates survives, with corrected constants.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "Reversed precision ratio r(i-1,i) yields false monotonicity and false bounds on a_i",
+      "why_classification": "The correction withdraws and replaces substantive claimed bounds (the a_i interval, the monotonicity direction, and the cost constant) and requires redoing the bound and cost derivations; a comparable theorem survives, so the loss is limited but more than a routine local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_theorem1",
+        "Thf",
+        "finalerror"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\geq c\\epsilon^{-2}\\left(d + \\log\\left(\\frac{N}{\\delta}\\right)\\right)\\log\\left(\\frac{ed}{\\delta}\\right),",
+          "tag": "thm:bigtheorem"
+        },
+        {
+          "quote": "r \\geq c\\epsilon^{-2}\\left[d + \\log\\left(\\frac{N}{\\delta}\\right)\\right]\\log\\left(\\frac{ed}{\\delta}\\right), \\quad m_1 \\textgreater r,",
+          "tag": "thm:convergence_theorem1"
+        }
+      ],
+      "failure_explanation": "Bounding each of the K embedding events at level delta/K requires applying Theorem thm:bigtheorem with failure probability delta/K, i.e., m_i >= c*eps^{-2}(d + log(NK/delta)) log(edK/delta). The hypotheses in force (inherited from Theorem thm:convergence_theorem1) impose only the condition with delta, and the extra K-dependent logarithmic factors cannot be absorbed into the constant c uniformly (e.g., small d with N growing and K = log_2(N/m_1) unbounded), so the union-bound conclusion Pr{union over i of the embedding-failure events} <= delta does not follow from the stated conditions.",
+      "failure_location": {
+        "quote": "For a sufficiently large constant \\(c\\), Theorem \\ref{thm:bigtheorem} ensures the following condition \\[ \\Pr\\left\\{\\left\\|{U}^{\\top} {S}_i^{\\top} {S}_i {U} - {I}_d \\right\\| > \\epsilon\\right\\} \\leq \\frac{\\delta}{K}, \\quad i = 1, \\ldots, K. \\]",
+        "tag": "lemma1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Strengthen the sketch-size hypothesis (in Lemma lemma1 or in Theorems thm:convergence_theorem1/Thf and Lemma finalerror) to r >= c*eps^{-2}[d + log(NK/delta)] log(edK/delta), or assume K = O(1).",
+      "overall_effect": "The 'with probability at least 1-2*delta' guarantees of Theorem thm:convergence_theorem1, Lemma finalerror, and Theorem Thf rest on this union bound and are unproven under the stated sketch-size conditions.",
+      "primary_affected_tag": "lemma1",
+      "target_type": "formal_result",
+      "title": "Embedding theorem invoked with per-event failure delta/K beyond its stated hypothesis",
+      "why_classification": "A local strengthening of one hypothesis by logarithmic factors preserves all conclusions, rates, and the advertised regime."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2509.06856",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n03-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "981b8984cdca82ea93a1c8e2f7a3a3ff16d853374c7f5e11ece8d6b29bfd4d2f",
+  "status": "ok"
+}

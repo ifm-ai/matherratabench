@@ -1,0 +1,300 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The solution satisfies the boundary conditions: $V(0) = 0$ by construction, $\\|\\nabla V(0)\\| \\approx 4.36 \\times 10^{-3}$, and $\\|\\nabla^2 V(0) - P\\|_F \\approx 5.67 \\times 10^{-1}$ in Frobenius norm.",
+          "tag": null
+        },
+        {
+          "quote": "The semidefinite program is solved using \\textsc{SCS} with tolerance $10^{-4}$ and Riccati--Hessian relaxation $\\varepsilon = 0.5$.",
+          "tag": null
+        },
+        {
+          "quote": "\\|\\nabla^2 V(0)-P\\|_F \\approx 1.0.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The SDP of thm:collocation imposes the boundary, gradient and Hessian conditions as hard equality constraints (eq:sdp_boundary--eq:sdp_hessian), so any solution must satisfy them to solver precision. The 2D experiment reports $\\|\\nabla V(0)\\| \\approx 4.36\\times10^{-3}$ and $\\|\\nabla^2 V(0) - P\\|_F \\approx 0.567$, and the Van der Pol experiment uses a 'Riccati--Hessian relaxation $\\varepsilon = 0.5$' with error $\\approx 1.0$. Hence these experiments did not solve the stated SDP but a relaxed variant, without acknowledgment. The stability and non-triviality guarantees of thm:stability, which require the exact constraint $\\nabla^2 \\hat V(0) = P \\succ 0$, therefore do not apply to the reported trajectories.",
+      "failure_location": {
+        "quote": "\\sum_{i=1}^M p_i \\nabla_x^2 \\kappa(0, x_i) = P,",
+        "tag": "thm:collocation"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Enforce the hard equality constraints in the experiments (the constraints are feasible with the chosen kernels and centers, as the 1D case shows) or explicitly solve a relaxed SDP together with a constraint-violation/robustness analysis; in either case acknowledge the deviation from eq:sdp.",
+      "overall_effect": "The reported stabilization experiments are not executions of the stated algorithm; the theoretical guarantees (exponential stability, rate, exclusion of the trivial solution) do not attach to the reported trajectories, so the numerical validation of the stability certificate is unsupported.",
+      "primary_affected_tag": "thm:collocation",
+      "target_type": "algorithm",
+      "title": "Numerical experiments violate the SDP's hard equality constraints",
+      "why_classification": "The algorithm's stated contract fails in the reported implementation; the repair (hard enforcement or a robustness analysis) is contained and the SDP framework itself is sound, but the reported guarantees are currently unsupported."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:control_suboptimality"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\textbf{Lower bound:} By definition, $V^*(x) = \\inf_u J(x, u)$ is the minimum cost. Any suboptimal control achieves at least this cost, so $\\hat{V}(x) \\geq V^*(x) - \\epsilon \\cdot T(x)$ follows from standard perturbation arguments.",
+          "tag": "thm:suboptimality"
+        },
+        {
+          "quote": "R(x) := \\nabla \\hat{V}(x)^\\top f(x) - \\frac{1}{2}\\nabla \\hat{V}(x)^\\top g(x)D^{-1}g(x)^\\top \\nabla \\hat{V}(x) + q(x) \\geq -\\epsilon",
+          "tag": "thm:suboptimality"
+        }
+      ],
+      "failure_explanation": "The hypothesis is a supersolution with slack ($R \\geq -\\epsilon$), not a supersolution ($R \\geq 0$). The lower-bound paragraph does not prove $\\hat V \\geq V^*$; it asserts the weaker slack inequality $\\hat V \\geq V^* - \\epsilon T(x)$, i.e., the opposite direction from the stated lower bound. The slack-free claim is false in general: with $\\hat V = V^* - \\delta\\psi$ for a smooth bump $\\psi \\geq 0$, $\\psi(0) = 0$, $\\psi = 0$ on $\\partial\\Omega$, one gets $R(\\hat V) = -\\delta\\,\\dot\\psi|_{u^*} - \\frac{\\delta^2}{2}\\|g^\\top\\nabla\\psi\\|^2 \\geq -\\epsilon$ for $\\delta$ small relative to $\\epsilon$, all hypotheses hold, yet $\\hat V < V^*$ in the interior. So the two-sided bound collapses on the lower side.",
+      "failure_location": {
+        "quote": "0 \\leq \\hat{V}(x) - V^*(x) \\leq \\epsilon \\cdot T(x),",
+        "tag": "thm:suboptimality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate the theorem with a one-sided conclusion ($\\hat V - V^* \\leq \\epsilon T$, proved via the optimal trajectory) or add a supersolution hypothesis $R \\geq 0$ to retain the slack-free lower bound via a comparison principle.",
+      "overall_effect": "The advertised two-sided suboptimality bound is wrong; only a one-sided comparison survives, and the control-suboptimality corollary's tighter bound is unsupported.",
+      "primary_affected_tag": "thm:suboptimality",
+      "target_type": "formal_result",
+      "title": "Lower bound $0 \\leq \\hat V - V^*$ is false under the stated hypotheses",
+      "why_classification": "The central suboptimality guarantee survives only in weakened one-sided form; the repair needs a comparison argument or a strengthened hypothesis, but the upper-bound direction is retained."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:control_suboptimality"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $T(x)$ is the time to reach a small neighborhood of the origin (or exit time from $\\Omega$) under optimal control.",
+          "tag": "thm:suboptimality"
+        },
+        {
+          "quote": "Since $V^*(x_0) \\leq J(x_0; \\hat{u})$, we have $V^*(x_0) \\leq \\hat{V}(x_0) + \\epsilon \\cdot T(x_0)$, giving the upper bound.",
+          "tag": "thm:suboptimality"
+        }
+      ],
+      "failure_explanation": "The integration argument gives $J_T(x_0;\\hat u) \\leq \\hat V(x_0) + \\epsilon T$ for finite $T$, hence $V^* \\leq \\hat V + \\epsilon T$ — a lower bound on $\\hat V - V^*$, the opposite of the stated upper bound $\\hat V - V^* \\leq \\epsilon T$. The stated inequality is a comparison-principle statement that follows by integrating the residual along the OPTIMAL trajectory (via $H(\\hat V) = \\dot W - \\frac{1}{2}\\nabla W^\\top g D^{-1} g^\\top \\nabla W \\geq -\\epsilon$ for $W = \\hat V - V^*$), not the $\\hat u$-trajectory used. Moreover $T \\to \\infty$ sends $\\epsilon T \\to \\infty$, so the limit step is vacuous; obtaining a finite bound requires stopping at the reaching time and controlling the tail cost, which is not done. The definition of $T(x)$ ('under optimal control') also mismatches the trajectory used in the proof.",
+      "failure_location": {
+        "quote": "As $T \\to \\infty$ with $x(T) \\to 0$ and $\\hat{V}(0) = 0$: $J(x_0; \\hat{u}) \\leq \\hat{V}(x_0) + \\epsilon \\cdot T(x_0)$.",
+        "tag": "thm:suboptimality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Reprove $\\hat V \\leq V^* + \\epsilon T$ by integrating $\\dot W \\geq -\\epsilon$ along the optimal trajectory up to the reaching time and estimate the tail, or restate the theorem with a precisely defined $T(x)$ and the correct derivation.",
+      "overall_effect": "The upper half of the suboptimality bound is unproven as written, although the statement itself is true via a different argument; the bound's stated form with finite $T(x)$ is not established, and the corollary inherits the gap.",
+      "primary_affected_tag": "thm:suboptimality",
+      "target_type": "formal_result",
+      "title": "Upper-bound proof derives the wrong inequality and a vacuous $T \\to \\infty$ limit",
+      "why_classification": "The statement is salvageable but only through a different argument (optimal-trajectory comparison plus a tail estimate); the written proof establishes the opposite inequality and a vacuous limit."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $\\hat{V}(x_0) \\geq V^*(x_0) - \\epsilon \\cdot T(x_0)$ (which can be verified by a similar argument), we have $J(x_0; \\hat{u}) \\leq V^*(x_0) + 2\\epsilon \\cdot T(x_0)$.",
+          "tag": "cor:control_suboptimality"
+        }
+      ],
+      "failure_explanation": "Under the stated conditions (residual $R \\geq -\\epsilon$), the proof itself derives $J - V^* \\leq 2\\epsilon T$, not $\\epsilon T$. The supersolution case does not rescue the claim either: there $\\epsilon = 0$ and the argument gives only $J - V^* \\leq \\hat V - V^*$, which need not be $\\leq 0$ for strict supersolutions. The stated bound is therefore not established; the supportable statement under the theorem's hypotheses is $2\\epsilon T(x_0)$.",
+      "failure_location": {
+        "quote": "J(x_0; \\hat{u}) - V^*(x_0) \\leq \\epsilon \\cdot T(x_0).",
+        "tag": "cor:control_suboptimality"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Change the bound to $2\\epsilon \\cdot T(x_0)$ to match the proof, or add a supersolution hypothesis together with a valid comparison argument.",
+      "overall_effect": "The control-suboptimality guarantee is overstated by a factor of two; the correct bound under the stated hypotheses is $2\\epsilon T(x_0)$.",
+      "primary_affected_tag": "cor:control_suboptimality",
+      "target_type": "formal_result",
+      "title": "Corollary states an $\\epsilon T$ bound whose own proof yields $2\\epsilon T$",
+      "why_classification": "A one-constant correction (or an added hypothesis) restores agreement between statement and proof with no loss of scope; the repair is immediate."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\partial V}{\\partial x}f(x) - \\frac{1}{2}\\frac{\\partial V}{\\partial x}g(x)D^{-1}g(x)^\\top\\left(\\frac{\\partial V}{\\partial x}\\right)^\\top + q(x) \\geq 0.",
+          "tag": null
+        },
+        {
+          "quote": "For stabilizable/detectable pairs, we have $q(x) \\geq c_3 \\|x\\|^2$ for some $c_3 > 0$ near the origin.",
+          "tag": "thm:stability"
+        }
+      ],
+      "failure_explanation": "The HJB inequality gives $\\nabla\\hat V^\\top f \\geq -q + \\frac{1}{2}\\nabla\\hat V^\\top g D^{-1} g^\\top \\nabla \\hat V$, a LOWER bound on $\\nabla\\hat V^\\top f$. Substituting it into $\\frac{d\\hat V}{dt} = \\nabla\\hat V^\\top f - \\nabla\\hat V^\\top g D^{-1} g^\\top \\nabla\\hat V$ yields $\\frac{d\\hat V}{dt} \\geq -q - \\frac{1}{2}\\nabla\\hat V^\\top g D^{-1} g^\\top \\nabla\\hat V$, not the claimed upper bound; a lower bound on $\\nabla\\hat V^\\top f$ cannot upper-bound the derivative. Hence supersolutions of the HJB inequality are not shown to be Lyapunov functions (they may increase along the closed loop). Independently, Step 3's claim that detectability yields $q(x) \\geq c_3\\|x\\|^2$ near the origin is false: it requires $Q = \\nabla^2 q(0) \\succ 0$, while detectability permits $Q$ singular (e.g., $q(x) = x^4$). The conclusion (local exponential stability) does hold from the equilibrium and Hessian constraints alone, since the closed-loop linearization $A - BD^{-1}B^\\top P$ is Hurwitz for the stabilizing $P$, but the proof as written is invalid and the HJB-inequality hypothesis is superfluous.",
+      "failure_location": {
+        "quote": "\\frac{d\\hat{V}}{dt} &= \\nabla \\hat{V}^\\top (f + g\\hat{u}) \\\\ &= \\nabla \\hat{V}^\\top f - \\nabla \\hat{V}^\\top g D^{-1} g^\\top \\nabla \\hat{V} \\\\ &\\leq -q(x) - \\frac{1}{2}\\nabla \\hat{V}^\\top g D^{-1} g^\\top \\nabla \\hat{V} \\\\ &\\leq -q(x).",
+        "tag": "thm:stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the proof with the indirect method: the Hessian constraint makes the closed-loop linearization $A - BD^{-1}B^\\top P$ Hurwitz, giving local exponential stability directly; drop the unnecessary HJB-inequality hypothesis or restate the theorem accordingly.",
+      "overall_effect": "The advertised exponential-stability certificate is unproven as stated; the proof's central Lyapunov argument fails in two independent places, and the connection 'HJB inequality implies a stability certificate' is misleading.",
+      "primary_affected_tag": "thm:stability",
+      "target_type": "formal_result",
+      "title": "Lyapunov decrease step reverses the inequality; detectability does not imply a quadratic lower bound on $q$",
+      "why_classification": "The conclusion survives via a standard contained argument (indirect Lyapunov), but the proof architecture must be replaced and the advertised Lyapunov-certificate route is invalid; more than a local fix, yet no major loss."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Taking $\\alpha = \\sqrt{c_2/c_1}$ and $\\beta = c_3/(2c_2)$ gives the result.",
+          "tag": "thm:stability"
+        }
+      ],
+      "failure_explanation": "The asymptotic rate near the origin is $-\\max\\mathrm{Re}\\,\\lambda(A - BD^{-1}B^\\top P)$, which can be arbitrarily small compared with $\\lambda_{\\min}(P)/\\lambda_{\\max}(P)$. Counterexample satisfying all standing assumptions: scalar system with $A = B = 0.1$, $D = 1$, $q(x) = 0.005x^2$ ($Q = 0.01$). The stabilizing Riccati solution is $P = 10 + \\sqrt{101} \\approx 20.05$, so $\\lambda_{\\min}(P)/\\lambda_{\\max}(P) = 1$, but the closed-loop rate is $A - B^2P/D = 0.1 - 0.2005 = -0.1005$, i.e., $\\beta \\approx 0.1 < 1$. The claim also does not follow from the proof, which obtains $\\beta = c_3/(2c_2) \\approx \\lambda_{\\min}(Q)/(2\\lambda_{\\max}(P))$.",
+      "failure_location": {
+        "quote": "The convergence rate $\\beta$ satisfies $\\beta \\geq \\lambda_{\\min}(P) / \\lambda_{\\max}(P)$ asymptotically near the origin.",
+        "tag": "thm:stability"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the rate bound with the true asymptotic rate $-\\max\\mathrm{Re}\\,\\lambda(A - BD^{-1}B^\\top P)$ (computable from the closed-loop linearization) or remove the quantitative claim.",
+      "overall_effect": "The quantitative rate guarantee (echoed in the numerical summary as 'rates consistent with the smallest eigenvalue of the Riccati matrix $P$') is unreliable; only the qualitative existence of some $\\beta > 0$ survives.",
+      "primary_affected_tag": "thm:stability",
+      "target_type": "formal_result",
+      "title": "Claimed rate $\\beta \\geq \\lambda_{\\min}(P)/\\lambda_{\\max}(P)$ is false",
+      "why_classification": "Withdrawing or replacing the advertised rate loses a quantitative guarantee, but the qualitative stability result survives; the repair is a contained restatement."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\textbf{Step 2:} For $V^* \\in H^s(\\Omega) \\cap \\mathcal{H}_\\kappa$, the best approximation from $\\mathcal{H}_M = \\text{span}\\{\\kappa(\\cdot, x_i)\\}_{i=1}^M$ satisfies:",
+          "tag": "thm:convergence"
+        },
+        {
+          "quote": "The Gaussian kernel generates an RKHS $\\mathcal{H}_\\kappa$ that is norm-equivalent to certain Sobolev spaces.",
+          "tag": "thm:convergence"
+        },
+        {
+          "quote": "\\|\\nabla V^* - \\nabla \\hat{V}\\|_{L^2(\\Omega)} \\leq C \\|V^* - \\hat{V}\\|_{H^1(\\Omega)} \\leq C' \\|V^* - \\hat{V}\\|_{\\mathcal{H}_\\kappa} = O(h^{s-1}).",
+          "tag": "thm:convergence"
+        }
+      ],
+      "failure_explanation": "The theorem assumes only $V^* \\in H^s(\\Omega)$, but the native-norm error bound in Step 2 requires $V^* \\in \\mathcal{H}_\\kappa$; for the Gaussian kernel this native space consists of analytic functions, so generic $H^s$ functions are not covered. Step 1's claim that the Gaussian RKHS is norm-equivalent to a Sobolev space is false (true for Mat\\'ern, not Gaussian), and the intermediate rate $\\|V^* - \\hat V\\|_{\\mathcal{H}_\\kappa} = O(h^s)$ is incorrect: for $f \\in \\mathcal{H}_\\kappa$ the Gaussian interpolant converges superalgebraically, while the standard power-function estimate in native norm is $O(h^{s - n/2})$, not $O(h^s)$. Step 3 is internally inconsistent (an $O(h^s)$ native-norm error cannot yield $O(h^{s-1})$). The final $L^2$ gradient rate $O(h^{s-1})$ is the standard Sobolev rate, but it is not established by the argument given.",
+      "failure_location": {
+        "quote": "\\|V^* - \\hat{V}\\|_{\\mathcal{H}_\\kappa} = O(h^s)",
+        "tag": "thm:convergence"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the proof with a correct kernel-approximation argument for $H^s$ functions (e.g., $L^2$/Sobolev error estimates for kernel interpolants on quasi-uniform grids yielding $\\|V^* - \\hat V\\|_{H^1} = O(h^{s-1})$ directly), without assuming $V^* \\in \\mathcal{H}_\\kappa$.",
+      "overall_effect": "The convergence-rate guarantee is unproven as stated; the proof does not cover $V^* \\in H^s \\setminus \\mathcal{H}_\\kappa$ and contains false intermediate claims.",
+      "primary_affected_tag": "thm:convergence",
+      "target_type": "formal_result",
+      "title": "Convergence proof assumes $V^* \\in \\mathcal{H}_\\kappa$ (not hypothesized) and uses incorrect intermediate rates",
+      "why_classification": "The conclusion is standard and correct, but the proof needs a genuine replacement argument from approximation theory; not a local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:collocation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $P = \\nabla^2 V(0) \\succ 0$ (positive definite since $A$ is stable by assumption).",
+          "tag": "thm:giesl_reduction"
+        },
+        {
+          "quote": "\\textbf{Prevents trivial solution}: Since $P \\succ 0$ (positive definite for stabilizable systems under Assumption~\\ref{ass:standing}), the constraint explicitly excludes $V \\equiv 0$.",
+          "tag": "rem:riccati_significance"
+        }
+      ],
+      "failure_explanation": "Stability of $A$ (or detectability) yields a unique positive SEMIdefinite solution of the Lyapunov equation; $P \\succ 0$ requires observability of $(A, Q^{1/2})$. Counterexample satisfying all standing assumptions: $q(x) = x^4$ (so $Q = \\nabla^2 q(0) = 0$ while $q(x) > 0$ for $x \\neq 0$) with $A = -1$: the Lyapunov equation $-2P = 0$ gives $P = 0 \\not\\succ 0$. In the controlled case, stabilizability plus detectability also give only $P \\succeq 0$ (e.g., $A = \\mathrm{diag}(-1,-2)$, $Q = \\mathrm{diag}(1,0)$, $B = D = I$ gives the stabilizing solution $P = \\mathrm{diag}(\\sqrt{2}-1, 0)$). Hence the 'trivial solution prevention' via $P \\succ 0$ fails whenever $(A, Q^{1/2})$ is not observable, including the 'prevents the trivial solution' claim of thm:collocation.",
+      "failure_location": {
+        "quote": "Since $A$ is assumed stable (all eigenvalues have negative real parts) and $(A, Q^{1/2})$ is detectable, the Lyapunov equation has a unique positive definite solution $P \\succ 0$.",
+        "tag": "thm:giesl_reduction"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Add an observability hypothesis on $(A, Q^{1/2})$ (or $Q \\succ 0$) to the standing assumptions, or treat the semidefinite case separately.",
+      "overall_effect": "The $P \\succ 0$ justification underlying trivial-solution prevention (thm:giesl_reduction, rem:riccati_significance, and the 'prevents the trivial solution' claim of thm:collocation) is invalid without observability; for non-observable costs the Hessian constraint does not exclude $V \\equiv 0$.",
+      "primary_affected_tag": "thm:giesl_reduction",
+      "target_type": "formal_result",
+      "title": "Positive definiteness of the Lyapunov solution claimed from detectability alone, which is false",
+      "why_classification": "A local hypothesis addition (observability) restores the claim with no change to the conclusion; the repair is routine."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The state cost satisfies $q(0) = 0$ and $q(x) > 0$ for $x \\neq 0$.",
+          "tag": "ass:standing"
+        },
+        {
+          "quote": "For the linearized system around the origin, we have $A = 1$, $B = 1$, $D = 1$, and choosing $Q = 2$ yields the Riccati solution (from Corollary~\\ref{cor:scalar_riccati}):",
+          "tag": null
+        },
+        {
+          "quote": "For the linearized system at the origin with $A = I_2$, $B = I_2$, $D = I_2$, choosing $Q = 2I_2$ yields the Riccati solution:",
+          "tag": null
+        },
+        {
+          "quote": "ensures the trivial solution is infeasible, local curvature matches the LQR solution, and exponential stability is guaranteed.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Substituting $V^*(x) = x^2 + 0.25x^4$ and $f(x) = x + x^3$ into eq:state_cost gives $q(x) = -x^4 - \\tfrac{1}{2}x^6 < 0$ for $x \\neq 0$, contradicting $q \\geq 0$ (eq:cost) and Assumption 3 ($q(x) > 0$ for $x \\neq 0$). The same computation in the 2D example gives $q(x) = -\\tfrac{1}{2}\\|x\\|^4(2 + \\|x\\|^2) < 0$. Consequently $\\nabla^2 q(0) = 0$, so the paper's 'chosen $Q = 2$' (resp. $Q = 2I_2$) contradicts the framework's definition $Q = \\nabla^2 q(0)$ (eq:are), detectability of $(A, Q^{1/2})$ fails, and the true LQR curvature is $\\nabla^2 V^*(0) = 2$ (resp. $2I_2$), not the imposed $P = 1 + \\sqrt{3} \\approx 2.732$ (resp. $(1+\\sqrt{3})I_2$). The claim that the Riccati constraint 'ensures... local curvature matches the LQR solution' is therefore false for these examples, and the examples are not valid instances of the problem class to which the theorems apply.",
+      "failure_location": {
+        "quote": "q(x) = \\frac{1}{2}\\left(\\frac{\\partial V^*}{\\partial x}\\right)^2 - \\frac{\\partial V^*}{\\partial x}f(x),",
+        "tag": "eq:state_cost"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Rebuild the examples with a nonnegative state cost consistent with the imposed Riccati constraint (choose $q$ with $\\nabla^2 q(0)$ matching the desired $P$, compute the corresponding true value function) and re-run the experiments; the theory itself is unaffected.",
+      "overall_effect": "The 1D and 2D numerical validations are performed on problems outside the paper's own assumptions; the theoretical guarantees (suboptimality, stability) do not apply to them, and the imposed Riccati constraint contradicts the true solution's curvature. The headline 'theoretical guarantees' validated numerically are unsupported.",
+      "primary_affected_tag": "eq:state_cost",
+      "target_type": "other",
+      "title": "Polynomial examples use a negative state cost and a Riccati curvature inconsistent with the true solution",
+      "why_classification": "The defect is confined to the numerical examples (the theory stands), but the paper's central empirical validation must be recomputed and the advertised guarantees do not cover the reported experiments; a contained re-computation, not new architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $Q = 2I_2$ and $R = 1$.",
+          "tag": null
+        },
+        {
+          "quote": "where $Q = \\nabla^2 q(0)$ is the Hessian of the state cost at the origin.",
+          "tag": "thm:riccati_matching"
+        },
+        {
+          "quote": "J(x_0, u) = \\int_0^\\infty \\left[ q(x(t)) + \\frac{1}{2}u(t)^\\top D u(t) \\right] dt",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The framework's cost is $q(x) + \\frac{1}{2}u^\\top D u$ and the Riccati constraint is defined with $Q = \\nabla^2 q(0)$ (eq:are). Mapping the Van der Pol cost onto the framework gives $q(x) = x^\\top(2I)x$, hence $\\nabla^2 q(0) = 4I \\neq 2I$ and $D = 2R = 2$. The ARE the paper solves ($A^\\top P + PA - PBR^{-1}B^\\top P + 2I = 0$) is therefore not the ARE of eq:are for the stated cost ($A^\\top P + PA - \\tfrac{1}{2}PBB^\\top P + 4I = 0$), so the imposed Riccati Hessian constraint is inconsistent with the framework's own prescription (thm:riccati_matching).",
+      "failure_location": {
+        "quote": "J(x_0, u) = \\int_0^\\infty \\big( x^\\top Q x + u^\\top R u \\big)\\, dt,",
+        "tag": "eq:vdp_cost"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Recompute $P$ from the ARE with $Q = \\nabla^2 q(0) = 4I$ and $D = 2R$, or restate the example's cost in the framework's $\\frac{1}{2}$-normalized form.",
+      "overall_effect": "The Van der Pol Riccati constraint does not match the framework's definition for the stated cost; the experiment's consistency with thm:riccati_matching is only apparent (a factor-2 convention mismatch in $Q$ and $D$).",
+      "primary_affected_tag": "eq:vdp_cost",
+      "target_type": "other",
+      "title": "Van der Pol Riccati constraint uses $Q = 2I$, inconsistent with the framework's $Q = \\nabla^2 q(0) = 4I$",
+      "why_classification": "A convention rescaling restores consistency; the example remains a valid LQR problem under its own convention, so the loss is limited to consistency with eq:are."
+    }
+  ],
+  "issues_found": 10,
+  "paper_id": "2603.01084",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "ae1bd8b81e57f8cdcc0b3f2717fbddf2f6278b8b00cfe06a2537efea483c8066",
+  "status": "ok"
+}

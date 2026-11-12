@@ -1,0 +1,68 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "convergalg2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\big( \\cH_{\\mu}(\\vx)\\big)_i =\\begin{cases}  0, & \\text{if } |\\vx_i| \\leq \\mu,\\\\ 1, & \\text{if } |\\vx_i| > \\mu, \\end{cases}",
+          "tag": "porpoptw"
+        },
+        {
+          "quote": "\\widehat{\\omega}^{(j+1)} = \\cH_{\\mu}(\\wvx^{(j+1)}),",
+          "tag": "updateforw"
+        },
+        {
+          "quote": "\\wvx^{(j+1)} \\in\\arg\\min _{A\\vx=\\vb }\\cQ_\\mu(\\vx,\\widehat{\\omega}^{j}),",
+          "tag": "BCDschemefornoiseless"
+        }
+      ],
+      "failure_explanation": "The algorithm can reach a fixed point with some |x_i|=μ. Because H_μ assigns 0 at equality, the component is treated as being in the quadratic region, so the x-subproblem KKT condition can hold and the iteration does not move. However such a point need not minimize the original objective: crossing μ in the appropriate direction can keep the penalty constant or reduce it while changing the data/constraint term favorably. Concrete counterexample: m=2,n=4, A columns (1,0),(0,1),(1,0.2),(1,0.1), μ=1, b=(2.3,1.05), x=(2,1,0.2,0.1), ω=(1,0,0,0). Then spark(A)=3, Q=2.05<3, x solves the BCD x-subproblem, and H(x)=ω, so BCD is fixed. But Φ(x)=2.05, and moving along v=(10,1,0,-10) with small ε>0 gives a feasible point with smaller Φ. The same construction with α=3 and b=(2.3,1.05+2/3) gives a fixed point of the noisy BCD that is not a minimizer of (3), falsifying Theorem convergalg2.",
+      "failure_location": {
+        "quote": "Then, the sequence $\\{(\\wvx^{k},\\widehat{\\omega}^{k})\\}_k$ is bounded and converges to the minimizer of model \\eqref{constrain_model} in a finite number of steps.",
+        "tag": "covgergalg1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must modify the algorithm's handling of equality |x_i|=μ (e.g., avoid the tie or perturb) and prove that any fixed point cannot have a breakpoint, or weaken the convergence claim to exclude such points.",
+      "overall_effect": "The finite-step convergence guarantee to a minimizer for the noise-free BCD is false. The same breakpoint trap also invalidates the corresponding noisy convergence guarantee. The algorithm may terminate at a non-minimizing fixed point where some component equals ±μ.",
+      "primary_affected_tag": "covgergalg1",
+      "target_type": "formal_result",
+      "title": "BCD can stall at breakpoints, invalidating finite-step convergence to minimizers",
+      "why_classification": "The advertised finite-step convergence to a minimizer fails, and the algorithm can be permanently trapped at a non-minimizer. Repair requires changing the algorithm's tie-breaking and adding a new convergence argument, not a routine local fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{K}+1=\\{i\\mid \\abs{(\\wvx_{k})_i}\\leq c_{k+1}\\}",
+          "tag": "updatemu"
+        }
+      ],
+      "failure_explanation": "The denominator m-n+card(K+1) can be zero or negative because m<n and card(K+1) can be less than n-m. In that case the square root is not real, so μ_{k+1} is not defined. The notation K+1 is also not defined as a set. Thus the continuation algorithm cannot be executed as written in general.",
+      "failure_location": {
+        "quote": "\\mu_{k+1}=\\min\\{\\max\\{c_{k+1}, \\sqrt{\\tfrac{\\sum_{i\\in\\mathcal{K}+1}(\\wvx_{k})_i^2}{m-n+\\mathrm{card}(\\mathcal{K}+1)}}\\}, \\mu_{k}\\},",
+        "tag": "updatemu"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Define the index set correctly and add a condition ensuring the denominator is positive (e.g., require the number of large entries to be < m before applying the update), or replace the update with a well-defined formula.",
+      "overall_effect": "The μ-continuation strategy, including Algorithm continuescheme, is not well-defined for general signals/sparsity levels, so its claimed numerical stability and experimental use are unsupported.",
+      "primary_affected_tag": "updatemu",
+      "target_type": "algorithm",
+      "title": "Continuation update rule for μ is ill-defined",
+      "why_classification": "The formula is a central step of the continuation algorithm and can be undefined. Fixing it requires clarifying the intended set and ensuring positivity, but it is an auxiliary numerical strategy rather than a core theorem."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2504.04509",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n04b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "806db391bc2a12e7e296de5a289b045ed6046db853e63982b09093bf18596081",
+  "status": "ok"
+}

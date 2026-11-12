@@ -1,0 +1,514 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "X_{k+1} = X_k - h \\nabla U(X_k) + \\sqrt{2h} Z_k",
+          "tag": "eq:ula"
+        }
+      ],
+      "failure_explanation": "Even for U(x)=x²/2, the update is X_{k+1}=(1-h)X_k+√(2h)Z_k. At h=2 its two-step chain is a Gaussian random walk and has no invariant probability distribution. Strong convexity and a Lipschitz gradient therefore do not justify the unrestricted ergodicity assertion.",
+      "failure_location": {
+        "quote": "Though the \\gls{mc} $(X_k)_k$ is again ergodic, its stationary distribution $\\pi_h$ depends on the stepsize \\( h > 0 \\)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Qualify the assertion by a sufficiently small, stable step-size condition, such as an appropriate instance of the restriction used later in the paper.",
+      "overall_effect": "The introductory stationary-distribution guarantee for ULA is false for permitted positive step sizes.",
+      "primary_affected_tag": "eq:ula",
+      "target_type": "algorithm",
+      "title": "ULA is asserted to be ergodic without a step-size restriction",
+      "why_classification": "A standard local step-size condition repairs this background guarantee without changing the subsequent analysis or its rates."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dd X_{t} = f(X_t,t) \\dd t + g(X_t,t)\\dd W_t,",
+          "tag": "eq:diffusion sde"
+        }
+      ],
+      "failure_explanation": "The forward equation permits state-dependent g, whereas the displayed reversal uses g(t). For state-dependent scalar diffusion, the reverse drift also requires the spatial divergence of the diffusion covariance, which is absent here. The stated formula is valid only after imposing spatial independence of g.",
+      "failure_location": {
+        "quote": "\\dd X_t = \\bigl(f(X_t,t) - g^2(t)\\nabla\\log p_{t}(X_t)\\bigr)\\dd t + g(t)\\dd W_t,",
+        "tag": "eq:BW_diff"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict this discussion explicitly to g(x,t)=g(t).",
+      "overall_effect": "The claimed reverse process does not reproduce the forward marginals for the full class of forward SDEs introduced.",
+      "primary_affected_tag": "eq:BW_diff",
+      "target_type": "other",
+      "title": "The reverse-SDE formula assumes spatially constant diffusion",
+      "why_classification": "This local hypothesis matches the additive-noise setting actually used by the paper and leaves its main results unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:KL between dynamic and moving target",
+        "thm:continuous diffusion final convergence",
+        "cor:final convergence continuous"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\mu_0$ admits a finite $4p$-th moment, then the $2p$-th moments of $\\mu_t$ are bounded uniformly in $t$.",
+          "tag": "lemma:mu_t bounded moments"
+        },
+        {
+          "quote": "Then $\\lim_{t\\rightarrow\\infty}\\KL(\\mu_t|\\pi)=0$.",
+          "tag": "cor:final convergence continuous"
+        }
+      ],
+      "failure_explanation": "No initial-law tail or entropy hypothesis is imposed. For the constant Gaussian target, X_t=e^{-t}X_0+√(1-e^{-2t})Z retains polynomial tails whenever X_0 has them. Even an initial density proportional to (1+x²)^{-3}, which has a finite fourth moment, contradicts the asserted Gaussian upper bound. With Cauchy initialization, forward KL to the Gaussian is infinite at every finite time, so the unrestricted convergence theorem itself is false. The cutoff proof and subsequent moment estimates therefore use inputs not established by the assumptions.",
+      "failure_location": {
+        "quote": "\\expo{-c_1(|x|^2+1)}\\leq q_t(x)\\leq \\expo{-c_2|x|^2},\\quad t\\in [t_1,t_2],\\; x\\in \\R^d.",
+        "tag": "eq:density_exponential"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add finite initial KL, the required initial moments, and valid Gaussian-envelope bounds on positive-time compact intervals as explicit hypotheses of the continuous results. Extending the result to a broader finite-moment class instead requires replacing the Gaussian-envelope estimates.",
+      "overall_effect": "The entropy-derivative justification and the continuous-time KL guarantees do not hold for the unrestricted initialization class stated.",
+      "primary_affected_tag": "lemma_time_deriv_KL",
+      "target_type": "formal_result",
+      "title": "The continuous analysis assumes unjustified Gaussian tails for arbitrary initial laws",
+      "why_classification": "A genuine initialization restriction or a contained replacement of the tail estimates is necessary, but the existing entropy and Grönwall architecture supports a comparable convergence result for suitably controlled initial laws."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "assume that $\\sum_k h_k=\\infty$ and $\\sum_k h_k^2<\\infty$.",
+          "tag": "corr discrete convergence"
+        }
+      ],
+      "failure_explanation": "A positive lower bound contradicts the cited theorem's square-summability assumption. Moreover, sending only that lower bound to zero does not make the actual steps small: the same constant sequence h_k=1/2 satisfies h_k≥h for every h≤1/2. For a standard Gaussian target this chain has stationary variance 4/3 and strictly positive KL bias, independently of the chosen lower bound h.",
+      "failure_location": {
+        "quote": "If we assume that $\\step_k\\geq \\step$ for some $\\step>0$ in \\cref{corr discrete convergence}, we obtain the convergence $\\lim_{h\\rightarrow 0}\\limsup_{k\\rightarrow\\infty}\\KL(\\hat{\\mu}_{k}|\\pi) = 0$, but for each fixed $\\step$ there remains a nonzero bias in general.",
+        "tag": "rmk:interpretation of results"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "State a separate constant-step or uniformly upper-bounded-step result, with h_k=h or sup_k h_k≤h, and derive its vanishing-bias limit from the one-step recursion rather than the square-summable-step theorem.",
+      "overall_effect": "The stated fixed/nonvanishing-step interpretation is not a consequence of the convergence theorem and is false under its proposed replacement condition.",
+      "primary_affected_tag": "rmk:interpretation of results",
+      "target_type": "formal_result",
+      "title": "A lower bound on step sizes does not yield vanishing discretization bias",
+      "why_classification": "The step-size quantifier must change and a separate bias argument is required, although the source supports a comparable constant-step conclusion."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The two main tools that lead to a small error term are small log-Sobolev constants and a fast-decreasing $\\tau$.",
+          "tag": "rmk:interpretation of results"
+        }
+      ],
+      "failure_explanation": "An upper bound involving LSI constants cannot establish absence of an actual sampling benefit. A Gaussian counterexample fits the framework: take π=N(0,1), π_τ=N(-2τ,1+τ), τ(t)=e^{-t}, and μ_0=N(1,1). Scaling gives C_LSI(π_τ)=(1+τ)C_LSI(π), yet the initial derivative of KL to π is -3/2 for the annealed diffusion and only -1 for ordinary Langevin. Thus annealing gives a strict short-time KL improvement despite uniformly worse path LSI constants.",
+      "failure_location": {
+        "quote": "Consequently, annealing is useless whenever the family $p_\\tau$ admits worse log-Sobolev constants for $\\tau>0$ than for $\\tau=0$, \\cf~\\cite{chehab2025provable}.",
+        "tag": "rmk:interpretation of results"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the claim by the narrower observation that worse LSI constants provide no improvement in the mixing factor of the displayed upper bound alone.",
+      "overall_effect": "The universal performance conclusion drawn from the error bounds is false.",
+      "primary_affected_tag": "rmk:interpretation of results",
+      "target_type": "formal_result",
+      "title": "Worse log-Sobolev constants do not make annealing universally useless",
+      "why_classification": "The universal no-benefit claim must be withdrawn, but a limited, bound-specific interpretation remains supported without changing the convergence proofs."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We denote the path of \\emph{potentials} corresponding to the path of densities $(p_\\tau)_\\tau$ as $U_\\tau \\coloneqq -\\log p_\\tau$.",
+          "tag": null
+        },
+        {
+          "quote": "p_\\tau \\propto p_1^{\\tau} p_0^{1-\\tau},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the normalized potential, writing D=U_1-U_0 gives ∂_τU_τ=D−E_{π_τ}D, not D. The additive constant in the geometric potential depends on τ. Since the required assumption concerns the time derivative of the normalized potential, it cannot simply be ignored.",
+      "failure_location": {
+        "quote": "In turn, Lipschitzness implies that $\\partial_\\tau U_\\tau = U_1 - U_0$ satisfies the quadratic growth bound.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Include the normalizer derivative and bound |E_{π_τ}D| using the quadratic growth of D and the uniform second-moment bound already available in the paper.",
+      "overall_effect": "The proof does not establish the normalized path's time-derivative growth condition as written.",
+      "primary_affected_tag": "prop:geom_tempering_ass",
+      "target_type": "formal_result",
+      "title": "Geometric tempering omits the derivative of its normalizer",
+      "why_classification": "A short expectation estimate repairs the proof and preserves the full proposition and its path scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The potential \\( U_\\tau \\) is differentiable and its gradient $\\nabla U_\\tau$ is Lipschitz-continuous.",
+          "tag": "Ass_drift"
+        },
+        {
+          "quote": "its gradient is globally Lipschitz with constant bounded by $\\lip/(1-\\tau\\lip)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The hypotheses do not provide a finite Lipschitz constant L for ∇U, although both the parameter range and the proof require one. For example, U(x)=x⁴+x² satisfies the listed convexity and dissipativity conditions but has no globally Lipschitz gradient. Its envelopes cannot have uniformly bounded gradient Lipschitz constants down to τ=0.",
+      "failure_location": {
+        "quote": "If  $U$ is $\\alpha$-weakly convex and differentiable, $\\nabla U$ is dissipative, and $U$ is convex outside a ball, then the path \\( (p_\\tau)_{\\tau \\in [0, \\bar{\\tau}]} \\) \\cref{eq:daz path} satisfies \\Cref{Ass_drift} on $[0,\\overline{\\tau}]$ for any $\\overline{\\tau}\\in(0,1/\\alpha\\wedge 1/\\lip)$.",
+        "tag": "prop:daz_ass"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Add the Lipschitz-continuity of ∇U, with constant L, to the proposition's hypotheses, as already assumed in the preceding discussion.",
+      "overall_effect": "The formal DAZ coverage statement includes potentials for which its parameter condition is undefined and its uniform smoothness conclusion fails.",
+      "primary_affected_tag": "prop:daz_ass",
+      "target_type": "formal_result",
+      "title": "The DAZ proposition omits the Lipschitz-gradient hypothesis it needs",
+      "why_classification": "This is a local hypothesis correction that preserves the DAZ regime actually described and used by the proof."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:convolution_ass"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{d}{2(1-\\tau)} + \\frac{x\\cdot \\nabla\\log p_\\tau(x)}{2(1-\\tau)} + \\frac{1}{2(1-\\tau)}(\\Delta \\log p_\\tau(x) +|\\nabla\\log p_\\tau(x)|^2).",
+          "tag": null
+        },
+        {
+          "quote": "As shown in~\\citep[Lemma 3.2]{cordero2025non}, the Eigenvalues of $\\nabla^2 \\log p_\\tau(x)$ are bounded uniformly in $\\tau$ and $x$ and, thus, the result follows.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Uniform Hessian bounds do not control the factors 1/(1−τ). Take the admissible target N(m,1), m≠0. Then p_τ=N(m√(1−τ),1) and ∂_τU_τ(x)=m(x−m√(1−τ))/(2√(1−τ)), which diverges for fixed suitable x as τ approaches 1. Thus the claimed uniform quadratic bound, and even differentiability at the endpoint, fail.",
+      "failure_location": {
+        "quote": "There exists $c>0$ such that the density \\cref{eq convolution path} satisfies for $\\tau\\in[0,1]$, $|\\partial_\\tau  U_\\tau(x)| \\leq c(|x|^2+1)$.",
+        "tag": "lemma:convolutional path growth"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Restrict the uniform bound and proposition to [0,barτ] with barτ<1. Estimates for a sampler started at τ=1 must begin after it enters such an interval or include a separate initial-stage argument.",
+      "overall_effect": "The full convolutional path on [0,1] is not covered by Ass_drift as claimed, including schedules initialized at the exact Gaussian endpoint.",
+      "primary_affected_tag": "lemma:convolutional path growth",
+      "target_type": "formal_result",
+      "title": "The convolutional time-derivative bound fails at the Gaussian endpoint",
+      "why_classification": "The endpoint claim needs a substantive restriction or an additional initial-layer argument, but the existing proof architecture remains applicable on every truncated parameter interval."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "p_\\tau(x) \\coloneqq \\frac{p_{Y|X}(y|x)p_X^\\tau(x)}{p_Y(y)}",
+          "tag": null
+        },
+        {
+          "quote": "Define for fixed $y$ the posterior path $(p_\\tau)_\\tau$ as $p_\\tau(x)\\propto p_{Y|X}(y|x)p_X^\\tau(x)$ and let $U_\\tau=-\\log p_\\tau$ be its potential.",
+          "tag": "prop:posterior_ass"
+        }
+      ],
+      "failure_explanation": "The evidence Z_τ=∫p_{Y|X}(y|x)p_X^τ(x)dx generally changes with τ. Consequently the preceding display with fixed p_Y(y) need not be normalized, and the normalized potential satisfies ∂_τU_τ=∂_τU_X^τ−E_{π_τ}[∂_τU_X^τ], rather than the asserted equality.",
+      "failure_location": {
+        "quote": "Finally, $\\partial_\\tau U_\\tau=\\partial_\\tau U_X^\\tau$ because the likelihood term does not depend on $\\tau$, so the growth condition transfers directly.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Use the τ-dependent evidence and bound the additional expectation using the posterior's uniform second moments, which follow from the already established uniform drift properties.",
+      "overall_effect": "The posterior construction's normalization and the proof of its time-growth condition are incorrect as written.",
+      "primary_affected_tag": "prop:posterior_ass",
+      "target_type": "formal_result",
+      "title": "The posterior normalizer varies with the prior path",
+      "why_classification": "The normalizer correction and its bound are local and preserve the posterior inheritance result without reducing its scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$t_k = \\sum_{i=0}^{k-1}h_i$.",
+          "tag": null
+        },
+        {
+          "quote": "p_\\tau =\\frac{1}{(1-\\tau)^{d/2}}p\\left(\\frac{\\cdot}{\\sqrt{1 - \\tau}}\\right).",
+          "tag": "eq:dilation path"
+        },
+        {
+          "quote": "for any $\\overline{\\tau}\\in(0,1/\\alpha\\wedge 1/\\lip)$.",
+          "tag": "prop:daz_ass"
+        }
+      ],
+      "failure_explanation": "The prescription gives t_0=0 and τ(t_0)=1. The dilation density and its score are undefined there. Interpreting its maximal step by a zero limit would leave the clock at t_1=0 and would not start the algorithm. The same unscaled schedule also exceeds the stated DAZ parameter range for the sharply curved mixture targets used in the experiments.",
+      "failure_location": {
+        "quote": "$\\tau(t) = \\exp\\bigl( -\\frac{t}{T} \\bigr)$ and compare different values for $T$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Choose a method-specific admissible barτ and use τ(t)=barτ exp(−t/T), with barτ<1 for dilation and below the DAZ thresholds, then recompute the experimental trajectories.",
+      "overall_effect": "The reported dilation implementation cannot execute its first update as specified, and the DAZ implementation is not within its stated admissible regime.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The experimental schedule starts outside the admissible path domains",
+      "why_classification": "The initialization and traversal parameters must be changed and the experiments rerun; this is a contained construction repair rather than a new sampling architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that the initial distribution admits a finite third moment, and let $\\step_k<\\frac{\\dissi_{\\tau(t_k)}}{\\lip^2_{\\tau(t_k)}}$.",
+          "tag": "lemma:discretization descent"
+        }
+      ],
+      "failure_explanation": "The theory requires a strict inequality, while the experimental rule uses equality. There is no largest admissible step in the stated open interval, and the paper supplies no boundary-case extension justifying this choice.",
+      "failure_location": {
+        "quote": "We always pick the largest possible step size that the theoretical results allow for each method: $\\step_k=\\dissi_{\\tau(t_k)}/\\lip_{\\tau(t_k)}^2$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Use a fixed safety factor θ∈(0,1), setting h_k=θa_τ/L_τ².",
+      "overall_effect": "The asserted theoretical admissibility of the chosen experimental steps is unsupported, independently of whether the drift constants were estimated correctly.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The experimental steps equal an excluded stability boundary",
+      "why_classification": "A routine local safety factor restores the stated step-size contract without changing the method or its convergence orders."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\pi = \\sum_{i=1}^{n_c}\\alpha_i \\Nc(m_i,\\Sigma_i)",
+          "tag": "eq:gmm"
+        },
+        {
+          "quote": "The parameters of the target distribution \\cref{eq:gmm} are set to $n_c=3$, $(\\alpha_i)_i = (0.3,0.4,0.3)$, $(m_i)_i = (-2, 0, 2)$, $(\\sigma_i)_i=(0.2, 0.1, 0.3)$ where in this case $\\sigma_i$ is the standard deviation of the $i$-th mixture component.",
+          "tag": null
+        },
+        {
+          "quote": "$(\\sigma_{1,j})_j = (0.2,0.2)$, $(\\sigma_{2,j})_j = (0.1,0.2)$, $(\\sigma_{3,j})_j = (0.3,0.1)$, $(\\sigma_{4,j})_j = (0.1,0.1)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a mixture, ∇²U=Σ_i w_iΣ_i^{-1}−Cov_w(Σ_i^{-1}(x−m_i)); the negative covariance term is not controlled by component covariance extrema alone. In the stated 1D example, curvature near x=−0.676 is approximately −2474, although the largest component precision is 100. More strongly, the stated 2D covariances give competing tail precisions diag(5,5) and diag(10/3,10). Along their equal-density tail curve their score difference grows linearly, producing an unbounded negative Hessian. That target does not have a globally Lipschitz score at all.",
+      "failure_location": {
+        "quote": "We estimated these parameters for the target through the largest and smallest eigenvalue of any of the covariance matrices.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Present these steps and noncovered targets as heuristic experiments, withdrawing their claimed theoretical certification. A certified comparison instead requires targets with verified global drift bounds and recomputed step sizes.",
+      "overall_effect": "The covariance-based step calibration is not a theoretical certificate, and some displayed experimental targets are outside the global smoothness assumptions regardless of step size.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Component covariance eigenvalues do not certify mixture drift bounds",
+      "why_classification": "This cannot be repaired by a harmless constant adjustment: the calibration needs reanalysis, and some targets require replacement or an explicit loss of theoretical coverage."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "its gradient is globally Lipschitz with constant bounded by $\\lip/(1-\\tau\\lip)$",
+          "tag": null
+        },
+        {
+          "quote": "$(m_i)_i = (-2, 0, 2)$, $(\\sigma_i)_i=(0.2, 0.1, 0.3)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Moreau smoothing does not generally decrease the Lipschitz constant for nonconvex potentials. In one dimension, at x=z+τU'(z), the envelope curvature is U''(z)/(1+τU''(z)); negative curvature is amplified. For the stated 1D mixture, positive curvature is at most 100 while negative curvature has magnitude exceeding 2400, so the global Lipschitz constant is controlled by negative curvature and increases in the admissible Moreau regime. The paper establishes a bound allowing this increase, not the asserted conditioning improvement.",
+      "failure_location": {
+        "quote": "Moreover, these paths decrease $\\lip_\\tau$ leading to larger step sizes \\citep[Remark 4.17]{habring2025diffusionjournal}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Remove the general Lipschitz-decrease claim for DAZ and state conditioning improvements only under verified additional curvature conditions or as measured experimental observations.",
+      "overall_effect": "The claimed theoretical explanation for DAZ's larger admissible steps and regularizing benefit is unsupported and can be false for the displayed target.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The claimed DAZ Lipschitz improvement is reversed by negative curvature",
+      "why_classification": "A substantive comparative conditioning claim must be weakened, although the conditional convergence framework itself need not change."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "X_{k+1} = X_k - \\step_k\\nabla U_{\\tau(t_{k})}(X_k) + \\sqrt{2\\step_k} Z_k",
+          "tag": "eq:discretization"
+        },
+        {
+          "quote": "p_\\tau =\\frac{1}{(1-\\tau)^{d/2}}p\\left(\\frac{\\cdot}{\\sqrt{1 - \\tau}}\\right).",
+          "tag": "eq:dilation path"
+        }
+      ],
+      "failure_explanation": "The sampler uses −∇U_τ=∇log p_τ, not ∇p_τ. For a dilated standard Gaussian, ∇p_τ is tiny in the tails but ∇U_τ(x)=x/(1−τ), which becomes large rather than small. With a stable step proportional to 1−τ, the deterministic update remains proportional to x and does not vanish. Small density gradients therefore do not imply the claimed inability to move.",
+      "failure_location": {
+        "quote": "The behavior of the dilation path for \\num{1000} iterations can be explained by the fact that for dilation $\\nabla p_\\tau(x)\\approx 0$ for $x$ significantly far away from the origin so that the sampler cannot make meaningful progress until $\\tau$ decreases sufficiently.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "Remove this causal attribution or replace it with an analysis of the score, effective drift step, and the clock increment governing the schedule.",
+      "overall_effect": "The proposed mathematical cause of the observed dilation behavior is false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The dilation explanation confuses the density gradient with the sampling score",
+      "why_classification": "The causal explanation needs replacement rather than a notation change, but the loss is confined to interpretation of the experiment."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:discretization descent",
+        "thm discrete final bound"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $(h_k)_k$ be bounded and satisfy $\\step_k<\\dissi_{\\tau(t_k)}/\\lip_{\\tau(t_k)}^2$.",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\frac{\\step_{k}}{1-\\exp\\bigl( -2 \\step_{k} \\dissi + 2\\lip^2\\step_{k}^2\\bigr)}",
+          "tag": "eq:fixed point phi"
+        }
+      ],
+      "failure_explanation": "The displayed fixed-point bound diverges as h approaches a/L² from below; boundedness of h does not prevent this. Set a=L=1 and h_k=1−(k+2)^{-2}. These steps satisfy every stated condition, but r_k=1−2h_k+2h_k² approaches 1 with Σ_k(1−r_k)<∞. The products in the claimed sum consequently remain bounded below, while h_k approaches 1, so the sum diverges.",
+      "failure_location": {
+        "quote": "Since the right-hand side of \\eqref{eq:fixed point phi} is bounded for $h_k$ bounded (note that it converges to $1/(2\\dissi)$ as $h_k\\rightarrow 0$)",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-015",
+      "least_adequate_overall_repair": "Restrict this scalar-sum lemma to a uniform relative gap below the threshold, or to eventually small steps. To retain the original broader Euler step contract, sharpen the existing moment recursion with a Young inequality coefficient smaller than 2, yielding a bound of the form E|X_{k+1}|²≤(1−c h_k)E|X_k|²+C h_k.",
+      "overall_effect": "The auxiliary lemma is false and does not discharge the extra moment condition used to obtain uniform constants in the general discrete bounds. The square-summable-step regime can still use eventual smallness of h_k.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Bounded steps can approach the threshold and make the auxiliary sum diverge",
+      "why_classification": "The false step-sequence scope must be restricted or bypassed by a contained replacement moment estimate; no new global convergence architecture is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For each $h_n$ \\gls{lsi} holds.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A bounded probability density need not satisfy any LSI. For example, let ν put equal uniform mass on two disjoint intervals and choose a smooth compactly supported f equal to 0 on one interval and 1 on the other. Its Dirichlet integral is zero but its entropy is (log 2)/2. Thus the smooth-test-function inequality used to start the proof is an additional missing hypothesis.",
+      "failure_location": {
+        "quote": "Assume $\\nu(\\d x) = q(x)\\d x$ with $q\\in L^1(\\R^d)$ and bounded from above. Then \\gls{lsi} holds for every $f\\in W^{2,1}_{\\mathrm{loc}}(\\R^d)\\cap L^2(\\R^d,\\nu)$",
+        "tag": "lemma:lsi_weak"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-016",
+      "least_adequate_overall_repair": "Add that ν satisfies LSI for smooth compactly supported test functions with the stated constant.",
+      "overall_effect": "The standalone extension lemma is false as stated; its actual applications already assume LSI and do not require the false broader claim.",
+      "primary_affected_tag": "lemma:lsi_weak",
+      "target_type": "formal_result",
+      "title": "The nonsmooth LSI extension never assumes that the measure satisfies LSI",
+      "why_classification": "This local hypothesis restores the intended extension result and is already present in the downstream applications."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume $\\nu$ satisfies \\gls{lsi}, $\\nu(\\d x)=q(x)\\d x$ with $q>0$ and $q$ is continuously differentiable.",
+          "tag": "lemma:lsi_KL"
+        },
+        {
+          "quote": "Assume $\\nu(\\d x) = q(x)\\d x$ with $q\\in L^1(\\R^d)$ and bounded from above.",
+          "tag": "lemma:lsi_weak"
+        }
+      ],
+      "failure_explanation": "The invoked lemma requires a globally bounded density, but the KL–Fisher lemma assumes only positivity, continuous differentiability, and LSI. None supplies the missing bound. In particular, smooth Lipschitz changes of Gaussian coordinates preserve LSI while an arbitrarily small transformation derivative can create unbounded density peaks. The invocation therefore does not prove the stated generality.",
+      "failure_location": {
+        "quote": "Using \\cref{lemma:lsi_weak} we find",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-017",
+      "least_adequate_overall_repair": "Either add q∈L∞ to this lemma or localize the approximations to compact sets, where the assumed positive C¹ density is bounded above and below, before passing the cutoff limit.",
+      "overall_effect": "The standalone KL–Fisher proof has an unverified dependency hypothesis. The paper's dissipative Gibbs applications satisfy the additional boundedness condition.",
+      "primary_affected_tag": "lemma:lsi_KL",
+      "target_type": "formal_result",
+      "title": "The KL–Fisher lemma invokes a bounded-density result without that hypothesis",
+      "why_classification": "A local hypothesis addition or routine localization preserves all actual applications and convergence guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq Z_{\\tau_1} \\int \\left| \\exp\\bigl( -(U_{\\tau_2}(x)-U_{\\tau_1}(x)) \\bigr) - 1\\right|p_{\\tau_1}(x)\\dd x",
+          "tag": null
+        },
+        {
+          "quote": "We denote the path of \\emph{potentials} corresponding to the path of densities $(p_\\tau)_\\tau$ as $U_\\tau \\coloneqq -\\log p_\\tau$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "This step uses |e^{-v}−1|≤|v| without a sign condition on v. It is false for every negative v, and potential differences have no prescribed sign. Thus the partition-function estimate is not established by the displayed comparison.",
+      "failure_location": {
+        "quote": "\\leq Z_{\\tau_1} \\int \\left| U_{\\tau_2}(x)-U_{\\tau_1}(x)\\right|p_{\\tau_1}(x)\\dd x",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-018",
+      "least_adequate_overall_repair": "Use U_τ=−log p_τ consistently, so Z_τ≡1, and discard the false comparison.",
+      "overall_effect": "The partition-function part of the proof is invalid as written, though it is unnecessary under the paper's normalized-potential definition.",
+      "primary_affected_tag": "lem:potential and partition are Lipschitz in time",
+      "target_type": "formal_result",
+      "title": "The partition-function proof uses a false exponential comparison",
+      "why_classification": "The source's own normalization supplies an immediate bypass preserving the assertion and all uses of normalized potential differences."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $u\\in W^{p,1}_{\\mathrm{loc}}(\\R^d)$, $p\\in[1,\\infty)$ such that $u>0$ and $u$ is continuous.",
+          "tag": "lem:appendix_weak_diff"
+        }
+      ],
+      "failure_explanation": "The failure already occurs at the unambiguous case p=1. On R, take u(x)=(1+x²)^{-1/3} and f(s)=s. Then u is positive, smooth, and locally W^{1,1}; both u and u' are in L², but u is not in L¹. Hence u is not globally W^{1,1}, contrary to the final implication.",
+      "failure_location": {
+        "quote": "If in addition $f(u),f'(u)\\partial_{x_i}u\\in L^2(\\R^d)$ then $f(u)\\in W^{p,1}(\\R^d)$.",
+        "tag": "lem:appendix_weak_diff"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-019",
+      "least_adequate_overall_repair": "State only the global first-order L² Sobolev conclusion entailed by the hypotheses; for a p-integrability conclusion, require the corresponding global L^p integrability.",
+      "overall_effect": "The lemma's general global-integrability clause is false. Its later uses only need the local chain rule, not this false p-general conclusion.",
+      "primary_affected_tag": "lem:appendix_weak_diff",
+      "target_type": "formal_result",
+      "title": "Global L² information does not imply the claimed global Sobolev conclusion for every p",
+      "why_classification": "Matching the global integrability hypotheses to the conclusion is a local correction and leaves the local chain-rule applications unchanged."
+    }
+  ],
+  "issues_found": 19,
+  "paper_id": "2601.22349",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0eab2e6cc55b92ab67363667326c9b28e88ecb2a12f43253d86fdb08b6888b7c",
+  "status": "ok"
+}

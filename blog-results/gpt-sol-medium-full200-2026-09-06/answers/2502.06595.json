@@ -1,0 +1,195 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:LS",
+        "th:main_ls"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We aim to find the coefficients $ \\bm{c} =(c_{\\bm{\\nu}_1},...,c_{\\bm{\\nu}_s})\\in\\C^s$, so we consider the linear system $ \\bm{\\Psi}  \\bm{c} = \\bm{b} $, with $ \\bm{\\Psi} \\in\\C^{m\\times s}$ and $ \\bm{b} \\in\\C^m$",
+          "tag": null
+        },
+        {
+          "quote": "$ \\bm{\\hat{c}} =( \\bm{\\Psi} ^* \\bm{\\Psi} )^{-1} \\bm{\\Psi} ^* \\bm{b} $.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The optimization variable is restricted to $\\mathbb R^s$, while the target coefficients, design matrix, data, and displayed pseudoinverse solution are complex. For genuinely complex data the pseudoinverse solution need not be feasible, so the stated least-squares construction and results referring to it do not describe the claimed complex approximation.",
+      "failure_location": {
+        "quote": "\\min_{ \\bm{z} \\in\\R^s} \\norm{ \\bm{\\Psi}  \\bm{z} - \\bm{b} }_2^2.",
+        "tag": "eq:ls"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the feasible set $\\mathbb R^s$ by $\\mathbb C^s$ throughout the least-squares formulation and retain the Hermitian-adjoint normal equations.",
+      "overall_effect": "The complex-valued least-squares estimator used in the two convergence statements is not defined by the displayed program.",
+      "primary_affected_tag": "eq:ls",
+      "target_type": "algorithm",
+      "title": "Least-squares program excludes the complex coefficient vectors it is meant to recover",
+      "why_classification": "This is a local correction of the estimator's feasible field and does not change the method, rate, sample complexity, or scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:CS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\| \\bm{z}\\|_{1, \\bm{w}} := \\sum\\limits_{i=1}^N w_iz_i",
+          "tag": null
+        },
+        {
+          "quote": "\\min_{ \\bm{z} \\in\\C^N} \\norm{ \\bm{z} }_{1,\\bm{w}} \\quad \\text { subject to } \\norm{ \\bm{\\Psi} \\bm{z} - \\bm{b} }_2\\leq\\eta .",
+          "tag": "eq:wqcbp"
+        }
+      ],
+      "failure_explanation": "For complex $z_i$, the quantity $\\sum_i w_i z_i$ can be complex and hence cannot be minimized using the usual order; it can also cancel and is not an $\\ell^1$ norm. Thus both weighted optimization programs are ill-defined as written, and the weighted recovery theorem cannot apply to them.",
+      "failure_location": {
+        "quote": "\\min \\limits_{ \\bm{z} \\in \\mathbb{C}^N} \\lambda \\|  \\bm{z}  \\|_{1, \\bm{w} } + \\|  \\boldsymbol{\\Psi}  \\bm{z}  - \\bm{b}  \\|_2",
+        "tag": "eq:wSR-LASSO"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Define $\\|z\\|_{1,w}=\\sum_i w_i|z_i|$ and require positive weights when it is called a norm; the intrinsic weights used in the corollary satisfy this positivity requirement.",
+      "overall_effect": "The weighted SR-LASSO estimator underlying the compressed-sensing guarantee, and the weighted QCBP variant, are not valid optimization problems as displayed.",
+      "primary_affected_tag": "eq:wSR-LASSO",
+      "target_type": "algorithm",
+      "title": "The weighted ell-one objective is not a norm and is not orderable over complex vectors",
+      "why_classification": "The standard absolute-value correction is local and preserves the intended decoders and all advertised guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:maincor",
+        "cor:LS",
+        "cor:CS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exist a compact set $\\mathcal{K}\\subset \\mathbb{C}^d$, with $\\mathcal{U} \\subset \\mathcal{K}$",
+          "tag": "ass:diffusion_matrix"
+        },
+        {
+          "quote": "Then the map $\\bm{f}:\\mathcal{U}=[-1,1]^d\\to\\C^{|V|}$ defined by $\\bm{f}( \\bm{y} )= \\bm{u(}T, \\bm{y} )$ satisfying problem \\eqref{eq:ted} admits a holomorphic extension $\\tilde{\\bm{f}}$ to $\\mathring{\\mathcal{K}}$.",
+          "tag": "thm:mainthm"
+        }
+      ],
+      "failure_explanation": "Assumption ass:diffusion_matrix requires $\\mathcal U\\subset\\mathcal K$, while the theorem additionally requires $\\mathcal K\\subset\\mathcal U$. Hence $\\mathcal K=\\mathcal U$. Viewed as a subset of $\\mathbb C^d$, the real cube $\\mathcal U$ has empty complex interior, so holomorphy on $\\mathring{\\mathcal K}$ gives no extension to a complex neighborhood. More generally, the assumption alone also does not ensure that $\\mathcal U$ lies in $\\mathring{\\mathcal K}$, which is required for a function on $\\mathring{\\mathcal K}$ to extend all of $f$.",
+      "failure_location": {
+        "quote": "satisfy Assumption \\ref{ass:diffusion_matrix} for some compact $\\mathcal{K}\\subseteq\\C^d$ such that $\\mathcal{K} \\subset \\mathcal{U}$.",
+        "tag": "thm:mainthm"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the incompatible inclusion by the neighborhood condition $\\mathcal U\\subset\\mathring{\\mathcal K}$ (or an equivalent open-neighborhood hypothesis), and consistently formulate the extension on that interior.",
+      "overall_effect": "The main theorem does not establish the claimed nonvacuous holomorphic extension under its literal hypotheses, and its stated form cannot be invoked by the polynomial-approximation corollaries.",
+      "primary_affected_tag": "thm:mainthm",
+      "target_type": "formal_result",
+      "title": "The holomorphy theorem imposes incompatible domain inclusions",
+      "why_classification": "A standard local strengthening of the domain condition makes the proof applicable, while the downstream corollaries already impose the stronger polyellipse inclusion and therefore retain their intended regimes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "let $ \\bm{c} =(c_{\\bm{\\nu}})$ be the sequence of coefficients of $f_v$ with respect to either the Chebyshev or Legendre basis",
+          "tag": "cor:CS"
+        },
+        {
+          "quote": "$\\varrho$ be either the uniform or Chebyschev measure on $\\mathcal{U}=[-1,1]^d$",
+          "tag": "cor:LS"
+        }
+      ],
+      "failure_explanation": "The corollary never specifies $\\varrho$ or links it to the selected polynomial basis. The Legendre and Chebyshev systems are orthonormal for different measures, and the sampling/recovery guarantee cannot hold for an arbitrary unspecified measure, for example one concentrated on too few points.",
+      "failure_location": {
+        "quote": "Let $m \\in \\mathbb{N}$ be the number of samples, drawing $\\bm{y}_1, \\dots, \\bm{y}_m$ independently from the measure $\\varrho$, and $0 < \\epsilon < 1$.",
+        "tag": "cor:CS"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Require the uniform measure with the Legendre basis or the Chebyshev measure with the Chebyshev basis, consistently with the preceding approximation framework.",
+      "overall_effect": "The probability and recovery bounds in cor:CS are unsupported for the full class of sampling measures allowed by its statement.",
+      "primary_affected_tag": "cor:CS",
+      "target_type": "formal_result",
+      "title": "Compressed-sensing guarantee leaves the sampling measure unrestricted",
+      "why_classification": "Adding the standard basis-matched sampling hypothesis is local and preserves the compressed-sensing rates and intended experimental setting."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:LS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "for any $f: \\mathcal{U} \\rightarrow \\mathbb{C}$ that admits a holomorphic extension to a Bernstein polyellipse $\\mathcal{E}_{\\bm{\\rho}} \\subset \\mathbb{C}^d$.",
+          "tag": "th:main_ls"
+        },
+        {
+          "quote": "\\| f_v - \\hat{f_v} \\|_{L_{\\varrho}^2(\\mathcal{U})} \\leq C(\\bm{\\rho}, p) \\cdot (m/\\log (m/\\epsilon))^{\\frac{1}{2}-\\frac{1}{p}} + 2 \\cdot \\|\\bm{n} \\|_{\\infty}.",
+          "tag": "cor:LS"
+        },
+        {
+          "quote": "\\sigma_s( \\bm{c} )_q \\leq \\frac{\\norm{f}_{L^{\\infty}(\\mathcal{\\mathcal{E}}_{\\bm{\\rho}})}\\cdot C(d,p, \\bm{\\rho} )}{(s+1)^{\\frac{1}{p}-\\frac{1}{q}}},",
+          "tag": "eq:bounderror"
+        }
+      ],
+      "failure_explanation": "The claimed noiseless error bound is independent of the amplitude of $f$. If a holomorphic function not represented exactly by the finite space is replaced by $Af$, then its least-squares approximation error scales by $|A|$, whereas the displayed right-hand side is unchanged. The paper's own best-term estimate includes the necessary factor $\\|f\\|_{L^\\infty(\\mathcal E_\\rho)}$. Corollary cor:LS likewise omits the available diffusion bound depending on $u_0$ and $M$.",
+      "failure_location": {
+        "quote": "\\| f - \\hat{f} \\|_{L_{\\varrho}^2(\\mathcal{U})} \\leq C(\\bm{\\rho}, p) \\cdot (m/\\log (m/\\epsilon))^{\\frac{1}{2}-\\frac{1}{p}} + 2 \\cdot \\|\\bm{n} \\|_{\\infty}.",
+        "tag": "th:main_ls"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Multiply the approximation term by an appropriate holomorphic-extension norm, and in cor:LS bound that norm by the quantity supplied by thm:mainthm. The algebraic rate may remain unchanged.",
+      "overall_effect": "Neither the auxiliary theorem nor the graph-diffusion least-squares corollary provides a valid error estimate uniformly over the stated functions or initial data.",
+      "primary_affected_tag": "th:main_ls",
+      "target_type": "formal_result",
+      "title": "Least-squares error bound is missing dependence on the size of the target function",
+      "why_classification": "The rate can be preserved, but the advertised amplitude-independent guarantee must be materially weakened by introducing problem-dependent norm or diffusion factors."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:LS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $0<\\epsilon < 1$, $\\varrho$ be either the uniform or Chebyschev measure on $\\mathcal{U}=[-1,1]^d$, $m \\geq 3$",
+          "tag": "th:main_ls"
+        },
+        {
+          "quote": "C(\\bm{\\rho}, p) \\cdot (m/\\log (m/\\epsilon))^{\\frac{1}{2}-\\frac{1}{p}}",
+          "tag": "cor:LS"
+        },
+        {
+          "quote": "satisfies, for every $0 < p \\leq 1$,",
+          "tag": "cor:CS"
+        }
+      ],
+      "failure_explanation": "The parameter $p$ occurs in the constant and convergence exponent of th:main_ls and cor:LS but is never introduced or quantified in either statement. Consequently, the asserted rate is not a well-formed mathematical conclusion, and different choices of $p$ give materially different exponents.",
+      "failure_location": {
+        "quote": "C(\\bm{\\rho}, p) \\cdot (m/\\log (m/\\epsilon))^{\\frac{1}{2}-\\frac{1}{p}}",
+        "tag": "th:main_ls"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "State the admissible range of $p$ and whether the estimate holds for every fixed $p$ in that range, consistently with the invoked holomorphic approximation result.",
+      "overall_effect": "The precise algebraic rate claimed for least-squares surrogates is undefined as stated.",
+      "primary_affected_tag": "th:main_ls",
+      "target_type": "formal_result",
+      "title": "The least-squares convergence statements contain an unquantified exponent parameter",
+      "why_classification": "Quantifying the already-used regularity parameter is a short local repair that does not otherwise alter the method or its rate family."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2502.06595",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "26936f3f91a7aefa7b2cdb949cf63aa8c5c3502e118636d01fae5814b32e6852",
+  "status": "ok"
+}

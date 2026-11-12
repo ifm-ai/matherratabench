@@ -1,0 +1,132 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\|\\fE_\\indKS\\|_2 \\leq \\frac{\\|\\fR_\\indKS\\|_{\\Frob}}{2\\sigma_{\\min}(\\fA)}$",
+          "tag": "prop1"
+        },
+        {
+          "quote": "$\\vec2{(\\fR_\\indKS)} = \\calL \\vec2{(\\fE_\\indKS)}$",
+          "tag": "prop1"
+        }
+      ],
+      "failure_explanation": "The proof claims σ_min(𝓛) = 2·σ_min(A) where 𝓛 = I⊗A + A⊗I. This equality holds only for normal matrices A. For non-normal A (e.g., a Jordan block A = [[-1, 0.5],[0,-1]] with σ_min(A) ≈ 0.876), one computes σ_min(𝓛) ≈ 1.035 < 2·0.876 ≈ 1.753. The claimed inequality ‖E_ℓ‖₂ ≤ ‖R_ℓ‖_F/(2σ_min(A)) is false: one can choose R_ℓ along the minimum singular direction of 𝓛 to obtain ‖E_ℓ‖₂ = ‖R_ℓ‖_F/σ_min(𝓛) > ‖R_ℓ‖_F/(2σ_min(A)). The correct bound requires σ_min(𝓛) (or a valid lower bound such as 2|λ_min(sym(A))|), not 2σ_min(A).",
+      "failure_location": {
+        "quote": "Using $\\|\\fE\\|_2\\le\\|\\fE\\|_{\\Frob}$ and $\\sigma_{\\min}(\\calL)=2\\sigma_{\\min}(\\fA)$ yields",
+        "tag": "prop1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace 2σ_min(A) with σ_min(𝓛) (or a computable valid lower bound on σ_min(𝓛) for the relevant class of matrices), or restrict the result to normal A where the equality holds; then re-derive the constants in Theorem 1.",
+      "overall_effect": "The computable error bound ‖X − X̃_k‖₂ in Theorem 1 (eq:50) inherits the invalid residual-error constant, so the certified accuracy guarantee ‖X − X̃‖₂ ≤ tol promised in the abstract and introduction is not established. All downstream stopping criteria based on this bound are unreliable.",
+      "primary_affected_tag": "prop1",
+      "target_type": "formal_result",
+      "title": "Proposition 1 error bound uses false equality σ_min(L)=2σ_min(A), yielding an invalid residual-error estimate",
+      "why_classification": "The core certified-accuracy strategy is preserved if a valid lower bound for σ_min(𝓛) is derived and substituted, but the current formula can understate the error constant, and deriving a general computable replacement is nontrivial and affects the advertised bound quality."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where we used the fact that $\\fw^{\\T}\\fA_j^{\\T}\\fw<0$ for all $\\fw\\in\\R^{\\stateDim}\\setminus \\{\\zeroVec\\}$ due to \\eqref{eqn:ass:ndeAj}",
+          "tag": "teo4"
+        },
+        {
+          "quote": "$\\perturbation \\;\\ge\\; \\max_{j\\in\\switchingSet} \\frac{\\sigma_1(\\fA_j)}{\\sigma_\\stateDim(\\fA_j)} \\|\\fX-\\tilde \\fX\\|_2",
+          "tag": "teo4"
+        },
+        {
+          "quote": "\\fA_j+\\fA^{\\T}_j\\prec\\zeroVec,\\quad\\text{ for all }j\\in\\switchingSet",
+          "tag": "teo4"
+        }
+      ],
+      "failure_explanation": "The proof uses w^T A_j^T w ≤ −σ_n(A_j)‖w‖². However, w^T A_j^T w = w^T sym(A_j) w and the relevant bound is |λ_min(sym(A_j))|, which can be much smaller than σ_n(A_j). For example, A_j = [[−ε, 1],[−1, −ε]] is dissipative with σ_n(A_j) ≈ 1 and κ(A_j) ≈ 1, yet |λ_min(sym(A_j))| = ε ≪ 1. The perturbation requirement should scale as κ(A_j)/|λ_min(sym(A_j))| · ‖X − X̃‖₂ rather than κ(A_j)·‖X − X̃‖₂. As written, the stated condition on μ is insufficient to guarantee the LMI for non-normal dissipative A_j.",
+      "failure_location": {
+        "quote": "$\\le\\|\\fw\\|_2^2\\left(\\sigma_1({\\fA_j})\\|\\tilde \\fE\\|_2-\\sigma_\\stateDim(\\fA_j)\\perturbation \\right)$",
+        "tag": "teo4"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace σ_n(A_j) in the perturbation bound by |λ_min(sym(A_j))| (or the numerical abscissa), or restrict Theorem 4 to matrices where |λ_min(sym(A_j))| ≥ σ_n(A_j) (e.g., normal matrices).",
+      "overall_effect": "The LMI-enforcement guarantee for near-antisymmetric or strongly non-normal dissipative system modes is not established. The claim that X̂ = X̃ + μI satisfies eqn:LMI:P under the stated condition (eqn:ass:teo4) is unsupported for general dissipative A_j, restricting the applicability of the perturbation strategy.",
+      "primary_affected_tag": "teo4",
+      "target_type": "formal_result",
+      "title": "Theorem 4 proof bounds w^T A_j^T w by −σ_n(A_j)‖w‖², conflating minimum singular value with the symmetric-part eigenvalue",
+      "why_classification": "A local constant replacement preserves the perturbation approach and all qualitative conclusions, but requires a nontrivial correction to the bound and restricts the regime of the theorem if not accompanied by a new derivation for non-normal matrices."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo6"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\gleH_{o,\\switch}(\\stateDim,\\stateDimRed)\\;\\vcentcolon=\\;\\sum_{k=0}^{K}\\lambda_{1}(\t\\fM_c(\\switch(t_k^{+})))\\int_{t_k}^{t_{k+1}}\\|\\bfX_o(s)\\|_2^2\\,\\ds$",
+          "tag": "teo5"
+        },
+        {
+          "quote": "$\\gleH_{c,\\switch}(\\stateDim,\\stateDimRed)\\;\\vcentcolon=\\;\\sum_{k=0}^{K}\\lambda_{1}(\t\\fM_c(\\switch(t_k^{+})))\\int_{t_k}^{t_{k+1}}\\|\\bfX_c(s)\\|_2^2\\,\\ds$",
+          "tag": "teo5"
+        },
+        {
+          "quote": "$\\gleG_{c}(\\switch(t_k^{+}))\\;\\vcentcolon=\\;{\\bfX}_c^{\\T}(t^{-}_{k+1})\\fSigma^{-1}_{\\switch(t^{+}_{k})}{\\bfX}_c(t^{-}_k)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Multiple independent definition errors make the theorem's right-hand side ill-defined or wrong: (1) M_o(j) contains Σ_j A̅_j^T where the appendix derivation requires Σ_j A̅_j (and the proof's own Lyapunov-derivative calculation writes the inconsistent product Σ_j A̅_j^T, which does not yield the symmetric form used in the inequality); (2) M_o(j) contains C̅_j C̅_j^T which is p×p while all other terms in M_o(j) are n×n — the correct term is C̅_j^T C̅_j; (3) H_o,q uses λ_1(M_c(·)) instead of λ_1(M_o(·)), copying the controllability weight into the observability contribution; (4) the appendix definition of G̃_c evaluates the first term at t_{k+1}^− and t_k^− instead of at t_{k+1}^− and t_k^+ as required by the integral it purports to equal. Consequently the error bound (eq:err:est:2) is either undefined (dimension mismatch) or mathematically wrong (wrong matrices, wrong weights).",
+      "failure_location": {
+        "quote": "$\\fM_o(j)\\;\\vcentcolon=\\;\\bar \\fA^{\\T}_j\\Sigma_j+\\Sigma_j\\bar \\fA_j^{\\T}+\\bar \\fC_j\\bar\\fC^{\\T}_j$",
+        "tag": "teo5"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct M_o(j) to A̅_j^T Σ_j + Σ_j A̅_j + C̅_j^T C̅_j; replace λ_1(M_c) by λ_1(M_o) in the definition of H_o,q; fix the G̃_c time indices in the appendix to match the integral endpoints; fix the Lyapunov-derivative equality in the appendix proof to use Σ_j A̅_j; then re-verify the proof and propagate corrected definitions to Theorem 6.",
+      "overall_effect": "The error bound (4.14) is ill-defined or incorrect as written. The derived quantities G_o, G_c, H_o, H_c that enter Theorem 6's bound (4.16) are corrupted by the same definition errors, so the advertised PBR error guarantee is unreliable. The chi and iota components in (4.24)–(4.25) used in the numerical experiments are correspondingly unverified.",
+      "primary_affected_tag": "teo5",
+      "target_type": "formal_result",
+      "title": "Theorem 5 statement contains dimensionally inconsistent and self-contradictory definitions of M_o, H_o, H_c and G_c",
+      "why_classification": "The correction is local and mechanical (fixing transposes, matrix products, and a copy-paste index) and the derivation in the appendix is essentially correct once the definitions are made consistent, preserving the form and content of the bound. However, multiple coordinated corrections are needed and the bound must be re-verified."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The proof follows directly by applying the sub-additivity of the square root function to \\Cref{teo5} and standard balance truncation error arguments; see, for instance, \\cite[Sec.~7]{PetWL13}.",
+          "tag": "teo6"
+        },
+        {
+          "quote": "$\\gleH_{c,o,\\switch}(s_{k+1},s_{k})",
+          "tag": "teo6"
+        }
+      ],
+      "failure_explanation": "The definition s_k := Σ_{k=r}^{ñ} m_k is self-referential (the summation index k shadows the defined variable k) and mixes the full dimension n with ñ, so the arguments s_{k+1}, s_k passed to H_{c,o,q} and G_{c,o,q} — which were defined with arguments (n, r) in Theorem 5 — are not well-defined. The theorem's bound is therefore not interpretable as written. Moreover, the entire proof is one sentence that does not verify the iterative single-truncation argument for the piecewise-constant-Gramian, time-varying-projection setting, which differs from the standard fixed-basis balanced truncation referenced. The combination of the ill-defined index sequence and the missing derivation constitutes incomplete reasoning for the paper's principal error bound.",
+      "failure_location": {
+        "quote": "$s_k\\vcentcolon=\\sum_{k=\\stateDimRed}^{\\tilde n}m_k$, $m_\\stateDimRed\\vcentcolon=\\stateDimRed$",
+        "tag": "teo6"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Provide a correct, non-self-referential definition of the index sequence (e.g., s_k := Σ_{i=r+1}^{k} m_i with proper limits and dummy index), rewrite the bound with well-defined arguments, and supply the full iterative single-truncation derivation for the time-varying-projection setting; alternatively restrict to the uniform-multiplicity case with explicit rank bookkeeping.",
+      "overall_effect": "The main PBR error bound (4.16) is not well-defined (invalid index sequence) and not proved (missing derivation for the piecewise-constant-Gramian setting). The central theoretical promise of the paper — a computable error bound for PBR without LMI conditions — is not established as stated. The numerical experiments' error estimates φ(r, ·) in (4.27) rely on this bound.",
+      "primary_affected_tag": "teo6",
+      "target_type": "formal_result",
+      "title": "Theorem 6 defines the index sequence s_k self-referentially and argues the multi-truncation bound with a one-line proof",
+      "why_classification": "The central error bound of the paper is both ill-defined and unproved: the index corruption makes the statement meaningless as written, and the one-line proof leaves a nontrivial derivation gap for the novel piecewise-constant-Gramian setting that cannot be repaired by a local edit. A new, complete argument is required before any comparable guarantee survives."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2601.13039",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "bd667d07baf9874b99b339d8a0a6b0aa8d1d403f5cfe7b718aa7b9a572affb14",
+  "status": "ok"
+}

@@ -1,0 +1,176 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "be a measurement matrix whose rows consist of randomly sampled independent sub-Gaussian vectors. Then, $\\frac{1}{\\sqrt{m}}\\mat{A}$ satisfies $(\\delta,\\vr)$-TensorRIP over $\\mathcal{S}_{r}^{CP}$",
+          "tag": "theorem:trip_cp"
+        }
+      ],
+      "failure_explanation": "Both TensorRIP theorems (Theorems lem:trip_hosvd and theorem:trip_cp) are stated for rows that are merely independent sub-Gaussian vectors, with no isotropy (or i.i.d. unit-variance entries) requirement. Without such a normalization the conclusion is false (e.g. rows supported on a fixed proper subspace, or the zero matrix, are sub-Gaussian). The cited result of Rauhut et al. requires independent mean-zero unit-variance entries, and the proof of theorem:trip_cp via a covering/union argument likewise needs isotropic rows.",
+      "failure_location": {
+        "quote": "be a measurement matrix whose rows consist of randomly sampled independent sub-Gaussian vectors. Then, $\\frac{1}{\\sqrt{m}}\\mat{A}$ satisfies $(\\delta,\\vr)$-TensorRIP",
+        "tag": "lem:trip_hosvd"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the hypothesis that the rows are isotropic (or have i.i.d. mean-zero unit-variance sub-Gaussian entries) to both statements.",
+      "overall_effect": "As stated the two TensorRIP theorems are false; later uses (Theorem thm:main under Assumption 1, which does include isotropy) are not affected once the hypothesis is added.",
+      "primary_affected_tag": "lem:trip_hosvd",
+      "target_type": "formal_result",
+      "title": "Invoked TensorRIP theorem stated without isotropy/variance normalization of rows",
+      "why_classification": "A standard missing hypothesis; adding it restores the cited results and all downstream uses already satisfy it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:main-informal"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\ge C^d \\delta^{-2}\\ln(4|\\mathcal{N}|n^{\\phi})",
+          "tag": "eq:m-bound"
+        },
+        {
+          "quote": "\\le \\left[ (4C)^{2d} - 1 \\right]\\|\\vx\\|_2^4.",
+          "tag": "lem:jl_trimming"
+        },
+        {
+          "quote": "Further, since the chosen $m$ scales linearly with $n$, we also get that \n$\n\\mathbbm{P} (\\mathcal{E}_1)\\le cn^{-\\phi}$ for some constant $c>0$.",
+          "tag": null
+        },
+        {
+          "quote": "For comparison, i.i.d. sub-Gaussian measurements are known to satisfy \\eqref{eq:trim-rip} -- without any trimming --  for $m$ of the same order up to the logarithms and an additional $d$-factor",
+          "tag": "thm:main-informal"
+        }
+      ],
+      "failure_explanation": "The proof bounds the variance of $\\langle a_{1j}\\otimes\\cdots\\otimes a_{dj},x\\rangle^2$ by $((4C)^{2d}-1)\\|x\\|^4$ and consequently obtains (via Lemma jl_trimming) the requirement $m\\ge C^d\\delta^{-2}\\ln(4|\\mathcal N|n^\\phi)$, which contains a factor exponential in $d$ (genuinely present for Gaussian entries: the fourth moment of a product of $d$ standard Gaussians is $3^d$) and a term $\\phi\\ln n$ (also forced by $\\alpha=n^{-\\phi}\\ge 4e^{-cm}$ and by $k=\\ln(8n^\\phi)<m$). The stated conditions (eq:order_m_hosvd), (eq:order_m_cp) have constants $C_1,C_2$ depending only on the sub-Gaussian norm and no $\\phi$-dependence, so the statement is not what the proof supports (and is false for large $\\phi$, where $k>m$). Similarly, $\\mathbb P(\\mathcal E_1)\\le 2me^{-cn/d}\\le cn^{-\\phi}$ only holds with $c$ depending on $d$ and $\\phi$ (or for $n$ large relative to $d,\\phi$).",
+      "failure_location": {
+        "quote": "Here, $C_1, C_2$ and $c \\in \\R^{+}$ are constants that can depend on the sub-Gaussian norm of the entries of $\\mat{A}_i$'s.",
+        "tag": "theorem:trim_trip"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate (eq:order_m_hosvd),(eq:order_m_cp) with a $C^d$ factor and an additive $\\phi\\ln n$ term (and allow $c$ to depend on $d,\\phi$), and weaken the comparison claim in the informal theorem accordingly; alternatively supply a sharper variance/trimmed-mean analysis.",
+      "overall_effect": "The explicit $d$-dependence advertised in Theorem trim_trip and the informal comparison in thm:main-informal/footnote ('same order up to logarithms and an additional d-factor' versus i.i.d. sub-Gaussian measurements) are unsupported; for fixed $d$ and $\\phi$ the qualitative result survives.",
+      "primary_affected_tag": "theorem:trim_trip",
+      "target_type": "formal_result",
+      "title": "Theorem trim_trip hides exponential-in-d and phi dependence of the sample complexity",
+      "why_classification": "The result survives for fixed $d$, but repairing it necessarily withdraws the advertised dimension dependence (exponential vs linear in $d$), a non-trivial quantitative weakening rather than a cosmetic fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\|\\vu_{(k)} - \\vv_{(k)}\\| \\leq \\|\\vu-\\vv\\|_\\infty$ for any two vectors $\\vu$ and $\\vv$ and their $k$-th order statistics",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The rows of $\\mat A^{\\vx}$ and $\\mat A^{\\hat\\vx}$ are ordered by the absolute values $|a_i^T x|$, $|a_i^T\\hat x|$, but the vectors $\\mat A^{\\vx}\\vx$ and $\\mat A^{\\hat\\vx}\\hat\\vx$ keep signs. The order-statistics lemma applies to sorted vectors, not to vectors sorted by magnitude with signs retained: e.g. $u=(1,-1.1)$, $v=(1.1,-1)$ have $\\|u-v\\|_\\infty=0.1$ but the entries sorted by absolute value are $(1,-1.1)$ and $(-1,1.1)$, differing by 2. So the displayed inequality is false in general.",
+      "failure_location": {
+        "quote": "$$ \\|\\mat{A}^\\vx \\vx -\\mat{A}^{\\hat{\\vx}} \\hat\\vx\\|_2^2  \\leq m\\|\\mat{A} \\vx -\\mat{A}\\hat{\\vx}\\|_{\\infty}^2 \\leq m\\max_i\\|\\va_i\\|_2^2 \\varepsilon^2,$$",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Run the decomposition with the entrywise absolute-value vectors $|\\mat A^{\\vx}\\vx|$, $|\\mat A^{\\hat\\vx}\\hat\\vx|$ (same norms), to which the order-statistics lemma applies with $\\||Ax|-|A\\hat x|\\|_\\infty\\le\\|Ax-A\\hat x\\|_\\infty$.",
+      "overall_effect": "One step of the net argument for Theorem trim_trip is invalid as written; the conclusion is unaffected after repair since only norms are needed.",
+      "primary_affected_tag": "theorem:trim_trip",
+      "target_type": "formal_result",
+      "title": "Order-statistics inequality misapplied to signed vectors in the proof of Theorem trim_trip",
+      "why_classification": "A local, routine replacement argument preserves the theorem exactly."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mat{A}_k \n= \\sqrt{\\frac{m}{m-m_{\\text{trim}}}} \\mat{A}[\\Theta_k,:]",
+          "tag": "def:truncated-A"
+        },
+        {
+          "quote": "the trimmed matrix at iteration $k$, $\\mat{A}_k$ corresponds to $\\mat{A}_{m_{trim}}^{\\algoname{Vec}(\\tX^k - \\tX^*)}$ as per Definition~\\ref{def:trimmed-matrix}",
+          "tag": null
+        },
+        {
+          "quote": "the trimmed matrix $\\mat{A}_k^\\vx \\in \\R^{ (m - k) \\times n}$",
+          "tag": "def:trimmed-matrix"
+        }
+      ],
+      "failure_explanation": "Line 4 of Algorithm 1 selects the $m_{trim}$ indices with smallest residual, so $|\\Theta_k|=m_{trim}$ and the update rescales by $m/m_{trim}$. The surrounding text and (def:truncated-A) instead treat $\\Theta_k$ as having $m-m_{trim}$ rows (removing the $m_{trim}$ most aligned rows, rescaled by $m/(m-m_{trim})$), as in Definition def:trimmed-matrix and as used in the experiments ($m_{trim}$ from 5 to 80, or 550 of 2700). The procedure as written is thus a different (and much more aggressive) algorithm than the one analyzed in Theorem thm:main_path and Remark rem:trimtiht-discussion.",
+      "failure_location": {
+        "quote": "$\\Theta_k = \\left[i_1, i_{2}, \\dots, i_{m_{\\text{trim}}} \\right]$",
+        "tag": "alg:trimtiht"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace $\\Theta_k$ by $[i_1,\\dots,i_{m-m_{trim}}]$ in Algorithm 1.",
+      "overall_effect": "Mismatch between the stated procedure and the analyzed/experimented procedure; the analysis and the claimed equivalence 'Step 5 ... can be expressed as' only hold for the $m-m_{trim}$ version.",
+      "primary_affected_tag": "alg:trimtiht",
+      "target_type": "algorithm",
+      "title": "TrimTIHT pseudocode keeps m_trim smallest rows, inconsistent with the trimmed-matrix definition used in the analysis",
+      "why_classification": "A single forced correction to the index set aligns the pseudocode with the definition and analysis without changing any result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\left( 2\\sqrt{ 1 - (2 - \\mu_t\\rho_t )\\mu_t\\Delta_t  }+\\sqrt{( 2\\xi_t + \\xi_t^2)}\\left(1 + \\mu_t \\|\\mat{A}_t\\|_{2} \\sqrt{\\Delta_t}\\right) \\right) \\|\\tR^t\\|_F,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The quantities $\\Delta_t,\\rho_t,\\xi_t,\\mu_t,\\|\\mat A_t\\|$ all depend on $t$. The proof establishes only the one-step contraction $\\|\\tR^{t+1}\\|\\le\\alpha_t\\|\\tR^t\\|$, which iterates to $\\prod_{s\\le t}\\alpha_s\\|\\tR^0\\|$, not to $\\alpha_t^{\\,t+1}\\|\\tR^0\\|$ as stated; the stated bound can fail when earlier factors exceed the last one.",
+      "failure_location": {
+        "quote": "\\left(1 + \\mu_t \\|\\mat{A}_t\\|_{2} \\sqrt{\\Delta_t}\\right) \\right)^{t+1} \\|\\tR^0\\|_F,",
+        "tag": "eqn:conv_path"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the $(t+1)$-th power by the product $\\prod_{s=0}^{t}(\\cdot)_s$ (or state the one-step bound).",
+      "overall_effect": "The displayed multi-step bound (eqn:conv_path) is not what is proved; the one-step bound and all discussion based on it remain valid.",
+      "primary_affected_tag": "thm:main_path",
+      "target_type": "formal_result",
+      "title": "Theorem main_path states a (t+1)-th power of an iteration-dependent factor; proof gives a product",
+      "why_classification": "The forced correction is immediate from the proof and loses no content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\le \\left(2\\sqrt{ 1 - 2\\mu_t\\Delta_t + \\mu_t^2\\rho_t \\Delta_t  }+|1 - \\mu_t\\Delta_t|\\right)\\|\\tR^t\\|_F =: \\alpha_t\\|\\tR^t\\|_F .",
+          "tag": "eqn:conv_path_err"
+        },
+        {
+          "quote": "\\left(1+\\frac{a^2}{17(1+\\sqrt{1+\\delta})^2}\\right)",
+          "tag": "eq:extra_assmpn"
+        }
+      ],
+      "failure_explanation": "The simplification requires $\\sqrt{2\\xi_t+\\xi_t^2}\\,(1+\\mu_t\\|\\mat A_t\\|\\sqrt{\\Delta_t})\\le|1-\\mu_t\\Delta_t|$. With $\\xi_t\\le\\tfrac{16}{17}x^2/B^2$ ($x=|1-\\mu_t\\Delta_t|$, $B$ the bracket) one only gets $2\\xi_t\\le\\tfrac{32}{17}x^2/B^2>x^2/B^2$, so the inequality fails; the implication holds with the Rauhut-type constant $1/17$ (then $2\\xi+\\xi^2\\le(2/17+1/289)x^2/B^2<x^2/B^2$). The remark thus asserts an implication that is false under the condition it states.",
+      "failure_location": {
+        "quote": "$$\\xi_t \\leq \\frac{16\\min\\{|1- \\mu_t\\Delta_t|^2\\}}{17\\left(1 + \\|\\mat{A}_t\\|_{2} \\mu_t \\sqrt{\\Delta_t}\\right)^2},$$\n \\eqref{eqn:conv_path} simplifies to",
+        "tag": "rem:trimtiht-discussion"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the constant $16/17$ by $1/17$ (or any constant $c$ with $2c+c^2<1$) in the assumed bound on $\\xi_t$.",
+      "overall_effect": "The simplified contraction factor $\\alpha_t$ and the derived threshold ($\\delta<0.106$ in the TensorRIP connection) are stated under an insufficient assumption on the thresholding accuracy.",
+      "primary_affected_tag": "rem:trimtiht-discussion",
+      "target_type": "prose_claim",
+      "title": "Remark's simplified rate (eqn:conv_path_err) does not follow from the stated xi_t condition with constant 16/17",
+      "why_classification": "Correcting one constant restores the implication with the same conclusion."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2502.02843",
+  "question_id": "Q1",
+  "run_name": "claude-fable-5.1-medium-2026-09-10-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4c2daef180803f17e54fe02230f23ed78ee18b72da6b7e8907307addb6750f64",
+  "status": "ok"
+}

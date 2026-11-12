@@ -1,0 +1,152 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\beta_{k-1} = \\| \\tilde{\\boldsymbol{v}}^{(k)} \\|_2$.",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "Real symmetric matrix $A \\in \\mathbb{R}^{n\\times n}$, real vector $\\boldsymbol{v} \\in \\mathbb{R}^{n\\times 1}$, number of Lanczos iterations $m$.",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "Apply $m$-step \\cref{alg:Lanc} to $A$ with the initial vector $\\boldsymbol{v}^{(i)}$ and obtain $\\{\\theta^{(i)}_k\\}_{k=1}^{m+1}$ and $\\{\\tau_k^{(i)}\\}_{k=1}^{m+1}$.",
+          "tag": "alg:SLQ"
+        }
+      ],
+      "failure_explanation": "For inputs admitted by the stated contract (e.g. the real symmetric matrix $A = I$, for which $\\tilde{\\boldsymbol v}_2 = A\\boldsymbol v_1 - \\alpha_1\\boldsymbol v_1 = \\boldsymbol 0$, or any $(A,\\boldsymbol v)$ whose Krylov subspace becomes $A$-invariant before step $m+1$, e.g. a matrix with fewer than $m+1$ distinct eigenvalues), the residual vanishes, so $\\beta_{k-1} = \\|\\tilde{\\boldsymbol v}_k\\|_2 = 0$ and the normalization $\\boldsymbol v_k = \\tilde{\\boldsymbol v}_k/\\beta_{k-1}$ divides by zero. No breakdown test or early-termination rule is given, so the node/weight computation is ill-defined exactly in the cases where the Krylov space is invariant, the quadrature is exact, and the remaining iterations are unnecessary.",
+      "failure_location": {
+        "quote": "Obtain $\\boldsymbol{v}_k = \\tilde{\\boldsymbol{v}}_{k}/\\beta_{k-1}$.",
+        "tag": "alg:Lanc"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a breakdown guard in alg:Lanc: if $\\beta_{k-1} = 0$, the Krylov subspace is invariant and the quadrature built from the current tridiagonal matrix is exact; terminate the loop and return its nodes and weights (padding the remaining weights with zeros).",
+      "overall_effect": "alg:Lanc fails to produce its promised outputs for a nonempty class of admissible inputs; alg:SLQ, which invokes it for every query, inherits the same ill-definedness for such matrices. The error theorems are stated for the mathematical estimator and are not invalidated (in the breakdown case the quadrature is exact), but the printed procedures are not executable as stated on their full input domain.",
+      "primary_affected_tag": "alg:Lanc",
+      "target_type": "algorithm",
+      "title": "Lanczos quadrature algorithm divides by zero at breakdown",
+      "why_classification": "A standard one-line local guard restores well-definedness on all admissible inputs; no guarantee, rate, or advertised scope is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $A\\in \\mathbb{R}^{n\\times n}$ be a real symmetric positive definite matrix with eigenvalues in $[\\lambda_{\\min},\\lambda_{\\max}]$, $\\lambda_{\\max}<1$, and $\\kappa = \\lambda_{\\max}/\\lambda_{\\min}$ be the condition number.",
+          "tag": "thm:ours"
+        },
+        {
+          "quote": "\\mathbb{P}\\Big\\{ \\left| \\log \\det A -  \\left[\\log \\det A \\right]_L \\right| \\le \\epsilon  |\\log \\det A |\\Big\\} \\ge 1-\\eta.",
+          "tag": "thm:ours"
+        },
+        {
+          "quote": "m\\geq \\frac{1}{2\\log(\\rho_2)}\\cdot \\log\\left(\\frac{K_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa}/ \\lambda_{\\max} \\right)}\\right),",
+          "tag": "thm:ours"
+        }
+      ],
+      "failure_explanation": "The remark asserts that the hypothesis $\\lambda_{\\max}<1$ of thm:ours is essentially WLOG because any SPD matrix with $\\lambda_{\\max}>1$ can be scaled. But the SLQ error (both the Lanczos-quadrature error and the Hutchinson fluctuation) is invariant under $A \\mapsto A/c$, while the relative-error reference is not: $\\log\\det(A/c) = \\log\\det A - n\\log c$. A relative-error guarantee for the scaled matrix bounds the error relative to $|\\log\\det A - n\\log c|$, not to $|\\log\\det A|$; e.g. for $A = \\mathrm{diag}(M, 1, \\ldots, 1)$ and any admissible $c > M$ the two quantities differ by a factor $\\approx n$, so nothing like the theorem's conclusion transfers back to the original matrix. Moreover, when $\\lambda_{\\max} \\ge 1$ the eigenvalue logarithms can have mixed signs (even $\\log\\det A = 0$), destroying the one-sign spectrum on which the proof's relative bounds (the Hutchinson relative-error estimate and $\\log(\\kappa/\\lambda_{\\max}^n) \\le |\\mathrm{tr}(f(A))|$) rest. The hypothesis is essential, not mild.",
+      "failure_location": {
+        "quote": "This assumption is mild since for any SPD matrix with $\\lambda_{\\max} > 1$, it can be simply scaled to have eigenvalues $\\lambda \\in (0,1)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Delete or correct the sentence, stating that $\\lambda_{\\max}<1$ (all eigenvalue logarithms of one sign, $\\det A < 1$) is essential to the relative-error analysis, and that scaling preserves the absolute error but changes the relative-error target.",
+      "overall_effect": "The stated scope of thm:ours (and thm:ours_updated, which shares the hypothesis) is misrepresented: a reader is invited to apply its parameter choices to general SPD matrices via scaling, for which no relative-error guarantee follows. The theorems themselves, under their stated hypotheses, are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that the $\\lambda_{\\max}<1$ hypothesis is mild (removable by scaling)",
+      "why_classification": "The repair is a one-sentence local correction; every formal result and guarantee stands unchanged, and only the false WLOG/scope impression is withdrawn."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\geq \\frac{1}{2\\log(\\rho_2)}\\log\\left(\\frac{K_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right)}\\right)",
+          "tag": "eq_optimized_m"
+        },
+        {
+          "quote": "m\\geq \\frac{1}{2\\log(\\rho_2)}\\cdot \\log\\left(\\frac{K_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa}/ \\lambda_{\\max} \\right)}\\right),",
+          "tag": "thm:ours"
+        },
+        {
+          "quote": "K_{\\rho_2} = \\frac{8 M_{\\rho_2}}{\\rho_2^{2} - \\rho_2}, M_{\\rho_2} = \\sqrt{\\log\\left(\\frac{\\lambda_{\\min}}{2} \\right)^2 + \\pi^2},",
+          "tag": "thm:ours"
+        },
+        {
+          "quote": "K_{\\rho_2} = \\frac{4 \\alpha M_{\\rho_2}}{\\rho_2^2 - \\rho_2}, M_{\\rho_2} = \\sqrt{\\log\\left(\\frac{\\lambda_{\\min}}{2} \\right)^2 + \\pi^2},",
+          "tag": "thm:ours_updated"
+        },
+        {
+          "quote": "\\cref{thm:ours_updated} summarizes the bounds of $m$ and $N$ which product is minimized through a reallocation of error.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the optimized-allocation derivation, the quadrature condition $\\frac{4nM_{\\rho_2}}{(\\rho_2^2-\\rho_2)\\rho_2^{2m}} \\le \\frac{\\epsilon}{\\alpha}\\log(\\kappa/\\lambda_{\\max}^n)$ yields eq_optimized_m with no factor $n$, because $\\log(\\kappa/\\lambda_{\\max}^n) = n\\log(\\sqrt[n]{\\kappa}/\\lambda_{\\max})$ cancels the $n$ in the numerator; at the equal split $\\alpha = 2$ this reproduces thm:ours's bound exactly. thm:ours_updated instead states the bound with an extra factor $n$ inside the logarithm, and defines $K_{\\rho_2}$ using the symbol $\\alpha$, which is undefined in the theorem (only $\\alpha^*$ is defined there). Hence the printed $m$ requirement exceeds the derived optimized bound by $\\frac{\\log n}{2\\log\\rho_2}$ steps (material for large $n$ and $\\rho_2$ near $1$), and the advertised property that the stated bounds minimize the $m \\times N$ product fails for the statement as printed. The probability guarantee itself still holds, since the printed (larger) $m$ is sufficient.",
+      "failure_location": {
+        "quote": "m \\geq \\frac{1}{2\\log(\\rho_2)}\\log\\left(\\frac{nK_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right)}\\right)",
+        "tag": "thm:ours_updated"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "In thm:ours_updated, delete the factor $n$ from the $m$ bound and replace $\\alpha$ by $\\alpha^*$ in the definition of $K_{\\rho_2}$, making the statement coincide with eq_optimized_m (and with thm:ours at $\\alpha^* = 2$).",
+      "overall_effect": "thm:ours_updated misstates the optimized Lanczos-step requirement; the minimized-MVM claim is false for the printed statement, and any MVM counts attributed to thm:ours_updated (e.g. in the experiments) are inflated by the spurious $\\log n$ term if computed from the printed bound.",
+      "primary_affected_tag": "thm:ours_updated",
+      "target_type": "formal_result",
+      "title": "thm:ours_updated's Lanczos-step bound contains a spurious factor $n$ and an undefined $\\alpha$",
+      "why_classification": "A local correction of the misstated bound restores consistency with the derivation and the minimality claim; the error guarantee is never at risk because the printed bound is stronger than needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{\\alpha>1} \\, \\log\\left(C \\alpha\\right) \\left(\\alpha/(\\alpha-1) \\right)^2.",
+          "tag": "optimization"
+        },
+        {
+          "quote": "\\alpha^* = 2\\log \\alpha^* + 2 \\log C + 1",
+          "tag": "alpha*"
+        },
+        {
+          "quote": "which is obtained through taking the derivative of the objective function and making it equal to 0.",
+          "tag": null
+        },
+        {
+          "quote": "By introducing a constant $C = 4 M_{\\rho_2} / (\\epsilon (\\rho_2^2 - \\rho_2) \\log \\left( \\sqrt[n]{\\kappa}/\\lambda_{\\max} \\right))$, the problem is simplified to",
+          "tag": null
+        },
+        {
+          "quote": "If $\\alpha^* = 2\\log \\alpha^* + 2 \\log C + 1$, the Lanczos iteration step $m$ and the query number $N$ satisfy",
+          "tag": "thm:ours_updated"
+        }
+      ],
+      "failure_explanation": "The claim that the minimizer of eq:optimization satisfies eq:alpha* (and thm:ours_updated's premise that such an $\\alpha^*$ exists) tacitly assumes the objective has an interior minimizer, which requires $C$ to be large enough; this hypothesis is nowhere stated or established. Stationary points solve $g(\\alpha) := \\alpha - 1 - 2\\log(C\\alpha) = 0$; since $\\min_{\\alpha>1}(\\alpha - 1 - 2\\log\\alpha) = 1 - 2\\log 2 < 0$ (attained at $\\alpha = 2$), the equation has no solution at all when $C \\le e^{(1-2\\log 2)/2} \\approx 0.824$, and for $C < 1$ the objective $\\log(C\\alpha)(\\alpha/(\\alpha-1))^2$ is unbounded below (as $\\alpha \\to 1^+$, $\\log(C\\alpha) \\to \\log C < 0$ while $(\\alpha/(\\alpha-1))^2 \\to \\infty$), so no minimizer exists; for $e^{(1-2\\log 2)/2} < C < 1$ there are two stationary points, the smaller being a local maximum, so the equation does not identify the minimizer. Such $C$ is attainable under the theorem's hypotheses (e.g. $\\lambda_{\\min} = 0.89$, $\\lambda_{\\max} = 0.9$, $n = 5000$, $\\epsilon = 0.1$ gives $C \\approx 0.04$). Hence the existence/uniqueness step of the derivation fails in a sub-regime, and thm:ours_updated's premise is unsatisfiable there.",
+      "failure_location": {
+        "quote": "The minimizer $\\alpha^*$ of \\eqref{optimization} then satisfies",
+        "tag": "alpha*"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the missing hypothesis (e.g. assume $C > 1$, or assume eq:alpha* is solvable and take its largest root), and handle the complementary regime separately, noting that there the $m$ bound is trivially satisfied and the allocation reduces to minimizing $N$.",
+      "overall_effect": "For matrices with $\\lambda_{\\max}<1$ but $C \\le 1$ (well-conditioned spectra, for which the Lanczos-step bound of eq_optimized_m is non-positive and the quadrature share is trivially met), eq:optimization is ill-posed, eq:alpha* is unsolvable, and thm:ours_updated yields no bounds (vacuous premise) even though thm:ours applies; for $C$ slightly below $1$ the characterization of the minimizing allocation is ambiguous (two roots, one a local maximum of the MVM product).",
+      "primary_affected_tag": "thm:ours_updated",
+      "target_type": "formal_result",
+      "title": "Error-allocation optimization is ill-posed and $\\alpha^*$ need not exist when $C \\le 1$",
+      "why_classification": "The repair is a local hypothesis addition plus a routine degenerate-case remark; the method, the rates, and the practically relevant regime ($C \\gg 1$, as in all experiments) survive, and the excluded regime is one where the bounds are trivial anyway."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2307.00847",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n02-reserve",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c42e539abecf88a44de72f2dedfec14703df372008f57b75de751f59b08fac16",
+  "status": "ok"
+}

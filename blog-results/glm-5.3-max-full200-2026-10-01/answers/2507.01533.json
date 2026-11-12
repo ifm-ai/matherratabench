@@ -1,0 +1,219 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "we abbreviate $\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$, and denote by $\\Phi := \\Phi_{0,1}$ the flow map evaluated at final time $t = 1$.",
+          "tag": null
+        },
+        {
+          "quote": "the generative direction $\\Phi$ mapping noise to the parameter distribution, $\\Phi^\\theta_*\\nu\\approx\\mu$, and the normalizing flow $(\\Phi^\\theta)^{-1}_*\\mu\\approx\\nu$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "If $Z\\sim\\nu$ and $x=\\Phi^{-1}(Z)$, then $x$ is distributed according to the pullback $(\\Phi^{-1})_*\\nu$ (i.e. $A\\mapsto\\nu(\\Phi(A))$), not according to $\\Phi_*\\nu=\\nu\\circ\\Phi^{-1}$; sampling $\\Phi_*\\nu$ requires the forward solve $x=\\Phi(z)$. Counterexample: $d=1$, $v\\equiv1$, so $\\Phi(z)=z+1$; then $\\Phi^{-1}(Z)=Z-1$ has law $\\nu(\\cdot+1)$ while $\\Phi_*\\nu=\\nu(\\cdot-1)$, which differ for any non-symmetric $\\nu$. The sentence thus states a wrong input-output contract for the described sampling procedure.",
+      "failure_location": {
+        "quote": "allowing efficient computation of samples from $\\Phi_* \\nu$ by sampling $Z \\sim \\nu$ and solving the ODE backward in time with $z$, a realization of $Z$, to obtain $x = \\Phi^{-1}(z)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the sentence: sample $Z\\sim\\nu$ and solve the ODE forward in time to obtain $x=\\Phi(z)$, which is distributed as $\\Phi_*\\nu$ (the backward solve maps samples of $\\Phi_*\\nu$ to samples of $\\nu$).",
+      "overall_effect": "The claimed sampling mechanism in the NeuralODE preliminaries is false as stated. No formal downstream result relies on it: the later proofs evaluate $\\Phi$ forward at quadrature nodes and use backward solves only to represent inverse flows, which is correct.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Backward ODE solve does not produce samples from the pushforward measure",
+      "why_classification": "A single forced local correction (forward solve, $x=\\Phi(z)$) restores the claim; no theorem, proof, guarantee, or advertised scope is affected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "we abbreviate $\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$, and denote by $\\Phi := \\Phi_{0,1}$ the flow map evaluated at final time $t = 1$.",
+          "tag": null
+        },
+        {
+          "quote": "Liouville’s formula provides an efficient integral representation for the log-determinant of the Jacobian, which leads to the identity",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the flow $\\Phi_{0,t}$ of $\\dot y=v(y,t)$, change of variables and Liouville's formula give $\\log f_{\\Phi_*\\nu}(y)=\\log f_\\nu(\\Phi^{-1}(y))-\\int_0^1\\operatorname{div}v(\\Phi_{0,t}(\\Phi^{-1}(y)),t)\\,dt$: the sign is negative and the divergence is integrated along the trajectory ending at $y$, namely $\\Phi_t(\\Phi^{-1}(y))$, not along $\\Phi_t(y)$ (the trajectory started at $y$). Counterexample: $d=1$, $v(y,t)=y$, so $\\Phi(z)=ez$ and $\\log f_{\\Phi_*\\nu}(y)=\\log f_\\nu(y/e)-1$, whereas the displayed identity yields $\\log f_\\nu(y/e)+1$.",
+      "failure_location": {
+        "quote": "\\log f_{\\Phi_*\\nu}(y) = \\log f_\\nu(\\Phi^{-1}(y)) + \\int_0^1 \\operatorname{div}_y v(\\Phi_t(y), t) \\, dt",
+        "tag": "eq:liouville_log_det"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the identity by $\\log f_{\\Phi_*\\nu}(y)=\\log f_\\nu(\\Phi^{-1}(y))-\\int_0^1\\operatorname{div}v(\\Phi_t(\\Phi^{-1}(y)),t)\\,dt$ (equivalently, integrate along the backward trajectory from $y$ with the corresponding sign).",
+      "overall_effect": "The displayed identity is false. It is invoked only to motivate likelihood-based training ('facilitates efficient computation'), so no labelled formal result is invalidated, but the stated log-density representation is unreliable as written.",
+      "primary_affected_tag": "eq:liouville_log_det",
+      "target_type": "other",
+      "title": "Liouville log-density identity has the wrong sign and the wrong trajectory",
+      "why_classification": "A local forced correction of a displayed identity that no proof depends on; all claims and guarantees are unaffected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\int_0^1 \\left\\| D_x\\tilde{v}^\\theta({[\\Phi_t^\\theta]}^{-1}(x), 1 - t) - D_x u^\\mu({[\\Phi_t^{\\mu}]}^{-1}(x), 1 - t) \\right\\|_2 \\cdot \\left\\| {(D_x\\Phi_t^\\theta)}^{-1}(x) \\right\\|_2 \\, dt",
+          "tag": "thm:learnability_target_class"
+        },
+        {
+          "quote": "\\leq \\exp\\left( \\int_0^1 \\text{Lip}(u_{1 - t}^\\mu) \\, dt \\right) \\cdot \\|\\tilde{v}^\\theta - u^\\mu\\|_{C^0}.",
+          "tag": "thm:learnability_target_class"
+        }
+      ],
+      "failure_explanation": "In the determinant part of the proof, $\\|D_x\\tilde v^\\theta({[\\Phi_t^\\theta]}^{-1}(x),1-t)-D_xu^\\mu({[\\Phi_t^\\mu]}^{-1}(x),1-t)\\|$ is bounded by $\\sup_{(x,t)}\\|D_x(\\tilde v_t^\\theta-u_t^\\mu)(x)\\|$, which is valid only when both derivatives are evaluated at the same point; but ${[\\Phi_t^\\theta]}^{-1}(x)\\ne{[\\Phi_t^\\mu]}^{-1}(x)$ in general, since the two different vector fields induce different backward trajectories from the same $x$. The missing term is the spatial Lipschitz constant of $D_xu^\\mu$ times the trajectory separation. Concrete failure of the inference: take $\\tilde v^\\theta=u^\\mu+w$ with a small constant field $w$ (so the same-point bound is $0$) and $u^\\mu$ with spatially varying derivative; the left side is then positive while the claimed bound is $0$.",
+      "failure_location": {
+        "quote": "\\leq  \\sqrt{d} \\sup_{(x,t)\\in [0,1]^{d+1}} \\|D_x(\\tilde{v}_t^\\theta -u_t^\\mu)(x)\\|_2 e^{\\left( \\sqrt{d}\\|\\tilde{v}^\\theta\\|_{C^1} \\right)}",
+        "tag": "thm:learnability_target_class"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add and subtract $D_xu^\\mu({[\\Phi_t^\\theta]}^{-1}(x),1-t)$ and bound the spatial increment by $\\operatorname{Lip}(D_xu^\\mu)\\le c_{d,k,\\kappa,\\mathcal{K}}$ (from $u^\\mu\\odiv\\eta_d\\in C^k$, $k\\ge3$, uniformly over $\\mathcal T$) times the Gronwall bound on $\\|{[\\Phi_t^\\theta]}^{-1}(x)-{[\\Phi_t^\\mu]}^{-1}(x)\\|$ already derived in the same proof; the extra term has the same form as the final KL estimate and is absorbed into its constant.",
+      "overall_effect": "The Jacobian-difference estimate, the determinant bound and hence the KL model-error bound of thm:learnability_target_class are not established as written; the model-error control inside the main theorem relies on this result.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Model-error proof bounds a derivative difference at two distinct trajectory points by a same-point supremum",
+      "why_classification": "The repair is local, uses only ingredients already in the proof or cited in it, requires no new lemma, and preserves the statement and all rates; only an omitted term must be inserted and absorbed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:sub_gaussian",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, the determinant sensitivity estimate from~\\cite[Cor.~2.14]{ipsen2008} yields",
+          "tag": "thm:learnability_target_class"
+        },
+        {
+          "quote": "Inserting into the determinant sensitivity bound~\\cite[Cor.~2.14]{ipsen2008} yields",
+          "tag": "lem:sub_gaussian"
+        },
+        {
+          "quote": "Inserting this into the determinant sensitivity bound~\\cite[Cor.~2.14]{ipsen2008}, this yields",
+          "tag": "thm:concentration_bound"
+        },
+        {
+          "quote": "\\| \\Phi^\\theta\\|_{C^1([0,1]^d)} \\leq \\sqrt{d} e^{\\sqrt{d} \\|v^\\theta \\otimes \\eta_d\\|_{C^1([0,1]^{d+1})}} \\leq \\sqrt{d} e^{\\sqrt{d} \\sqrt{q} \\operatorname{Lip}_1^\\Theta}",
+          "tag": "thm:learnability_sparse_grid"
+        }
+      ],
+      "failure_explanation": "The proof claims, as a consequence of [Cor. 2.14, ipsen2008], that $|\\log|\\det A|-\\log|\\det B||\\le\\sum_{k=1}^d\\binom{d}{k}2^k\\|A-B\\|^k$ for the inverse-flow Jacobians $A=D_x[\\Phi^\\theta]^{-1}(x)$, $B=D_x[\\Phi^\\mu]^{-1}(x)$. Such a bound cannot hold for general invertible matrices with a constant depending only on $d$: for $A=\\epsilon I$, $B=2\\epsilon I$ the left side equals $d\\log 2$ while the right side tends to $0$ as $\\epsilon\\to0$. A correct log-determinant perturbation bound necessarily carries factors $\\|A^{-1}\\|^k$ or $\\|B^{-1}\\|^k$ (or a smallness hypothesis on $\\|A-B\\|$ relative to the smallest singular value); here these are forward-flow Jacobian norms, bounded in the paper only by $\\sqrt{d}\\,e^{\\sqrt{d}\\sqrt{q}\\operatorname{Lip}_1^\\Theta}$, not by $2$. No hypotheses are stated or verified, so the step is unsupported as written. The identical pattern recurs in lem:sub_gaussian and thm:concentration_bound.",
+      "failure_location": {
+        "quote": "\\quad \\leq \\sum_{k=1}^d \\binom{d}{k} 2^k \\left\\| {D_x[\\Phi^\\theta]}^{-1}(x) - {D_x[\\Phi^{\\mu}]}^{-1}(x) \\right\\|_2^k",
+        "tag": "thm:learnability_target_class"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Apply a correct log-determinant perturbation inequality carrying the inverse-Jacobian factors and bound those factors by the already-established forward-flow Jacobian estimates (e.g. $\\|D\\Phi^\\theta\\|\\le\\sqrt{d}e^{\\sqrt{d}\\sqrt{q}\\operatorname{Lip}_1^\\Theta}$); since $k\\le d$, the factors are absorbed into the exponentials already present in the displays immediately following each invocation, so all stated bounds survive with their stated growth.",
+      "overall_effect": "The three log-determinant difference estimates, and hence the constants $\\bar L$ and $D$ and the KL model-error bound, are not justified as written; transitively the generalization-error bounds and the PAC result in the main theorem inherit the gap.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Determinant sensitivity bound invoked without invertibility/conditioning factors",
+      "why_classification": "The repair inserts standard conditioning factors that are already bounded in-context and absorbed into existing constants; no lemma, statement, rate, or guarantee changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then the mappings $\\theta \\mapsto v_t^\\theta(x) \\otimes \\eta_d(x)\\quad \\text{and} \\quad \\theta \\mapsto D\\left(v_t^\\theta \\otimes \\eta_d \\right)(x)$ are $\\| \\cdot\\|_2-d_\\Theta$ Lipschitz continuous, with constants",
+          "tag": "lem:lip_constants"
+        },
+        {
+          "quote": "\\leq e^{\\sqrt{d} \\sqrt{q} \\operatorname{Lip}_1^\\Theta}\\operatorname{Lip}_0^\\Theta 2\\sqrt{q}",
+          "tag": "lem:sub_gaussian"
+        }
+      ],
+      "failure_explanation": "The proof bounds $\\|D_x\\tilde v^\\theta(p,1-t)-D_x\\tilde v^{\\theta'}(q,1-t)\\|$ with $p={[\\Phi_t^\\theta]}^{-1}(x)\\ne q={[\\Phi_t^{\\theta'}]}^{-1}(x)$ (the two backward trajectories, which the lemma itself shows differ) by $\\operatorname{Lip}_1^\\Theta\\|\\theta-\\theta'\\|$. But Lemma lem:lip_constants controls $\\theta\\mapsto D(v_t^\\theta\\otimes\\eta_d)(x)$ only at a fixed evaluation point; neither it nor Corollary cor:c1_bound provides the spatial Lipschitz constant of $D_x(v^\\theta\\otimes\\eta_d)$ — a second-derivative-type bound for bounded-weight ReQU networks — needed to bridge the two distinct points. Hence the increments $Z_{\\theta,n}-Z_{\\theta',n}$ are not shown to be sub-Gaussian with proxy $\\frac{\\bar L^2}{n}d_\\Theta^2(\\theta,\\theta')$, the property to which Dudley's entropy integral is applied. (The same point-mismatch arises in thm:learnability_target_class, but there the missing ingredient follows from the smoothness of $u^\\mu$; here it must be derived for the network class.)",
+      "failure_location": {
+        "quote": "\\left\\| D_x\\tilde{v}^\\theta({[\\Phi_t^\\theta]}^{-1}(x), 1 - t) - D_x\\tilde{v}^{\\theta'}({[\\Phi_t^{\\theta'}]}^{-1}(x), 1 - t) \\right\\|_2 \\leq \\operatorname{Lip}_1^\\Theta \\|\\theta - \\theta'\\|_2",
+        "tag": "lem:sub_gaussian"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Establish a new lemma bounding, uniformly over $\\theta\\in[-1,1]^q$, the spatial Lipschitz constant of $D_x(v^\\theta\\otimes\\eta_d)$ on $[0,1]^{d+1}$ in terms of $(L,W,d)$ (bounded-weight ReQU networks are $C^{1,1}$ with such bounds, analogous to the estimates of Lemmas 3.2/3.7 of ehrhardt2025); combine it with the Gronwall trajectory bound already derived to control the mixed difference by $(\\operatorname{Lip}_1^\\Theta+G\\,e^{\\sqrt d\\sqrt q\\operatorname{Lip}_1^\\Theta}\\operatorname{Lip}_0^\\Theta)\\|\\theta-\\theta'\\|$ and enlarge $\\bar L$. The new term is of $\\operatorname{Lip}_0$-type, so the growth bound of Remark rmk:main_constant_L and all downstream results survive with adjusted constants.",
+      "overall_effect": "The sub-Gaussianity claim and the constant $\\bar L$ of lem:sub_gaussian are unproven as written; consequently thm:dudley, thm:concentration_bound, and the PAC-learnability result thm:learnability_sparse_grid are not established.",
+      "primary_affected_tag": "lem:sub_gaussian",
+      "target_type": "formal_result",
+      "title": "Sub-Gaussian increment bound misapplies the parameter-Lipschitz estimate across different trajectory points",
+      "why_classification": "The repair needs a new, contained but nontrivial lemma (a uniform second-derivative bound for ReQU networks) plus a rederivation of the sub-Gaussian proxy, which exceeds a routine local fix; however, no global proof architecture changes and no stated guarantee, regime, or rate is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\varepsilon_n^{\\mathrm{gen}} := \\sup_{\\theta \\in \\Theta_n} \\left| \\mathbb{E}_{X \\sim \\mu}[-\\log(f_{\\mu_\\theta}(X))] - \\widehat{L}_n(\\mu_\\theta, \\chi_n) \\right|",
+          "tag": null
+        },
+        {
+          "quote": "Z_{\\theta, n} := \\mathbb{E}_{X \\sim \\mu} \\left[ -\\log(f_{\\mu_\\theta}(X)) \\right] - \\widehat{L}_n(\\mu_\\theta, \\chi_n)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "By definition $\\varepsilon_n^{\\mathrm{gen}}=\\sup_\\theta|Z_{\\theta,n}|$, whereas Dudley's inequality is applied to $\\mathbb{E}[\\sup_\\theta Z_{\\theta,n}]$; the asserted equality is false in general (e.g. if $Z_{\\theta,n}<0$ for all $\\theta$ then $\\sup_\\theta Z_{\\theta,n}<0<\\sup_\\theta|Z_{\\theta,n}|$). The correct comparison gives $\\mathbb{E}[\\varepsilon_n^{\\mathrm{gen}}]\\le2\\,\\mathbb{E}[\\sup_\\theta Z_{\\theta,n}]$, bounding $\\sup_\\theta(-Z_{\\theta,n})$ by the same Dudley argument; in addition, the substitution $\\int_0^{2\\sqrt q}\\sqrt{q\\log(1+2\\sqrt q/\\varepsilon)}\\,d\\varepsilon=2q\\int_0^1\\sqrt{\\log(1+2/u)}\\,du$ drops a further factor of $2$. Hence the constant $48$ in thm:dudley is not established by the proof.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\varepsilon_{n}^{\\mathrm{gen}} \\right] = \\mathbb{E}\\left[\\sup_{\\theta \\in \\Theta} Z_{\\theta,n}\\right]",
+        "tag": "thm:dudley"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the equality by $\\mathbb{E}[\\varepsilon_n^{\\mathrm{gen}}]\\le2\\,\\mathbb{E}[\\sup_\\theta Z_{\\theta,n}]$, bound $\\sup_\\theta(-Z_{\\theta,n})$ with the same Dudley argument, and repair the factor $2$ in the covering-number substitution; the constant $48$ becomes $96$ (up to equivalent bookkeeping) and all downstream statements hold with adjusted constants.",
+      "overall_effect": "The numerical constant in thm:dudley, and with it the constants in thm:concentration_bound and in the explicit thresholds of the main theorem's proof, are unjustified as written; the form, order, and dependence structure of all bounds survive.",
+      "primary_affected_tag": "thm:dudley",
+      "target_type": "formal_result",
+      "title": "Dudley step equates the expected supremum of absolute increments with the supremum",
+      "why_classification": "Only constant-level bookkeeping in the proofs changes; every statement survives with an $O(1)$ larger constant and no guarantee, rate, or scope is affected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\mu \\| \\mu_{\\hat{\\theta}_n}) \\leq \\varepsilon_n^{\\mathrm{model}} + 2 \\varepsilon_n^{\\mathrm{gen}}",
+          "tag": "empirical_error_decomp"
+        }
+      ],
+      "failure_explanation": "The proof of the main theorem restates the risk decomposition without the factor $2$ on the generalization error, contradicting the paper's own decomposition, which carries it. The standard ERM argument needs uniform deviation control at both $\\hat\\theta_n$ and the model-optimal parameter, so the factor cannot be dropped in general. Consequently the derived generalization-error threshold $\\varepsilon^2/(16\\|Q\\|_\\infty^2)$ and the constants in the subsequent probability bound and sample-size threshold are unjustified; with the correct decomposition the threshold becomes $\\varepsilon^2/(32\\|Q\\|_\\infty^2)$ given the model-error bound used.",
+      "failure_location": {
+        "quote": "\\KL(\\mu\\| \\Phi^{\\hat{\\theta}_n}_* \\nu) \\leq \\varepsilon_n^{\\mathrm{model}} + \\varepsilon_n^{\\mathrm{gen}}.",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Use the decomposition with the factor $2$ and adjust the constants in the subsequent chain (the generalization-error threshold becomes $\\varepsilon^2/(32\\|Q\\|_\\infty^2)$); the conclusion of the theorem is unchanged.",
+      "overall_effect": "The explicit constants in the probability chain of the main theorem's proof are unreliable as written; the PAC-learnability statement of thm:learnability_sparse_grid itself survives with adjusted thresholds.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Main proof drops the factor 2 in the empirical risk decomposition",
+      "why_classification": "A forced constant-level repair inside the proof; the theorem's statement, the existence of the thresholds, and all guarantees are preserved."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2507.01533",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n02-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4061c0fabc84b846272339b854b6a82a9cfd5d1ef91d57be1f2279301753237e",
+  "status": "ok"
+}

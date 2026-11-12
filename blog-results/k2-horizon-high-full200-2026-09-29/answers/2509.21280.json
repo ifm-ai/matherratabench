@@ -1,0 +1,182 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "To ensure the injectivity of the encoder approximated by a neural network, each layer must be injective, condition which is satisfied when $n_\\ell \\geq n_{\\ell-1}$ for all hidden layers, so $n_\\ell \\geq n_\\text{in}$ for $\\ell = 1,\\ldots,L-1$.",
+          "tag": "th:reduction"
+        },
+        {
+          "quote": "By \\Cref{th:uap}, we have that $n_\\ell = n_\\text{in}+n_\\text{out}$ is sufficient to satisfy $\\Varepsilon_1 = 0$ and $\\lim_{|\\myw|\\to\\infty}\\Varepsilon_2 = 0$.",
+          "tag": "th:reduction"
+        }
+      ],
+      "failure_explanation": "The proof's inference is false: a layer with $n_\\ell \\geq n_{\\ell-1}$ need not be injective. E.g., the ReLU layer $\\mathbb{R}^2\\to\\mathbb{R}^2$, $x\\mapsto(\\max(x_1,0),\\max(x_2,0))$, has equal widths but collapses the whole negative quadrant to $0$; any affine map with a nontrivial kernel is non-injective regardless of width, and even full-rank affine maps followed by ReLU are non-injective. Hence the stated width condition is not a sufficient condition for injectivity of the encoder (on $\\mathbb{R}^N$ or, in general, on $\\mathcal{M}$). Additionally, the appeal to the universal approximation theorem (th:uap) only yields $\\varepsilon$-approximation, not the exact identity $\\Varepsilon_1 = 0$ claimed in the proof.",
+      "failure_location": {
+        "quote": "A sufficient condition for the width to ensure injectivity of the encoder is $n_\\ell \\geq n_\text{in}$, for $\\ell = 1,\\ldots, L-1$.",
+        "tag": "th:reduction"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restate the theorem with explicit layer-wise injectivity hypotheses (e.g., strictly monotone activations such as ELU/PReLU and full-column-rank affine maps for $\\ell=1,\\ldots,L-1$, plus injectivity of the final linear map on the reshaped manifold $\\psi'(\\mathcal{M})$); under those added hypotheses the conclusion holds, so the design message is preserved.",
+      "overall_effect": "The architecture-design guideline that the dimension reduction must be performed only at the last layer loses its formal justification; the main-results bullet in the introduction and the remark restating the message of th:reduction are unsupported as formal claims (the qualitative guidance survives only heuristically).",
+      "primary_affected_tag": "th:reduction",
+      "target_type": "formal_result",
+      "title": "Th:reduction — non-decreasing layer widths do not ensure encoder injectivity",
+      "why_classification": "The stated sufficient condition is false and must be withdrawn or replaced, but a contained strengthening of hypotheses repairs the theorem without changing the qualitative architecture guidance; no new global proof architecture is needed and no rate or regime is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:well_posedness_node"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "& \\leq \\underbrace{(M_{J_{\\Psi'}}L_{F_N} + M_{F_N}L_{J_{\\Psi'}}) L_\\Psi}_{= \\overline{L}_{F_n,\\mu}} \\|u_{n1} - u_{n2}\\|,",
+          "tag": "th:L_{F_n}"
+        }
+      ],
+      "failure_explanation": "The estimate for $\\overline{L}_{F_n,\\mu}$ uses the Lipschitz constant $L_{F_N}$ of $F_N$, but the proposition's hypotheses assume only that $\\Psi,\\Psi'$ are Lipschitz and that $F_N$ is bounded; well-posedness of the N-ODE (existence/uniqueness/continuous dependence) does not imply Lipschitz continuity of $F_N$. The bound is therefore unproven under the stated hypotheses.",
+      "failure_location": {
+        "quote": "Additionally, we assume that $F_N$ is bounded, with $M_{F_N} \\coloneqq \\sup_{u_N\\in\\mathcal{M}} \\|F_N(u_N)\\|$.",
+        "tag": "th:L_{F_n}"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that $F_N$ is Lipschitz continuous with constant $L_{F_N}$ to the statement of th:L_{F_n}; the estimate in the proposition and appendix and all downstream uses then go through unchanged.",
+      "overall_effect": "th:well_posedness_node, whose proof cites th:L_{F_n}, inherits the gap; the same missing hypothesis propagates to every bound built on $L_{F_n}$ (the Lyapunov bounds eq:lyapunov_stab_node/eq:lyapunov_stab_Node, the B-stability timestep bound eq:b_stab_timestep_bound, and the exponential factor in th:global_convergence).",
+      "primary_affected_tag": "th:L_{F_n}",
+      "target_type": "formal_result",
+      "title": "Th:L_{F_n} — Lipschitz continuity of F_N is used but never assumed",
+      "why_classification": "A standard local condition repairs the defect; every substantive claim, guarantee, and rate survives, so the issue is minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We now assume the construction of an autoencoder that realizes an orthogonal projection.",
+          "tag": null
+        },
+        {
+          "quote": "(J_{\\Psi}J_{\\Psi'}) \\Lambda w = \\lambda w.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With $P = J_\\Psi J_{\\Psi'}$ an orthogonal projection onto an $n$-dimensional subspace $S$, the nonzero eigenvalues of $A = J_{\\Psi'}\\Lambda J_\\Psi$ are the eigenvalues of the compression $P\\Lambda|_S$, which in general are not eigenvalues of $\\Lambda$. Counterexample: $\\Lambda = \\mathrm{diag}(-3,-5)$ and $S = \\mathrm{span}\\{(1,1)\\}$ (e.g., $J_{\\Psi'} = [1\\ 1]$, $J_\\Psi = [1;1]/2$) gives the single compression eigenvalue $-4 \\notin \\{-3,-5\\}$; the node's Forward Euler stability limit is then $2/4 = 0.5$, strictly smaller than the N-ODE limit $2/3$, contradicting the claim that the timestep bound is, even in the worst scenario, the same.",
+      "failure_location": {
+        "quote": "Due to the specific assumptions made in the construction of the decoder, the projection sets some eigenvalues to zero while leaving the others unchanged. Therefore, the eigenvalues $\\neq 0$ are those of $\\Lambda$, so the bound on the timestep of the node is, in the worst scenario, the same as that of the \\Node.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the claim by the correct spectral statement: the FE timestep bound for the node is governed by the eigenvalues of $P\\Lambda|_S$, which must be computed or bounded separately; the sentence asserting that the nonzero eigenvalues are those of $\\Lambda$ must be withdrawn.",
+      "overall_effect": "The advertised 'no worse than the N-ODE' timestep guarantee for the reduced scheme is false; the correct statement must be phrased in terms of the compression spectrum (for symmetric $\\Lambda$, Cauchy interlacing relates it to the spectrum of $\\Lambda$ but does not make it coincide). The surrounding conclusions — that the stability bound must be checked for the specific autoencoder — remain valid.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A-stability: nonzero eigenvalues of the reduced FE matrix are not those of Lambda",
+      "why_classification": "A materially false guarantee must be withdrawn and the spectral analysis reworked (a contained but nontrivial correction, e.g., via interlacing bounds); the advertised 'same bound' property is lost, though the rest of the section survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:global_convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, setting \\eqref{eq:what_nn_learns_1} to zero and comparing it to \\eqref{eq:diff_op_tau}, we conclude that",
+          "tag": "th:fully_works"
+        },
+        {
+          "quote": "A necessary condition to meet the requirement $\\max_{k=0,1,\\ldots}\\|N_{F_n}(t_k) - F_n(t_k)\\| \\to 0$ is that $\\tau_n^k, \\zeta_k \\to 0$ and $\\kappa \\to 0$.",
+          "tag": "th:fully_works"
+        }
+      ],
+      "failure_explanation": "Setting the residual loss \\eqref{eq:loss_2_fully_datadriven} to zero and comparing with the truncation-error identity \\eqref{eq:diff_op_tau} only controls the multistep combination $\\sum_p \\beta_p (N_{F_n} - F_n)$ evaluated at training states, not the pointwise maximum over all $k$; for $P \\geq 2$ pointwise convergence does not follow even on training data. Moreover, subtracting the two identities shows the encoder error enters as $\\Delta t_\\text{train}^{-1} \\sum_p \\alpha_p \\kappa$, so the stated necessary condition $\\kappa \\to 0$ does not make that term vanish — one needs $\\kappa = o(\\Delta t_\\text{train})$. The stated convergence claim and the stated necessary condition are both unsupported as written.",
+      "failure_location": {
+        "quote": "The fully data-driven is a convergent method for training $N_{F_n}$ in the sense that, under proper conditions, $\\max_{k=0,1,\\ldots}\\|N_{F_n}(t_k) - F_n(t_k)\\| \\to 0$.",
+        "tag": "th:fully_works"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restrict the claim (e.g., to one-step schemes with dense training data and $\\kappa = o(\\Delta t_\\text{train})$, concluding convergence on training states) or supply a genuine argument controlling $N_{F_n} - F_n$ pointwise; correct the necessary condition to $\\kappa = o(\\Delta t_\\text{train})$.",
+      "overall_effect": "The convergence claim for fully data-driven training of $N_{F_n}$ is unsupported; the final limit claim of th:global_convergence explicitly invokes th:fully_works for $\\eps_{F_n} \\to 0$ and is affected for the fully data-driven strategy (the error bound of th:global_convergence itself remains valid).",
+      "primary_affected_tag": "th:fully_works",
+      "target_type": "formal_result",
+      "title": "Th:fully_works — zero residual loss does not yield pointwise convergence of N_{F_n} to F_n",
+      "why_classification": "A necessary nontrivial argument is missing and the stated guarantee does not follow, but a contained repair (restricted claim plus a corrected necessary condition) leaves a recognizably comparable result; no global proof architecture is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "and the following vector whose elements are the solution at each timesteps: $\\m \\uut_n = [\\uut_n^0, \\uut_n^1, \\ldots, \\uut_n^K]^T$",
+          "tag": null
+        },
+        {
+          "quote": "A = \\begin{bmatrix} \\alpha_P, \\alpha_{P-1}, \\ldots, \\alpha_0, 0, \\ldots, 0\\\\ \\vdots \\end{bmatrix} \\in \\mathbb{R}^{(K-P+1)\\times K}",
+          "tag": null
+        },
+        {
+          "quote": "\\Gamma = \\begin{bmatrix} \\gamma_0, \\ldots, \\gamma_{P-1},  \\gamma_P, 0, \\ldots, 0\\\\ \\vdots \\\\ 0, \\ldots, 0, \\gamma_0, \\ldots, \\gamma_{P-1}, \\gamma_P \\end{bmatrix} \\in \\mathbb{R}^{(P-1)\\times K}",
+          "tag": null
+        },
+        {
+          "quote": "with the following auxiliary conditions for the first $P-1$ steps, derived from a one-sided finite difference of the same order of convergence of the $P$-steps scheme: \\begin{equation}\\label{eq:auxiliary_conditions} \\sum_{p=0}^{P}\\gamma_p\\uut_n^{k+p}=\\Delta t N_{F_n}(\\uut_n^k), \\quad k=0,\\ldots,P-1. \\end{equation}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The stacked system has $(K-P+1) + (P-1) = K$ equations for the $K+1$ unknowns of $\\m \\uut_n$, and no initial-condition row appears even though the surrounding text says the matrix form has 'initial conditions included'. The declared dimensions ($K$ columns) are incompatible with $\\m \\uut_n \\in \\mathbb{R}^{K+1}$; the displayed row pattern of $\\Gamma$ places $\\gamma_P$ in the last column, matching auxiliary index $k = K-P$ rather than the stated range $k = 0,\\ldots,P-1$ (consistent only when $K = 2P-1$, while the text assumes $K \\geq 2P-1$); and '$P-1$ steps' contradicts the displayed range $k=0,\\ldots,P-1$, which is $P$ values. As written the system does not determine the discrete solution.",
+      "failure_location": {
+        "quote": "The solution in time of the \\node\\ is obtained from the following non-linear system:",
+        "tag": "eq:sys_lmm"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Redefine $A, B, \\Gamma, C$ with $K+1$ columns and row patterns matching the stated equation ranges, reconcile the auxiliary-condition count ($k=0,\\ldots,P-2$ for $P-1$ equations), and add the initial-condition row $\\uut_n^0 = N_{\\Psi'}(u_N^0)$; the construction then determines the solution as claimed.",
+      "overall_effect": "The matrix formulation of the fully discrete problem is unusable as stated; th:global_convergence references this matrix form, and any reader implementing the assembled system obtains an underdetermined problem.",
+      "primary_affected_tag": "eq:sys_lmm",
+      "target_type": "other",
+      "title": "Eq:sys_lmm — assembled discrete system is underdetermined and mis-dimensioned",
+      "why_classification": "The repair is routine linear-algebra bookkeeping (dimension and index corrections plus one initial-condition row); the construction's purpose and all subsequent claims survive, so the issue is minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathscr{N}_{ij}^1(\\myw_{\\Psi'}\\cup \\myw_{\\Psi}) = \\| \\vt_{N,i}^j - N_{\\Psi}\\circ N_{\\Psi'}(\\vt_{N,i}^j) \\|_2^2.",
+          "tag": null
+        },
+        {
+          "quote": "We observe a consistent overestimation of the total concentration.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The added term is the componentwise reconstruction error, i.e., the same quantity already minimized by the autoencoder loss $\\mathscr{N}_{ij}^1$; it constrains $N_\\Psi$ only at training snapshots and imposes no constraint on the invariant $\\sum_k [N_\\Psi(\\uut_n)]_k = \\mathrm{const}$ along trajectories generated by $N_{F_n}$. Hence its minimization does not enforce conservation, contrary to the prose claim; the small observed conservation error is attributable to reconstruction accuracy, not to the claimed mechanism.",
+      "failure_location": {
+        "quote": "To this aim, a simple strategy is to modify the loss function by adding a contribution whose minimization enforces conservation: \\begin{equation*} \\mathscr{N}_{ij}^\\text{cons} = \\sum_{k=1}^{N=19} \\|[u_{N,i}^j]_k - [N_{\\Psi}(\\uut_{n,i}^j)]_k\\|_2^2. \\end{equation*}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the term with a penalty that targets the invariant directly, e.g., $\\big|\\sum_k [N_\\Psi(\\uut_{n,i}^j)]_k - \\sum_k [u_{N,i}^j]_k\\big|^2$ or deviation of the reconstructed total mass from its initial value; a contained change to the training objective.",
+      "overall_effect": "The proposed structure-preservation mechanism in Test 3 is misdescribed; the claim that the modification enforces conservation of the total concentration is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Chemistry test: the added 'conservation' loss does not enforce the total-concentration invariant",
+      "why_classification": "The construction is a heuristic in a numerical experiment and the observed conservation is already good; the fix is a short local modification of the loss, so the issue is minor."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2509.21280",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "19e6e96dd9ce47adb57a09625f6049b746db9e746b768969ac4dfbdbdddf7897",
+  "status": "ok"
+}

@@ -1,0 +1,194 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "All three methods exhibit a time complexity of $O(N^2)$ and outperform S-Fair-SC.",
+          "tag": null
+        },
+        {
+          "quote": "However, Figure \\ref{fg - GermanRunTime} reveals that AFF-Fair-SMW incurred the highest overall runtime, while the remaining algorithms exhibited similar performance.",
+          "tag": null
+        },
+        {
+          "quote": "As shown in Figure \\ref{fg - LastfmBalance}, our algorithms maintained an average balance comparable to S-Fair-SC.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The abstract asserts the method is 'flexible enough to achieve twice as much balance' and 'twice as fast as the state-of-the-art', and the introduction asserts all three variants 'outperform S-Fair-SC'. The paper establishes no balance guarantee beyond comparability (experiments report average balance 'comparable to S-Fair-SC', with fluctuations sometimes underperforming it), and its own Experiment 4 reports that AFF-Fair-SMW has the highest overall runtime on German, contradicting a blanket outperformance claim. The prose thus claims quantitatively doubled balance and universal runtime superiority that nothing in the paper establishes.",
+      "failure_location": {
+        "quote": "We achieve an improvement in computation time that is twice as fast as the state-of-the-art, and also flexible enough to achieve twice as much balance.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Weaken the abstract/introductory sentences to what is supported: balance comparable to baselines, runtime improvements in specific regimes (sparse graphs, eigs-dominated cases), with the German exception acknowledged.",
+      "overall_effect": "The advertised performance guarantees (2x balance, universal superiority over S-Fair-SC) are not supported by any formal result or experiment in the paper.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Abstract and introduction overclaim balance and runtime results",
+      "why_classification": "A local rewording of unsupported prose preserves every theorem, guarantee and experimental finding; no mathematical content is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&= G^{-1} H - F\\Lambda - \\mu F F^T H",
+          "tag": null
+        },
+        {
+          "quote": "(G^{-1} - \\mu F F^T) H - F\\Lambda = \\mathbf{0}",
+          "tag": null
+        },
+        {
+          "quote": "\\min_{H^TH =I} \\text{Tr} [H^T (G^{-1} +\\mu FF^T) H]",
+          "tag": "SMW3"
+        }
+      ],
+      "failure_explanation": "For the minimization problem (SMW2) the augmented-Lagrangian penalty for the constraint F^T H = 0 must enter with a plus sign, mu/2*||F^T H||_F^2. The displayed Lagrangian has -mu/2*||F^T H||_F^2, i.e. the 'penalty' rewards violating the fairness constraint. Consequences inside the source: the stationarity system uses (G^{-1} - mu FF^T), and the Lambda=0 subproblem min_H (1/2)Tr(H^T(G^{-1}-mu FF^T)H) is unbounded below along directions with F^T x != 0, so it is not a well-posed subproblem. The next display (SMW3) then silently restores the sign (+mu F F^T) and re-imposes H^T H = I without any derivation. As written, the Augmented-Lagrangian derivation never yields problem (SMW3), although (SMW3) is the sensible penalty formulation.",
+      "failure_location": {
+        "quote": "\\mathcal{L}(H, \\Lambda, \\mu) = \\frac{1}{2}\\text{Tr}(H^T G^{-1} H) - \\text{Tr}(\\Lambda^T (F^T H)) - \\frac{\\mu}{2} \\|F^T H\\|_F^2",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the sign of the penalty term in the Lagrangian display and in the block system (G^{-1} - mu FF^T -> G^{-1} + mu FF^T), and state the H-subproblem under the orthonormality constraint H^T H = I; then (SMW3) follows routinely.",
+      "overall_effect": "The central derivation connecting (SMW2) to (SMW3)/(reformulation) is unsound as written; the algorithmic object itself is unaffected once the sign is fixed, since (SMW3) is the standard penalty formulation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Augmented Lagrangian derivation uses a wrong-sign penalty, so problem (SMW3) is never derived",
+      "why_classification": "A local sign repair of the Lagrangian display restores the intended derivation; (SMW3), (reformulation) and the algorithm are unchanged, so no substantive claim or guarantee is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left|\\dfrac{x^T\\frac{1}{2}(D^{-1}W+WD^{-1})x}{x^Tx}\\right|=\\left|\\dfrac{x^TD^{-1}Wx}{x^Tx}\\right|\\leq 1.",
+          "tag": "thm:added-4"
+        },
+        {
+          "quote": "Therefore the eigenvalues of $B=\\frac{1}{2}(D^{-1}W+WD^{-1})$ belong in $[-1,1]$",
+          "tag": "thm:added-4"
+        },
+        {
+          "quote": "and the matrix $G_{rw}$ is generalized positive definite because its symmetric part $C$ is positive definite.",
+          "tag": "thm:added-4"
+        }
+      ],
+      "failure_explanation": "The proof infers that B = (1/2)(D^{-1}W + WD^{-1}) has eigenvalues in [-1,1] from the (true) fact that the eigenvalues of the non-normal matrix D^{-1}W lie in [-1,1]. That inference is invalid (the Rayleigh quotient of a non-normal matrix is not controlled by its eigenvalues) and the claimed bound is false: for the star graph K_{1,4} the symmetric part B has eigenvalues +/-5/4, so |x^T B x / x^T x| reaches 5/4 > 1. Hence lambda_min(C) = 2 + lambda_min(B) is not bounded below by 1. Worse, the theorem statement itself is false: for a star with n >= 15 vertices, lambda_min(B) = -n/(2*sqrt(n-1)) < -2, so x^T G_rw x = x^T (B + 2I) x < 0 for some x, contradicting 'generalized positive definite'. (The proof also refers to an undefined matrix 'S'.)",
+      "failure_location": {
+        "quote": "$G_{rw}$ has real eigenvalues and is generalized positive definite. That is $\\bm{x}^T G_{rw}\\bm{x} >0$",
+        "tag": "thm:added-4"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the theorem as: D^{-1}W is similar to D^{-1/2}WD^{-1/2}, hence G_rw has real eigenvalues in [1,3] and is invertible; drop the false quadratic-form (generalized positive definiteness) claim, which cannot be true.",
+      "overall_effect": "The claimed justification that G_rw is a valid (positive definite) choice of G fails; the real-eigenvalue/invertibility part needed by the RW variant survives only through the similarity argument, not through this theorem as stated.",
+      "primary_affected_tag": "thm:added-4",
+      "target_type": "formal_result",
+      "title": "Theorem that G_rw is generalized positive definite is false and its proof uses a false spectral claim",
+      "why_classification": "The stated positive-definiteness claim must be abandoned (it is false), but the property the RW variant actually needs - real spectrum in [1,3] and invertibility - is established inside the same proof by the similarity argument, so a contained restatement preserves the method without new architecture."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "F^T D^{-1} = F^T D^{-1} F (F^T F)^{-1} F^T",
+          "tag": "eq:identity"
+        },
+        {
+          "quote": "Since $D^{-1}$ is an invertible diagonal matrix, it is of full rank, and multiplying by it from the right does not change the row space $ \\mathcal{R}(F^T D^{-1}) = \\mathcal{R}(F^T) $",
+          "tag": "thm:added-5"
+        },
+        {
+          "quote": "We notice that $\\mathcal{W}P$ is symmetric.",
+          "tag": "thm:added-5"
+        }
+      ],
+      "failure_explanation": "The proof hinges on the identity F^T D^{-1} = F^T D^{-1} F (F^T F)^{-1} F^T, i.e. F^T D^{-1} = F^T D^{-1} P_F, which holds iff the rows of F^T D^{-1} lie in the row space of F^T. The claimed justification ('multiplying by an invertible diagonal matrix from the right does not change the row space') is false: right multiplication by an invertible diagonal matrix preserves only the rank, not the row space. Concrete counterexample: path 1-2-3 with w12 = 1, w23 = 2, groups V1 = {1,3}, V2 = {2}, so F = (1/2, -1, -1/2)^T and D = diag(1,3,2). Then F^T D^{-1} = (1/2, -1/3, -1/4), while F^T D^{-1} F (F^T F)^{-1} F^T = (17/24)(2/3) F^T = (17/72, -17/36, -17/72), which is different. With the identity false, the rewriting of P, the assertion that W P is symmetric, and hence the similarity U_rw ~ D^{-1/2} W P D^{-1/2} to a symmetric matrix all collapse; the theorem is left unproven.",
+      "failure_location": {
+        "quote": "The eigenvalues of $U_{\\text{rw}} = G_{\\text{rw}}(I-F(F^T G_{\\text{rw}}F)^{-1}F^T G_{\\text{rw}})$ are real.",
+        "tag": "thm:added-5"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must provide a valid proof that the spectrum of U_rw = G_rw(I - F(F^T G_rw F)^{-1} F^T G_rw) is real (or restrict the RW variant to regimes where a corrected statement holds), since the identity (eq:identity) used by the source is false in general and cannot be fixed locally.",
+      "overall_effect": "The only theoretical support for the RW-Fair-SMW variant (real spectrum of U_rw, needed for the eigensolver step) is lost; no labelled downstream result relies on it, but the advertised RW variant is left unjustified.",
+      "primary_affected_tag": "thm:added-5",
+      "target_type": "formal_result",
+      "title": "Proof that U_rw has real eigenvalues uses a false identity",
+      "why_classification": "The single proof strategy offered fails at a demonstrably false identity, the statement may itself be false, and the source contains no alternative argument; either a genuinely new proof is required or the real-spectrum guarantee for the advertised RW variant must be abandoned."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State Construct the fairness-adjusted matrix $U_{\\text{sym}} = G_{\\mathrm{sym}} - M (F^T M)^{-1} F^T G_{\\mathrm{sym}}$",
+          "tag": "alg:smw-cluster"
+        },
+        {
+          "quote": "$$P = F(F^T GF)^{-1}F^T G \\quad \\text{and} \\quad U =G-GP.$$",
+          "tag": "reformulation"
+        },
+        {
+          "quote": "$$U = G_{\\text{sym}}-G_{\\text{sym}}F(F^T G_{\\text{sym}}F)^{-1}F^T G_{\\text{sym}}$$",
+          "tag": "thm:added-3"
+        }
+      ],
+      "failure_explanation": "The derivation and Theorems 3 and 6 concern the matrix U = G - G F (F^T G F)^{-1} F^T G, obtained from the Sherman-Morrison-Woodbury limit of (G^{-1} + mu F F^T)^{-1}. Algorithm alg:smw-cluster instead computes M = G_sym^{-1} F and builds U = G - G^{-1}F (F^T G^{-1} F)^{-1} F^T G, which is a different matrix (G^{-1} appears where G should). It is in general not symmetric, so its top-k eigenvectors need not form the orthonormal basis the analysis requires and may be complex; none of the paper's results apply to it. Example: G = diag(1,4), F = (1,1)^T gives U_alg = [[0.2, -3.2], [-0.2, 3.2]] (non-symmetric) instead of the symmetric [[0.2, -0.8], [-0.8, 1]].",
+      "failure_location": {
+        "quote": "\\State Compute the projection matrix $M = G_{\\mathrm{sym}}^{-1} F$",
+        "tag": "alg:smw-cluster"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace step 2 by M = G_sym F (equivalently M(F^T M)^{-1}F^T G_sym = G_sym F (F^T G_sym F)^{-1} F^T G_sym); with this one-word change the algorithm computes exactly the matrix analyzed in (reformulation) and Theorems 3/6, and every guarantee is restored.",
+      "overall_effect": "The executable procedure does not implement the fairness-adjusted operator derived in (reformulation) and analyzed by Theorems 3 and 6; its output carries no fairness or spectral guarantee.",
+      "primary_affected_tag": "alg:smw-cluster",
+      "target_type": "algorithm",
+      "title": "Fair-SMW algorithm computes a different matrix than the analyzed U",
+      "why_classification": "A single local, forced correction to one algorithm step makes the implemented matrix coincide with the analyzed symmetric U, preserving all substantive claims; no new argument is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& \\leq \\frac{\\sum_{i,j} W_{ij}(\\bm{y}_i^2 + \\bm{y}_j^2)}{\\sum_j \\bm{y}_j^2 d_j} \\quad \\text{(By Lemma \\ref{lem:diff-square})}",
+          "tag": "thm:added-7"
+        },
+        {
+          "quote": "& = \\frac{2\\sum_j \\bm{y}_j^2 d_j}{\\sum_j \\bm{y}_j^2 d_j} = 2 ",
+          "tag": "thm:added-7"
+        }
+      ],
+      "failure_explanation": "The proof chain only establishes the upper bound y^T(D-W)y / y^T D y <= 2; its final line evaluates the value of that upper bound, not the supremum. The supremum equals the largest eigenvalue of the normalized Laplacian, which is strictly smaller than 2 unless the graph has a bipartite component containing an edge. Counterexample: the triangle (3-cycle, unit weights) has L_sym spectrum {0, 3/2, 3/2}, so the supremum is 3/2, not 2. The displayed identity is therefore false; only the inequality sup <= 2 is established.",
+      "failure_location": {
+        "quote": "$$ \\sup_{\\bm{y} \\ne \\bm{0}} \\frac{\\bm{y}^T(D-W)\\bm{y}}{\\bm{y}^T D \\bm{y}} = 2 $$",
+        "tag": "thm:added-7"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the displayed identity by sup <= 2 (noting equality holds iff some connected component is bipartite and contains an edge); all subsequent uses survive unchanged.",
+      "overall_effect": "Only the theorem's own statement overclaims; the [0,2] eigenvalue bound that the paper actually invokes (for Theorems 2 and 4) remains valid from the same argument.",
+      "primary_affected_tag": "thm:added-7",
+      "target_type": "formal_result",
+      "title": "Normalized-Laplacian bound asserted as an attained supremum",
+      "why_classification": "A one-symbol correction of the statement preserves the entire chain of results, since only the upper bound 2 is ever used; no rate, regime or guarantee is lost."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2510.20220",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7838ff1ebb2ad510c37241685362756b5cee8236d0d2169e81cb3c0265b11f0c",
+  "status": "ok"
+}

@@ -1,0 +1,143 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\rho \\coloneqq 1-2\\tau c + 2\\sqrt{\\eta}(1+\\sqrt{1-c\\tau}) + 2\\tau^2 L^2 +2\\eta\\left(1+\\sqrt{1-c\\tau}\\right)^2\\leq 1-2\\tau c+ 2\\tau^2L^2 + 4\\sqrt{\\eta}+8\\eta,",
+          "tag": "thm:error"
+        },
+        {
+          "quote": "and, for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently small so that $4\\sqrt{n}+8\\eta<\\frac{c^2}{2L^2}$, it holds that $\\rho<1$.",
+          "tag": "thm:error"
+        }
+      ],
+      "failure_explanation": "The proof bounds the contraction factor by rho <= 1 - 2*tau*c + 2*tau^2*L^2 + 4*sqrt(eta) + 8*eta. The noise terms 4*sqrt(eta) + 8*eta do not vanish as tau -> 0+, whereas 2*tau*c - 2*tau^2*L^2 does; hence rho < 1 follows only when 2*tau*c - 2*tau^2*L^2 > 4*sqrt(eta) + 8*eta, i.e. for tau in a subinterval bounded away from 0 (the hypothesis 4*sqrt(eta)+8*eta < c^2/(2L^2) guarantees such tau exist, e.g. tau = c/(2L^2)). For small tau the displayed upper bound on rho exceeds 1, so the proof's final inference 'rho < 1 for every tau in (0, c/(2L^2))' is invalid (note the undefined 4\\sqrt{n} in that very step); covering the full interval would require a sharper bias estimate than the one given. The statement therefore claims a step-size range that the argument does not support.",
+      "failure_location": {
+        "quote": "Then, for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently small so that $4\\sqrt{\\eta}+8\\eta<\\frac{c^2}{2L^2}$, it holds",
+        "tag": "thm:error"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the quantifier to the range where the proof applies, e.g. 'for tau in (0, c/(2L^2)) with 2*tau*c - 2*tau^2*L^2 > 4*sqrt(eta) + 8*eta' (a nonempty subinterval containing c/(2L^2) whenever 4*sqrt(eta)+8*eta < c^2/(2L^2)), or rephrase as an existence statement; no other change to the proof or downstream results is needed.",
+      "overall_effect": "The advertised range tau in (0, c/(2L^2)) is too large: for tau near 0 no contraction is established and the conclusion can fail (bias-dominated regime). The numerical section's remark that any fixed tau in (0, c/(2L^2)) works inherits the overclaim. The linear-convergence conclusion, the rate, and all downstream formal results survive on the restricted range.",
+      "primary_affected_tag": "thm:error",
+      "target_type": "formal_result",
+      "title": "thm:error claims contraction for every tau in (0, c/(2L^2)), but the proof's bound exceeds 1 for small tau",
+      "why_classification": "A one-line quantifier restriction repairs the statement; the contraction argument, the rate rho, and every use of the theorem survive unchanged, and no mathematical content is lost because the small-tau claim was unsupported (and generally false in the bias-dominated regime) to begin with."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:complexity_gradient_estimation",
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\EE^{\\mathrm{ML}}\\big[Y_L\\big] =\\sum_{\\ell=1}^L \\frac{1}{M_{\\ell}}\\sum_{m=1}^{M_\\ell} Y^{(m)}_{\\ell}-Y^{(m)}_{\\ell-1} = \\sum_{\\ell=1}^L \\frac{1}{M_{\\ell}}\\sum_{m=1}^{M_\\ell} \\Delta Y^{(m)}_{\\ell}.",
+          "tag": "eq:ml_estimator_denominator"
+        },
+        {
+          "quote": "the elements of $\\{\\bsxi^{(m,\\ell)}\\}_{m=1}^{M_\\ell}$ are independent and identically distributed, and these sequences are mutually independent and identically distributed across $\\ell$.",
+          "tag": null
+        },
+        {
+          "quote": "where $C \\coloneqq \\|\\mathbb{E}\\left[ X\\right]\\|_U^2/\\EE\\left[Y\\right]^2$.",
+          "tag": "proposition:bound_mean_square_error"
+        }
+      ],
+      "failure_explanation": "The proof bounds ||E[X]/E[Y] - E^ML[X_L]/E^ML[Y_L]|| by (||E[X]||*|E[Y]-E^ML[Y_L]| + E[Y]*||E[X]-E^ML[X_L]||)/(E[Y]*E^ML[Y_L]) and then drops the denominator using the claim E^ML[Y_L] > 1. That claim is false pathwise: E^ML[Y_L] is a sum of independent level averages of the increments ΔY^(m)_ℓ = Y^(m)_ℓ - Y^(m)_{ℓ-1}, where Y_ℓ = exp(theta*Phi(y_ℓ)) >= 1 a.s. has nonnegative increments in mean but not pathwise; e.g. for L = 2, M_1 = M_2 = 1 with Y_1^(1,1) = Y_2^(1,2) = 1 and Y_1^(1,2) = e^{10} one obtains E^ML[Y_2] = 2 - e^{10} < 0. On events where E^ML[Y_L] is near zero the ratio E^ML[X_L]/E^ML[Y_L] blows up while the right-hand side, which only involves first-moment errors of X and Y, stays small; hence the stated MSE bound is unproven as written and can fail (the left side can be arbitrarily large while the right side remains bounded).",
+      "failure_location": {
+        "quote": "where we used that $\\EE^{\\textrm{ML}} \\left[Y_L\\right] > 1$.",
+        "tag": "proposition:bound_mean_square_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Prove that the denominator is bounded below with high probability (e.g. E^ML[Y_L] >= (1/2)E[Y] outside an event whose probability is controlled via the level variance bounds from lemma:auxiliary) and handle the complementary event separately, or reformulate the estimator/assumptions so the denominator is bounded below; this requires a nontrivial additional probabilistic argument, but the intended bias-variance split and complexity rates survive.",
+      "overall_effect": "The MSE control of the ratio estimator is unproven and can fail for small batches or large theta. Theorem thm:complexity_gradient_estimation builds its bias-variance decomposition on this proposition, and cor:complexity-result inherits the overall complexity bounds; both are unsupported until the denominator of the ratio is controlled.",
+      "primary_affected_tag": "proposition:bound_mean_square_error",
+      "target_type": "formal_result",
+      "title": "proposition:bound_mean_square_error justifies the ratio bound by the false step 'E^ML[Y_L] > 1', leaving the ratio estimator's denominator uncontrolled",
+      "why_classification": "The proof relies on a false pathwise inequality and the statement can fail as written; a complete repair needs a genuine denominator-concentration argument or a reformulated estimator — more than a local fix, though it causes no loss of the intended results and no new global proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "K \\coloneqq \\bigg\\lceil\\left|\\frac{2\\log \\varepsilon}{\\log \\rho}\\right|\\bigg\\rceil",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "\\mathcal{C}\\lesssim_{\\theta} \\begin{cases} \\sum_{k=1}^K e^{-2}_k\\quad & \\beta>\\gamma,\\ \\sum_{k=1}^K e^{-2}_k|\\log e_k|^2\\quad & \\beta=\\gamma,\\ \\sum_{k=1}^K e^{-2-\\frac{\\gamma-\\beta}{\\alpha}}_k\\quad & \\beta<\\gamma \\end{cases}",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "The claim then follows since $e_K\\cong\\varepsilon$.",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "\\EE_k\\left[\\|\\nabla \\mathcal{J}(u)-\\nabla \\mathcal{J}^{\\text{ML}}(u)\\|_U^2 \\right]\\leq \\varepsilon^2",
+          "tag": "thm:complexity_gradient_estimation"
+        }
+      ],
+      "failure_explanation": "The idealized condition controls the mean-square error and the bound gives e_k = rho^k as an MSE-scale accuracy. But Theorem thm:complexity_gradient_estimation prices an MSE target epsilon^2 at cost ~epsilon^{-2}, i.e. an MSE target e_k costs ~e_k^{-1}, not e_k^{-2}; the corollary's sums sum_k e_k^{-2} treat e_k as if it were the RMS accuracy. With the stated K = ceil(|2 log epsilon / log rho|) one gets e_K = rho^K = epsilon^2, contradicting the final step 'the claim follows since e_K congruent to epsilon'. The displayed derivation is therefore internally inconsistent and does not establish the stated bounds as written; the advertised rates are correct only under a consistent reading (e.g. e_k = rho^{k/2} as the RMS accuracy, or per-step cost C(sqrt(e_k)) with e_K congruent to epsilon^2).",
+      "failure_location": {
+        "quote": "\\rho^k \\eqqcolon e_k.",
+        "tag": "cor:complexity-result"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Make the accuracy scale consistent, e.g. define e_k := rho^{k/2} (RMS), under which the stated K gives e_K congruent to epsilon and the displayed cost sums are correct; equivalently keep e_k = rho^k as the MSE target and price it via C(sqrt(e_k)) ~ e_k^{-1} with final relation e_K congruent to epsilon^2. Either one-line correction preserves all advertised rates.",
+      "overall_effect": "The corollary's proof does not establish its complexity bounds as written (iteration count, accuracy scale, and final relation are mutually inconsistent). The headline complexity rates themselves are correct under a consistent reading, so no downstream result is affected; the defect is confined to this corollary's derivation.",
+      "primary_affected_tag": "cor:complexity-result",
+      "target_type": "formal_result",
+      "title": "cor:complexity-result mixes MSE and RMS accuracy scales: the displayed K, the cost sums, and 'e_K congruent to epsilon' are mutually inconsistent",
+      "why_classification": "A single-line consistency fix (MSE vs RMS scaling) makes the derivation valid and preserves every advertised complexity rate; no claim or rate needs to be withdrawn."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The illustrated algorithm aims to achieve a gradient norm smaller than some chosen accuracy $\\varepsilon > 0$",
+          "tag": "alg:mlsgd"
+        },
+        {
+          "quote": "\\varepsilon_k \\leftarrow \\eta \\tnorm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U",
+          "tag": "alg:mlsgd"
+        },
+        {
+          "quote": "\\langle \\nabla \\mathcal{J}(u^\\star), u - u^\\star \\rangle_{U} \\ge 0 \\quad \\forall u \\in U_{\\mathrm{ad}},",
+          "tag": "eq:variational_inequality"
+        },
+        {
+          "quote": "\\EE_k\\left[\\|\\nabla \\mathcal{J}(u_k)-\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)\\|_U^2 \\right]\\leq \\eta \\|\\mathcal{R}_{\\tau}(u_k)\\|_U^2,",
+          "tag": "eq:conditionmeansquareerror"
+        }
+      ],
+      "failure_explanation": "The stopping test and the per-iteration tolerance are driven by the raw gradient norm. For the constrained problem the optimality condition is the variational inequality (eq:variational_inequality); at a boundary optimum nabla J(u*) != 0 in general, so ||nabla J^ML(u_k)|| need not tend to zero, the while-loop may never terminate, and the stated aim 'gradient norm below epsilon' is not a meaningful or achievable guarantee for this problem class. In addition, the tolerance epsilon_k = eta*||nabla J^ML(u_k)|| does not enforce the mean-square accuracy condition required by Theorem thm:error, which scales with the reduced gradient ||R_tau(u_k)|| — the quantity that actually vanishes at u*; the convergence analysis controls ||u_k - u*||, not the raw gradient norm.",
+      "failure_location": {
+        "quote": "\\texttt{while } \\tnorm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U > \\varepsilon \\colon",
+        "tag": "alg:mlsgd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Base stopping and tolerances on the reduced/projected gradient, e.g. stop when ||R_tau^ML(u_k)||_U <= epsilon and choose epsilon_k proportional to ||R_tau(u_k)||_U (or use a fixed iteration/time budget as in the numerics); this contained change to the algorithm's bookkeeping leaves the iteration, the convergence analysis, and the complexity results intact.",
+      "overall_effect": "The algorithm's stopping criterion can fail to terminate and its accuracy schedule does not implement the condition under which Theorem thm:error guarantees linear convergence; the advertised aim (final gradient norm below epsilon) is generally unachievable at a constrained optimum. The MLSGD iteration, the convergence theorem, and the complexity results are unaffected, and the numerical experiments in fact bypass the issue by running on a fixed four-hour budget.",
+      "primary_affected_tag": "alg:mlsgd",
+      "target_type": "algorithm",
+      "title": "alg:mlsgd stops on the raw gradient norm, which is not an optimality measure for the constrained problem, and its tolerance does not match the theory's accuracy condition",
+      "why_classification": "The algorithm's stated input-output contract (terminate with gradient norm below epsilon) is wrong for the constrained problem class and must be replaced, and the tolerance schedule must be re-linked to the reduced gradient; the repair is contained and costs the paper no convergence or complexity results, but it withdraws and replaces a stated guarantee rather than patching a line."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2606.09291",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f995bc2781848745f7a0e9dc1ec709b3b392f7fb87821723f10dd174128e1d3c",
+  "status": "ok"
+}

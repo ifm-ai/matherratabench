@@ -1,0 +1,128 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nu_k^{n+1} &= (\\frac{1}{\\rho_k c_k^2})^{n+1}= \\frac{1}{\\gamma_k (p^{n+1}+p_{w,k})}, \\\\\n        p^{n+1} &= (\\rho e)^{n}(\\gamma^{n+1}-1)-\\gamma^{n+1} p_{w}^{n+1}",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "Given $z_1^n \\in [0, 1]$ and $\\Delta t_{\\mathrm{im}} > 0$",
+          "tag": null
+        },
+        {
+          "quote": "We rigorously prove that this implicit treatment \nis unconditionally BP",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the implicit scheme, p^{n+1} is a function of z_1 at fixed (rho e)^n, and f(z_1)=kappa(z_1) div u^n with kappa = z_1 z_2 (nu_1-nu_2)/nu, nu_k = 1/(gamma_k (p(z_1)+p_{w,k})). For gas-liquid parameters (e.g. p_{w,2}=6000) and a gas-dominated cell with small rho e, p(z_1) becomes negative as z_1 decreases, so nu_1 and nu_2 take opposite signs on a sub-interval and nu(z_1) has a zero there; kappa, hence F, blows up and is not continuous on [0,1]. The intermediate value argument from F(0)<=0, F(1)>=0 then does not apply, and a root in [0,1] is not guaranteed in general (on each side of the singularity F may keep a fixed sign). The theorem states no hypothesis ensuring f is continuous (e.g. p(z_1)+p_{w,k}>0 for all z_1 in [0,1]), and bisection may converge to the singularity instead of a root.",
+      "failure_location": {
+        "quote": "The continuity of $F(z_1)$ guarantees the \nexistence of root $z_1^{n+1} \\in [0, 1]$.",
+        "tag": "thm:implicit_solver"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add and justify a hypothesis guaranteeing continuity of f on [0,1] (e.g. p(z_1)+p_{w,k}>0 for all z_1 in [0,1], i.e. (rho e)^n > max_k p_{w,k}, or a regularized kappa), or give a separate argument for existence in the general case, and state the corresponding restriction on the 'unconditional' claim.",
+      "overall_effect": "The unconditional BP/existence guarantee for the backward Euler kappa step, and hence for the adaptive Euler/SDIRK2 scheme (adaptive_sdirk2) whose proof is said to be 'similar', is unsupported precisely in the stiff gas-liquid regime the paper targets; the abstract's 'unconditionally BP' claim is unproven.",
+      "primary_affected_tag": "thm:implicit_solver",
+      "target_type": "formal_result",
+      "title": "Existence proof for implicit kappa step assumes continuity of F(z_1), which fails when nu(z_1) vanishes",
+      "why_classification": "The result can be rescued with an extra hypothesis or a contained additional argument, but this genuinely restricts the advertised unconditional guarantee in the gas-liquid regime; no global rearchitecture is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "theta_{z_1} is defined by a case split in which the lower-bound ratio is used whenever m_{i,j} < eps_z. If simultaneously M_{i,j} > 1-eps_z (a cell whose polynomial undershoots 0 and overshoots 1), the upper-bound ratio is ignored, and the scaled solution can still exceed 1-eps_z at some quadrature point, contradicting the claim that the limited solution satisfies (U_ingp).",
+      "failure_location": {
+        "quote": "\\frac{(\\overline{z}_1)_{i,j}^n - \\varepsilon_z}{(\\overline{z}_1)_{i,j}^n - m_{i,j}}, & \\text{if } m_{i,j} < \\varepsilon_z, \\\\\n    \\frac{(1 - \\varepsilon_z) - (\\overline{z}_1)_{i,j}^n}{M_{i,j} - (\\overline{z}_1)_{i,j}^n}, & \\text{if } M_{i,j} > 1 - \\varepsilon_z,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Define theta_{z_1} as the minimum of the two ratios (each taken to be 1 when the corresponding bound is not violated), as in standard Zhang-Shu type limiters.",
+      "overall_effect": "The BP limiter's stated guarantee z_1 in [eps_z, 1-eps_z] at all Gauss-Lobatto points fails in cells violating both bounds.",
+      "primary_affected_tag": "BP_Z",
+      "target_type": "algorithm",
+      "title": "Volume-fraction limiter theta_{z_1} only corrects one bound when both bounds are violated",
+      "why_classification": "A one-line local correction to the case split restores the guarantee with no loss of any claim."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "complemented by a BP limiter to ensure the BP property of partial densities, pressure, and volume fraction.",
+          "tag": null
+        },
+        {
+          "quote": "\\varepsilon_p = \\min\\{ p(\\overline{\\mathbf{U}}_{i,j}^n), 10^{-13} \\}",
+          "tag": null
+        },
+        {
+          "quote": "p^{n+1} &= (\\rho e)^{n}(\\gamma^{n+1}-1)-\\gamma^{n+1} p_{w}^{n+1}",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "For all cases, we simply employ $\\Delta t \\propto \\Delta x$ and $CFL=0.1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The scaling limiter (BP_Z),(BP_P) yields a solution in G^p only if the cell average of the OEDG solution lies in G^p (the formulas for theta and eps_p are meaningless otherwise, e.g. eps_p<0 if p(bar U)<0). The paper asserts the limited solution satisfies (U_ingp) and advertises a BP scheme for partial densities, pressure and volume fraction, but never proves cell-average preservation: no CFL condition or Zhang-Shu type argument is given for the transport RKDG step (with the quasi-conservative non-conservative z_1 discretization), and the implicit kappa step changes z_1 at fixed rho e, so the pointwise pressure p(z_1^{n+1}) can become negative (for Tammann liquid parameters p(z_1) decreases sharply as z_1 decreases), so positivity of the cell-average pressure after that step is not guaranteed either. Only z_1 in [0,1] is proved (Theorem thm:implicit_solver).",
+      "failure_location": {
+        "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "State the BP guarantee as conditional on cell averages remaining in G^p, and either prove cell-average preservation for the transport step under an explicit CFL condition (and address pressure after the kappa step), or explicitly weaken the abstract/introduction claims to only the volume-fraction bound of the implicit step and the limiter's conditional property.",
+      "overall_effect": "The claimed BP property of the overall BP-OEDG scheme (in particular pressure positivity and partial-density positivity) is unsupported; it is a conditional property depending on unproven cell-average admissibility.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "BP guarantee of the full scheme presupposes cell averages in G^p, which is never established",
+      "why_classification": "A rigorous resolution needs a new, nontrivial cell-average BP argument (or an explicit weakening of the advertised guarantee), but the method and main results remain recognizable."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\mathcal{G} = \\left\\{ \\mathbf{U} : z_1\\rho_1 > 0, z_2\\rho_2 > 0, \\ c^2(\\mathbf{U})>0,\\ z_1\\in[0,1] \\right\\}$",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{U}^{(1)} = \n [1.2, \\ 0, \\ 0, \\ 1000, \\ 1]^T$$$$\\mathbf{U}^{(2)} = [0, \\ 1000, \\ 0, \n \\ 6001, \\ 0]^T",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "G requires z_1 rho_1 > 0 and z_2 rho_2 > 0 strictly. U^{(1)} has z_2 rho_2 = 0 and U^{(2)} has z_1 rho_1 = 0, so neither lies in G, and the claimed membership verification is false; the appendix therefore does not, as written, exhibit two elements of G whose midpoint leaves G. (The midpoint computation itself, giving c^2<0, is correct.)",
+      "failure_location": {
+        "quote": "Thus, $\\mathbf{U}^{(1)}$ is physically \n admissible and belongs to $\\mathcal{G}$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Perturb the two states to have small positive partial densities of the absent phase (z_1 = 1-eps, z_2 = eps and vice versa); by continuity the midpoint still has c^2 < 0 and the endpoints then satisfy all strict inequalities.",
+      "overall_effect": "The stated non-convexity demonstration for G is not valid as written, weakening the motivation for replacing G by G^p.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Appendix A counterexample states have zero partial densities and so do not belong to G as defined",
+      "why_classification": "A routine local perturbation of the example restores the demonstration with no loss of content."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2604.25672",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6e33d4743ac4690d4731311b541c59b0314910ae99b86bef3e25e9c3e4e7b64a",
+  "status": "ok"
+}

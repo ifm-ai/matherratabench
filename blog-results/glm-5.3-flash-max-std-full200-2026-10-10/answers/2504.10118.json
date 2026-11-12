@@ -1,0 +1,155 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, we can conclude that\n    \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = \\nabla_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z}^{(j+1)};\\bm{z}^{(j+1)}\\right) = 0\\,.",
+          "tag": "app:proof_convergence_iterative_surrogate"
+        },
+        {
+          "quote": "Suppose that the $\\widetilde{\\Phi}\\left(\\bm{z} ; \\bm{z}^{(j)}\\right)$, given in \\eqref{eqn:quadratic_surrogate}, can be minimized by a numerical solution $\\bm{z}^{(j+1)}$.",
+          "tag": "thm:convergence_iterative_surrogate"
+        }
+      ],
+      "failure_explanation": "The proof's optimality part derives only \"equality of consecutive objective values implies gradient zero\". The converse, asserted by the biconditional, is false: take N=m=n=1, Q=1, d_1=1, z^(0)=2. One exact surrogate minimization gives z^(1)=1, so Phi(z^(1))=0 while Phi(z^(0))=1/2 (strict decrease), yet the new iterate is stationary: grad_z Phi(z^(1)) = conj(Q)(Q z^(1) - R_1(z^(1))) = 1-1 = 0. Thus 'grad at the new iterate is zero' does not imply equality of consecutive objectives; the equivalence claimed in the theorem is unsupported and false.",
+      "failure_location": {
+        "quote": "\\Phi\\left(\\bm{z}^{(j+1)}\\right)=\\Phi\\left(\\bm{z}^{(j)}\\right)\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0\\,.",
+        "tag": "thm:convergence_iterative_surrogate"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the biconditional in the theorem's second display by the one-directional statement (equality implies grad_z Phi(z^(j+1)) = 0), which is exactly what the appendix proof establishes.",
+      "overall_effect": "The 'optimality' half of the convergence-and-optimality theorem as stated is wrong; only the direction 'stalled decrease implies stationarity of z^(j+1)' is established. No downstream labelled result uses the reverse direction, so the monotone-descent content survives.",
+      "primary_affected_tag": "thm:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "Theorem 3.2's optimality biconditional is false; only the forward implication is proven",
+      "why_classification": "A one-line weakening of the statement; the proven direction and all substantive guarantees (monotone descent, stationarity at stall) are preserved, no new argument needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot\\left(\\frac{1}{2} \\sum_{k=1}^N P_k^{\\top}\\nabla_{\\bm{z}_k}\\Phi_k\\left(\\bm{z}_k^{(j)}\\right)\\right)",
+          "tag": "app:proof_convergence_rate"
+        },
+        {
+          "quote": "&\\leq \\frac{1}{2}\\left\\|\\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right\\|_\\infty\\left\\|\\bm{z}-\\bm{z}^{(j)}\\right\\|_2^2+\\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\,",
+          "tag": "app:proof_convergence_rate"
+        },
+        {
+          "quote": "Then, the choice $\\bm{z}=\\bm{z}^{(j)}-\\frac{1}{L}\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)$ yields:",
+          "tag": "app:proof_convergence_rate"
+        }
+      ],
+      "failure_explanation": "By (eqn:misfit_derivative_full), grad_z Phi = sum_k P_k^T grad_{z_k} Phi_k, so the derived bound carries the linear term (1/2) grad_z Phi (plus conjugate). The proof's final displayed line silently replaces this by grad_z Phi, doubling the linear term. With the correct factor, the choice z = z^(j) - grad/L gives decrease >= 0, not >= (1/L)||grad||^2; the best gradient-type choice gives decrease >= ||grad||^2/(4L) = ||grad||^2/(2||sum P_k^T|Q|^2||_inf). Telescoping then yields min ||grad||^2 <= 2||sum P_k^T|Q|^2||_inf/(n+1) * Phi(z^(0)) — four times the stated constant. The stated bound is false: for N=m=n=1, Q=1, d_1=1, z^(0)=2 and n=0, the left side is 1 while the stated right side is 1/4.",
+      "failure_location": {
+        "quote": "\\min_{0\\leq j\\leq n} \\left\\|\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\right\\|_2^2\\leq\\frac{\\left\\|\\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right\\|_\\infty}{2(n+1)}\\Phi\\left(\\bm{z}^{(0)}\\right)",
+        "tag": "thm:convergence_rate"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Recompute the descent step keeping the factor 1/2 on the linear term (or use the exact surrogate minimizer, giving decrease >= (1/2) g* Sigma^dagger g >= ||g||^2/(2||Sigma||_inf)), and restate the theorem with constant 2||sum_k P_k^T|Q|^2||_inf/(n+1).",
+      "overall_effect": "The displayed quantitative guarantee of Theorem 3.3 is unsupported and false; the provable bound has the same sublinear O(1/n) rate but a constant four times larger.",
+      "primary_affected_tag": "thm:convergence_rate",
+      "target_type": "formal_result",
+      "title": "Convergence-rate proof drops a factor 1/2; the stated constant is false",
+      "why_classification": "The stated bound necessarily weakens by a factor of 4, so the theorem's quantitative claim cannot be preserved as written; but the rate type (sublinear O(1/n) on the minimal gradient) and all other content survive via a contained recomputation of one displayed inequality."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "it serves as a majorization of~\\eqref{eqn:exit_misfit} that recovers the optimal solution",
+          "tag": null
+        },
+        {
+          "quote": "majorizes the original non-convex objective, yielding monotonic descent and sub-linear convergence guarantees;",
+          "tag": null
+        },
+        {
+          "quote": "gives a descending direction of the surrogate model on the fine grid~\\eqref{eqn:fine_grid_surrogate_model} at $\\bm{z}'_{k}$",
+          "tag": "thm:coarse_grid_update"
+        }
+      ],
+      "failure_explanation": "The prose asserts that the weight choices 'ensure the convergence of MGrPIE' and that the surrogate approach 'recovers the optimal solution' with 'monotonic descent and sub-linear convergence guarantees'. What the paper proves: (i) Theorems 3.2-3.3 establish monotone decrease and a min-gradient bound only for the deterministic, full-gradient, unregularized surrogate iteration (eqn:surrogate_minimization), ending in stationarity, not global optimality of the nonconvex Phi; (ii) Theorem 4.1, although titled 'Convergence', proves only the single-step descent-direction inequality grad* I_H^h e_{H,k} <= 0; (iii) no theorem addresses the stochastic sequential-update scheme or the proximal-regularized multigrid updates (Algorithms 2-4) that constitute the proposed solver. The prose therefore attributes to MGrPIE convergence and optimality guarantees that are never established for it.",
+      "failure_location": {
+        "quote": "These choices ensure the convergence of \\texttt{MGrPIE}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Reword the prose (Section 3 opening, Section 4 intro, Section 4.2 opening, and the conclusion bullet) to attribute monotone descent and the sublinear min-gradient rate to the deterministic surrogate iteration, and to describe Theorem 4.1 as a descent-direction result for the coarse update rather than a convergence guarantee for MGrPIE.",
+      "overall_effect": "The advertised guarantees (convergence of the stochastic multigrid method, recovery of the optimal solution) exceed the proven content; readers would credit MGrPIE with monotone descent and a rate that are only proven for the idealized full-batch, unregularized iteration.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Prose overclaims convergence and optimality of the stochastic multigrid algorithm",
+      "why_classification": "A prose-level weakening restores accuracy; all formal results and the algorithm remain intact, and no advertised formal guarantee exists to lose."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{I}_h^H\\left(\\frac{1}{\\bm{u}+|\\bm{Q}|^2}\\right)&= \\frac{1}{\\bm{u}_H + |\\bm{Q}_H|^2}\\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\,,",
+          "tag": "app:proof_automatic_regularization_selection"
+        },
+        {
+          "quote": "\\bm{u}_H + |\\bm{Q}_H|^2&= \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\bm{I}_h^H\\left(\\bm{u}+|\\bm{Q}|^2\\right)\\,,",
+          "tag": "app:proof_automatic_regularization_selection"
+        }
+      ],
+      "failure_explanation": "Writing s = u + |Q|^2, the proof computes LHS-max = (1/(u_H+|Q_H|^2))(|Q_H|^2/I_h^H|Q|^2)_r, which by the proof's own preceding line equals (1/(I_h^H s))_r, i.e., the reciprocal of the bin-average of s; while the RHS-max equals (I_h^H(1/s))_r, the bin-average of the reciprocals (each |(I_h^H e_k(g))_r| is maximized by aligning g with 1/(u+|Q|^2)). The asserted identity therefore claims avg(1/s) = 1/avg(s), which holds only when s is constant on each bin; for a generic probe (e.g., a bin with |Q|^2 = (1,1,1,2) and u = u^rPIE, alpha in (0,1)) the two sides differ strictly, so the proposition is false as stated. The valid statement is the inequality LHS <= RHS (AM-HM/Jensen for 1/x), which is what the proof's two maxima computations actually deliver.",
+      "failure_location": {
+        "quote": "\\max_{\\|\\bm{g_1}\\|_\\infty\\leq1}\\left|\\bm{e}_{H,k}(\\bm{I}_h^H\\bm{g_1})\\right|_r= \\max_{\\|\\bm{g_2}\\|_\\infty\\leq1} \\left|\\bm{I}_h^H\\bm{e}_k(\\bm{g_2})\\right|_r\\,,",
+        "tag": "prop:automatic_regularization_selection"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace '=' by '<=' in the proposition (the proof's computed maxima already give both sides; AM-HM yields <=), noting equality holds iff u+|Q|^2 is constant on each bin.",
+      "overall_effect": "The exact worst-case matching of coarse- and fine-grid update magnitudes claimed for the automatic regularization selection fails; with the inequality repair, the qualitative guarantee (coarse worst-case update magnitude is controlled by the fine one, so coarse tolerances can be inherited) and the MGrPIE algorithm itself remain intact.",
+      "primary_affected_tag": "prop:automatic_regularization_selection",
+      "target_type": "formal_result",
+      "title": "Automatic-regularization identity is false (reciprocal of bin-average conflated with bin-average of reciprocals)",
+      "why_classification": "A one-symbol weakening of one displayed relation; the automatic-selection mechanism, the algorithm, and all other guarantees are untouched, and the corrected inequality is already supported by the proof's own computations."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=-4\\left(\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right)\\right)^*\\operatorname{diag}(\\bm{A})\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right) \\,,",
+          "tag": "prop:multigrid_convergence"
+        },
+        {
+          "quote": "for some positive vector $\\bm{A}\\in\\mathbb{R}^{m_H^2}$",
+          "tag": "prop:multigrid_convergence"
+        }
+      ],
+      "failure_explanation": "The proof reduces the descent inner product to -4 (I_h^H g)^* diag(A) (I_h^H g) with g = grad_z_k Phi~_k, which vanishes iff the coarse projection I_h^H g vanishes (for positive A). Since I_h^H (bin averaging) has a nontrivial kernel, equality in the <= 0 statement holds for any nonzero gradient with zero bin averages (e.g., g alternating +1/-1 within each bin, realizable as conj(Q)(Q z'_k - R_k) for a probe with all-nonzero entries and suitable data), so the addendum 'equality implies grad = 0' is false; only 'equality iff I_h^H grad = 0' is supported. The main descent inequality, and Theorem 4.1 which uses only the <= statement, are unaffected.",
+      "failure_location": {
+        "quote": "Additionally, equality implies $\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)=0$.",
+        "tag": "prop:multigrid_convergence"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Delete the addendum or weaken it to 'equality holds iff I_h^H (grad_z_k Phi~_k) = 0'; no other part of the paper depends on the stronger claim.",
+      "overall_effect": "Only the add-on equality characterization inside the appendix proposition is invalid; the proven <= inequality and Theorem thm:coarse_grid_update, which invokes just that inequality, remain valid.",
+      "primary_affected_tag": "prop:multigrid_convergence",
+      "target_type": "formal_result",
+      "title": "False equality characterization in the multigrid descent-direction proposition",
+      "why_classification": "A one-sentence deletion/local weakening; the proposition's main inequality and its downstream use in Theorem 4.1 are untouched, so no substantive guarantee is lost."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2504.10118",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e9a1fb619c786f644b01b96a3fc12b8566c68fb3b203771e6f1978a95647dfae",
+  "status": "ok"
+}

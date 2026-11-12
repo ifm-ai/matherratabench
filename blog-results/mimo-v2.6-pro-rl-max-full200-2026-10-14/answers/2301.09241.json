@@ -1,0 +1,152 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "main theorem"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$a \\not \\in [a_l,a_u], \\quad \\mbox{with probability at most } \\alpha,$",
+          "tag": "prop: m-IQAE"
+        },
+        {
+          "quote": "where $0\\leq a_u-a_l < 2\\eps$.",
+          "tag": "prop: m-IQAE"
+        }
+      ],
+      "failure_explanation": "The estimator is defined as the half-width of the confidence interval, not a point estimate of a. From the stated properties (a lies in [a_l,a_u] with probability at least 1-alpha and a_u-a_l < 2*epsilon), the correct point estimator is the midpoint (a_u+a_l)/2, which satisfies |a-(a_u+a_l)/2| < epsilon. The claimed bound |a-(a_u-a_l)/2| < epsilon is false in general, since the half-width is independent of the location of a within the interval.",
+      "failure_location": {
+        "quote": "the estimator $\\widehat{a} := \\frac{a_u-a_l}{2}$ of $a$ satisfies",
+        "tag": "prop: m-IQAE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Change the estimator definition from (a_u-a_l)/2 to (a_u+a_l)/2 in Proposition prop: m-IQAE and Algorithm line 7.",
+      "overall_effect": "The estimated amplitude used in Algorithm line 7 and in Proposition proposition: final error estimate does not approximate the true amplitude a. The rescaled output and the main theorem accuracy guarantee fail.",
+      "primary_affected_tag": "prop: m-IQAE",
+      "target_type": "formal_result",
+      "title": "Wrong point estimator for amplitude in Modified IQAE proposition",
+      "why_classification": "A single sign change in the estimator definition preserves every substantive claim and guarantee, with no new lemma, construction, or replacement argument needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Hence, applying the multiplication algorithm on integers we have $\\tau_m(x) \\boxdot \\tau_m(y) \\in \\mathbb{F}_{n+m,0}$.",
+          "tag": "lemma: multiplication in TC"
+        }
+      ],
+      "failure_explanation": "The proof shifts both inputs by tau_m (left shift by m bits), yielding integer values 2^m times the rational values. Their integer product is 2^(2m) times the desired rational product, not 2^m times as claimed. The shift-back tau_{-m} divides by only 2^m, leaving the value 2^m times too large. The type is also wrong: tau_m(x) multiplied by tau_m(y) lives in F_{n+2m,0}, not F_{n+m,0} as claimed.",
+      "failure_location": {
+        "quote": "x\\ {\\boxdot}\\ y := \\tau_{-m}(\\tau_m(x) \\boxdot \\tau_m(y))  = \\tau_{-m}\\left(\\mathrm{E}_{n+m,0}(2^m \\mathrm{D}_{n_1,m_1}(x) \\cdot \\mathrm{D}_{n_2,m_2}(y))\\right) = \\mathrm{E}_{n,m}(\\mathrm{D}_{n_1,m_1}(x) \\cdot \\mathrm{D}_{n_2,m_2}(y))",
+        "tag": "lemma: multiplication in TC"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Rewrite the proof of lemma: multiplication in TC using reinterpretation of bit strings: view registers as integers via D_{n_i+m_i,0}(string)=2^{m_i} D_{n_i,m_i}(string), multiply as integers to obtain 2^m times the rational product, and reinterpret the n+m-bit integer result as F_{n,m} via D_{n,m}(string)=2^{-m} D_{n+m,0}(string).",
+      "overall_effect": "The proof of lemma: multiplication in TC fails to establish its conclusion. The lemma statement (existence of rational two's complement multiplication) is a basic mathematical fact, and downstream quantum circuit constructions use correct integer multiplication with reinterpretation of bit strings, so no dependent formal result is invalidated.",
+      "primary_affected_tag": "lemma: multiplication in TC",
+      "target_type": "formal_result",
+      "title": "Invalid shift-based multiplication construction in two's complement lemma",
+      "why_classification": "The proof requires a replacement construction (reinterpretation-based instead of shift-based), which is a contained nontrivial step. The lemma statement and all downstream results survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma: quantum affine sum",
+        "prop: CPWA component circuit",
+        "prop: loading payoff circuit",
+        "main theorem"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "we can extend the addition operation $\\boxplus: \\mathbb{F}_{n_1+m_1,0} \\times \\mathbb{F}_{n_2+m_2,0} \\to \\mathbb{F}_{n+m+1,0}$ to $\\boxplus: \\mathbb{F}_{n_1,m_1} \\times \\mathbb{F}_{n_2,m_2} \\to \\mathbb{F}_{\\tilde{n}+1,\\tilde{m}}$ where $\\tilde{n} = \\max\\{n_1,n_2\\}$ and $\\tilde{m} = \\max\\{m_1,m_2\\}$",
+          "tag": "corollary: add circuit"
+        },
+        {
+          "quote": "x\\ {\\boxplus}\\ y = \\mathrm{E}_{n+1,m}(\\mathrm{D}_{n_1,m_1}(x) + \\mathrm{D}_{n_2,m_2}(y))",
+          "tag": "lemma: addition in TC"
+        }
+      ],
+      "failure_explanation": "The proof applies integer addition on raw bit-string registers. When operands have different fractional bit counts (m_1 != m_2), their integer representations have different scaling factors (2^{m_1} and 2^{m_2}). The integer sum 2^{m_1} D(a) + 2^{m_2} D(b) reinterpreted as a rational with max(m_1,m_2) fractional bits yields D(a) + 2^{m_2-m_1} D(b) (or similar), not the rational sum D(a)+D(b). The correct construction requires aligning fractional parts before addition.",
+      "failure_location": {
+        "quote": "\\mathcal{Q}_{(+)}:\\ket{0} \\ket{a}_{n_1+m_1}\\ket{b}_{n_2+m_2} \\mapsto \\ket{a \\boxplus b}_{n_1+m_1+1}\\ket{b}_{n_2+m_2}",
+        "tag": "corollary: add circuit"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Modify the construction in corollary: add circuit to align the fractional parts of the operands before integer addition (e.g., pad the operand with fewer fractional bits with zero bits at the least significant end via a permutation), then update the gate count bound.",
+      "overall_effect": "The affine sum circuit in lemma: quantum affine sum computes wrong values when adding the constant term b (whose fractional bit count differs from the products). The computed payoff function values are incorrect, making the payoff rotation circuit, the main algorithm output, and the main theorem accuracy guarantee unreliable.",
+      "primary_affected_tag": "corollary: add circuit",
+      "target_type": "formal_result",
+      "title": "Integer addition circuit fails for rational addition with differing fractional bit counts",
+      "why_classification": "The fix requires adding an alignment construction step and updating gate counts, which is more than a local correction but contained within the existing proof architecture. All polynomial complexity and error guarantees survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma: quantum linear rotation",
+        "prop: loading payoff circuit",
+        "main theorem"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "CR_y(\\theta):\\ket{c}\\ket{0} \\mapsto \\ket{c} (R_y(\\theta))^{c}\\ket{0} = \\begin{cases} \\ket{c}\\ket{0}, \\quad \\text{if $c = 0$},\\\\ \\ket{c}(\\cos(\\theta/2)\\ket{0} + \\sin(\\theta/2)\\ket{1}), \\quad \\text{if $c = 1$} \\end{cases}",
+          "tag": "lemma: controlled y-rotation"
+        }
+      ],
+      "failure_explanation": "The formula applies R_y(theta/2) in both rotation positions. Direct computation shows the circuit produces R_y(theta)|0> on the target when the control is 0 (a superposition) instead of |0>, and produces |0> when the control is 1 instead of R_y(theta)|0>. The circuit has the opposite behavior from the claim. The correct formula requires R_y(-theta/2) in one of the two rotation positions.",
+      "failure_location": {
+        "quote": "CR_y(\\theta) = (I_2\\otimes R_y(\\theta/2))(\\text{CNOT})(I_2\\otimes R_y(\\theta/2))(\\text{CNOT})",
+        "tag": "lemma: controlled y-rotation"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Change R_y(theta/2) to R_y(-theta/2) in one position of the formula for CR_y(theta) in lemma: controlled y-rotation (and similarly fix the analogous CR_x formula in the proof of prop: m-IQAE).",
+      "overall_effect": "The controlled Y-rotation circuit implements the rotation when the control is 0 and does nothing when the control is 1, the opposite of the claimed behavior. The payoff rotation circuit (lemma: quantum linear rotation and prop: loading payoff circuit) computes wrong rotation angles. The main theorem accuracy guarantee fails.",
+      "primary_affected_tag": "lemma: controlled y-rotation",
+      "target_type": "formal_result",
+      "title": "Wrong formula for controlled Y-rotation gate",
+      "why_classification": "A single sign change in the formula preserves every substantive claim and guarantee, with no new lemma, construction, or replacement argument needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "main theorem"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\max\\{\\Vert \\bm{a}_{k,l}\\Vert_\\infty, \\vert b_{k,l}\\vert: k=1,\\ldots,K,l=1,\\ldots,I_k\\}\\leq C_2$",
+          "tag": "prop: quad-payoff"
+        },
+        {
+          "quote": "$n_2 := 1 + \\lceil \\log_2(C_2)\\rceil$",
+          "tag": "prop: quad-payoff"
+        }
+      ],
+      "failure_explanation": "The rounding [c]_{m_2}=floor(2^{m_2} c)/2^{m_2} can produce values outside K_{n_2,m_2}=[-2^{n_2-1}, 2^{n_2-1}-2^{-m_2}]. When C_2 is a power of 2 and a coefficient equals C_2, the rounded value [C_2]_{m_2}=C_2=2^{n_2-1} exceeds the maximum representable value 2^{n_2-1}-2^{-m_2}. The two's complement encoder E_{n_2,m_2} is then not defined for this input.",
+      "failure_location": {
+        "quote": "it follows that $(\\widetilde{\\bm{a}}_{n_2,m_2,k,l},\\widetilde{b}_{n_2,m_2,k,l}) \\in \\mathbb{K}_{n_2,m_2}^{d+1}$",
+        "tag": "prop: quad-payoff"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Increase n_2 by 1 (use n_2 := 2 + ceil(log_2(C_2))) in prop: quad-payoff and all downstream constructions, so that 2^{n_2-1} >= C_2 + 2^{-m_2}.",
+      "overall_effect": "When a payoff coefficient equals C_2 and C_2 is a power of 2, the rounded coefficient exceeds the representable range and cannot be encoded in two's complement. The encoder E_{n_2,m_2} is not defined, making the algorithm ill-defined in this boundary case. The main theorem guarantees fail for these inputs.",
+      "primary_affected_tag": "prop: quad-payoff",
+      "target_type": "formal_result",
+      "title": "Rounded payoff coefficients can exceed two's complement representable range",
+      "why_classification": "Adding one more integer bit to n_2 fixes the boundary case and preserves all claims and guarantees. The method, complexity rates, and advertised scope are unchanged."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2301.09241",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "344935100857784fc02cca177913ce39f8661d45576f2c1e3fc3afb04f3ff8b6",
+  "status": "ok"
+}

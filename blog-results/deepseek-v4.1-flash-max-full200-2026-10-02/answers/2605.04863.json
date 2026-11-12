@@ -1,0 +1,160 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:normalized-accuracy"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "U^*_i = U^n_i - \\frac{\\Delta t}{V_i} \\sum_{f \\in \\partial i} F_{i,f}",
+          "tag": null
+        },
+        {
+          "quote": "U^{n+1}_i = (1 - s_j) U^*_i + s_j \\sum_{k \\in W_i} w_{i,k} \\hat{Q}^*_k",
+          "tag": null
+        },
+        {
+          "quote": "\\STATE $U^*_i \\leftarrow U^n_i - \\dfrac{\\Delta t}{V_i} \\displaystyle\\sum_{f \\in \\partial i} F_{i,f}$",
+          "tag": "alg:added-1"
+        }
+      ],
+      "failure_explanation": "The proof decomposes the time step as pre-merge, finite-volume update on the merged mesh, and blended redistribution. However, the UM-SRD definition and Algorithm alg:added-1 perform the finite-volume update on the original cut-cell mesh first, then aggregate and blend; no pre-merge before the update is present. Thus the theorem proves TVD for a different scheme. Moreover, actual UM-SRD is not TVD under the stated CFL: take α=0.1, ν=aΔt/h=1, initial values 0,0,1,0 around the small cell. Initial TV=2; after one UM-SRD step with s≈1, TV≈3.8>2. So the theorem's claim is false.",
+      "failure_location": {
+        "quote": "Pre-merge: apply $S_j$ to map $U^n$ to neighborhood averages $Q^{n,-1}$ (lifted to the original mesh).",
+        "tag": "thm:TVD-UMSRD"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Either modify the algorithm to include the pre-merge stage before the finite-volume update and prove TVD for that scheme, or prove TVD for the actual UM-SRD operator under a different CFL condition. No complete source-supported repair is identified for the stated theorem as written.",
+      "overall_effect": "The central TVD guarantee for UM-SRD is invalid; the algorithm's claim to inherit TVD and the paper's stability claims based on it are unsupported.",
+      "primary_affected_tag": "thm:TVD-UMSRD",
+      "target_type": "formal_result",
+      "title": "TVD theorem proves a different algorithm and is false for UM-SRD",
+      "why_classification": "The root invalidates the paper's main analytical guarantee (TVD) and requires either a new algorithm or a new proof/CFL regime; the actual method can increase total variation, so the stated result cannot be recovered by a local edit."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:srd-steady",
+        "cor:steady-accumulation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat{Q}^* = \\frac{h \\cdot U^n_{j-1} + \\alpha h \\cdot U^n_j}{h + \\alpha h} = (1-\\alpha)U^n_{j-1} + \\alpha U^n_j.",
+          "tag": "prop:srd-steady"
+        },
+        {
+          "quote": "SRD sets $U_{j-1} = U_j = \\hat{Q}^* = (1 \\cdot 1.5 + 0.2 \\cdot 2.5)/(1 + 0.2) = 1.6\\overline{6}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The volume-weighted average of values over a full cell of volume h and a small cell of volume αh is (U_{j-1}+α U_j)/(1+α), not (1-α)U_{j-1}+α U_j. The latter is a convex combination with incorrect weights. The error propagates to the SRD redistribution formula, the steady-state change formula, and the error-accumulation corollary; the local-consistency proof's algebra is also wrong, although the final O(h) bound may survive with different constants.",
+      "failure_location": {
+        "quote": "= \\frac{h\\,V_{j-1} + \\alpha h\\, V_j}{h + \\alpha h} = (1-\\alpha)V_{j-1} + \\alpha V_j.",
+        "tag": "prop:local-consistency"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the incorrect simplification everywhere with the correct weighted average (U_{j-1}+α U_j)/(1+α) and update downstream constants and formulas.",
+      "overall_effect": "The specific numerical values and formulas for SRD's steady-state modification and error accumulation are incorrect; the local-consistency proof contains a false algebraic step.",
+      "primary_affected_tag": "prop:local-consistency",
+      "target_type": "formal_result",
+      "title": "Incorrect simplification of the volume-weighted neighborhood average",
+      "why_classification": "The error is a local algebraic correction; it changes constants and specific formulas but preserves the order conclusions and the overall structure of the affected results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For a smooth exact solution $u$ and a first-order consistent scheme, $B(u^n) = u^{n+1} + \\mathcal{O}(h)$",
+          "tag": "prop:local-consistency"
+        },
+        {
+          "quote": "$\\tau^{n,\\mathrm{UM}} - \\tau^{n,\\mathrm{base}} = \\mathcal{O}(h^p)\\cdot\\mathcal{O}(h) = \\mathcal{O}(h^{p+1})$",
+          "tag": "prop:local-consistency"
+        }
+      ],
+      "failure_explanation": "Under the CFL condition Δt=O(h), the one-step error B(u^n)-u^{n+1} of the first-order upwind scheme is O(h^2), not O(h). For p=1, the perturbation s_j(S_j-I)B(u^n) is also O(h^2), so it is the same order as the base one-step error, not higher-order. The proposition's claim of a higher-order term for all p≥1 is therefore false; it holds only for p>1.",
+      "failure_location": {
+        "quote": "for some $p \\ge 1$ and constant $C_s$ independent of $h$ and $n$ when the solution is smooth in the small-cell neighborhood $M_j$. Then the local truncation error of UM-SRD differs from that of the base scheme by a higher-order term:",
+        "tag": "prop:local-consistency"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change the hypothesis to p>1 for the higher-order statement, or state that for p=1 the perturbation is the same order as the base scheme.",
+      "overall_effect": "The proposition overstates the accuracy gain for the p=1 case; the abstract's unqualified higher-order claim is not valid for all allowed p.",
+      "primary_affected_tag": "prop:local-consistency",
+      "target_type": "formal_result",
+      "title": "Higher-order perturbation claim fails for p=1",
+      "why_classification": "The repair is a local restriction of the parameter range; the main higher-order result for p>1 (including the default p=2) survives."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:steady-accumulation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The base scheme is the first-order upwind finite volume method with flux \\begin{equation} F(U_i, U_{i+1}) = a U_i, \\qquad a > 0. \\end{equation}",
+          "tag": null
+        },
+        {
+          "quote": "U^*_i = U^n_i - \\frac{\\Delta t}{V_i} \\sum_{f \\in \\partial i} F_{i,f}",
+          "tag": null
+        },
+        {
+          "quote": "Thus, if $U^n_{j-1} \\neq U^n_j$, then $U^{n+1} \\neq U^n$ even though the finite-volume update is zero.",
+          "tag": "prop:srd-steady"
+        }
+      ],
+      "failure_explanation": "For first-order upwind with a>0, the update U^*_i = U_i - (aΔt/Δx_i)(U_i-U_{i-1}) vanishes for all i only if U_i=U_{i-1} for all i, so the only steady states are constant. Hence the scenario U_{j-1}≠U_j in the proposition cannot occur. The proposition does not establish that SRD fails to preserve non-constant steady states of the base scheme; in fact, SRD preserves constant states. Experiment 6 forces U^*=U for a non-steady state, which is not a valid time step of the base scheme.",
+      "failure_location": {
+        "quote": "Let $U^n$ be a steady state for the base finite-volume scheme, i.e., $U^*_i = U^n_i$ for all $i$.",
+        "tag": "prop:srd-steady"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Either change the model to one that admits non-constant steady states (e.g., add a source term or set a=0), or restate the proposition as a forced-zero-update redistribution property rather than a steady-state property.",
+      "overall_effect": "The claimed limitation of standard SRD regarding steady-state preservation is not demonstrated for the analyzed model, undermining a central motivation for UM-SRD's shut-off mechanism. The UM-SRD zero-update property itself remains true.",
+      "primary_affected_tag": "prop:srd-steady",
+      "target_type": "formal_result",
+      "title": "Non-constant steady states do not exist for the 1D upwind model",
+      "why_classification": "The repair requires changing the model or abandoning the advertised steady-state contrast between SRD and UM-SRD; a central motivating claim is invalidated for the analyzed setting."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:normalized-accuracy"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\eta_j = \\frac{\\Delta U_{\\max,j}}{\\varepsilon + \\Delta U_{\\max,j}}, \\end{equation} where $\\varepsilon > 0$",
+          "tag": "def:eta"
+        }
+      ],
+      "failure_explanation": "For any finite nonzero ΔU_max, η_j = ΔU_max/(ε+ΔU_max) is strictly less than 1, not equal to 1. It is only approximately 1 when ΔU_max is much larger than ε. Also η_j=0 requires ΔU_max=0 exactly, not merely updates at machine precision. Thus the claim that the normalized indicator is effectively binary for any nonzero update is false for updates comparable to or smaller than ε.",
+      "failure_location": {
+        "quote": "By construction, $\\eta_j = 0$ if and only if all updates in $M_j$ are at machine precision, and $\\eta_j \\approx 1$ whenever any cell in $M_j$ has a nonzero update.",
+        "tag": "def:eta"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the equality with the correct inequality η_j<1 and clarify that η_j≈1 only when ΔU_max≫ε, and that exact shut-off requires exactly zero updates.",
+      "overall_effect": "The analysis of the normalized implementation overstates its activation for very small updates; the exact shut-off property (s=0 when updates are exactly zero) remains true.",
+      "primary_affected_tag": "def:eta",
+      "target_type": "other",
+      "title": "Normalized indicator does not equal one for any nonzero update",
+      "why_classification": "The defect is a local overstatement about the indicator's behavior; the main shut-off and zero-update properties survive with a corrected statement."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2605.04863",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n03b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7818cd4cd642c55846288cd8538a55a3a2f19a519b1a0153dbaf44ab1fba0b17",
+  "status": "ok"
+}

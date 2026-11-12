@@ -1,0 +1,112 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the inequality~\\eqref{eqn:proof_thm_2} achieves equality only when $\\theta\\left(\\mathcal{F}\\left(\\bm{Q} \\bm{z}_k^{(j+1)}\\right)\\right) = \\theta\\left(\\mathcal{F}\\left(\\bm{Q} \\bm{z}_k^{(j)}\\right)\\right)$ except at the zero entries of $\\bm{d}_k$ or at the zero entries of $\\mathcal{F}\\left(\\bm{Q} \\bm{z}_k^{(j+1)}\\right)$ for all $k=1,2,\\dots,N$.",
+          "tag": "thm:convergence_iterative_surrogate"
+        }
+      ],
+      "failure_explanation": "The theorem claims Φ(z^(j+1)) = Φ(z^(j)) if and only if ∇Φ(z^(j+1)) = 0. The forward direction (equality implies gradient zero) is proved in the appendix and is correct. The reverse direction (gradient zero implies equal objective values) is neither proved nor true: a single surrogate-minimization step can land on a stationary point of Φ while strictly decreasing Φ. For example, with N=1, scalar Q=1, d=1, starting from z^(j)=2 gives z^(j+1)=1 with ∇Φ(1)=0 but Φ(1)=0 < ½ = Φ(2). The proof only establishes the forward direction; the reverse direction is false.",
+      "failure_location": {
+        "quote": "\\Phi\\left(\\bm{z}^{(j+1)}\\right)=\\Phi\\left(\\bm{z}^{(j)}\\right)\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0\\,.",
+        "tag": "thm:convergence_iterative_surrogate"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Remove the reverse direction of the biconditional so the statement reads Φ(z^(j+1)) = Φ(z^(j)) ⟹ ∇Φ(z^(j+1)) = 0. Alternatively, restate the reverse direction as relating consecutive steps: ∇Φ(z^(j+1))=0 ⟹ z^(j+2)=z^(j+1).",
+      "overall_effect": "The 'optimality' half of Theorem 3.2 is wrong in one direction. The correct characterization is only that fixed points of the iteration (Φ(z^(j+1))=Φ(z^(j))) are stationary points. The claim that stationary points are necessarily fixed points of the current step is false. The monotonic descent half of the theorem is unaffected.",
+      "primary_affected_tag": "thm:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "False biconditional in surrogate convergence/optimality theorem",
+      "why_classification": "The main convergence result (monotonic descent) is correct and survives. Only the optimality characterization is overclaimed in one direction. A short local edit to the statement preserves the substantive content and the fixed-point-is-stationary guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ \\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot\\left(\\frac{1}{2} \\sum_{k=1}^N P_k^{\\top}\\nabla_{\\bm{z}_k}\\Phi_k\\left(\\bm{z}_k^{(j)}\\right)\\right)",
+          "tag": "thm:convergence_rate"
+        }
+      ],
+      "failure_explanation": "In the proof of Theorem 3.3 the expansion of Φ̃(z;z^(j)) − Φ̃(z^(j);z^(j)) correctly produces gradient terms with the factor ½∇Φ (second diagnostic quote). The very next inequality line replaces these with ∇Φ (first quote), silently doubling the gradient contribution. This step claims the doubled expression is an upper bound (≤) of the original, but doubling a quantity that can be negative reverses the inequality. The correct bound is L‖z−z^(j)‖² + Re⟨z−z^(j), ∇Φ(z^(j))⟩ with L = ½‖Σ P_k^T|Q|²‖_∞. Choosing z = z^(j) − (1/(2L))∇Φ gives decrease ‖∇Φ‖²/(4L), yielding min‖∇Φ‖² ≤ 2‖Σ P_k^T|Q|²‖_∞ Φ(z^(0))/(n+1). The theorem's stated constant ‖Σ P_k^T|Q|²‖_∞/(2(n+1)) is four times too small.",
+      "failure_location": {
+        "quote": "+\\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)",
+        "tag": "thm:convergence_rate"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the gradient factor from ∇Φ to ½∇Φ at the indicated step and optimize the test point as z = z^(j) − (1/(2L))∇Φ(z^(j)). This preserves the sublinear rate with the corrected constant 2‖Σ P_k^T|Q|²‖_∞/(n+1).",
+      "overall_effect": "The O(1/n) rate type is preserved but the explicit constant in the bound is wrong by a factor of four. The choice z = z^(j) − (1/L)∇Φ(z^(j)) used in the proof yields only non-increase (value 0) with the corrected gradient term, so the proof's quantitative bound does not follow as written.",
+      "primary_affected_tag": "thm:convergence_rate",
+      "target_type": "formal_result",
+      "title": "Factor-of-two error in convergence-rate proof yields incorrect constant",
+      "why_classification": "The rate type (O(1/n)) is unchanged and the method of proof is salvageable with a local algebraic correction and a reoptimization of the test point. The quantitative guarantee weakens by a constant factor but no claim is abandoned."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{u}_H + |\\bm{Q}_H|^2&= \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\bm{I}_h^H\\left(\\bm{u}+|\\bm{Q}|^2\\right)\\,,\\\\",
+          "tag": "prop:automatic_regularization_selection"
+        }
+      ],
+      "failure_explanation": "The preceding equation (second quote) shows u_H + |Q_H|² = B · I_h^H(u+|Q|²) where B = |Q_H|²/(I_h^H|Q|²). Dividing both sides by B·(u_H+|Q_H|²) gives 1/I_h^H(u+|Q|²) = B/(u_H+|Q_H|²). The proof then equates this to I_h^H(1/(u+|Q|²)) (first quote), which asserts that averaging reciprocals equals the reciprocal of the average. By the AM–HM inequality, I_h^H(1/(u+|Q|²)) ≥ 1/I_h^H(u+|Q|²) with equality only when u+|Q|² is constant within each bin. For a general probe (e.g. the Fresnel zone plate used in the paper) this fails. Consequently the claimed equality max|e_{H,k}(I_h^H g1)|_r = max|I_h^H e_k(g2)|_r does not hold; the correct relation is an inequality (fine-grid maximum ≥ coarse-grid maximum).",
+      "failure_location": {
+        "quote": "\\bm{I}_h^H\\left(\\frac{1}{\\bm{u}+|\\bm{Q}|^2}\\right)&= \\frac{1}{\\bm{u}_H + |\\bm{Q}_H|^2}\\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\,,\\\\",
+        "tag": "prop:automatic_regularization_selection"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Weaken the proposition to the inequality max|e_{H,k}(I_h^H g1)|_r ≤ max|I_h^H e_k(g2)|_r and adjust the claims about automatic regularization selection to state that coarse updates are no larger than fine updates (a conservative correspondence). Alternatively, restrict the equality to probes with |Q|² constant within each bin.",
+      "overall_effect": "The proposition that justifies automatic regularization selection (Proposition 4.4) is false. The advertised 'automatic hyperparameter selection' for the regularization term is not established as an exact correspondence; it holds only approximately with a factor governed by the spread of u+|Q|² within each bin. The stopping-criterion result (Proposition 4.5) uses a different argument and is unaffected.",
+      "primary_affected_tag": "prop:automatic_regularization_selection",
+      "target_type": "formal_result",
+      "title": "Automatic regularization selection proposition is false",
+      "why_classification": "The exact equality is false but a meaningful inequality survives and the multigrid method and its convergence guarantees are not affected. The loss is confined to the exactness of the automatic regularization-selection claim; the method and all other theorems remain valid with a limited weakening of this one proposition."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{z}^{(j+1)} = \\operatornamewithlimits{argmin}_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z} ; \\bm{z}^{(j)}\\right)\\,",
+          "tag": null
+        },
+        {
+          "quote": "\\bm{z}_k^{(j)}\\leftarrow\\bm{z}_k^+=\\operatornamewithlimits{argmin}_{\\bm{z}_k}\\widetilde{\\Phi}_k\\left(\\bm{z}_k; \\bm{z}_k^{(j)}\\right)\\,",
+          "tag": null
+        },
+        {
+          "quote": "While a scanning region is selected and updated, the entries outside that region remain unchanged.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims that the method yields 'monotonic descent and sub-linear convergence guarantees'. The theorems that supply these guarantees (Theorems 3.2 and 3.3) require z^(j+1) to minimize the full surrogate Φ̃(z;z^(j)) over all of z simultaneously (first diagnostic quote, eqn:surrogate_minimization). The actual algorithm updates one scanning region at a time, minimizing only the k-th term Φ̃_k (second quote, eqn:stochastic_surrogate_minimization). Because scanning regions overlap (third quote), each per-region update changes pixels that enter other terms Φ̃_j, so the total surrogate Φ̃ is not guaranteed to decrease after a sweep. Concrete counterexample: two regions sharing one pixel, with surrogate terms ½|z₁|²+½|z₂−10|² and ½|z₂|²+½|z₃|², the full minimizer is z₂=5 giving Φ̃=25, but sequential per-region minimization drives z₂ first to 10 and then to 0, giving Φ̃=50 after one sweep. Thus the monotonic-descent and rate guarantees are not established for the stochastic method actually analyzed and implemented.",
+      "failure_location": {
+        "quote": "majorizes the original non-convex objective, yielding monotonic descent and sub-linear convergence guarantees",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Clarify that Theorems 3.2 and 3.3 apply to the exact full-surrogate minimization and that the stochastic per-region scheme is an efficient approximation without established monotone-descent guarantees. A complete resolution would require a new convergence analysis for coupled coordinate descent on the overlapping-region surrogate, which is non-trivial.",
+      "overall_effect": "The headline convergence claims ('monotonic descent and sub-linear convergence guarantees') attributed to the stochastic multigrid method MGrPIE are not supported by the paper's theory, which covers only the exact full-surrogate minimization. The theoretical contribution does not validate the principal algorithmic contribution.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Convergence guarantees do not cover the stochastic algorithm",
+      "why_classification": "The full-minimization theory is correct and the stochastic method is empirically validated; the least repair is to restrict the stated guarantees to the exact minimization and acknowledge the gap. This is a limited weakening of the claims but leaves the method, the surrogate framework, and the full-minimization theorems recognizable and intact."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2504.10118",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e9a1fb619c786f644b01b96a3fc12b8566c68fb3b203771e6f1978a95647dfae",
+  "status": "ok"
+}

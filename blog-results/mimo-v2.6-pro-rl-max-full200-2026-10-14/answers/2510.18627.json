@@ -1,0 +1,207 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor: r_max with matching"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For all other tuples $f$, we have $\\deg X>r$ and there exist linear space of projective dimension $r-1$ that intersects $X$ in more than $r$ real points, see~\\cite[Theorem 1.6]{ranestad2024real}.",
+          "tag": "thm:rmax_formula"
+        },
+        {
+          "quote": "$r(f)$ to be the largest integer $r$ such that $r = \\rank \\bT^{(f)}$ and $\\sT^{(f)}$ has a unique decomposition of rank $r$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem claims r(f) is exactly min{n_col^f,n_codim^f} outside the stated two-entry case, but this understates the true maximum. Take ell=1, m_1=2, d_1=4, f=(2): n_row^f=3, n_col^f=3, n_codim^f=3-1-1=1, so the formula gives r(f)=1. For a generic rank-2 binary quartic, however, the column space A=span{v_1^{⊗2},v_2^{⊗2}} is a pencil of binary quadratics in which a v_1^{⊗2}+b v_2^{⊗2} is a perfect square only when ab=0 (its 2x2 matrix has determinant ab sin^2(theta)), so A contains exactly the two rank-one tensors of the decomposition and T^(f) has a unique rank-2 decomposition, i.e. r(f)>=2. Correspondingly the proof's assertion that for all other tuples f one has deg X>r is false: X is a conic with deg X=2=n_codim^f+1, and at r=n_codim^f+1 the span of r general points has complementary dimension to X, so Bezout gives exactly deg X=r points. The same failure occurs whenever deg X=n_codim^f+1 outside the stated case (e.g. ell=2, m_1=2, f=(f_1,1) with f_1>=2, where deg X=m_2 f_1=n_codim^f+1).",
+      "failure_location": {
+        "quote": "\\min\\{\\,n_{\\rm col}^f,\\, n_{\\rm codim}^f\\,\\}, & \\text{otherwise}.",
+        "tag": "thm:rmax_formula"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Re-derive the threshold: at the complementary-dimension rank r=n_codim^f+1 uniqueness holds exactly when deg X=n_codim^f+1 (Bezout count), and re-derive the non-uniqueness direction without the false claim deg X>r; then restate cor: r_max with matching with the corrected r(f).",
+      "overall_effect": "The claimed exact value of r(f) and the maximal-recovery-rank formulae of cor: r_max with matching derived from it are unreliable wherever deg X = n_codim^f+1 outside the stated special case (and at degenerate cases such as n_codim^f=0). The sufficient direction r<=r(f) still guarantees correctness, so algorithmic guarantees that assume r<=r_max(f) survive.",
+      "primary_affected_tag": "thm:rmax_formula",
+      "target_type": "formal_result",
+      "title": "Exact formula for r(f) is false (case split based on deg X is wrong)",
+      "why_classification": "The statement is false and its case analysis must be redone (a reoptimization of the classification and a repair of one proof step), but the same intersection-theoretic machinery yields the corrected criterion and the conservative guarantee r<=r(f) survives, so no new proof architecture or major loss is required."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop: shift for Ttilde A"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bigl|F_i(\\fv^{(i)})-F_i(\\fv^{(i)}_\\ast)\\bigr|^{\\theta_i}",
+          "tag": "thm:power_method_convergence"
+        },
+        {
+          "quote": "\\bigl(F(\\fv_\\ast)-F(\\fv_{(k,i)}) \\bigr)^{\\theta_i}{\\|\\fv^{(i,k+1)}-\\fv^{(i,k)}\\|}",
+          "tag": "thm:power_method_convergence"
+        }
+      ],
+      "failure_explanation": "Equation (eq:lojasiewicz) bounds |F_i(v^{(i)})-F_i(v_*^{(i)})|, a difference of the single-block function F_i with all other blocks frozen at one configuration, by the block gradient. The proof then uses it with left-hand side (F(v_*)-F(v_{(k,i)}))^{theta_i}, where v_{(k,i)} differs from v_* in every block. These quantities are not comparable: for a decoupled F(x,y)=f(x)+g(y), at an iterate with y at a critical point of g (so the block-2 gradient vanishes) but x not yet at x_*, one has F(v_*)-F(v)>0 while the right-hand side is zero, so the displayed inequality is false. Moreover F_i itself changes from block update to block update, so the constants and neighbourhood in (eq:lojasiewicz) do not apply uniformly. Hence the summability (Cauchy) argument and the claimed algebraic rate are not established (a further slip, the step dividing G_k-G_{k+1} by G_k^{theta_i}, also misses a factor 1/(1-theta_i)).",
+      "failure_location": {
+        "quote": "Then equation \\eqref{eq: lojasiewicz} holds for $\\fv_{(k,i)}$ and together with \\eqref{eq:function_increase}, we obtain",
+        "tag": "thm:power_method_convergence"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the estimate chain by a standard KL/Lojasiewicz argument for the global function F on the product of spheres, together with a relative-error estimate relating the full gradient at an iterate to the block update increments, and insert the missing factor 1/(1-theta_i) in the telescoping step.",
+      "overall_effect": "Global convergence of Algorithm alg:psspm (hence of the shifted construction of prop: shift for Ttilde A) and the 'at least algebraic' rate are unproved; the local convergence statement of prop:local linear is unaffected.",
+      "primary_affected_tag": "thm:power_method_convergence",
+      "target_type": "formal_result",
+      "title": "Global convergence proof uses a Lojasiewicz inequality for the wrong function",
+      "why_classification": "The theorem should survive and a contained (standard) KL-based block-descent argument restores it with the same rate type, but the given inference is invalid and must be replaced by a nontrivial new argument rather than a local edit."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\leq\\sum_{i=1}^r |\\langle \\fv^{(j)}_i, \\fw^{(j)}\\rangle|^2",
+          "tag": "thm:added-2"
+        },
+        {
+          "quote": "When all the rows of each $\\bM_j$ are orthonormal, we have $\\rho=\\rho_1=\\cdots=\\rho_\\ell=0$, and hence",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof bounds sum_i |<v_i^{(j)},w^{(j)}>|^{ell f_j} by sum_i |<v_i^{(j)},w^{(j)}>|^2, which needs |x|^{ell f_j} <= x^2 and therefore ell f_j >= 2; this fails when f_j=0 or when ell=f_j=1, and the conclusion is then false. Counterexample: ell=1, f=(1), r=2, R^{(1)}=e_1, R^{(2)}=e_2 (rho=rho_1=0, so C=1), T^(f)=e_1⊗e_1+e_2⊗e_2 with orthonormal slices and A=span{e_1,e_2}. For w=(e_1+e_2)/sqrt(2) one gets F_A(w)=||P_A w||^2=1 but max_i |<R^{(i)},T_w>|=1/sqrt(2), contradicting the claimed 1 <= C/sqrt(2). The same counterexample falsifies the remark (the case rho=rho_k=0).",
+      "failure_location": {
+        "quote": "C \\max_i |\\langle \\mathscr{R}^{(i)}, \\mathscr{T}_\\fw \\rangle|,",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Weaken the upper bound to a valid statement, e.g. F_A <= (r/(1-rho)) max_i |<R^{(i)},T_w>|^2 (or keep the linear form with a constant enlarged by about a factor r), and repair the proof by treating the blocks with ell f_j < 2 separately.",
+      "overall_effect": "The stated quantitative guarantee that a critical point of F_A has small objective value or lies close to a rank-one summand is wrong as written (constant and functional form), and the orthonormal-factor specialisation in the following remark is false; the lower bound and the rest of the section are unaffected.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "Upper bound F_A <= C max_i |<R^(i),T_w>| is false",
+      "why_classification": "The constant C cannot be preserved (any valid linear bound needs C >= sqrt(2) in the 2x2 example), so the repair necessarily weakens a quantitative guarantee; the qualitative conclusion survives with adjusted constants, i.e. a limited weakening leaving a comparable result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Moreover, the $r$ rank-one tensors $\\{\\mathscr{R}^{(i)}_{(f)}\\}_{i=1}^r$ are the only rank-one elements in $\\Acal$ (up to scale), since $r \\leq r(f)$.",
+          "tag": "thm: match up patterns"
+        },
+        {
+          "quote": "and assume $\\dim \\Acal = r$",
+          "tag": "thm: match up patterns"
+        }
+      ],
+      "failure_explanation": "The statement assumes only genericity and dim A=r, but the proof needs A to contain exactly the r rank-one tensors R^{(i)}_{(d)} up to scale, asserting this 'since r <= r(f)', a hypothesis absent from the statement (and r(f) refers to a different span, that of the f-degree tensors). Without such a hypothesis the claim is false: for ell=1, m_1=2, d_1=2, f=(1), r=3 with general v_i, A=span{v_i^{⊗2}}=S^2(R^2) has dimension 3=r, but then M has orthonormal rows so every unit u in R^2 is a left singular vector with singular value 1, and every u is a vectorisation of a rank-one tensor; the claimed uniqueness fails. The proof's key sentence is also ill-typed: R^{(i)}_{(f)} has degree sum f_j and cannot be a rank-one element of A = span{R^{(i)}_{(d)}} inside tensor_j S^{d_j}.",
+      "failure_location": {
+        "quote": "Then \\(\\Vect(\\mathscr{R}^{(i)}_{(d-f)})\\) is the unique left singular vector of",
+        "tag": "thm: match up patterns"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "State the missing hypothesis (e.g. r <= r(f), or directly that A contains exactly r rank-one tensors up to scale), replace R^{(i)}_{(f)} by R^{(i)}_{(d)} in the 'only rank-one elements' sentence, and add the short argument that a rank-one element sum c_i R^{(i)}_{(d)} has all but one c_i zero whenever the f-factors and the (d-f)-factors are each linearly independent.",
+      "overall_effect": "As stated, the recovery of complementary factors (and hence summand completion outside the assumed rank regime) is unreliable; inside the regime r<=r(f) that the surrounding prose assumes, the intended claim survives.",
+      "primary_affected_tag": "thm: match up patterns",
+      "target_type": "formal_result",
+      "title": "Complementary-factor recovery theorem omits the hypothesis its proof uses",
+      "why_classification": "Adding the hypothesis the proof already uses, fixing one mis-typed tensor, and supplying a routine rank-one/linear-independence argument preserves every conclusion and the advertised scope of the completion step."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "When $n=2$ or $k=2$, $(2,1)$ dominates.",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "\\min\\{4,\\,k\\}, & n = 2,",
+          "tag": "cor:added-1"
+        }
+      ],
+      "failure_explanation": "The threshold k <= (n^2+3n-2)/(2n-2) is derived only in the case n>2 (from r(1,1)=min{binom(n+2,3),(n-1)(k-1)} versus r(2,1)=binom(n+1,2)), but the statement applies it at n=2 as well. For n=2 the proof's own values are r(1,1)=min{4,k} and r(2,1)=3, so at (n,k)=(2,4) the tuple (1,1) attains rank 4 while (2,1) attains only 3: the statement selects the suboptimal tuple. The proof sentence 'When n=2 or k=2, (2,1) dominates' is false for all n=2, k>=4 and even contradicts the statement's own rule for k>4.",
+      "failure_location": {
+        "quote": "(2,1), & k \\leq \\dfrac{n^2+3n-2}{2n-2},",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Split off n=2 and compare r(1,1)=min{4,k} with r(2,1)=3 directly, yielding (2,1) only for k<4 (a tie at k=3) and (1,1) for k>=4.",
+      "overall_effect": "For S^4(R^2) tensor R^k at k=4 the stated optimal flattening is wrong and the achievable recovery rank is understated by one.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Optimal-flattening threshold misclassifies the case n=2, k=4",
+      "why_classification": "A single boundary case of the case comparison is misclassified; repeating the existing comparison with the n=2 values fixes it and leaves every other conclusion unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min\\!\\left\\{ \\binom{n+2}{3},\\ (n - 1)(k - 1) \\right\\}, & n > 2,",
+          "tag": "cor:added-1"
+        }
+      ],
+      "failure_explanation": "For f=(1,1) and k=2 one has n_col^f = binom(n+2,3) and n_codim^f+1 = (n-1)(k-1)+1 = n (the min{m_i,m_j}=2 case of the rank formula), so r(1,1)=min{binom(n+2,3),n}=n, not min{4,n}; the two expressions differ for every n>=5. The value min{4,n} follows from none of the preceding formulae and is inconsistent with the same computation used for the n=2 case.",
+      "failure_location": {
+        "quote": "\\min\\{4,\\,n\\}, & k = 2.",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace 'min{4,n}' by 'n' in the k=2 entry of the displayed r(1,1) case formula.",
+      "overall_effect": "One of the three rank values feeding the optimality comparison of cor:added-1 is wrong for n>=5, k=2; the conclusion '(2,1) dominates for k=2' survives only because binom(n+1,2) >= n.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Wrong value of r(1,1) in the k=2 case of the proof",
+      "why_classification": "A one-token correction of a displayed case value, computed by the same recipe as the neighbouring cases, preserves every claim and guarantee of the corollary."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "alg:psspm-deflation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "= \\mathbf{T}^{(f)}-\\lambda_1\\,\\Vect(\\mathscr{R}_{(f)})\\otimes\\Vect(\\mathscr{R}_{(d-f)})\\);",
+          "tag": "prop:deflation"
+        },
+        {
+          "quote": "(c)] The columns of \\(\\hat {\\mathbf{U}}\\) form an orthonormal basis of",
+          "tag": "prop:deflation"
+        },
+        {
+          "quote": "$\\mathbf{O}_v \\gets$ orthonormal basis of $\\Span\\{\\mathbf{C} \\alpha_v\\}^\\perp$",
+          "tag": "alg:psspm-deflation"
+        }
+      ],
+      "failure_explanation": "Writing a~_i=U^T vec(R^{(i)}_{(f)}) and b~_i=V^T vec(R^{(i)}_{(d-f)}), one has b~_j^T C a~_i = delta_{ij}/lambda_i, so C^T b~_1 (=C^T a_v) is orthogonal to a~_j for j>=2 and must define O_v; the stated vector C a_v satisfies (C a_v)^T a~_j = b~_1^T C^T a~_j, which is not zero unless C is symmetric (and C becomes non-symmetric already after one update C-hat = O_u^T C O_v). Concrete failure: r=2, a_1=b_1=e_1, a_2=(1,1)^T/sqrt(2), b_2=e_2, lambda_1=lambda_2=1, so T^{(f)}=[[1,1/sqrt(2)],[0,1/sqrt(2))]] with U=V=I, C=(T^{(f)})^{-1}. Then a_v=e_1, C a_v=(1,0)^T and the prescribed O_v=e_2^T gives U-hat=e_2^T, C-hat=sqrt(2), hence U-hat C-hat^{-1} V-hat^T = e_2 e_2^T/sqrt(2) != T^{(f)}-lambda_1 a_1 b_1^T = [[0,1/sqrt(2)],[0,1/sqrt(2))]], and the columns of U-hat do not span {a_2}, contradicting claim (c).",
+      "failure_location": {
+        "quote": "\\(\\Span\\{\\mathbf{C}\\fa_u\\}^\\perp\\) and \\(\\Span\\{\\mathbf{C}\\fa_v\\}^\\perp\\), respectively.",
+        "tag": "prop:deflation"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Define O_v to span the orthogonal complement of C^T a_v instead of C a_v (keeping O_u as is), and make the same change in alg:psspm-deflation; the stated identities then hold.",
+      "overall_effect": "Claims 2(b) and 2(c) of prop:deflation are false as stated, and the deflation step of alg:psspm-deflation deletes the wrong direction from the subspace (from the second deflation onward even for SVD initialisation, since C-hat is not symmetric), so all later components are computed in an incorrect subspace.",
+      "primary_affected_tag": "prop:deflation",
+      "target_type": "formal_result",
+      "title": "Deflation update uses C a_v where C^T a_v is required",
+      "why_classification": "The repair is a single transposed factor in one definition and its copy in the algorithm, and it restores every claim and guarantee of the deflation procedure without new arguments or loss."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2510.18627",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "85713754da9f56610f38c773a5c0be6b84a93b324770df60ebddbd68caa3e252",
+  "status": "ok"
+}

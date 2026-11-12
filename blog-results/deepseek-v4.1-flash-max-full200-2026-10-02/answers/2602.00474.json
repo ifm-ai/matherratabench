@@ -1,0 +1,99 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:main_end_to_end_v"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Define $a := \\alpha(1-\\widehat\\gamma)$. Assume \\(a>1/2\\).",
+          "tag": "thm:projSA_rate_template"
+        },
+        {
+          "quote": "where the oracle satisfies\n\\begin{equation}\\label{eq:oracleB}\n\\E[\\widehat T(v_t)\\mid \\cF_t]=r+Pv_t,\n\\qquad\n\\E\\!\\left[\\|\\widehat T(v_t)-(r+Pv_t)\\|_\\infty^2\\mid \\cF_t\\right]\\le \\sigma^2.\n\\end{equation}",
+          "tag": "lem:projSA_stability_template"
+        },
+        {
+          "quote": "Assume the SA stepsizes are $\\alpha_t=\\alpha/(t+t_0)$ with $t_0\\ge \\alpha$ and $a=\\alpha(1-\\widehat\\gamma)>1/2$.",
+          "tag": "cor:end_to_end_v"
+        }
+      ],
+      "failure_explanation": "The main SA theorem and the end-to-end corollary present the O(1/√T) rate as following from structural recovery and \\hatγ<1 alone. However, the formal proof (Theorem projSA_rate_template and Lemma projSA_stability_template) requires both a stepsize condition a=α(1-\\hatγ)>1/2 for the 1/√T rate and a uniform conditional second-moment bound on the oracle noise, E[||\\hat T(v_t)-(r+Pv_t)||∞^2|F_t]≤σ^2. The latter is not established for Algorithm main_psa: the actual noise variance depends on ||v_t||∞, and the stability proof assumes the bound to prove bounded iterates. Thus the stated unconditional end-to-end guarantee is not justified.",
+      "failure_location": {
+        "quote": "Assume the structural learning and weight estimation steps succeed and assume $\\widehat\\gamma<1$.\nThen Algorithm~\\ref{alg:main_psa} satisfies",
+        "tag": "thm:main_sa_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the missing hypotheses (a>1/2 and the uniform conditional second-moment bound) to Theorem main_sa_rate and Corollary main_end_to_end_v, or prove the oracle noise bound from the algorithm and stepsize choice.",
+      "overall_effect": "The end-to-end query-complexity and O(T^{-1/2}) convergence claims in the main text are not established as stated; they require additional assumptions or a new stability argument.",
+      "primary_affected_tag": "thm:main_sa_rate",
+      "target_type": "formal_result",
+      "title": "Main SA theorem and end-to-end corollary omit required stepsize and oracle-noise hypotheses",
+      "why_classification": "The core result likely survives with a standard but nontrivial stability argument for multiplicative noise; the source already contains conditional formal statements, so the repair is contained rather than requiring new global architecture. However, the missing oracle bound is more than a local typo because it changes the end-to-end guarantee from unconditional to conditional."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$T(v)=r+Pv$",
+          "tag": null
+        },
+        {
+          "quote": "$g^\\star \\coloneqq r + Pv^\\star - v^\\star$",
+          "tag": null
+        },
+        {
+          "quote": "$v^\\star = \\mathcal{T}(v^\\star)=\\Pi(r+Pv^\\star)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a gauge-fixed solution v* of the projected equation, T(v*)=r+Pv*=v*+g*. Hence the unprojected iteration error satisfies e_{t+1}=v_{t+1}-v* = r+Pv_t-v* = g*+P e_t, not P e_t. The displayed equation omits the residual g*, which is generally nonzero (e.g., in the period-two example if K(P)=R^2, then Π=0 and v*=0, so e_{t+1}=r+P e_t).",
+      "failure_location": {
+        "quote": "If $v_{t+1} = T(v_t)$ and $v^\\star$ is any fixed point in a chosen gauge, then the error $e_t \\coloneqq v_t - v^\\star$ evolves as $e_{t+1} = P e_t$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace e_{t+1}=P e_t with e_{t+1}=g*+P e_t (or state the recursion in the quotient, where the g* term vanishes).",
+      "overall_effect": "The illustrative explanation of oscillation in the period-two example contains a false error recursion; the qualitative conclusion about non-contraction remains, but the displayed equation is incorrect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Incorrect error recursion in period-two illustrative example",
+      "why_classification": "A short local correction to an illustrative example; no formal result or algorithm depends on this equation."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\mathbb E\\|[v_T]-[v^\\star]\\|_{\\mathrm q}\n\\le\nO\\!\\left(\\frac{1}{\\sqrt T}\\right)\n+\nO\\!\\left(N\\varepsilon_b\\right)$",
+          "tag": "thm:main_sa_rate"
+        }
+      ],
+      "failure_explanation": "The bound contains the term N ε_b. To make this term O(1/√T), one needs ε_b = O(1/(N√T)), not ε_b = O(T^{-1/2}). The statement is therefore off by a factor N unless N is constant. The correct scaling appears in Corollary main_end_to_end_v as M = tilde O(N^2/ε^2).",
+      "failure_location": {
+        "quote": "Choosing $M$ so that $\\varepsilon_b$ scales like $T^{-1/2}$ yields the near optimal $T^{-1/2}$ rate for estimating the quotient class $[v^\\star]$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the scaling with ε_b = O(1/(N√T)) (equivalently M = tilde O(N^2 T)).",
+      "overall_effect": "The stated sample complexity for the weight-estimation budget M to achieve the O(T^{-1/2}) rate is misleading when N grows.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Prose scaling of projection error omits the factor N",
+      "why_classification": "A short local correction to a scaling statement; the correct dependence is already present in the formal corollary."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2602.00474",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n03b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "972379f0da0ee4de13a10747348296e76d7000e64b93e768397abb525d521a6d",
+  "status": "ok"
+}

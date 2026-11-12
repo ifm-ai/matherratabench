@@ -1,0 +1,149 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\( r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}} \\geq \\frac{\\mathbb{E}\\|X({\\tilde{\\beta}^{i-1}} - {\\beta})\\|}{\\mathbb{E}\\|X({\\tilde{\\beta}^{i}} - {\\beta})\\|} \\)",
+          "tag": "lowerBoundai"
+        },
+        {
+          "quote": "Theorem \\ref{lowerBoundai} implies that the sequence $\\{a_i\\}_{i=2}^K$ are monotonically increasing with respect to \\(i\\), namely \\(a_2<\\ldots<a_K\\)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof of lowerBoundai needs the ratio r = E||X(tilde beta^{i-1}-beta)|| / E||X(tilde beta^i-beta)|| = sqrt((m_i-d)/(m_{i-1}-d)) > 1 to bound the initial error of the i-th subproblem. The complexity proof instead uses the reciprocal sqrt((m_{i-1}-d)/(m_i-d)) < 1. This underestimates the required a_i, reverses the monotonicity (the correct ratio decreases with i), and invalidates the claimed bound a_i < alpha and the first-stage cost 4 alpha N d. As gamma approaches 2^{-K}, m_1-d approaches 0, so the correct a_2 can grow unbounded while the paper's bound remains constant.",
+      "failure_location": {
+        "quote": "together with $d/N\\rightarrow\\gamma\\in(0,2^{-K})$ as $N\\rightarrow+\\infty$, it follows that $r(i-1,i)=\\sqrt{(1-2^{K+2-i}\\gamma)/(2-2^{K+2-i}\\gamma)}$ ($i=2,\\ldots,K$).",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Use the correct ratio r(i-1,i)=sqrt((m_i-d)/(m_{i-1}-d)) throughout, rederive the lower bounds and monotonicity, and replace the alpha-based cost bound by one that accounts for the correct (possibly large) a_i.",
+      "overall_effect": "The lower bounds on iteration counts and the first-stage complexity bound in Theorem cmpxtyAlgSLSE are unreliable, and the monotonicity claim used to guide a_i is false.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "Inverted error ratio in lower-bound and complexity analyses",
+      "why_classification": "The error reverses the main iteration-count control and can make the claimed constant upper bound on a_i false, invalidating the complexity guarantee; the repair requires redoing the complexity analysis."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "as \\(N\\) tends to infinity, while \\(d/N \\rightarrow \\gamma \\in (0,1)\\), \\(m_i/N \\rightarrow \\xi \\in (\\gamma, 1)\\), the \\(i\\)-th relative prediction efficiency $\\mathrm{PE}(i)$ has the limit",
+          "tag": "lemma:lemma3"
+        },
+        {
+          "quote": "Furthermore, if the condition below holds \\[ \\operatorname{Var}(\\|X\\tilde{\\beta}^i - X\\beta\\|) \\geq \\operatorname{Var}(\\sqrt{\\frac{N - d}{m_i - d}}\\|X\\hat{\\beta} - X\\beta\\|), \\] we obtain",
+          "tag": "remarkA7"
+        }
+      ],
+      "failure_explanation": "Lemma lemma:lemma3 is an asymptotic limit statement requiring N -> infinity, d/N -> gamma, m_i/N -> xi, and a variance condition in Remark A7. Lemma finalerror and Theorem Thf are stated for fixed N with high probability and do not assume these conditions. The replacement of delta_i by sqrt((N-d)/(m_i-d)) E||X(hat beta - beta)|| is therefore not justified in the stated finite-sample setting.",
+      "failure_location": {
+        "quote": "According to Theorem \\ref{thm:convergence_theorem1} and Lemma \\ref{lemma:lemma3}, there exists a constant \\({M_1} >0\\), such that if \\(a_1 > M_1\\), it holds that",
+        "tag": "finalerror"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Either restate finalerror, Thf, lowerBoundai, and cmpxtyAlgSLSE as asymptotic results under the exact hypotheses of Lemma lemma:lemma3 and the variance condition, or prove finite-sample bounds replacing the asymptotic PE limit.",
+      "overall_effect": "The main convergence guarantee Thf and the iteration/complexity bounds based on delta_i are unsupported as finite-sample statements; they hold at most under additional asymptotic and variance assumptions not stated.",
+      "primary_affected_tag": "finalerror",
+      "target_type": "formal_result",
+      "title": "Finite-sample convergence results rely on asymptotic PE lemma without its hypotheses",
+      "why_classification": "A central convergence theorem and its dependent complexity results lose their stated finite-sample/high-probability guarantee; repairing requires either changing the quantifier regime or proving new finite-sample bounds."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\FOR{$t\\leftarrow$ $T^{\\dagger}$ {\\bfseries to} $T$}",
+          "tag": "Alg-SRHT"
+        },
+        {
+          "quote": "if $a_i > {M}$, $i = 1,\\ldots, K$, and $T > T^\\dagger + M$",
+          "tag": "Thf"
+        }
+      ],
+      "failure_explanation": "The initialization line sets both T and T^dagger to sum a_i. With T=T^dagger, the second-stage loop has no effective full-scale iterations (or only an off-by-one iteration), so the algorithm returns the first-stage iterate and cannot perform the full-scale refinement required by Theorem Thf. The theorem assumes T>T^dagger+M.",
+      "failure_location": {
+        "quote": "$K, {\\{B_i\\}}_{i = 1}^{K}, {\\{a_i\\}}_{i = 1}^{K}, {\\{m_i\\}}_{i = 1}^{K}, T, T^{\\dagger}\\leftarrow\\sum\\limits_{i=1}\\limits^{K} a_i, t \\leftarrow 0$",
+        "tag": "Alg-SRHT"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Set T^dagger = sum a_i and treat T (total iterations including the second stage) as an input or separately chosen parameter; adjust the loop bound to perform exactly T-T^dagger full-scale iterations.",
+      "overall_effect": "Algorithm Alg-SRHT as written does not implement its stated two-stage procedure; the convergence guarantee in Thf is not realized by the algorithm.",
+      "primary_affected_tag": "Alg-SRHT",
+      "target_type": "algorithm",
+      "title": "Algorithm assigns T=T^dagger, so the second stage is not executed",
+      "why_classification": "The mathematical method and guarantees survive with a local initialization/input correction; no new argument or loss of advertised scope is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(W_i = I_d - \\mu (U_{X}^{\\top}\\hat{S}^{\\top}\\hat{S}U_{X})^{-1}U_{X}^{\\top}S_{i}^{\\top}S_{i}U_{X}\\).",
+          "tag": "thm:convergence_theorem1"
+        }
+      ],
+      "failure_explanation": "The matrix W_i is I - mu A^{-1}B with A and B symmetric positive definite. In general A^{-1}B is not symmetric, so W_i does not admit an orthogonal eigendecomposition W_i = U Lambda U^top as written. The subsequent block factorization relies on this decomposition. The conclusion can be recovered using a similarity transformation to a symmetric matrix or a Jordan form, but the proof step as written is invalid.",
+      "failure_location": {
+        "quote": "Let the eigenvalue decomposition of \\(W_i\\) be \\(W_i = \\tilde{U}_i \\Lambda_i \\tilde{U}_i^{\\top}\\), where \\(\\Lambda_i\\) is a real diagonal matrix with its $k$-th diagonal \\(\\lambda_k^{(i)}\\) being the \\(k\\)-th eigenvalue of \\(W_i\\).",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the orthogonal eigendecomposition with a similarity diagonalization of W_i (or use Jordan/Schur form) and carry the resulting similarity through the norm bound, using Gelfand's formula as already done.",
+      "overall_effect": "The proof of Theorem thm:convergence_theorem1 is incomplete/invalid at this step; the stated convergence bound is not established by the given argument until the eigendecomposition is repaired.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "Orthogonal eigendecomposition of non-symmetric W_i in Theorem 1 proof",
+      "why_classification": "The repair is local and preserves the result; it only requires the standard observation that A^{-1}B is similar to a symmetric matrix."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\( r \\geq c\\epsilon^{-2}\\left[d + \\log\\left(\\frac{N}{\\delta}\\right)\\right]\\log\\left(\\frac{ed}{\\delta}\\right), \\quad m_1 \\textgreater r\\)",
+          "tag": "thm:convergence_theorem1"
+        },
+        {
+          "quote": "the SRHT sketching matrix \\(\\hat{S} \\in \\mathbb{R}^{r \\times N}\\) adopted in the Hessian sketch \\(\\hat{H}\\triangleq(\\hat{S}X)^{T}\\hat{S}X\\) should be of sketch size \\(r=O(d\\log d)\\).",
+          "tag": "sec:effcntSLSE"
+        }
+      ],
+      "failure_explanation": "If d/N -> gamma > 0, then d = Theta(N), so the required Hessian sketch size is r = Omega(d log d) = Omega(N log N). But r is the row dimension of the sketching matrix hat S in R^{r x N}, and the algorithm also requires m_1 > r with m_K = N/2, so r < N/2. No such r exists for large N. Thus the asymptotic regime in Theorem cmpxtyAlgSLSE is incompatible with the algorithm's own sketching requirements.",
+      "failure_location": {
+        "quote": "let \\(d/N\\rightarrow\\gamma\\in(0,2^{-K})\\) as \\(N\\rightarrow+\\infty\\)",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Use an asymptotic regime with d = o(N/log N) (or otherwise ensure r <= m_1 < N) and rederive the PE bounds under that regime, or explicitly restrict the complexity theorem to regimes where r <= N.",
+      "overall_effect": "The complexity theorem is vacuous in the stated asymptotic regime because the required Hessian sketch cannot be constructed under its assumptions.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "Asymptotic regime d/N -> gamma > 0 is incompatible with the required Hessian sketch size",
+      "why_classification": "The stated regime makes the theorem's assumptions unsatisfiable, so the complexity guarantee does not apply to any large-N instance; repairing requires changing the asymptotic regime and likely rederiving the underlying PE approximation."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2509.06856",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n01a",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "981b8984cdca82ea93a1c8e2f7a3a3ff16d853374c7f5e11ece8d6b29bfd4d2f",
+  "status": "ok"
+}

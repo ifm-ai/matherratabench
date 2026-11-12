@@ -1,0 +1,91 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "({A} - \\lambda_j I_\\sizeA) x_j = b_j, \\quad j = 1,\\dots, \\ell,",
+          "tag": "eq:blockproblem"
+        },
+        {
+          "quote": "${x_j = \\Re({x_j}) + i \\;\\Im({x_j})}$, ${b_j = \\Re({b_j}) + i \\;\\Im({b_j})}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Substituting x_j = u+iv and b_j = r+is into (A - λ_j I)x_j = b_j with λ_j = p+iq gives Ψu + qv = r and Ψv - qu = s, where Ψ = A - pI. The displayed saddle system instead enforces q u - Ψ v = -r and Ψ u - q v = s. These equations are not equivalent. For example, with A=2, λ=1+i, x=1+i, b=2, the displayed system gives [0;2]=[-2;0]. Thus the real system does not solve the original complex subproblem.",
+      "failure_location": {
+        "quote": "\\begin{pmatrix}\n\\Im(\\lambda_j)I_\\sizeA & {A}-\\Re(\\lambda_j)I_\\sizeA \\\\\n{A}-\\Re(\\lambda_j)I_\\sizeA & -\\Im(\\lambda_j)I_\\sizeA\n\\end{pmatrix}\\begin{pmatrix}\n\\Re({x_j}) \\\\ -\\Im({x_j})\n\\end{pmatrix} = \\begin{pmatrix}\n-\\Re({b_j})\\\\ \\Im({b_j})\n\\end{pmatrix}",
+        "tag": "eq:saddlesystem"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace eq:saddlesystem with the correct equivalent real system, e.g. [[q I, Ψ],[Ψ, -q I]] [Im x; Re x] = [Re b; Im b] for q>0, with appropriate sign handling for q<0.",
+      "overall_effect": "The entire saddle point reformulation and all P_SP numerical results and claims about solving the block problems are invalid.",
+      "primary_affected_tag": "eq:saddlesystem",
+      "target_type": "other",
+      "title": "Saddle point reformulation is not equivalent to the complex shifted system",
+      "why_classification": "The central reformulation for the second preconditioning method is wrong; no version of the P_SP method as written is supported, and the numerical results based on it cannot be trusted. Repair requires rederiving the inner system and redoing the method's convergence and implementation."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\lambda_j = \\alpha^{1/\\ell}\\exp \\left(\\frac{2\\pi i (j-1)}{\\ell}\\right), {\\quad j=1, \\ldots, \\ell}$",
+          "tag": null
+        },
+        {
+          "quote": "\\Im(\\lambda_j)I_\\sizeA & {A}-\\Re(\\lambda_j)I_\\sizeA",
+          "tag": "eq:saddlesystem"
+        }
+      ],
+      "failure_explanation": "For j in the second half of the complex roots (e.g. j ∈ [ℓ/2+2,ℓ]), Im(λ_j) is negative, so Φ = Im(λ_j)I is negative definite, not SPD. Consequently Φ+Ψ may not be SPD either, so the preconditioner P_D in eq:minresprecond is not guaranteed to be SPD and the AMG/MINRES assumptions are violated. The source later explicitly solves these negative-imaginary subproblems.",
+      "failure_location": {
+        "quote": "with $\\phimat$ and $\\psimat$ symmetric positive definite.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict the saddle point formulation to roots with positive imaginary part and handle negative-imaginary roots by conjugate symmetry, or use |Im(λ_j)| and swap/sign-adjust the variables and right-hand side.",
+      "overall_effect": "The P_SP method is not well-defined as stated for half of the complex subproblems; Theorem thm:added-2 cannot be applied to them, and their numerical results rely on an unstated workaround.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed SPD blocks fail for negative imaginary roots",
+      "why_classification": "A contained sign-handling fix (using conjugate pairs or |Im|) preserves the method, but the source as written applies an SPD preconditioner to indefinite blocks, invalidating the stated guarantees for those subproblems."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "which employs a nonlinear solver (MINRES)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "MINRES is a linear Krylov subspace method for symmetric (indefinite) linear systems; in exact arithmetic its solution is a linear function of the right-hand side. Calling it nonlinear is incorrect.",
+      "failure_location": {
+        "quote": "which employs a nonlinear solver (MINRES)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Remove 'nonlinear' or state that MINRES is a linear Krylov method.",
+      "overall_effect": "The claimed contrast that the nested Chebyshev approach is 'completely linear' while the saddle point approach uses a 'nonlinear solver' is unsupported. This is a minor misstatement in the conclusions.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "MINRES is misclassified as a nonlinear solver",
+      "why_classification": "The error is a local misclassification in the conclusions; it does not affect any theorem, algorithm, or numerical result, and is corrected by a one-word change."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2506.03947",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n04b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3524514ec032ec87b79cf3f5eba88988a0a08a64f20bf981e36596fab8eae76d",
+  "status": "ok"
+}

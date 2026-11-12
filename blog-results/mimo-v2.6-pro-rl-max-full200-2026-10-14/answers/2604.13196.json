@@ -1,0 +1,228 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "alg:compilation",
+        "prop:deformation_as_evaluation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{(-1)^z [z+1]_q!}{\\prod_{i=1}^4 [z - a_i]_q! \\prod_{y=1}^3 [b_y - z]_q!}",
+          "tag": "eq:racah_6j"
+        },
+        {
+          "quote": "{\\prod_{y=1}^3 [b_y-(z+1)]_q}",
+          "tag": "eq:ratio_Rz"
+        },
+        {
+          "quote": "$\\mathcal{R}_z \\gets$ compute cyclotomic factorization of the ratio via Eq.~\\eqref{eq:ratio_Rz}",
+          "tag": "alg:compilation"
+        }
+      ],
+      "failure_explanation": "Dividing the (z+1)-st summand of Eq. eq:racah_6j by the z-th gives R_z = -[z+2]_q prod_y [b_y-z]_q / prod_i [z+1-a_i]_q. The printed ratio instead puts the factors [z+1-a_i]_q in the numerator and uses [b_y-(z+1)]_q in the denominator: both the a-factors and the b-factors are wrong. The printed expression is even undefined at z = z_max-1, where [b_y-(z+1)]_q = [0]_q = 0, although the true ratio is finite there.",
+      "failure_location": {
+        "quote": "- \\frac{[z+2]_q \\prod_{i=1}^4 [z+1-a_i]_q}",
+        "tag": "eq:ratio_Rz"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace Eq. eq:ratio_Rz by R_z = -[z+2]_q prod_{y=1}^3 [b_y-z]_q / prod_{i=1}^4 [z+1-a_i]_q, obtained directly from Eq. eq:racah_6j, and recompute the analogous ratio for each additional series the framework treats.",
+      "overall_effect": "The ratios compiled by Algorithm alg:compilation do not generate the summands of the series, so the DCR does not represent S(q); the identity S(q) = Pi_q(S_DCR) of Proposition prop:deformation_as_evaluation and every numerical/exact value obtained from the DCR are unreliable.",
+      "primary_affected_tag": "eq:ratio_Rz",
+      "target_type": "other",
+      "title": "Wrong term ratio in the hypergeometric update recurrence",
+      "why_classification": "The corrected ratio is uniquely forced by Eq. eq:racah_6j and the repair is a single local formula replacement; the recurrence framework, the DCR construction and all complexity and stability guarantees survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "alg:compilation",
+        "alg:projection",
+        "prop:deformation_as_evaluation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Here, $\\mathcal{M}_{\\rm root}$ collects all cyclotomic factors with even exponents (a perfect square) and $\\mathcal{M}_{\\rm rad}$ collects the square-free part ($e_d \\in \\{-1,0,1\\}$ for all $d$).",
+          "tag": null
+        },
+        {
+          "quote": "are the square and square-free parts of the global geometric prefactor",
+          "tag": null
+        },
+        {
+          "quote": "$\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})} \\cdot \\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm root}) \\cdot S_{\\rm sum}$",
+          "tag": "alg:projection"
+        }
+      ],
+      "failure_explanation": "Writing the exponents of M_geom as e_d = 2f_d + r_d with r_d in {0,1}: if M_root collects the even parts (exponents 2f_d, a perfect square) and M_rad the square-free part (exponents r_d), then M_root*sqrt(M_rad) has exponents 2f_d + r_d/2, not e_d, so the displayed identity is false (for Delta_111, M_geom = 1/[4]_q! has exponents (q^6; Phi_2^{-2}, Phi_3^{-1}, Phi_4^{-1}) and M_root*sqrt(M_rad) = q^6 Phi_2^{-2} Phi_3^{-3/2} Phi_4^{-3/2}). If instead M_root = prod Phi_d^{f_d}, so that sqrt(M_geom) = M_root*sqrt(M_rad) (the reading consistent with Algorithm alg:projection), then M_root is not a perfect square and the displayed identity is wrong as printed. Under the literal description Algorithm alg:projection returns M_root*sqrt(M_rad) instead of sqrt(M_geom), an extra factor sqrt(M_root).",
+      "failure_location": {
+        "quote": "\\mathcal{M}_{\\rm geom} = \\mathcal{M}_{\\rm root} \\cdot \\sqrt{\\mathcal{M}_{\\rm rad}}",
+        "tag": "eq:sqrt_decomp"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Fix one convention (e.g. M_geom = M_root^2 * M_rad with M_rad square-free, so sqrt(M_geom) = M_root*sqrt(M_rad)), state Eq. eq:sqrt_decomp and the extraction step of Algorithm alg:compilation accordingly, and make the return value of Algorithm alg:projection evaluate sqrt(M_geom) consistently.",
+      "overall_effect": "The radical data (M_root, M_rad) of the DCR are not well defined by the source; depending on the reading, Algorithm alg:projection returns an amplitude off by a factor sqrt(M_root), and the evaluations certified in Proposition prop:deformation_as_evaluation are wrong.",
+      "primary_affected_tag": "eq:sqrt_decomp",
+      "target_type": "other",
+      "title": "Square/square-free decomposition of the geometric prefactor is internally inconsistent",
+      "why_classification": "Both candidate repairs are local formula/definition fixes that keep the DCR construction, the algorithms and every advertised guarantee; no new lemma, construction or reoptimization is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:deformation_as_evaluation",
+        "alg:projection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})} \\cdot \\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm root}) \\cdot S_{\\rm sum}$",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "Evaluated amplitude $S \\in \\mathbb{T}$",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "For symbolic evaluation, one may take $\\mathbb{T} = \\Q(\\zeta_{2h})$, the cyclotomic number field generated by a primitive root $\\zeta_{2h}$",
+          "tag": null
+        },
+        {
+          "quote": "from which evaluation in any target field is realized as a ring homomorphism",
+          "tag": null
+        },
+        {
+          "quote": "where $\\Pi_q$ denotes the evaluation map defined in Eq.~\\eqref{eq:project_monomial}",
+          "tag": "prop:deformation_as_evaluation"
+        }
+      ],
+      "failure_explanation": "Exponent bookkeeping only records the radicand; the square root itself must still be taken at the projection step (Algorithm alg:projection returns sqrt(Pi_T(M_rad)) times the rest) and it generally does not lie in T. For the 6j-symbol with spins (1,1,1,3,3,3) the geometric prefactor is Delta_111*Delta_133^3 = q^30 Phi_2^{-4} Phi_3^{-2} Phi_4^{-2} (Phi_6 Phi_7 Phi_8)^{-3/2}, whose square-free part is Phi_6 Phi_7 Phi_8; at q = e^{i pi/5} one computes Phi_6(zeta_5)Phi_7(zeta_5)Phi_8(zeta_5) = -zeta_5, and sqrt(-zeta_5) = zeta_20^7 is not in Q(zeta_10) = Q(zeta_{2h}). Hence the advertised exact projection into T = Q(zeta_{2h}) does not return an element of T, evaluation is not a ring homomorphism into T, and Eq. eq:project_monomial defines Pi_T only on integer-exponent monomials, so Pi_q(S_DCR) in Proposition prop:deformation_as_evaluation is undefined for the radical part of the DCR.",
+      "failure_location": {
+        "quote": "The entire square root is resolved at the exponent level, without field extension and without any polynomial computation.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Adjoin the radical explicitly: define the projection on the extended generator sqrt(M_rad) with values in T(sqrt(M_rad)) (or restrict to target fields closed under the required square roots), extend Eq. eq:project_monomial to cover the radical factor, and weaken the 'any target field / no field extension' claims accordingly.",
+      "overall_effect": "The claims that the square root is handled 'without field extension', that evaluation in any target field is a ring homomorphism with output in that field, and the exact-algebraic projection into Q(zeta_{2h}) all fail for amplitudes with a non-trivial radical prefactor (in particular generic quantum 6j-symbols); the output contract 'S in T' of Algorithm alg:projection fails.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Square roots are not resolved without field extension; projection need not land in the target field",
+      "why_classification": "The construction survives but a headline guarantee must be weakened: evaluation is no longer a ring homomorphism into an arbitrary target field and the exact algebraic projection requires a quadratic extension. This is a limited narrowing of scope, not a new proof architecture or a major loss of results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$R \\gets R \\cdot v$",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "$S_{\\rm sum} \\gets S_{\\rm sum} + \\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm base}) \\cdot R$",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "while a negative exponent produces a pole",
+          "tag": null
+        },
+        {
+          "quote": "allowing early termination in the evaluation of individual summands",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The loop forms every summand as Pi_T(M_base) times a running product R = prod Pi_T(R_z) and stops at the first ratio that evaluates to 0. A zero summand can be followed by non-zero summands. For the 6j-symbol with spins (5.5, 5.5, 6, 6, 6, 5.5), whose sum runs over z = 18,...,23, at q^2 = e^{2 pi i/5} the Phi_5-exponents of the summands are 0, 4, 4, 4, 1, 0: T_18 != 0, T_19 = ... = T_22 = 0, T_23 != 0. Then Pi_T(R_18) = 0 triggers the break and the algorithm returns only T_18, dropping T_23. Deleting the break does not repair it, because the running product stays 0 and the later ratio R_22 has a pole (0*infinity). The same failure occurs for generic series of Eq. eq:generic_q_series, e.g. sum_{z=1}^{h+1} (-1)^z [z]!/[z-1]! at q^2 = e^{2 pi i/h}.",
+      "failure_location": {
+        "quote": "\\If{$v = 0$}",
+        "tag": "alg:projection"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Make the accumulation survive zero/pole transitions (evaluate a summand directly from its exponent vector whenever the running product becomes 0 or infinite, or rebuild the product after a zero) and delete or condition the break (stop only when all remaining update ratios have non-negative Phi_h-exponent); qualify the evaluation-complexity statement for the affected terms.",
+      "overall_effect": "Algorithm alg:projection returns truncated or NaN results on legitimate inputs at roots of unity (including quantum 6j-symbols), so its output contract fails; the advertised early-termination optimisation is unsound and the straightforward repair (per-summand evaluation from exponent vectors) is not covered by the stated evaluation bound.",
+      "primary_affected_tag": "alg:projection",
+      "target_type": "algorithm",
+      "title": "DCR projection fails when a summand vanishes but later summands do not",
+      "why_classification": "Correctness requires a contained but non-routine change to the projection scheme and forces withdrawal of the early-termination optimisation (or a qualified bound); the DCR representation and the main construction complexity claims survive, so the loss is limited."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Pi_q(\\mathcal{M}) = 0 \\q \\Longleftrightarrow \\q e_h > 0.",
+          "tag": "prop:admissibility"
+        },
+        {
+          "quote": "Terms violating admissibility are annihilated under projection",
+          "tag": null
+        },
+        {
+          "quote": "determine summation bounds from admissibility conditions",
+          "tag": "alg:compilation"
+        },
+        {
+          "quote": "while a negative exponent produces a pole",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Proposition prop:admissibility only states when a single monomial vanishes at q = e^{i pi/h}; its criterion e_h > 0 depends on the summation index through the exponent vector and is not the spin-admissibility conditions (triangle inequalities and level bounds) defining admissible colourings. Vanishing modes occur in fully admissible configurations: for spins j_i = 1 at level k = 3 the z = 4 summand has e_5 = 1 and vanishes although the configuration is admissible, so cyclotomic vanishing is not equivalent to inadmissibility and 'terms violating admissibility' misdescribes the criterion. Nor is non-admissibility always 'annihilation': the same criterion produces poles for negative exponents. Finally the DCR construction itself still imposes admissibility externally (Algorithm alg:compilation determines the summation bounds 'from admissibility conditions'), contradicting the claim that admissibility is not imposed 'at the level of summation indices'.",
+      "failure_location": {
+        "quote": "This identifies admissibility as a vanishing condition internal to the representation, rather than an externally imposed constraint.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restate the structural claim: the DCR detects vanishing and poles at roots of unity through cyclotomic support, while admissibility of colourings and of the summation range is still imposed externally; withdraw the claimed identification of admissibility with cyclotomic vanishing.",
+      "overall_effect": "Main contribution (5) and the abstract's claim that admissibility at roots of unity is an intrinsic property of the DCR object are unsupported and false as an equivalence; only the (correct but weaker) statement that vanishing/poles at roots of unity are detected by the Phi_h-exponent is established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Admissibility is claimed to be characterised by cyclotomic vanishing",
+      "why_classification": "One of the five advertised main contributions must be weakened to a materially different (though recognizably comparable) statement; no formal result needs a new proof, so the loss is limited rather than serious."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the combinatorial compilation cost is bounded by the number of unique spin configurations",
+          "tag": null
+        },
+        {
+          "quote": "isolating the exponential cost inherent in topological state sums",
+          "tag": null
+        },
+        {
+          "quote": "This separation of structure and evaluation renders large-scale topological state sums computationally tractable.",
+          "tag": null
+        },
+        {
+          "quote": "\\sum_{ \\{j\\} }\\prod_{\\tau \\in \\Delta_3(\\mathcal{M})}",
+          "tag": "eq:TV"
+        }
+      ],
+      "failure_explanation": "The macroscopic analysis bounds only the compilation cost of the local amplitudes (once per distinct spin configuration); the cost of the state sum itself is the sum over all admissible spin colourings in Eq. eq:TV, which is exponential in the number of tetrahedra and is not reduced or analysed anywhere in the paper. The paper itself acknowledges this exponential cost, so the conclusion that the separation 'renders large-scale topological state sums computationally tractable' claims far more than the formal content establishes.",
+      "failure_location": {
+        "quote": "By severing the compilation of the local geometric weights from the global topological summation, the DCR renders such large-scale computations tractable.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Weaken the claim to what is shown (the DCR amortises and cheapens the per-amplitude algebraic work, leaving the intrinsic exponential colouring sum unchanged) and remove the tractability assertion from the section and the conclusion.",
+      "overall_effect": "The advertised macroscopic guarantee (tractability of large-scale state sums / spin-foam observables) is unsupported; only amortisation of the per-amplitude compilation and projection cost is established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Macroscopic claim of tractable topological state sums is unsupported",
+      "why_classification": "The repair is a limited weakening of the advertised scope that leaves the per-amplitude complexity, stability and amortisation results recognizably intact; no new algorithm or proof architecture is supplied by the source to support the stronger claim."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2604.13196",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f27f4d9edd84cc6caa93d0bb9705e7cb9c415e35fb2a71b7e9470c22f26222de",
+  "status": "ok"
+}

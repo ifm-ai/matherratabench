@@ -1,0 +1,162 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:deformation_as_evaluation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{z = z_{\\min}}^{z_{\\max}} \\frac{(-1)^z [z+1]_q!}{\\prod_{i=1}^4 [z - a_i]_q! \\prod_{y=1}^3 [b_y - z]_q!}",
+          "tag": "eq:racah_6j"
+        },
+        {
+          "quote": "The summation limits $z_{\\min} = \\max_i(a_i)$ and $z_{\\max} = \\min_y(b_y)$ are governed by the linear combinations",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathcal{R}_z \\gets$ compute cyclotomic factorization of the ratio via Eq.~\\eqref{eq:ratio_Rz}",
+          "tag": "alg:compilation"
+        },
+        {
+          "quote": "$\\{\\mathcal{R}_z\\}$ is the sequence of multiplicative update ratios computed via Eq.~\\eqref{eq:ratio_Rz}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "From the paper's own summand, $T_{z+1}/T_z = -[z+2]_q\\,\\prod_y[b_y-z]_q / \\prod_i[z+1-a_i]_q$: since $[z+1-a_i]! = [z+1-a_i]\\cdot[z-a_i]!$, the factors $[z+1-a_i]_q$ belong in the ratio's denominator, and since $[b_y-z-1]! = [b_y-z]!/[b_y-z]$, the factors $[b_y-z]_q$ belong in its numerator. Eq. (ratio_Rz) swaps the two products and uses $[b_y-(z+1)]_q$ instead of $[b_y-z]_q$. Concrete checks: for $\\{1\\,1\\,1;1\\,1\\,1\\}$ ($a_i=3$, $b_y=4$), $T_4/T_3 = -[5]_q$, while Eq. (ratio_Rz) gives $-[5]_q[1]_q^4/[0]_q^3$, a division by $[0]_q=0$; for $\\{2\\,2\\,2;2\\,2\\,2\\}$, $T_7/T_6 = -[8]_q[2]_q^3$, not $-[8]_q$. Moreover, because $z_{\\max}=\\min_y b_y$, the denominator of Eq. (ratio_Rz) always contains $[b_y-(z_{\\max})]_q=[0]_q=0$ at $z=z_{\\max}-1$, so the final update ratio is always singular. Hence the DCR built 'via Eq. (ratio_Rz)' (DCR definition, Algorithm 1, Algorithm 2) does not encode the series it claims to represent.",
+      "failure_location": {
+        "quote": "\\mathcal{R}_z = - \\frac{[z+2]_q \\prod_{i=1}^4 [z+1-a_i]_q}{\\prod_{y=1}^3 [b_y-(z+1)]_q}",
+        "tag": "eq:ratio_Rz"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the right-hand side of Eq. (ratio_Rz) by the correct ratio $-[z+2]_q\\prod_y[b_y-z]_q/\\prod_i[z+1-a_i]_q$, a routine derivation from Eq. (racah_6j); all downstream constructions and algorithms then work unchanged.",
+      "overall_effect": "The recurrence of Sec. 3.3, the DCR definition, Algorithm alg:compilation and Algorithm alg:projection as written produce wrong summand values and a guaranteed division by zero at the last update step, so the compiled object does not represent the series; Prop. deformation_as_evaluation consequently fails for 6j-type series.",
+      "primary_affected_tag": "eq:ratio_Rz",
+      "target_type": "other",
+      "title": "Hypergeometric update ratio Eq. (ratio_Rz) is incorrect (products swapped, b-index off by one) and always singular at the last step",
+      "why_classification": "The repair is a short, local, forced algebraic correction (rederivable directly from Eq. racah_6j in the source) that preserves every substantive claim, guarantee, rate and scope; no new lemma, construction or replacement argument is needed. It is not a pure typo because the construction depends on the erroneous formula and the correction must be rederived, but its repair burden and mathematical loss are nil."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{|\\widehat{S} - S|}{|S|} = \\mathcal{O}\\!\\left(\\kappa \\,  Z \\,\\epsilon\\right) + \\mathcal{O}\\!\\left(\\kappa \\, \\gamma_{\\text{rep}} \\, \\epsilon\\right)",
+          "tag": "eq:forwd_error"
+        },
+        {
+          "quote": "The intrinsic sensitivity of the problem is governed by the condition number (Eq.~\\eqref{eq:condition_num}), which is independent of representation.",
+          "tag": null
+        },
+        {
+          "quote": "While both engines ultimately utilize LSE to safely accumulate the final alternating sum, the DCR engine pre-conditions the calculation.",
+          "tag": null
+        },
+        {
+          "quote": "The residual error at large $j$ is governed by the intrinsic condition number $\\kappa$, confirming that the DCR has exhausted the representation-level improvement.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The condition number $\\kappa = \\sum_z|T_z|/|S|$ (Eq. condition_num) measures cancellation between the final summands and the sum. The DCR still evaluates the alternating sum $\\sum_z(-1)^zT_z$ of the reduced summands numerically (Algorithm alg:projection; the paper itself states both engines use LSE to accumulate the final alternating sum), and the paper's own analysis keeps the intrinsic $\\mathcal{O}(\\kappa Z\\epsilon)$ error term, states that $\\kappa$ is representation-independent, and reports that the DCR's residual error at large $j$ is governed by $\\kappa$ (the DCR already has ~433% relative error at $j=110$, $k=500$, in Table tab:phase_flip). Only the intra-summand numerator/denominator cancellations ($\\gamma_{\\text{rep}}$) are resolved at the exponent level; the $\\kappa$-cancellation between summands is not resolved algebraically.",
+      "failure_location": {
+        "quote": "In particular, the large intermediate cancellations to resolve the condition number $\\kappa$ in Section~\\ref{subsec:cancellation} are no longer realized numerically, but are instead resolved exactly at the algebraic level.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Reword the claim to the mechanism established elsewhere in the paper: exact resolution of intra-summand cancellations (dynamic-range/$\\gamma_{\\text{rep}}$ compression), with the intrinsic $\\kappa$-limited summation error remaining.",
+      "overall_effect": "The mechanistic justification of the 'algebraic preconditioner' claim misstates what the framework achieves; a reader is led to believe the DCR escapes the intrinsic condition number, contradicting the paper's own error analysis (Sec. 6.2) and empirical results (Sec. 7.2).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that condition-number (kappa) cancellations are 'resolved exactly at the algebraic level'",
+      "why_classification": "A local rewording, consistent with the paper's own Eq. (forwd_error), complexity analysis and benchmark data, preserves all results and guarantees; no mathematical content is lost since the correct mechanism is already established in the source."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Pi_{\\mathbb{T}}(\\mathcal{M}) = \\sigma\\, \\Pi_{\\mathbb{T}}(q)^P \\prod_{d \\ge 2} \\Pi_{\\mathbb{T}}(\\Phi_d(q^2))^{e_d}",
+          "tag": "eq:project_monomial"
+        },
+        {
+          "quote": "\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})} \\cdot \\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm root}) \\cdot S_{\\rm sum}",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "Both components have integer exponents and are evaluated exactly by integer arithmetic.",
+          "tag": "eq:sqrt_decomp"
+        },
+        {
+          "quote": "The entire square root is resolved at the exponent level, without field extension and without any polynomial computation.",
+          "tag": "eq:sqrt_decomp"
+        }
+      ],
+      "failure_explanation": "The evaluation map is defined (Eq. project_monomial) only on cyclotomic monomials, but $\\mathcal{S}_{\\mathrm{DCR}}$ is a tuple containing the square-free part $\\mathcal{M}_{\\rm rad}$, whose evaluation requires $\\sqrt{\\Pi_q(\\mathcal{M}_{\\rm rad})}$ (the return statement of Algorithm alg:projection) — an operation outside the stated definition with two possible values. No branch/sign convention is given, although the sign of the amplitude (e.g. of the 6j prefactor $\\prod\\Delta_{abc}$, a square root of a factorial ratio) depends on it, so the claimed equality is not well defined and the proof ('Since $\\Pi_q$ is multiplicative, the result follows') does not establish it. The supporting claims are also false as written: the square root is not 'evaluated exactly by integer arithmetic', and it is not resolved 'without field extension': by the paper's own formulas the classical 6j $\\{1\\,1\\,2;1\\,2\\,1\\}$ equals $-1/(2\\sqrt{5})$, so exact evaluation requires $\\sqrt{5}\\notin\\mathbb{Q}$, and membership of the needed square root in the exact target $\\mathbb{Q}(\\zeta_{2h})$ is never established. 'Any admissible value of $q$' is moreover undefined (admissibility is defined for spins, not for $q$).",
+      "failure_location": {
+        "quote": "Then for any admissible value of $q$, $S(q) = \\Pi_q(\\mathcal{S}_{\\mathrm{DCR}})$, where $\\Pi_q$ denotes the evaluation map defined in Eq.~\\eqref{eq:project_monomial}.",
+        "tag": "prop:deformation_as_evaluation"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Define the square-root semantics of the projection: fix a branch/sign convention (e.g. the standard sign convention for the $\\Delta_{abc}$ prefactors, or continuity from real $q\\in(0,1)$), add the corresponding sign handling to Algorithm alg:projection, prove the convention reproduces $S(q)$, and qualify the exact-evaluation claims (the square root may require a quadratic extension or a symbolic square-root representation, as the classical limit already shows).",
+      "overall_effect": "The central exactness claim — evaluation equals a projection of a fixed combinatorial object — is ill-defined as stated; the exact projection regime ($\\mathbb{Q}(\\zeta_{2h})$) and the classical-limit regime inherit unproven field-membership assumptions, and the sign of projected amplitudes is undetermined by the specification.",
+      "primary_affected_tag": "prop:deformation_as_evaluation",
+      "target_type": "formal_result",
+      "title": "Projection of the DCR is undefined on its square-root part: branch/sign unspecified and 'no field extension'/'integer arithmetic' claims false",
+      "why_classification": "A supported resolution avoiding new global architecture exists (branch/sign convention plus qualification of the 'integer arithmetic'/'no field extension' claims), but it requires a contained nontrivial argument (correctness of the sign convention) and a limited weakening of the advertised exact-evaluation capabilities."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Pi_q(\\mathcal{M}) = 0 \\q \\Longleftrightarrow \\q e_h > 0",
+          "tag": "prop:admissibility"
+        },
+        {
+          "quote": "\\Delta_{abc} = \\sqrt{ \\frac{[a+b-c]_q! [a-b+c]_q! [-a+b+c]_q!}{[a+b+c+1]_q!} }",
+          "tag": "eq:tri_coeff"
+        },
+        {
+          "quote": "$z_{\\min}, z_{\\max} \\gets$ determine summation bounds from admissibility conditions",
+          "tag": "alg:compilation"
+        },
+        {
+          "quote": "while a negative exponent produces a pole",
+          "tag": null
+        },
+        {
+          "quote": "In particular, all topological levels $k$ and the classical limit $q \\to 1$ arise from the same data $\\mathcal{S}_{\\mathrm{DCR}}$ via different projection maps.",
+          "tag": null
+        },
+        {
+          "quote": "We demonstrate that admissibility at roots of unity, $q$-deformation, and classical limits manifest as intrinsic properties of a single DCR combinatorial object.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Prop. admissibility establishes only a monomial-level criterion (vanishing iff the $\\Phi_h$-exponent is positive). The prose claims admissibility itself is internalized: violating terms are 'annihilated under projection' and admissibility becomes 'a vanishing condition internal to the representation, rather than an externally imposed constraint'. For the actual level-$k$ admissibility of the 6j (triad sums $\\le k = h-2$), violations are not annihilated: by the paper's own formulas ($[m]_q=0$ iff $h\\mid m$, Prop. cyclo_fact; Eq. tri_coeff), a triad with $a+b+c\\ge h-1$ makes $[a+b+c+1]_q!$ vanish, so $\\Delta_{abc}$ has a pole, while the summand numerators $[z+1]_q!$ also vanish — the projection is $0/0$-indeterminate (e.g. spins $(3,3,0,3,3,3)$ at $h=5$ give a net pole), not zero. Admissibility is in fact imposed externally (Algorithm alg:compilation determines the summation bounds from admissibility conditions), and the claim that 'all topological levels $k$' arise from the same DCR fails for levels below the spin content, where the projection is singular.",
+      "failure_location": {
+        "quote": "Terms violating admissibility are annihilated under projection, and in practical implementations this can lead to early termination of summations.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Qualify the claims: cyclotomic vanishing captures the summation cutoff for admissible spins (where the projection is pole-free), while spin/level admissibility must still be imposed externally, and admissibility-violating projections are singular (poles or indeterminate) rather than annihilated; weaken contribution (5) and the abstract accordingly.",
+      "overall_effect": "The structural claim that admissibility at roots of unity is an intrinsic property of the DCR (abstract, contribution (5), Secs. 5.1–5.2) is unreliable, and the advertised scope ('all topological levels $k$' from one compiled object) overstates what the projection supports; the early-termination story covers only the admissible, pole-free case.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Admissibility at roots of unity is not internalized as cyclotomic vanishing: violating terms are singular (poles/0-0), not 'annihilated'",
+      "why_classification": "The repair is a limited weakening with local rewording and no new proof architecture, but a substantive advertised claim (admissibility as an intrinsic vanishing property of the DCR, one of the five listed contributions) must be withdrawn or heavily qualified, so it is more than minor."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2604.13196",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n03-reserve",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f27f4d9edd84cc6caa93d0bb9705e7cb9c415e35fb2a71b7e9470c22f26222de",
+  "status": "ok"
+}

@@ -1,0 +1,262 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:deformation_as_evaluation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{(-1)^z [z+1]_q!}{\\prod_{i=1}^4 [z - a_i]_q! \\prod_{y=1}^3 [b_y - z]_q!}",
+          "tag": "eq:racah_6j"
+        },
+        {
+          "quote": "{\\prod_{y=1}^3 [b_y-(z+1)]_q}",
+          "tag": "eq:ratio_Rz"
+        },
+        {
+          "quote": "compute cyclotomic factorization of the ratio via Eq.~\\eqref{eq:ratio_Rz}",
+          "tag": "alg:compilation"
+        }
+      ],
+      "failure_explanation": "From Eq. racah_6j, T_{z+1}/T_z = -[z+2] prod_y [b_y-z] / prod_i [z+1-a_i]. The stated R_z instead puts prod_i [z+1-a_i] in the numerator and prod_y [b_y-z-1] in the denominator. It does not satisfy M_{z+1}=M_z R_z. At z=z_max-1 it contains [b_{y*}-z_max]_q=[0]_q=0 in the denominator, which is undefined and outside Proposition prop:cyclo_fact (n>=1).",
+      "failure_location": {
+        "quote": "- \\frac{[z+2]_q \\prod_{i=1}^4 [z+1-a_i]_q}",
+        "tag": "eq:ratio_Rz"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace Eq. ratio_Rz with the correct ratio -[z+2]_q prod_y [b_y-z]_q / prod_i [z+1-a_i]_q derived from Eq. racah_6j.",
+      "overall_effect": "The DCR defined and compiled via Eq. ratio_Rz (Algorithm alg:compilation) does not reproduce the 6j summands, and its last ratio is ill-defined.",
+      "primary_affected_tag": "eq:ratio_Rz",
+      "target_type": "algorithm",
+      "title": "Update ratio for the 6j summand is incorrect and singular at the last step",
+      "why_classification": "A local formula correction derivable from the source restores the construction; no claim or rate is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The intrinsic sensitivity of the problem is governed by the condition number (Eq.~\\eqref{eq:condition_num}), which is independent of representation.",
+          "tag": null
+        },
+        {
+          "quote": "\\mathcal{O}\\!\\left(\\kappa \\, \\gamma_{\\text{rep}} \\, \\epsilon\\right)",
+          "tag": "eq:forwd_error"
+        },
+        {
+          "quote": "500 & 2000 & 72.70 & 9518.5 & 1079.8 & 8438.8 \\\\",
+          "tag": null
+        },
+        {
+          "quote": "substantially extends the range of reliable double-precision computation by reducing cancellation-induced error amplification",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The DCR performs only multiplicative cancellation inside each summand. kappa measures additive cancellation between summands of the alternating sum, whose values are unchanged by the representation; the paper itself calls kappa representation-independent and keeps it in both error terms. Moreover, gamma enters Eq. forwd_error only linearly. Reducing gamma from 9518.5 to 1079.8 (with Z~500) changes the bound by about a factor of 6. That is roughly one digit, not thousands of decades. Since log10 kappa grows by about 0.146 per unit of j, this extends the reliable range by only a few spin units.",
+      "failure_location": {
+        "quote": "In particular, the large intermediate cancellations to resolve the condition number $\\kappa$ in Section~\\ref{subsec:cancellation} are no longer realized numerically, but are instead resolved exactly at the algebraic level.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Withdraw the claim that kappa-cancellations are resolved algebraically. Restate the benefit as a bounded reduction of per-term evaluation error, with kappa-driven loss unchanged.",
+      "overall_effect": "The stability contribution (4), the 'algebraic preconditioner' explanation, and the abstract claim of a substantial extension of double precision are unsupported. Only a bounded constant-factor gain follows.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "DCR claimed to resolve kappa-driven cancellation and substantially extend double precision",
+      "why_classification": "An advertised contribution must be materially weakened, but a comparable modest-improvement statement survives without new proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:deformation_as_evaluation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\prod_i [A_i(z)]_q!}{\\prod_j [B_j(z)]_q!}",
+          "tag": "eq:generic_q_series"
+        },
+        {
+          "quote": "$R \\gets R \\cdot v$",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "Any cyclotomic monomial containing a factor $\\Phi_h(q^2)$ with positive exponent vanishes identically, while a negative exponent produces a pole.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Algorithm alg:projection multiplies projected ratios and stops at the first zero ratio. That is valid only if the accumulated Phi_h exponent never decreases. For a series of the form eq:generic_q_series with T_z=[2z]_q!/([z]_q!)^2, the accumulated exponent is floor(2z/h)-2floor(z/h). It is 1 for z mod h >= h/2 and returns to 0 afterwards. Later nonzero terms are therefore dropped. Moreover, the ratio restoring them carries Phi_h^{-1}, a pole, so ratio-wise projection cannot evaluate them.",
+      "failure_location": {
+        "quote": "\\Comment{early termination at vanishing factor}",
+        "tag": "alg:projection"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Track the accumulated integer exponent of Phi_h separately. Project ratios with Phi_h removed, skip terms with positive accumulated exponent, and flag poles instead of breaking.",
+      "overall_effect": "The universal projection returns wrong values at roots of unity for general q-hypergeometric series. Admissible 6j sums, whose accumulated Phi_h exponent is monotone, are unaffected.",
+      "primary_affected_tag": "alg:projection",
+      "target_type": "algorithm",
+      "title": "Early termination and ratio-wise projection fail at roots of unity for general series",
+      "why_classification": "A routine local change to the loop restores correctness, and the 6j results and benchmarks are preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:deformation_as_evaluation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Evaluated amplitude $S \\in \\mathbb{T}$",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "The entire square root is resolved at the exponent level, without field extension and without any polynomial computation.",
+          "tag": null
+        },
+        {
+          "quote": "For symbolic evaluation, one may take $\\mathbb{T} = \\Q(\\zeta_{2h})$, the cyclotomic number field generated by a primitive root $\\zeta_{2h}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The square-free part M_rad still requires a square root at projection. Take Delta_{0,1/2,1/2}=[2]_q^{-1/2} from Eq. tri_coeff at h=5. Here [2]_q=2cos(pi/5) has the negative Galois conjugate 2cos(3pi/5), so it is not a square in the real subfield. Its real square root therefore does not lie in Q(zeta_10). The output thus generally lies outside T, contradicting both 'S in T' and 'without field extension'. Also, Pi(M_rad) is a complex value built from complex Phi_d(q^2). A principal square root fixes the sign of the product only up to +/-, so the sign of the real positive Delta is not determined.",
+      "failure_location": {
+        "quote": "$\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})} \\cdot \\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm root}) \\cdot S_{\\rm sum}$",
+        "tag": "alg:projection"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Return the result as an element of T together with a formal square-free radicand (or work in T(sqrt r)). Fix the branch using positivity of the quantum factorials for n<h, and withdraw the 'no field extension' claim.",
+      "overall_effect": "Exact projection into Q(zeta_2h) is ill-defined for typical 6j symbols. Floating-point projection may return the amplitude with the wrong sign.",
+      "primary_affected_tag": "alg:projection",
+      "target_type": "algorithm",
+      "title": "Square-root prefactor is not in the target field and its branch is undetermined",
+      "why_classification": "A contained change of output format and a branch rule repair it, but an advertised exactness claim is withdrawn."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{[a+b-c]_q! [a-b+c]_q! [-a+b+c]_q!}{[a+b+c+1]_q!}",
+          "tag": "eq:tri_coeff"
+        },
+        {
+          "quote": "Any cyclotomic monomial containing a factor $\\Phi_h(q^2)$ with positive exponent vanishes identically, while a negative exponent produces a pole.",
+          "tag": null
+        },
+        {
+          "quote": "This identifies admissibility as a vanishing condition internal to the representation, rather than an externally imposed constraint.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Proposition prop:admissibility only states when a monomial vanishes. Consider a triangle violating the level bound with a+b+c=k+1=h-1. Its denominator [h]_q! contributes Phi_h with exponent 1, while the numerator factorials have arguments below h. The radicand therefore has e_h=-1, which by the paper's own rule is a pole, not zero. Inadmissibility is thus not detected as cyclotomic vanishing and must be imposed externally.",
+      "failure_location": {
+        "quote": "Terms violating admissibility are annihilated under projection, and in practical implementations this can lead to early termination of summations.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the claim to vanishing of summands with e_h>0. State that level-admissibility must be imposed externally, since violations produce poles.",
+      "overall_effect": "The structural-unification claim (contribution 5, abstract, conclusion) that admissibility emerges intrinsically as cyclotomic vanishing is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Admissibility violations produce poles, not annihilation",
+      "why_classification": "An advertised structural contribution must be withdrawn or weakened, though the formal proposition survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "This produces a dense table in $\\mathcal{O}(D \\log D)$ time, eliminating repeated factorization or symbolic expansion.",
+          "tag": null
+        },
+        {
+          "quote": "Precompute $\\Pi_{\\mathbb{T}}(\\Phi_d(q^2))$ for all required $d$",
+          "tag": "alg:projection"
+        }
+      ],
+      "failure_explanation": "No proof is given. The precomputation step uses the Mobius recursion over all divisors, costing sum_n tau(n)=Theta(D log D) field operations, as the paper itself states. The bound's D_max C_T term is therefore unsupported.",
+      "failure_location": {
+        "quote": "\\mathcal{O}\\!\\left( D_{\\max} \\cdot C_{\\mathbb{T}} + Z \\cdot K \\cdot S_{\\max} \\cdot C_{\\mathbb{T}} \\right)",
+        "tag": "prop:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace D_max by D_max log D_max in the bound, or justify a linear-time table construction.",
+      "overall_effect": "The stated evaluation bound is low by a logarithmic factor in the precomputation term.",
+      "primary_affected_tag": "prop:added-1",
+      "target_type": "formal_result",
+      "title": "Evaluation complexity omits the D log D cost of the cyclotomic table",
+      "why_classification": "Only a log factor changes, and the near-linear claim survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Interestingly, the DCR architecture removes repeated algebraic recomputation, isolating the exponential cost inherent in topological state sums.",
+          "tag": null
+        },
+        {
+          "quote": "which requires a coherent summation over all admissible spin colorings $\\{j\\}$",
+          "tag": null
+        },
+        {
+          "quote": "This separation of structure and evaluation renders large-scale topological state sums computationally tractable.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Eq. TV sums over all admissible colorings, whose number grows exponentially in the number of edges. The DCR only reduces the cost of each local 6j weight, which can also be amortized by caching distinct weights. The paper itself says the exponential cost remains, so no tractability of the global sum follows.",
+      "failure_location": {
+        "quote": "By severing the compilation of the local geometric weights from the global topological summation, the DCR renders such large-scale computations tractable.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Restrict the claim to amortized per-weight cost reduction, stating that the exponential coloring sum is unaffected.",
+      "overall_effect": "The macroscopic tractability claim in Section subsec:state_sums and the conclusion is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that DCR renders large-scale state sums tractable",
+      "why_classification": "An advertised application claim must be withdrawn, but no formal result depends on it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$0.1622$ & $0.2195$",
+          "tag": null
+        },
+        {
+          "quote": "$1.6052$ & $2.6260$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At 256 bits, DCR projection is slower than eager LSE at every spin. The ratio of DCR to eager time rises from 1.35 (j=50) to 1.64 (j=500), so projection cost grows faster, not more slowly. The Float64 ratio rises from about 1.2 to 3.0.",
+      "failure_location": {
+        "quote": "In this regime, the amortized advantages of the deferred representation become increasingly significant, as the cost of projection grows more slowly than direct high-precision summation.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Delete or correct the sentence, limiting the amortization claim to skipping the build stage.",
+      "overall_effect": "The stated growing amortized advantage in the high-precision regime is contradicted by the paper's own data.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that projection cost grows more slowly than eager high-precision summation contradicts the latency table",
+      "why_classification": "A local prose correction suffices, and no formal claim depends on it."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2604.13196",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f27f4d9edd84cc6caa93d0bb9705e7cb9c415e35fb2a71b7e9470c22f26222de",
+  "status": "ok"
+}

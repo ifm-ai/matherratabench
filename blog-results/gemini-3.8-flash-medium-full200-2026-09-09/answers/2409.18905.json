@@ -1,0 +1,132 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sigma_{\\min}([B , (x+y)\\gamma]) \\geq \\sqrt{\\sigma_{\\min}^2(B)\n\t\t+\n\t\t\\frac{\\gamma^2 \\|x+y\\|_2^2 - \\sqrt{\\gamma^4 \\|x+y\\|_2^4 + 4\\gamma^2 \\|B^Ty\\|_2^2}}{2}}",
+          "tag": "thm:cool"
+        }
+      ],
+      "failure_explanation": "In the proof of Theorem 3.2, the author splits $[B, (x+y)\\gamma]^T [B, (x+y)\\gamma]$ into a sum where the first block matrix has 1 in its $(n+1, n+1)$ entry and the second has $\\gamma^2 \\|x+y\\|_2^2$, meaning their sum has $1 + \\gamma^2 \\|x+y\\|_2^2$ rather than $\\gamma^2 \\|x+y\\|_2^2$. Moreover, the proof claims $\\lambda_{\\min}(\\begin{bmatrix} B^TB & 0 \\\\ 0 & 1 \\end{bmatrix}) \\geq \\sigma_{\\min}^2(B)$, which is false in general. When $y = 0$, the formula claims $\\sigma_{\\min}([B, \\gamma x]) \\geq \\sigma_{\\min}(B)$ regardless of how small $\\gamma \\|x\\|_2$ is. For a counterexample, take $B = [1; 0]$, $x = [0; 1]$, $y = 0$, $\\gamma = 0.01$: then $\\kappa([B, b]) = 100$, but item 1 asserts $\\kappa([B, b]) \\leq \\sqrt{1.0001} \\approx 1.00005$. Both items 1 and 2 fail.",
+      "failure_location": {
+        "quote": "\\kappa([B,b]) \\leq \\sqrt{\\frac{2\\sigma_{\\max}^2(B)\n\t\t\t\t+\n\t\t\t\t\\gamma^2 \\|x+y\\|_2^2 + \\sqrt{\\gamma^4 \\|x+y\\|_2^4 + 4\\gamma^2 \\|B^Ty\\|_2^2}}{2\\sigma_{\\min}^2(B)\n\t\t\t\t+\n\t\t\t\t\\gamma^2 \\|x+y\\|_2^2 - \\sqrt{\\gamma^4 \\|x+y\\|_2^4 + 4\\gamma^2 \\|B^Ty\\|_2^2}}}",
+        "tag": "thm:cool"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must correctly apply interlacing inequalities or singular value perturbation bounds without artificially introducing identity entries or lower bounds that exceed the true minimum singular value.",
+      "overall_effect": "Both upper bounds in Theorem 3.2 on the condition number growth under column addition fail and can vastly underestimate the true condition number.",
+      "primary_affected_tag": "thm:cool",
+      "target_type": "formal_result",
+      "title": "Invalid matrix splitting and false lower bound on minimum singular value in Theorem 3.2",
+      "why_classification": "The core theorem of Section 3 is mathematically false with counterexamples off by multiple orders of magnitude, requiring fundamentally new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [],
+      "failure_explanation": "Corollary 5.3 claims that under the assumptions of Theorem 5.1 (where $X \\in \\mathrm{span}(Q^\\perp)$ is arbitrary), the probability $\\mathbb{P}(\\|X + P_Q^\\perp(Y)\\|_2 > 1/10)$ is at least $0.9734$ when $m - n \\ge 100$ and $\\sigma = 2^{-8}$. However, if $X = 0$, $\\|P_Q^\\perp(Y)\\|_2^2 / \\sigma^2 \\sim \\chi^2(m-n)$. For $m-n = 100$ and $\\varepsilon = 0.1$, $(\\varepsilon/\\sigma)^2 = 25.6^2 = 655.36$. The probability that a $\\chi^2(100)$ random variable exceeds $655.36$ is approximately $10^{-84}$, not $\\geq 0.9734$. The statement lacks a necessary lower bound on $\\|X\\|_2$.",
+      "failure_location": {
+        "quote": "\\mathbb{P}(\\|X + P_{Q}^{\\perp}(Y)\\|_2 > 1/10) \\geq 0.9734.",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add an explicit lower-bound assumption on $\\|X\\|_2$ ensuring that the noncentrality parameter is large enough to support the numerical probability guarantee.",
+      "overall_effect": "Corollary 5.3 is false as stated for vectors $X$ with small or zero norm.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Corollary 5.3 omits required hypothesis on the norm of X",
+      "why_classification": "A standard assumption bounding $\\|X\\|_2$ from below restores the validity of the numerical claim without overhauling the broader theory."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $Z_1 \\sim \\chi^2_n$, $Z_2 \\sim \\chi'^2_{m-n}\\left(\\frac{\\|X\\|_2^2}{\\sigma^2}\\right)$, therefore, by Chapter 6, equation 40 of \\cite{patnaik1949non}, we have:\n\n\\[\n\\frac{Z_2 / (m-n)}{Z_1 / n} \\sim F'_{m-n, n}\\left(\\frac{\\|X\\|_2^2}{\\sigma^2}\\right)\n\\]",
+          "tag": "thm:noise-ls"
+        },
+        {
+          "quote": "1 - \\mathbb{P}\\left(\\frac{\\frac{Z_2}{m-n}}{\\frac{Z_1}{n}} < \\frac{\\frac{\\varepsilon_2}{m-n}}{\\frac{\\varepsilon_1}{n}}\\right) = F'_{m-n, n}\\left(\\frac{n\\varepsilon_2}{(m-n)\\varepsilon_1}; \\frac{\\|X\\|_2^2}{\\sigma^2}\\right)",
+          "tag": "thm:noise-ls"
+        }
+      ],
+      "failure_explanation": "In Theorem 6.1 (labelled thm:noise-ls), $Z_1 = \\|P_Q(Y)\\|_2$ and $Z_2 = \\|X + P_Q^\\perp(Y)\\|_2$ are Euclidean norms (chi/noncentral chi distributed), not sums of squares (chi-squared distributed). Consequently, their ratio (unsquared) is not distributed according to the noncentral $F$-distribution $F'_{m-n, n}$. Furthermore, in the final derivation step, the proof equates $1 - \\mathbb{P}(W < c)$ to $F'_{m-n, n}(c; \\lambda)$, erroneously equating the survival function $1 - F(c)$ with the cumulative distribution function $F(c)$.",
+      "failure_location": {
+        "quote": "\\mathbb{P}\\left(\\|r\\|_2 \\geq \\frac{1}{\\sqrt{1 + \\left(\\frac{\\varepsilon_1}{\\varepsilon_2}\\right)^2}}\\right) = F'_{m-n, n}\\left(\\frac{n\\varepsilon_2}{(m-n)\\varepsilon_1}; \\frac{\\|X\\|_2^2}{\\sigma^2}\\right)",
+        "tag": "thm:noise-ls"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must work with the squared norms $Z_1^2 / Z_2^2$, apply the true noncentral $F$ distribution to squared ratios, and retain the complementary probability $1 - F'_{m-n, n}(\\dots)$ instead of equating it to $F'$.",
+      "overall_effect": "The exact distribution and tail probability formula stated in Theorem 6.1 are mathematically incorrect.",
+      "primary_affected_tag": "thm:noise-ls",
+      "target_type": "formal_result",
+      "title": "Conflation of chi and chi-squared distributions and survival function error in Theorem 6.1",
+      "why_classification": "The core theorem on least squares under Gaussian noise is invalidated by multiple structural mathematical errors in the distribution and CDF algebra."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If columns of $B$ have norm 1, then $\\sigma_{\\max}(B) \\geq 1$ and $\\sigma_{\\min}(B) \\leq 1$.",
+          "tag": "lm:cond-ls"
+        },
+        {
+          "quote": "\\frac{\\max\\{\\sigma_{\\max}(B),1\\}\n}{\\min\\{\\sigma_{\\min}(B),1\\}}\n=\\frac{\\sigma_{\\max}(B)\n}{\\sigma_{\\min}(B)}\n=\\kappa(B).",
+          "tag": "lm:cond-ls"
+        }
+      ],
+      "failure_explanation": "In Theorem 7.2 (labelled lm:cond-ls), $\\|r\\|_2$ is defined as $\\min_z \\|c\\gamma - Bz\\|_2 = \\gamma \\|r_c\\|_2$, meaning it already contains the factor $\\gamma$. Substituting this into Liesen et al.'s formula creates an extra factor of $\\gamma^2$ ($4\\gamma^2 \\|r\\|_2^2 = 4\\gamma^4 \\|r_c\\|_2^2$). For general $\\gamma$, $\\alpha^2 - 4\\gamma^2 \\|r\\|_2^2$ becomes strictly negative: for example, with $B = [1; 0]$, $c = [0; 1]$, and $\\gamma = 2$, we have $\\alpha = 5$, $\\|r\\|_2 = 2$, and $\\alpha^2 - 4\\gamma^2 \\|r\\|_2^2 = 25 - 64 = -39 < 0$, making the bound non-real. Additionally, the proof evaluates $\\frac{\\max\\{\\sigma_{\\max}(B), \\gamma\\}}{\\min\\{\\sigma_{\\min}(B), \\gamma\\}}$ at $\\gamma = 1$ using Claim 7.2.1, but then claims the inequality holds for arbitrary $\\gamma$.",
+      "failure_location": {
+        "quote": "\\kappa([B,c\\gamma])\\leq \\kappa(B)\\frac{\\alpha+\\sqrt{(\\alpha^2 - 4 \\gamma^2 \\|r\\|_2^2)}}{2\\gamma \\|r\\|_2}.",
+        "tag": "lm:cond-ls"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must restrict to $\\gamma = 1$ (as in Corollary 7.3) or correctly account for the scaling of the residual vector and singular value bounds with respect to general $\\gamma$.",
+      "overall_effect": "Theorem 7.2 gives non-real upper bounds for real condition numbers when $\\gamma > 1$, and its proof is invalid for general $\\gamma$.",
+      "primary_affected_tag": "lm:cond-ls",
+      "target_type": "formal_result",
+      "title": "Scaling inconsistency and negative discriminant in Theorem 7.2",
+      "why_classification": "The primary theorem bounding condition number growth in Section 7 yields imaginary bounds for standard parameter values and relies on a broken deduction from Theorem 7.1."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\kappa(\\hat{Q}) \\leq \\prod_{i=2}^n \\left(\\varepsilon_{1,i}\\sqrt{1 + (\\frac{\\varepsilon_{1,i}}{\\varepsilon_{2,i}})^2}\\right)",
+          "tag": "cor:added-2"
+        }
+      ],
+      "failure_explanation": "In Corollary 7.4 (labelled cor-main), the vector $q$ appearing in $\\kappa([B, q])$ is never defined. Furthermore, the bound $\\kappa([B, q]) \\leq \\left(\\varepsilon_1 \\sqrt{1 + (\\varepsilon_1/\\varepsilon_2)^2}\\right) \\kappa(B)$ is impossible: as $\\varepsilon_1 \\to 0$, the right-hand side approaches 0, whereas the condition number of any matrix is at least 1. The proof purports to deduce this from Corollary 7.3 and Theorem 6.1, but introduces an erroneous factor of $\\varepsilon_1$. Downstream Corollary 7.5 (labelled cor:added-2) inherits this flawed bound directly.",
+      "failure_location": {
+        "quote": "\\kappa([B,q])\\leq \\left(\\varepsilon_1\\sqrt{1 + (\\frac{\\varepsilon_1}{\\varepsilon_2})^2}\\right)\\kappa(B)",
+        "tag": "cor-main"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must define $q = (X+Y)/\\|X+Y\\|_2$, invert the inequality on $\\|r\\|_2$ correctly without introducing extraneous vanishing factors of $\\varepsilon_1$, and resolve the distribution errors inherited from Theorem 6.1.",
+      "overall_effect": "Corollary 7.4 and its downstream application Corollary 7.5 (the main advertised result on QR factorization under noise) are mathematically invalid.",
+      "primary_affected_tag": "cor-main",
+      "target_type": "formal_result",
+      "title": "Undefined variable and mathematically impossible bound in Corollary 7.4",
+      "why_classification": "The main culminating results of the paper (Corollaries 7.4 and 7.5) state bounds that violate the elementary lower bound $\\kappa \\ge 1$, destroying the advertised stability guarantees."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2409.18905",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d0ea61e40ee287e00036dfe22953018a90764fc30df04152cb70b75c437082aa",
+  "status": "ok"
+}

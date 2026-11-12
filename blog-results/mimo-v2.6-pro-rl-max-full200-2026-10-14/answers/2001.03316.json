@@ -1,0 +1,178 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:nolocalminima"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We know that for any $p_i$, $\\sum_i p_i f_i(\\bs{w})$ is strongly convex in $\\bs{w}$ with parameter $\\lambda_{\\bs{w}}$. This implies",
+          "tag": "lemma:sc"
+        },
+        {
+          "quote": "$$\\nabla \\widetilde{F}(\\bs{w})^\\top (\\bs{w} - \\bs{w}^*)  \\geq \\lambda_{\\bs{w} } \\norm{\\bs{w} - \\bs{w}^*}^2$$",
+          "tag": "lemma:sc"
+        }
+      ],
+      "failure_explanation": "The definition of $\\widetilde{F}$ omits the loss terms $f_{m_i(\\mathbf{w})}$. The claim that $\\sum_i p_i f_i$ is strongly convex 'for any $p_i$' is false (it fails when some $p_i = 0$). The inference from strong convexity of the frozen-weight sum to the stated directional inequality requires the additional observation that the frozen-weight sum is minimized at $\\mathbf{w}^*$ (so its gradient vanishes there), which is not established. Despite these gaps, the lemma's conclusion is true.",
+      "failure_location": {
+        "quote": "$\\widetilde{F}(\\bs{w}) = \\sum_i p_{m_i(\\bs{w})}(\\bs{w})$.",
+        "tag": "lemma:sc"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the definition of $\\widetilde{F}$ to include $f_i$ terms. Replace 'for any $p_i$' with 'for any positive weights with $p_{\\min}>0$' and give the standard decomposition $\\sum p_i f_i = p_{\\min}\\sum f_i + \\sum(p_i - p_{\\min})f_i$ combined with Assumption 2 to establish strong convexity. Note that $\\nabla g(\\mathbf{w}^*)=0$ in the noiseless setting to derive the directional inequality.",
+      "overall_effect": "The proof of Lemma lemma:sc is incoherent as written. Theorem theorem:nolocalminima (unique stationary point) depends on this lemma and inherits the proof gap, though both results are correct after a local fix.",
+      "primary_affected_tag": "lemma:sc",
+      "target_type": "formal_result",
+      "title": "Proof of lemma sc has incorrect definition and unjustified strong convexity claim",
+      "why_classification": "The lemma is true and the corrected proof is short and local (fix definition, justify strong convexity with Assumption 2 and positive weights, note gradient vanishes at w*). All downstream claims survive unchanged."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$\\norm{ \\sum_{i\\in\\mathcal{O}} \\nabla f_i(\\wsgd)} = \\min\\left(\\epsilon n  G(\\wsgd), (1 - \\epsilon) n L \\norm{\\wsgd - \\ws}\\right)$$",
+          "tag": "lemma:sgdbound"
+        },
+        {
+          "quote": "\\norm{\\sum_{i\\notin\\mathbb{O}}   \\nabla f_i(\\wsgd)} &\\leq \\sum_i  \\norm{\\nabla f_i(\\wsgd)} \\notag \\\\ &\\leq \\sum_i  L \\norm{\\wsgd - \\ws}\\notag\\\\ &=(1 - \\epsilon) n L \\norm{\\wsgd - \\ws}",
+          "tag": "lemma:sgdbound"
+        }
+      ],
+      "failure_explanation": "The proof establishes only upper bounds on gradient norms ($\\|\\sum_{i\\notin\\mathbb{O}}\\nabla f_i\\| \\leq (1-\\epsilon)nL\\|\\bar{\\mathbf{w}}_{SGD}-\\mathbf{w}^*\\|$ and $\\|\\sum_{i\\in\\mathbb{O}}\\nabla f_i\\| \\leq \\epsilon nG$) but the lemma claims a lower bound on $\\|\\bar{\\mathbf{w}}_{SGD}-\\mathbf{w}^*\\|$. The final line incorrectly states equality with the min of two upper bounds. A counterexample exists: if outlier gradients at $\\mathbf{w}^*$ sum to zero, then $\\bar{\\mathbf{w}}_{SGD} = \\mathbf{w}^*$ and the claimed inequality becomes $\\epsilon G \\leq 0$, which is false for any $\\epsilon > 0$ and $G > 0$. The proof also writes $\\nabla\\widetilde{F}$ instead of $\\nabla F$ at the start and has a missing factor of $n$ in $\\sum_{i\\in\\mathbb{O}}G \\leq \\epsilon G$.",
+      "failure_location": {
+        "quote": "$\\epsilon G \\leq (1 - \\epsilon)  L \\norm{\\wsgd - \\ws} $",
+        "tag": "lemma:sgdbound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must add a hypothesis preventing outlier gradient cancellation at $\\mathbf{w}^*$ (e.g. $\\|\\sum_{i\\in\\mathbb{O}}\\nabla f_i(\\mathbf{w}^*)\\| \\geq c > 0$) and derive a valid lower bound on $\\|\\bar{\\mathbf{w}}_{SGD}-\\mathbf{w}^*\\|$, possibly in a different form than $\\epsilon G \\leq (1-\\epsilon)L\\|\\bar{\\mathbf{w}}_{SGD}-\\mathbf{w}^*\\|$.",
+      "overall_effect": "Lemma lemma:sgdbound is false under assumptions 1-3. Theorem theorem:relativebounds (MKL strictly better than SGD) chains through this lemma and cannot be established. The main comparison guarantee of the paper in the general outlier setting is unreliable.",
+      "primary_affected_tag": "lemma:sgdbound",
+      "target_type": "formal_result",
+      "title": "Lemma sgdbound states a false lower bound on SGD distance",
+      "why_classification": "The lemma is false with an explicit counterexample under the stated assumptions. The proof only gives upper bounds and cannot yield the claimed lower bound. The main comparison theorem (theorem:relativebounds) depends on this lemma and cannot be recovered without new hypotheses or a different argument."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\wsm$ be any first order stationary point attained by \\mkl.",
+          "tag": "lemma:m2lboundstrongconvexity"
+        },
+        {
+          "quote": "m \\norm{ \\wsm - \\ws} &\\leq \\sum_{i\\in\\mathbb{O}}p_i(\\wsm) \\norm{ \\wsm - \\ws} G(\\wsgd) \\notag \\\\",
+          "tag": "lemma:m2lboundstrongconvexity"
+        }
+      ],
+      "failure_explanation": "The proof step $\\sum_{i\\in\\mathbb{O}}p_i(\\bar{\\mathbf{w}}_{MKL}) \\leq \\epsilon^k$ (probability of picking an outlier at most $\\epsilon^k$) is only valid inside $\\mathcal{B}_r(\\mathbf{w}^*)$ where all good samples have lower loss than all outliers. For stationary points outside this ball (e.g. near an outlier's optimum where the outlier has zero loss and good samples have positive loss), the probability of picking an outlier can approach 1, far exceeding $\\epsilon^k$. A two-sample scalar squared-loss example yields a stationary point near the outlier's optimum that does not converge to $\\mathbf{w}^*$ as $k$ increases, contradicting the lemma's claim for 'any first order stationary point.' The stated bound also uses $\\lambda = \\min_\\mathbf{w}\\lambda_\\mathbf{w}$ from equation lambdasc, which depends on $k$ through the MKL weights (as $\\lambda \\gtrsim \\mu_{total}/n^k$ in the worst case), making the bound $\\epsilon^k G/\\lambda$ potentially vacuous rather than improving with $k$.",
+      "failure_location": {
+        "quote": "m \\norm{ \\wsm - \\ws} &\\leq \\epsilon^k G(\\wsgd) ",
+        "tag": "lemma:m2lboundstrongconvexity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict the lemma statement to stationary points $\\bar{\\mathbf{w}}_{MKL} \\in \\mathcal{B}_r(\\mathbf{w}^*)$ (where $\\hat{p} \\leq \\epsilon^k$ is justified) and use the proof's actual strong convexity parameter $m(\\bar{\\mathbf{w}}_{MKL})$ (for the good-sample weighted sum at $\\bar{\\mathbf{w}}_{MKL}$) instead of $\\lambda = \\min_\\mathbf{w}\\lambda_\\mathbf{w}$ in the bound to obtain a quantity that properly improves with $k$.",
+      "overall_effect": "The claimed bound on MKL stationary point distance fails for stationary points outside $\\mathcal{B}_r(\\mathbf{w}^*)$. Theorem theorem:relativebounds restricts to $\\bar{\\mathbf{w}}_{MKL} \\in \\mathcal{B}_r(\\mathbf{w}^*)$ so the restricted version suffices for its proof, but the lemma's statement as written overclaims. The misleading use of $\\lambda$ (which depends on $k$) also undermines the interpretation that the bound improves with larger $k$.",
+      "primary_affected_tag": "lemma:m2lboundstrongconvexity",
+      "target_type": "formal_result",
+      "title": "Lemma m2lboundstrongconvexity is false for arbitrary stationary points",
+      "why_classification": "Restricting the scope to stationary points in $\\mathcal{B}_r(\\mathbf{w}^*)$ and using $m$ instead of $\\lambda$ preserves the main application in theorem:relativebounds. This is a limited weakening and a contained reoptimization of the bound, not a new proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We restate the theorem here and show that the theorem still holds for the non-convex landscape obtained by \\mkl~in noiseless setting.",
+          "tag": null
+        },
+        {
+          "quote": "Let $F(\\w) = \\mathbb{E}[f_i(\\bs{\\w})]$ be $\\lambda$-strongly convex. Set $\\sigma^2= \\mathbb{E}[\\|\\nabla f_i(\\ws)\\|^2]$ with $\\bs{w}^*:=argmin F(\\bs{w})$. Suppose  $\\eta\\leq \\dfrac{1}{\\sup_i L_i}$.",
+          "tag": "lemma:rachel"
+        }
+      ],
+      "failure_explanation": "The prose claims that Lemma lemma:rachel (linear convergence of SGD for uniformly sampled $\\lambda$-strongly-convex $F$) 'can be applied' to MKL-SGD. But MKL-SGD uses non-uniform state-dependent sampling and its surrogate $\\widetilde{F}$ is non-convex; Lemma lemma:rachel's hypotheses (strong convexity of $F$, uniform sampling) are violated. The restricted secant inequality from Lemma lemma:sc is a different property than strong convexity and requires a new convergence proof, not a direct application of Lemma lemma:rachel. The claimed linear convergence is not established by the cited result.",
+      "failure_location": {
+        "quote": "Even though above theorem is for SGD, it still can be applied to our algorithm \\ref{alg:min2loss}. At each iteration there exists a parameter $\\lambda_{\\bs{w_t}}$ that could be seen as the strong convexity parameter (c.f. Lemma \\ref{lemma:sc}). For MKL-SGD, the parameter $\\lambda$ in \\eqref{eq:convergence} should be  $\\lambda = \\min_{t}\\lambda_{\\bs{w}_t}$. Thus, MKL-SGD algorithm still guarantees \\textit{linear convergence} result but with an implication of slower speed of convergence than standard SGD.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the invocation of Lemma lemma:rachel with a direct convergence proof for MKL-SGD in the noiseless setting using the restricted secant inequality from Lemma lemma:sc (with its corrected proof), or cite the corrected version of Theorem thm:R with $\\sigma = 0$ as the justification for linear convergence.",
+      "overall_effect": "The claim that MKL-SGD has linear convergence in the noiseless setting is stated with invalid justification at the point of the claim. The claim itself may be true (establishable via the corrected analysis of thm:R), but the reasoning given does not support it.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Linear convergence of MKL-SGD claimed via unjustified application of standard SGD theorem",
+      "why_classification": "The linear convergence claim is true and can be justified by the corrected analysis of thm:R (with its own proof fix). Replacing the invalid citation with the correct argument is a short, local change that preserves all claims."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:R"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\langle{\\bs{w} -\\bs{v}, \\nabla f_{i}(\\bs{w})-\\nabla f_{i}(\\bs{v})\\rangle} \\geq \\frac{1}{L_i}\\| f_i(\\bs{w}) -f_i(\\bs{v}) \\|^2$",
+          "tag": "lem:R"
+        }
+      ],
+      "failure_explanation": "The bound on Term1 uses $\\leq$ where $\\geq$ is needed: since each $\\langle \\mathbf{w}_t - \\mathbf{w}^*, \\nabla f_i(\\mathbf{w}_t) - \\nabla f_i(\\mathbf{w}^*)\\rangle \\geq 0$ by convexity and $p_i \\geq p_{\\min}$, the correct inequality is $\\text{Term1} \\geq p_{\\min}\\sum_{i\\in\\mathcal{G}}\\langle\\cdots\\rangle$. The second bound writes $\\|\\mathbf{w}_{t+1} - \\mathbf{w}^*\\|^2$ instead of $\\|\\mathbf{w}_t - \\mathbf{w}^*\\|^2$ and omits the factor $|\\mathcal{G}|$ from applying strong convexity of $F_{good} = \\frac{1}{|\\mathcal{G}|}\\sum f_i$. The stated co-coercivity inequality at the proof's start also has $\\|f_i(\\mathbf{w}) - f_i(\\mathbf{v})\\|^2$ instead of $\\|\\nabla f_i(\\mathbf{w}) - \\nabla f_i(\\mathbf{v})\\|^2$. These errors prevent the claimed contraction factor $\\psi = 2\\eta_t\\lambda_{good}(1-\\eta_t\\sup L_i)\\min_{i\\in\\mathcal{G}}p_i$ from being derived.",
+      "failure_location": {
+        "quote": "Term1 &\\leq \\min_{i}p_i(\\bs{w_t}) \\sum_{ i\\in \\mathcal{G}}\\bigg\\langle{ \\bs{w_t} - \\wg,\\nabla f_{i}(\\bs{w_t}) - \\nabla f_{i}(\\wg) \\bigg\\rangle} \\\\ &\\leq\\min_{i  \\in \\mathcal{G}}p_i(\\bs{w_t})   \\lambda_{good}\\norm{\\bs{w_{t+1}} -  \\wg}^2",
+        "tag": "lem:R"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Change $\\leq$ to $\\geq$ in the Term1 bound, replace $\\mathbf{w}_{t+1}$ with $\\mathbf{w}_t$, and account for the $|\\mathcal{G}|$ factor from strong convexity of $F_{good}$ (or redefine $\\lambda_{good}$ accordingly). Also correct the co-coercivity inequality to use gradient differences. Redo the contraction derivation with these corrections.",
+      "overall_effect": "The contraction bound and convergence rate in Lemma lem:R and Theorem thm:R are not established by the proof. The qualitative conclusion (contraction with positive $\\psi$) is likely true with corrected bounds, but the quantitative rate is wrong (missing $|\\mathcal{G}|$ factor) and the proof as written is invalid.",
+      "primary_affected_tag": "lem:R",
+      "target_type": "formal_result",
+      "title": "Proof of lem:R has wrong inequality direction and content in contraction term bound",
+      "why_classification": "The result (contraction and convergence rate) is likely true with corrected bounds, but the fix requires a contained nontrivial correction to the proof's key step (inequality direction, subscript, and normalization factor). The qualitative conclusion (linear convergence) survives but the quantitative rate changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose we have $\\abs{\\mathcal{G}}\\leq \\frac{n}{2}$.",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "p_{m_i(\\bs{w})}(\\bs{w}) = \\dfrac{2(n-i)}{n(n-1)} ",
+          "tag": "cor:added-1"
+        }
+      ],
+      "failure_explanation": "The proof bounds each outlier MKL-2 probability $\\frac{2(n-i)}{n(n-1)}$ by $\\frac{1}{n}$ (the SGD uniform probability) to compare $R_t^{(MKL_2)}$ and $R_t^{(SGD)}$. But $\\frac{2(n-i)}{n(n-1)} \\leq \\frac{1}{n}$ requires $i \\geq (n+1)/2$, which fails for outlier ranks $i$ near $|\\mathcal{G}|+1$ when $|\\mathcal{G}| < (n-1)/2$. The corollary assumes $|\\mathcal{G}| \\leq n/2$, which includes parameter regimes (e.g. $n=6$, $|\\mathcal{G}|=2$) where the first outlier rank has probability $\\frac{2(n-|\\mathcal{G}|-1)}{n(n-1)} > \\frac{1}{n}$. The pointwise bound is therefore invalid for part of the stated parameter range.",
+      "failure_location": {
+        "quote": "+ \\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{\\eta_t^2}{n}\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+  \\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{2  \\eta_t}{n} \\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right)",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Either restrict the corollary to $|\\mathcal{G}| \\geq (n-1)/2$ (where the pointwise probability bound $\\frac{2(n-i)}{n(n-1)} \\leq \\frac{1}{n}$ holds for all outlier ranks) or provide a different argument that bounds the weighted sum of outlier residual terms using the total outlier probability $\\sum_{i\\in\\mathbb{O}} p_i \\leq |\\mathbb{O}|/n$ rather than term-by-term comparisons.",
+      "overall_effect": "The comparison $R_t^{(MKL_2)} \\leq R_t^{(SGD)}$ is not established for the full stated range $|\\mathcal{G}| \\leq n/2$. The conclusion of the corollary (MKL-2 is better than SGD under the given conditions) is unproved for $|\\mathcal{G}| < (n-1)/2$.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Corollary added-1 proof uses invalid pointwise probability bound",
+      "why_classification": "Restricting the parameter range or finding a different bounding argument preserves a recognizably comparable result. The fix is contained but requires more than a single forced correction to the existing proof."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2001.03316",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d10c7474fbe52751d29cd038f650e3f1381876416035c1862f7697927c71b083",
+  "status": "ok"
+}

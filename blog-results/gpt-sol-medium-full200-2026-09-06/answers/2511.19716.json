@@ -1,0 +1,230 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, the $\\bfM$-Lipschitz continuity of the gradient for $F$ is equivalent to the Lipschitz continuity of the gradient for $f$, which is equivalent to \n\nthat $\\nabla_z^2 f(z)$, i.e.  $\\bfP^\\top \\nabla_w^2 F(\\bfw) \\bfP$, has eigenvalues bounded above by $\\hat L$.",
+          "tag": "lem:added-1"
+        }
+      ],
+      "failure_explanation": "For a symmetric Hessian, Lipschitz continuity of the gradient with constant $\\hat L$ requires the operator norm to be at most $\\hat L$, equivalently every eigenvalue must lie in $[-\\hat L,\\hat L]$. Merely bounding eigenvalues above allows arbitrarily large negative eigenvalues and therefore does not imply Lipschitz continuity. The repeated lemma has the same defect.",
+      "failure_location": {
+        "quote": "(i) $\\nabla F$ is $\\bfM$-Lipschitz with constant $\\hat L$  \n$\\iff$ all eigenvalues of $\\bfP^\\top\\nabla^2F(\\bfw)\\bfP$ are $\\le \\hat L$;",
+        "tag": "lemma:bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the upper-eigenvalue condition by an absolute-eigenvalue/operator-norm bound, or explicitly state only the one-sided Hessian condition needed for a descent upper bound.",
+      "overall_effect": "The claimed equivalence and the paper's unrestricted spectral interpretation of metric smoothness are false for nonconvex objectives.",
+      "primary_affected_tag": "lemma:bound",
+      "target_type": "formal_result",
+      "title": "Spectral characterization of Lipschitz gradients omits absolute eigenvalue bounds",
+      "why_classification": "This is a short local correction to the spectral characterization and does not alter the convergence theorems, which separately assume metric Lipschitz continuity."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:3rdmainthm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Theorem~\\ref{1stmainthm} shows that, with a fixed learning rate $\\overline\\alpha$,\npreconditioned SGD contracts linearly with factor $1-\\overline\\alpha\\,\\hat c\\,\\mu$ and\nconverges to an asymptotic floor",
+          "tag": null
+        },
+        {
+          "quote": "and in particular $\\mathbb E[F(\\bw_k)-F_\\ast\\mid\\tau=\\infty]\\to C$ as $k\\to\\infty$.",
+          "tag": "thm:3rdmainthm"
+        }
+      ],
+      "failure_explanation": "The recursion proves only an upper bound whose right-hand side tends to the displayed floor. It implies at most a limsup bound, not that the expected gap itself converges to that value. For example, the assumptions permit a loose positive choice of $K$ even when the actual gradients are deterministic and the gap converges to zero.",
+      "failure_location": {
+        "quote": "\\mathbb E\\!\\left[F(\\bfw_k)-F_\\ast\\right]\n\\;\\le\\;\n\\frac{\\overline\\alpha\\,\\hat L\\,K}{2\\,\\hat c\\,\\mu}\n\\;+\\;\n(1-\\overline\\alpha\\,\\hat c\\,\\mu)^{k-1}\n\\left(\\,F(\\bfw_1)-F_\\ast - \\frac{\\overline\\alpha\\,\\hat L\\,K}{2\\,\\hat c\\,\\mu}\\right)\n\\;\\xrightarrow{k\\to\\infty}\\; \\frac{\\overline\\alpha\\,\\hat L\\,K}{2\\,\\hat c\\,\\mu}.",
+        "tag": "1stmainthm"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace convergence-to-floor assertions by $\\limsup$ upper bounds and describe the displayed quantity as an upper bound on the asymptotic error.",
+      "overall_effect": "The asserted equality of the asymptotic loss with the nominal noise floor is unsupported in both fixed-step theorems; the quantity is only a certified upper floor.",
+      "primary_affected_tag": "1stmainthm",
+      "target_type": "formal_result",
+      "title": "Upper bounds are misreported as convergence to the noise floor",
+      "why_classification": "The established finite-time upper bounds and rates remain intact; only the unsupported equality interpretation must be weakened."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:4thmainthm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Restricting \\eqref{eq:cond-step} to $\\Omega_\\infty$ gives\n\\[\n\\mathbb E\\!\\left[F(\\bw_{k+1})-F_\\ast\\mid\\mathcal F_k,\\Omega_\\infty\\right]\n\\le\n(1-\\rho)\\bigl(F(\\bw_k)-F_\\ast\\bigr)\n+\\rho\\,C.\n\\]",
+          "tag": "eq:cond-step"
+        },
+        {
+          "quote": "Multiply \\eqref{eq:stopped-one-step} by $\\mathbf 1_{\\Omega_\\infty}$ and take expectations; since $\\mathbf 1_{\\Omega_\\infty}\\mathbf 1_{\\{k<\\tau\\}}=\\mathbf 1_{\\Omega_\\infty}$,",
+          "tag": "eq:stopped-one-step"
+        },
+        {
+          "quote": "and, on the event $\\{\\tau=\\infty\\}$, we have the conditional rate\n\\[\n  \\mathbb{E}\\!\\left[F(\\bw_k)-F_\\ast \\mid \\tau=\\infty\\right] \\;\\le\\; \\frac{\\nu}{\\gamma + k}\n  \\qquad \\forall\\,k\\ge1.\n\\]",
+          "tag": "thm:4thmainthm"
+        }
+      ],
+      "failure_explanation": "The event $\\Omega_\\infty=\\{\\tau=\\infty\\}$ depends on the current and all future gradient noise and is not $\\mathcal F_k$-measurable. A conditional drift inequality given $\\mathcal F_k$ therefore cannot be restricted to that event, nor can it be multiplied by its indicator before taking expectations, without changing the conditional distribution of $g_k$. Survival can select atypical noise trajectories. In addition, the theorem allows the stated lower bound on $\\mathbb P(\\Omega_\\infty)$ to be zero, in which case the conditional expectation is not even defined.",
+      "failure_location": {
+        "quote": "Then, on the event $\\{\\tau=\\infty\\}$, the iterates exhibit conditional geometric convergence in expectation to the noise floor $C$: for all $k\\ge1$,\n\\[\n  \\mathbb{E}\\!\\big[F(\\bw_k)-F_\\ast \\,\\big|\\, \\tau=\\infty\\big]\n  \\;\\le\\;\n  C \\;+\\;\n  (1-\\rho)^{k-1}\\bigl(F(\\bw_1)-F_\\ast - C\\bigr),\n\\]",
+        "tag": "thm:3rdmainthm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must control the change of law induced by conditioning on eternal survival and ensure that this event has positive probability, or replace the conditional guarantees with rigorously derived stopped/killed-process guarantees.",
+      "overall_effect": "The advertised conditional geometric and $O(1/k)$ convergence guarantees inside the local basin are not established. This defeats the central local convergence component of both local theorems, though it does not by itself refute a correctly proved stopped-process or exit-probability bound.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "Conditioning on eternal basin survival invalidates the local rate recursions",
+      "why_classification": "The invalid step is the core architecture for both local rate claims. Repairing it requires a new conditional-survival argument or a material change in guarantee type."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+\\frac{\\hat L}{2}\\overline\\alpha^2 K,\n\\end{equation}\nwhere we have used $\\mathbf 1_{\\{k<\\tau\\}}\\le 1$ to relax the $K$–term.",
+          "tag": "eq:const-descent-local"
+        },
+        {
+          "quote": "\\mathbb E\\!\\left[F(\\widetilde{\\bw}_{k+1})-F_\\ast\\mid\\mathcal F_k\\right]\n\\le\n\\bigl(1-\\rho\\,\\mathbf 1_{\\{k<\\tau\\}}\\bigr)\\bigl(F(\\widetilde{\\bw}_k)-F_\\ast\\bigr)\n+\\rho\\,C.",
+          "tag": "eq:cond-step"
+        }
+      ],
+      "failure_explanation": "Subtracting $C$ from the displayed inequality gives an additional term $\\rho C(1-\\mathbf 1_{\\{k<\\tau\\}})$, so the asserted supermartingale inequality does not follow. The error results from replacing the noise term's stopping indicator by one and then treating it as though the indicator remained.",
+      "failure_location": {
+        "quote": "Define $Y_k:=F(\\widetilde{\\bw}_k)-F_\\ast - C$. Then \\eqref{eq:cond-step} implies\n\\[\n\\mathbb E\\!\\left[Y_{k+1}\\mid\\mathcal F_k\\right]\n\\le (1-\\rho\\,\\mathbf 1_{\\{k<\\tau\\}})\\,Y_k,\n\\]\nso $(Y_{k\\wedge\\tau})_{k\\ge1}$ is a supermartingale.",
+        "tag": "eq:cond-step"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Retain $\\mathbf 1_{\\{k<\\tau\\}}$ on the $K$ term throughout the stopped descent calculation; then the shifted recursion has the required indicator and the optional-stopping argument can proceed.",
+      "overall_effect": "The optional-stopping derivation of the fixed-step basin-stability probability is unsupported as written.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "The fixed-step stability proof asserts a supermartingale after dropping the stopping indicator",
+      "why_classification": "The source already contains the sharper indicator-bearing inequality before relaxing it, so a short local correction restores the stability proof without changing its bound."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The objective function $F\\colon \\mathbb{R}^d \\to \\mathbb{R}$ is strongly convex in that there exists a constant $c>0$ such that",
+          "tag": "ass:1"
+        }
+      ],
+      "failure_explanation": "Strong convexity implies uniqueness of the minimizer, but uniqueness does not imply strong convexity; for instance, a function can have a unique minimizer while having zero curvature there. Thus the claimed equivalence is false.",
+      "failure_location": {
+        "quote": "From elementary optimization, this assumption is equivalent to $F$ having a unique minimizer $\\bfw^\\ast\\in\\mathbb{R}^d$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace “is equivalent to” by the one-way statement that strong convexity implies a unique minimizer.",
+      "overall_effect": "The appendix materially misstates the scope of the strong-convexity assumption, although the subsequent theorems explicitly retain strong convexity.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unique minimization is incorrectly claimed equivalent to strong convexity",
+      "why_classification": "A one-line weakening corrects the claim and leaves every theorem and guarantee unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, by Assumption \\ref{assumption:44},\n    \\[F(\\bfw_{k+1})-F(\\bfw_k)\\leq \\nabla F(\\bfw_k)^\\top(\\bfw_{k+1}-\\bfw_k)+\\frac{1}{2}\\hat{L}||\\bfw_{k+1}-\\bfw_k||^2_\\bfM\\]",
+          "tag": "lemma:1"
+        },
+        {
+          "quote": "$F\\colon\\mathbb R^d\\!\\to\\!\\mathbb R$ is $\\bfM$-strongly convex: there exists $\\hat c>0$ such that",
+          "tag": "assumption:44"
+        },
+        {
+          "quote": "$\\nabla F$ is $\\bfM$-Lipschitz with constant $\\hat L>0$:",
+          "tag": "assumption:55"
+        }
+      ],
+      "failure_explanation": "The quadratic upper bound used in the proof follows from metric Lipschitz continuity of the gradient, not from metric strong convexity. Under Assumption 44 alone, $\\hat L$ is not supplied and the asserted descent inequality need not hold.",
+      "failure_location": {
+        "quote": "Under Assumption \\ref{assumption:44}, the iterates of Eq. \\ref{alg:PSGD} satisfy the following inequality for all $k\\in \\mathbb{N}$:",
+        "tag": "lemma:1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the cited hypothesis by Assumption \\ref{assumption:55} and state the metric inner product consistently in the lemma's conclusion.",
+      "overall_effect": "Lemma 1 is false under its stated hypothesis, although later principal theorems separately assume smoothness.",
+      "primary_affected_tag": "lemma:1",
+      "target_type": "formal_result",
+      "title": "The first descent lemma assumes strong convexity but uses smoothness",
+      "why_classification": "Adding the already-defined smoothness hypothesis is a local standard repair and does not narrow the main theorems, which already impose it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "By Lemma \\ref{lemma:1} and Assumption \\ref{assumption:55}, it follows that\n      \\begin{align*}\n          \\mathbb{E}_{\\bfxi_k}[F(\\bfw_{k+1})]-F(\\bfw_k) &\\leq -\\alpha_k \\mu ||\\nabla F(\\bfw_k)||_{\\bfM^{-1}}^2",
+          "tag": "lemma:2"
+        },
+        {
+          "quote": "\\mathbb{E}_{\\bfxi_k}[||g(\\bfw_k,\\bfxi_k)||_{\\bfM^{-1}}^2] \\leq K_G ||\\nabla F(\\bfw_k)||_{\\bfM^{-1}}^2 + K \\text{ with } K_G := K_V + \\mu_G^2 \\geq \\mu^2>0",
+          "tag": "eq:9"
+        }
+      ],
+      "failure_explanation": "The constants $\\mu$, $K_G$, and $K$ and both inequalities involving them come from Assumption \\ref{assumption:66}, which is absent from the lemma's hypotheses. Curvature assumptions alone impose no alignment or second-moment control on the stochastic gradients.",
+      "failure_location": {
+        "quote": "Under Assumptions \\ref{assumption:44} and \\ref{assumption:55}, the iterates of Eq. \\ref{alg:PSGD} satisfy the following inequalities for all $k\\in\\mathbb{N}$:",
+        "tag": "lemma:2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Add Assumption \\ref{assumption:66} to the lemma's hypotheses and cite its alignment and second-moment consequences in the proof.",
+      "overall_effect": "Lemma 2 is false as a standalone result. Its later uses happen in contexts that include the missing stochastic assumptions, but the lemma itself does not establish what it states.",
+      "primary_affected_tag": "lemma:2",
+      "target_type": "formal_result",
+      "title": "The second descent lemma omits all stochastic moment assumptions",
+      "why_classification": "The missing hypothesis is already part of every relevant main theorem, so the repair is local and preserves all substantive guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(1-\\overline\\alpha\\,\\hat c\\,\\mu)^{k-1}",
+          "tag": "1stmainthm"
+        }
+      ],
+      "failure_explanation": "The parent theorem gives contraction factor $1-\\overline\\alpha\\hat c\\mu$, not a rate determined solely by $\\hat c/\\hat L$ unless a particular maximal step is imposed. It also provides an upper bound approaching the floor; it neither proves monotone decrease nor that the expected gap eventually lies below that floor.",
+      "failure_location": {
+        "quote": "Then for a fixed learning rate bounded by $ \\frac{K_G}{\\hat{L}K_G}$, $ \\bbE[F(\\bfw_k)-F_\\ast]$ decreases to below $ \\frac{\\overline{\\alpha}\\hat{L}K}{2\\hat{c}\\mu}$ at the rate of  $\\frac{\\hat{c}}{\\hat{L}}$.",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Restate the specialization with $\\mu=\\mu_G=K_G=1$, step size $\\overline\\alpha\\le1/\\hat L$, contraction factor $1-\\overline\\alpha\\hat c$, and only the finite-time and limsup upper bounds supplied by Theorem \\ref{1stmainthm}.",
+      "overall_effect": "The corollary gives an incorrect specialization of the fixed-step theorem and overstates the trajectory and asymptotic conclusion.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "The unbiased-gradient corollary states the wrong rate and an unsupported monotone floor claim",
+      "why_classification": "A comparable valid corollary survives, but the advertised rate and monotone-below-floor guarantee must both be materially weakened rather than merely notationally corrected."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2511.19716",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e917ba1144e6fa4c2415186c265b16ef399f1891d6a4e98601ba893f94692732",
+  "status": "ok"
+}

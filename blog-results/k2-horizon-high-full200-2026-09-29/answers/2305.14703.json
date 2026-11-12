@@ -1,0 +1,127 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "PDNO &  35, 707, 841 & 0.0046 & $5.08$e$-07$ & 0.0022 & $3.52$e$-07$ & 0.0037 & $1.21$e$-05$ \\\\",
+          "tag": "tab:darcy_error"
+        },
+        {
+          "quote": "PDNO & $3, 980, 129$ & $0.0047$ & $5.47$e$-04$ & $0.0053$ & $7.93$e$-04$ & $0.0152$ & $1.51$e$-03$ \\\\",
+          "tag": "tab:burgers"
+        },
+        {
+          "quote": "PDNO & $3, 980, 129$ & $0.0062$ & $7.91$e$-04$ & $0.0081$ & $7.38$e$-04$ & $0.0445$ & $2.59$e$-03$ \\\\",
+          "tag": "tab:adv_error"
+        },
+        {
+          "quote": "# of samples $N_s$   &  $1$ if noise-free; $100$ if noisy\\\\",
+          "tag": "tab:params-test2"
+        },
+        {
+          "quote": "# of samples $N_s$   &  $1$\\\\",
+          "tag": "tab:params-test3"
+        },
+        {
+          "quote": "# of samples $N_s$   &  $1$\\\\",
+          "tag": "tab:params-test4"
+        }
+      ],
+      "failure_explanation": "The MSTD is defined as the test-averaged 2-norm of the sample standard deviation of the N_s generated solutions, divided by N_s. A sample standard deviation estimates the conditional standard deviation of u|a independently of N_s (it does not decay like 1/N_s; even the standard error of the mean would scale like 1/sqrt(N_s)), so dividing by N_s conflates the Monte Carlo sample size with model uncertainty and the quantity does not measure what the metric is named for. Moreover, under the paper's own noise-free testing protocol N_s = 1 (tab:params-test2, tab:params-test3, tab:params-test4), the standard deviation of a single sample is exactly zero, so this MSTD is identically zero; this contradicts the nonzero MSTD values reported for noise-free PDNO in tab:darcy_error (5.08e-07, 3.52e-07, 1.21e-05), tab:burgers (5.47e-04, 7.93e-04, 1.51e-03) and tab:adv_error (7.91e-04, 7.38e-04, 2.59e-03). The reported numbers cannot be produced by the stated definition and protocol.",
+      "failure_location": {
+        "quote": "\\frac{1}{|\\mathcal{\\widetilde{D}}|} \\sum_{(a, u) \\in \\mathcal{\\widetilde{D}}}\n\\frac{\\|\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s}) \\|_2}{N_s}\\,,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Redefine MSTD as a relative sample standard deviation (e.g., ||std({S_theta^{(n)}(a)})||_2 / ||u||_2, paralleling the relative MRLE, with no division by N_s), state the N_s actually used for each reported value, and recompute the MSTD entries of the three tables; no change to the method or the accuracy claims is required.",
+      "overall_effect": "The paper's only quantitative uncertainty metric is ill-defined and its reported values are irreproducible from the stated definition and protocol; the MSTD columns of tab:darcy_error, tab:burgers and tab:adv_error, and any quantitative uncertainty conclusion drawn from them, are unreliable. The MRLE accuracy comparisons and the qualitative standard-deviation-recovery figures are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "MSTD metric divides the sample standard deviation by the sample count N_s and contradicts the reported values",
+      "why_classification": "The metric fix is local, but the reported MSTD values are irreproducible as stated and must be recomputed or re-explained, so the repair withdraws the paper's quantitative uncertainty reporting while leaving all accuracy claims and the qualitative noise-recovery evidence intact: a contained rework with no loss of the main results, hence more than a routine edit but far from a new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "eqn:cov"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a (nonzero mean) Gaussian distribution with the identity covariance, i.e., $u_0 \\sim \\mathcal{N}(m, \\mathbf{I})$",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "we assume a noisy data set $\\mathcal{D}_{\\eta}$ obtained from corrupting the output $u$ by an additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$, i.e., $u_{\\eta} = u + \\eta$.",
+          "tag": null
+        },
+        {
+          "quote": "L_{t-1}(\\theta; a) &= \\mathbb{E}_{p(u_t, u_0|a)}\\left[\\text{KL}(p(u_{t-1}|u_t, u_0) || q_{\\theta}(u_{t-1}|u_t, a))\\right], \\qquad t = 2, \\ldots, T",
+          "tag": "eqn:split-VLB"
+        },
+        {
+          "quote": "\\Sigma(t, u_t, u_0) = \\frac{1 - \\bar{\\alpha}_{t-1}}{1 - \\bar{\\alpha}_t}\\beta_t \\mathbf{I}\\,,",
+          "tag": "eqn:true-reverse"
+        },
+        {
+          "quote": "The model is trained on the noisy data set with $\\sigma = 1\\%$",
+          "tag": "fig:1d_noisy"
+        },
+        {
+          "quote": "The model is trained on the noisy data set with $\\sigma=0.0005$",
+          "tag": "fig:DF_noisy"
+        }
+      ],
+      "failure_explanation": "The claim that Sigma_theta = beta_t I is optimal for Gaussian-noise data rests on prop:added-2, whose hypothesis is that the initial state has identity covariance, u_0 ~ N(m, I). The method's noise model is u_eta = u + eta with eta ~ N(0, Sigma(a)), and every noisy experiment uses sigma much smaller than 1 (1%, 5%, 0.0005, 0.001), so the proposition's hypothesis never holds in the reported applications. For u_0 ~ N(m, sigma^2 I) the reverse kernel obtained by integrating out u_0 has covariance (v_{t-1}/v_t) beta_t I with v_t = 1 - bar-alpha_t (1 - sigma^2), which equals beta_t I only when sigma^2 = 1; hence the asserted covariance beta_t I after integrating out u_0 is false for all reported noisy settings. Moreover, the paper's own training objective (eqn:split-VLB) KL-matches the posterior p(u_{t-1}|u_t, u_0), whose covariance is (1 - bar-alpha_{t-1})/(1 - bar-alpha_t) beta_t I (eqn:true-reverse), so beta_t I is not even the covariance that minimizes the stated loss; the marginal reverse kernel is not the training target. Consequently the claimed entropy-optimality H_p(u_{t-1}|u_t) = H_{q_theta}(u_{t-1}|u_t) fails for the Gaussian-noise setting, and the closing exact-likelihood claim for 'both cases' fails with it.",
+      "failure_location": {
+        "quote": "Furthermore, after integrating out $u_0$ in~\\eqref{eqn:true-reverse}, the true reverse distribution $p(u_{t-1} | u_t)$ has a covariance $\\beta_t \\mathbf{I}$. Hence, the parameterization~\\eqref{eqn:cov} for $\\Sigma_{\\theta}$ in the Gaussian noise setting is optimal in the sense that $H_p(u_{t-1}|u_t) = H_{q_{\\theta}}(u_{t-1}|u_t)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Re-derive the noisy-data covariance against the actual noise model and training objective: either adopt the posterior covariance (1 - bar-alpha_{t-1})/(1 - bar-alpha_t) beta_t I from eqn:true-reverse, which is the KL minimizer of eqn:L_t-1 in both settings, or carry out the entropy computation for u_0 ~ N(m, sigma^2 I) and match the resulting time-dependent marginal reverse covariance (v_{t-1}/v_t) beta_t I; restate the optimality claim accordingly and recheck the noisy experiments. The method and its demonstrated noise-std recovery can remain as is.",
+      "overall_effect": "The information-theoretic justification of the noisy-data branch of the reverse covariance eqn:cov collapses: the advertised entropy-optimality of Sigma_theta = beta_t I is false for the noise levels actually used, and the choice does not match the KL target of the paper's own loss eqn:L_t-1. The noisy-data experiments (Test 1 and Test 2 noisy settings) rest on this unjustified choice, and the Appendix A.3 exact-likelihood summary is unreliable. The method's demonstrated ability to recover the noise standard deviation is empirical only and is not disproved, but its theoretical warrant in the noisy regime is withdrawn.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Entropy-optimality justification of the noisy-data reverse covariance beta_t I is invalid for the method's actual noise model",
+      "why_classification": "No new global proof architecture is required — a corrected covariance choice plus a short recomputation, or a weakened optimality claim, yields a recognizably comparable result — but the advertised optimality guarantee for the noisy regime is false as stated and cannot be repaired by a local edit; the method's empirical claims survive, so the issue is moderate rather than serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "H_p(u_{t-1}|u_t) = H_p(u_t|u_{t-1}) + H_p(u_{t-1} | u_0) - H_p(u_t | u_0) \\,,\\; \\qquad t = 1, \\ldots, T\\,.",
+          "tag": "prop:added-1"
+        },
+        {
+          "quote": "\\dfrac{1 - \\bar{\\alpha}_{t-1}}{1 - \\bar{\\alpha}_t}\\beta_t \\mathbf{I} & \n       \\mbox{Noise free observation,}",
+          "tag": "eqn:cov"
+        }
+      ],
+      "failure_explanation": "The prose asserts that the trained model 'achieves the exact likelihood under the true model p', but the displayed chain only equates the entropy of the model's joint law with the entropy of the true joint law via the chain rule. Equality of these entropies does not imply equality of likelihoods or distributions — the actual likelihood comparison would be E_p[-log q_theta] = E_p[-log p] — and Gaussian entropies depend only on covariances, so the identity is insensitive to the network mean m_theta and cannot certify that q_theta matches p. Independently of the noisy-case failure (ISSUE-002), the chain is already false at t = 1 for noise-free data: prop:added-1's identity at t = 1 with u_0 ~ delta gives H_p(u_0|u_1) = 0 (a Dirac initial state is deterministic given u_1), whereas q_theta(u_0|u_1, a) is a nondegenerate Gaussian with covariance beta_1/(1 - beta_1) I (eqn:cov) and strictly positive entropy, so H_{q_theta}(u_0|u_1) != H_p(u_0|u_1).",
+      "failure_location": {
+        "quote": "In both cases, the noise-free and Gaussian noise, the learned parametric model $q_{\\theta}$ achieves the exact likelihood under the true model $p$, i.e., \n\\[\n\\mathbb{E}_{q_{\\theta}}\\left[-\\log q_{\\theta}(u_{0:T}) \\right]\n=\nH_{q_{\\theta}}(u_T) + \\sum_{t=1}^T H_{q_{\\theta}}(u_{t-1} | u_t) \n=\nH_p(u_T) + \\sum_{t=1}^T H_p(u_{t-1} | u_t) \n=\n\\mathbb{E}_{p}\\left[-\\log p(u_{0:T}) \\right].",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Rephrase the claim to state only the entropy matching actually established (and then only for t >= 2 in the noise-free case, or after the noisy-case reanalysis required by ISSUE-002), or prove genuine likelihood equality q_theta(u_{t-1}|u_t, a) = p(u_{t-1}|u_t) including the mean, which needs a new approximation argument for the network.",
+      "overall_effect": "The closing summary of Appendix A.3 overstates what the covariance analysis establishes, asserting an exact-likelihood guarantee that is neither proved nor implied by the displayed entropy identity; no theorem, algorithm, or main-text experimental claim depends on it, but as written it misrepresents the strength of the analysis.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that the learned model achieves the exact likelihood is unsupported: entropy equality is not likelihood equality, and the chain already fails at t=1",
+      "why_classification": "The overclaim is confined to a justification paragraph in the appendix; rewording it to match what is actually proved, or deleting the exact-likelihood promise, is a short local repair that costs no theorem, algorithm, or experimental guarantee, so it is minor."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2305.14703",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e417f6e97606e57c1bddcad5ccc77b48f42186a7406fb76629c7aa30c1d3514b",
+  "status": "ok"
+}

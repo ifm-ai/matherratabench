@@ -1,0 +1,187 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal G=\\left\\{ \\mathbf U : z_1\\rho_1 > 0, z_2\\rho_2 > 0, \\ c^2(\\mathbf U)>0,\\ z_1\\in[0,1] \\right\\}",
+          "tag": null
+        },
+        {
+          "quote": "it represents pure phase 1 ($z_1 = 1$, $\\rho_1 = 1.2$)",
+          "tag": null
+        },
+        {
+          "quote": "it represents pure phase 2 ($z_1 = 0$, $\\rho_2 = 1000$)",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathbf{U}^{(s)} = [0.6, \n \\ 500, \\ 0, \\ 3500.5, \\ 0.5]^T$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "G is defined with strict inequalities z1*rho1>0 and z2*rho2>0. The two states of the counterexample have z1=1 (hence z2*rho2=0) and z1=0 (hence z1*rho1=0), so both lie outside G; a convex combination of points outside G cannot witness non-convexity of G. The verified computation c^2<0 at the mixed state is therefore not a counterexample to the convexity of G, and the advertised conclusion is not established.",
+      "failure_location": {
+        "quote": "we provide a concrete counterexample \nin Appendix A to demonstrate \nthat the admissible set $\\mathcal{G}$ is non-convex.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Perturb the two boundary states to z1=1-delta and z1=delta with strictly positive partial densities, re-select E so that the pressures 400 and -5996.6 are unchanged, and re-check the three sound-speed computations; the strict sign of 1/(rho c^2) at the mixed state persists for small delta.",
+      "overall_effect": "The claim that the classical admissible set G is non-convex (used to motivate the new set G^p) is unsupported as written.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Counterexample states for non-convexity of G lie outside G",
+      "why_classification": "Replacing the two degenerate states by nearby interior states and re-running three short computations is a local routine fix; the non-convexity conclusion and all downstream claims survive unchanged."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Given $z_1^n \\in [0, 1]$ and $\\Delta t_{\\mathrm{im}} > 0$, ",
+          "tag": "thm:implicit_solver"
+        },
+        {
+          "quote": "\\kappa^{n+1} &= z_1^{n+1} z_2^{n+1} \\frac{\\nu_1^{n+1}-\\nu_2^{n+1}}{\\nu^{n+1}},",
+          "tag": null
+        },
+        {
+          "quote": "\\nu^{n+1} &= z_1^{n+1}\\nu_1^{n+1} + z_2^{n+1}\\nu_2^{n+1},",
+          "tag": null
+        },
+        {
+          "quote": "\\nu_k^{n+1} &= (\\frac{1}{\\rho_k c_k^2})^{n+1}= \\frac{1}{\\gamma_k (p^{n+1}+p_{w,k})},",
+          "tag": null
+        },
+        {
+          "quote": "In the two stages in Eq. \\eqref{adaptive_sdirk2}, we all use the method of bisection.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "f(z1)=kappa(z1)*div(u^n) with kappa=z1*z2*(nu1-nu2)/nu and nu=z1*nu1+z2*nu2=1/(rho c^2). f has genuine poles at the z1 in (0,1) where nu=0, so F need not be continuous on [0,1] and the intermediate-value argument is void. Concrete counterexample within the paper's own gas-liquid constants (gamma1=1.4, pw1=0, gamma2=4.4, pw2=6000): with rho e = 1000 and z1^n=0.9 the pressure is p~=98>0 (state in G^p), yet nu vanishes at z1~=0.3513 where kappa diverges. Taking Delta t_im * div(u^n) = -1, F(z1)=(z1-0.9)/Delta t_im - f(z1) is strictly negative on [0,0.3513) and strictly positive on (0.3513,1] (e.g. F(0.2)=-0.79, F(0.5)=+0.30, F(0.85)=+0.10), so no root z1^{n+1} in [0,1] exists. The stated conclusion is false, and the proposed bisection can converge to the pole rather than to a root.",
+      "failure_location": {
+        "quote": "The continuity of $F(z_1)$ guarantees the \nexistence of root $z_1^{n+1} \\in [0, 1]$.",
+        "tag": "thm:implicit_solver"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must exclude the data/parameter regimes in which z1 -> kappa(z1) is unbounded on [0,1] (which removes the advertised gas-liquid cases) or replace the implicit root-finding step by a globally defined bounded update, and then re-establish existence of z1^{n+1} in [0,1] and the BP property for the modified scheme.",
+      "overall_effect": "The existence/BP conclusion of Theorem thm:implicit_solver fails; the BP claim for the adaptive SDIRK2 scheme (asserted to follow by the same proof) and the headline guarantee that the implicit treatment of the stiff kappa-source term is unconditionally bound-preserving become unreliable in exactly the stiff gas-liquid regime the paper targets, and the bisection root finder is not well defined there.",
+      "primary_affected_tag": "thm:implicit_solver",
+      "target_type": "formal_result",
+      "title": "Implicit kappa-source update need not exist in [0,1]",
+      "why_classification": "The existence conclusion is false for admissible data in the paper's target regime, and the underlying sub-ODE dz1/dt = kappa(z1) div u can reach the pole in finite time, so no local edit restores the unconditional BP guarantee; any supported resolution either drops the advertised regime or rebuilds the update and its proof."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "First, enforce the volume fraction bounds $\\varepsilon_z \\le z_1 \\le 1 - \\varepsilon_z$ and the partial density positivity $z_\\ell \\rho_\\ell \\ge \\varepsilon_\\ell$",
+          "tag": null
+        },
+        {
+          "quote": "$\\varepsilon_z = \\min \\{ (\\overline{z_1})_{i,j}^n,1-(\\overline{z_1})_{i,j}^n , 10^{-13} \\}$",
+          "tag": null
+        },
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The cases are selected in order, so when a cell overshoots on both sides (both m<eps_z and M>1-eps_z) only the lower-bound ratio is applied and the upper bound is lost. Example: zbar1=0.6, m=-0.1, M=1.1, eps_z=10^{-13} give theta_z1=(0.6-10^{-13})/0.7=0.857, and the limited maximum zbar1+theta_z1*(M-zbar1)=1.029 exceeds 1-eps_z, so z1>1 (and z2<0) at a quadrature point after Step 1.",
+      "failure_location": {
+        "quote": "\\theta_{z_1} = \\begin{cases} \n    \\frac{(\\overline{z}_1)_{i,j}^n - \\varepsilon_z}{(\\overline{z}_1)_{i,j}^n - m_{i,j}}, & \\text{if } m_{i,j} < \\varepsilon_z, \\\\\n    \\frac{(1 - \\varepsilon_z) - (\\overline{z}_1)_{i,j}^n}{M_{i,j} - (\\overline{z}_1)_{i,j}^n}, & \\text{if } M_{i,j} > 1 - \\varepsilon_z, \\\\\n    1, & \\text{otherwise}.\n    \\end{cases}",
+        "tag": "BP_Z"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Set theta_z1 to the minimum of the two applicable ratios (each equal to 1 when its own condition fails).",
+      "overall_effect": "The Step-1 guarantee eps_z <= z1 <= 1-eps_z and hence the claim that the limited state lies in G^p can fail at quadrature points in strongly oscillating cells.",
+      "primary_affected_tag": "BP_Z",
+      "target_type": "algorithm",
+      "title": "Two-sided volume-fraction bound is not enforced by theta_z1",
+      "why_classification": "Replacing the prioritized cases by a minimum of the two existing ratios is a one-line local fix that restores the two-sided bound and every guarantee that depends on it; nothing else changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Next, enforce the pressure positivity $p \\ge \\varepsilon_p$ with $\\varepsilon_p = \\min\\{ p(\\overline{\\mathbf{U}}_{i,j}^n), 10^{-13} \\}$.",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{U}_{i,j} = \\overline{\\mathbf{U}}_{i,j}^n + \\theta_{p} \\left( \\widetilde{\\mathbf{U}}_{i,j} - \\overline{\\mathbf{U}}_{i,j}^n \\right)",
+          "tag": "BP_P"
+        },
+        {
+          "quote": "p(\\mathbf{U}) = \\frac{E - \\frac{|\\rho\\mathbf{u}|^2}{2\\rho} - \\left( \\frac{z_1 \\gamma_1 p_{w, 1}}{\\gamma_1 - 1} + \\frac{z_2 \\gamma_2 p_{w, 2}}{\\gamma_2 - 1} \\right)}{\\frac{z_1}{\\gamma_1 - 1} + \\frac{z_2}{\\gamma_2 - 1}}",
+          "tag": null
+        },
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Along the limiting ray p = num/den with den = z1/(gamma1-1)+z2/(gamma2-1) depending on z1, so p is not affine in the scaling factor and the linear-scaling value (p(Ubar)-eps_p)/(p(Ubar)-min p) is not the factor at which p reaches eps_p. Explicit counterexample with zero momentum (gamma1=1.4, pw1=0, gamma2=4.4, pw2=6000): quadrature states (z1,E)=(0.9,774.19) and (0.1,7039.70) have p=-1 and p=100; the cell mean has p(Ubar)=17.61 so eps_p=10^{-13} and theta_p=17.61/18.61=0.946, but the limited state at the first point (z1=0.8785, E=942.6) has p=-0.32 < eps_p. Thus Step 2 leaves p<0 and U not in G^p.",
+      "failure_location": {
+        "quote": "\\theta_{p} = \\begin{cases}\n    \\frac{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\varepsilon_p}{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y))}, & \\text{if } \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y)) < \\varepsilon_p, \\\\\n    1, & \\text{otherwise}.\n    \\end{cases}",
+        "tag": "BP_P"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Compute the scaling from the concave functional g(U)=num(U)-eps_p*den(U) (num is concave and den affine in U, by the same kinetic-energy estimate used in Theorem thm:convex_Gp): take theta_p = min over quadrature points with g<0 of g(Ubar)/(g(Ubar)-g(Utilde(x))), clipped to [0,1]; concavity of g then gives p>=eps_p along the ray.",
+      "overall_effect": "The bound-preserving guarantee for pressure, and hence the claim that the BP limiter maps the OEDG state into G^p at all quadrature points, fails; downstream bound/positivity arguments relying on p>0 after limiting are unreliable.",
+      "primary_affected_tag": "BP_P",
+      "target_type": "algorithm",
+      "title": "Pressure scaling theta_p does not enforce p >= eps_p",
+      "why_classification": "The formula and its justification must be rederived using the concave pressure functional rather than p itself; this is a contained nontrivial argument and a local reoptimization of the limiter, after which the pressure bound and all claims survive, so the loss is limited but not routine."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For all cases, we simply employ $\\Delta t \\propto \\Delta x$ and $CFL=0.1$.",
+          "tag": null
+        },
+        {
+          "quote": "Although the standard second-order Strang \nsplitting is limited to $O(\\Delta t^2)$ \ntemporal accuracy",
+          "tag": null
+        },
+        {
+          "quote": "While formally restricted to second-order temporal accuracy \nby the Strang splitting and the implicit solver,",
+          "tag": null
+        },
+        {
+          "quote": "Although this conventional scaling restricts the temporal accuracy to second order at the two-phase interface due to the operator splitting",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper states that Strang splitting plus the implicit solver give only second-order temporal accuracy, and that the tests use dt proportional to dx. The temporal error is then O(dt^2)=O(dx^2), which dominates the third-order spatial error O(dx^3) of DG(P^2) asymptotically, so the temporal error cannot remain subdominant and third-order convergence is not the expected asymptotic rate. The stated justification and the resulting accuracy promise are mathematically inconsistent with the paper's own order statement (the test case is two-phase throughout, z1=0.5+0.4 sin(pi x), so the O(dt^2) splitting error is active everywhere).",
+      "failure_location": {
+        "quote": "the resulting temporal error remains subdominant to the overall error.\nAs a result, the  DG($P^2$) with $\\Delta t \\propto \\Delta x$ \n still exhibits the expected third-order convergence.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Either rerun the convergence study with dt = O(dx^(3/2)) (so that O(dt^2)=O(dx^3)) and state the rate accordingly, or weaken the claim to second-order asymptotic accuracy with observed orders near three on the tested grids.",
+      "overall_effect": "The advertised third-order convergence of DG(P^2) with dt proportional to dx and the interpretation of the reported convergence table are unsupported; only second-order asymptotic accuracy is implied by the stated temporal order.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Third-order convergence with dt proportional to dx conflicts with second-order time accuracy",
+      "why_classification": "Adjusting the time-step scaling (or the accompanying rate statement) is a short local repair that preserves the method, its rates and its advertised scope, with no new lemma, construction or replacement argument."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2604.25672",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6e33d4743ac4690d4731311b541c59b0314910ae99b86bef3e25e9c3e4e7b64a",
+  "status": "ok"
+}

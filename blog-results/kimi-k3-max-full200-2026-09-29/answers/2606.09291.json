@@ -1,0 +1,143 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\rho \\coloneqq 1-2\\tau c + 2\\sqrt{\\eta}(1+\\sqrt{1-c\\tau}) + 2\\tau^2 L^2 +2\\eta\\left(1+\\sqrt{1-c\\tau}\\right)^2\\leq 1-2\\tau c+ 2\\tau^2L^2 + 4\\sqrt{\\eta}+8\\eta,",
+          "tag": "thm:error"
+        },
+        {
+          "quote": "so that $4\\sqrt{n}+8\\eta<\\frac{c^2}{2L^2}$, it holds that $\\rho<1$.",
+          "tag": "thm:error"
+        }
+      ],
+      "failure_explanation": "The proof derives rho <= 1 - 2*tau*c + 2*tau^2*L^2 + 4*sqrt(eta) + 8*eta, so rho<1 requires 4*sqrt(eta)+8*eta < 2*tau*(c - tau*L^2). On the stated range tau in (0, c/(2L^2)) the right-hand side ranges over (0, c^2/(2L^2)) and tends to 0 as tau -> 0; hence the stated tau-independent condition 4*sqrt(eta)+8*eta < c^2/(2L^2) does not imply rho<1. For example c=L=1, tau=0.1 (<1/2), eta=0.006 (so 4*sqrt(eta)+8*eta approximately 0.36 < 1/2) satisfy both stated hypotheses but give rho approximately 1.17 > 1. Since the estimates used (Cauchy-Schwarz, triangle inequality, saturation of the MSE condition eq:conditionmeansquareerror) are worst-case tight, the stated hypotheses admit parameters for which the mean-square contraction actually fails: the admissible eta must shrink with tau.",
+      "failure_location": {
+        "quote": "so that $4\\sqrt{\\eta}+8\\eta<\\frac{c^2}{2L^2}$, it holds",
+        "tag": "thm:error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Strengthen the hypothesis to the tau-dependent sufficient condition 4*sqrt(eta)+8*eta < 2*tau*c - 2*tau^2*L^2 (positive exactly on tau in (0, c/(2L^2))); the proof then yields rho<1 verbatim and the linear-convergence statement and rate are preserved.",
+      "overall_effect": "The main mean-square linear convergence result eq:meansquareaccuracy is unsupported, and in the worst case false, on the part of its stated parameter range where tau is small relative to eta. The advertised linear convergence in expectation of the method inherits this gap. No later formal result is damaged: Corollary cor:complexity-result only assumes the conclusion eq:meansquareaccuracy, which the repaired theorem still provides.",
+      "primary_affected_tag": "thm:error",
+      "target_type": "formal_result",
+      "title": "Admissible eta in the convergence theorem is stated independently of tau, so rho<1 is not guaranteed",
+      "why_classification": "The resolution modifies the theorem's hypothesis by coupling eta to tau, a limited weakening of the stated admissible parameter set that has genuine (worst-case) counterexamples rather than a degenerate gap; but it requires no new argument beyond the displayed estimate, and the conclusion, the linear rate, and all downstream uses survive, so it is not serious."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:complexity_gradient_estimation",
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{\\ell=1}^L \\frac{1}{M_{\\ell}}\\sum_{m=1}^{M_\\ell} Y^{(m)}_{\\ell}-Y^{(m)}_{\\ell-1}",
+          "tag": "eq:ml_estimator_denominator"
+        },
+        {
+          "quote": "the elements of $\\{\\bsxi^{(m,\\ell)}\\}_{m=1}^{M_\\ell}$ are independent and identically distributed, and these sequences are mutually independent and identically distributed across $\\ell$.",
+          "tag": "eq:shorthand-notation"
+        },
+        {
+          "quote": "where $C \\coloneqq \\|\\mathbb{E}\\left[ X\\right]\\|_U^2/\\EE\\left[Y\\right]^2$.",
+          "tag": "proposition:bound_mean_square_error"
+        }
+      ],
+      "failure_explanation": "The final inequality of the proof absorbs 1/E^ML[Y_L]^2 into the constants, which requires E^ML[Y_L] >= 1 almost surely. But E^ML[Y_L] is the multilevel estimator eq:ml_estimator_denominator: a sum over levels of mutually independent sample means of the differences Delta Y_l = Y_l - Y_{l-1}. Only the one-sided bound Y_l = exp(theta*Phi(y_l)) >= 1 holds; the differences Delta Y_l have no sign and are negative with positive probability, so with independent level samples the estimator falls below 1 with positive probability, and without further assumptions it is not bounded away from 0 at all. The premise is therefore unestablished and generically false, and the proposition with the stated exact constant C = ||E[X]||^2/E[Y]^2 is unproven; absent a lower bound on the denominator, the second moment of the ratio gradient estimator need not even be finite.",
+      "failure_location": {
+        "quote": "where we used that $\\EE^{\\textrm{ML}} \\left[Y_L\\right] > 1$.",
+        "tag": "proposition:bound_mean_square_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Impose or establish an almost-sure lower bound E^ML[Y_L] >= c_0 > 0 (e.g., from almost-sure strong convergence of the FE solutions together with the boundedness of Phi, or by safeguarding/truncating the denominator in the gradient estimator), rescaling C and the second term by c_0^{-2}; the proposition and both downstream results then hold with identical asymptotic content.",
+      "overall_effect": "The bias/sampling decomposition eq:num-sam-decompostion-gradient on which the complexity analysis rests loses its justification: Theorem thm:complexity_gradient_estimation and Corollary cor:complexity-result are established only up to repairing this step (their asymptotic statements are insensitive to the exact constant, so their content survives a repair).",
+      "primary_affected_tag": "proposition:bound_mean_square_error",
+      "target_type": "formal_result",
+      "title": "Unjustified almost-sure lower bound E^ML[Y_L] > 1 in the ratio-estimator MSE bound",
+      "why_classification": "The repair needs a genuinely new hypothesis or a nontrivial almost-sure lower-bound argument and changes the stated constant, which is more than a routine local patch; however it is contained, no proof architecture changes, and every downstream asymptotic claim survives unchanged, so no result or regime is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{k=1}^K e^{-2}_k\\quad & \\beta>\\gamma,",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "we need to perform $K \\coloneqq \\bigg\\lceil\\left|\\frac{2\\log \\varepsilon}{\\log \\rho}\\right|\\bigg\\rceil$ iterations",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "\\rho^k \\eqqcolon e_k",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "the $\\varepsilon^2$-accuracy of the MLMC gradient estimator,",
+          "tag": "thm:complexity_gradient_estimation"
+        }
+      ],
+      "failure_explanation": "e_k := rho^k is a mean-square (squared-norm) accuracy level, whereas the cost law of Theorem thm:complexity_gradient_estimation is parametrized by the root-mean-square level epsilon with MSE <= epsilon^2. The cost of achieving MSE target e_k is therefore e_k^{-1} (respectively e_k^{-1}|log e_k|^2 and e_k^{-1-(gamma-beta)/(2 alpha)}), not the displayed e_k^{-2} (and analogues); moreover K = ceil(|2 log eps / log rho|) yields e_K of order eps^2, contradicting the closing identity e_K ~ eps. Read literally, the displayed geometric sum yields eps^{-4} in the case beta>gamma, not the claimed eps^{-2}. The two errors cancel, so the stated rates are correct, but the written derivation does not establish them.",
+      "failure_location": {
+        "quote": "The claim then follows since $e_K\\cong\\varepsilon$.",
+        "tag": "cor:complexity-result"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Evaluate Theorem thm:complexity_gradient_estimation at RMSE level sqrt(e_k), i.e., replace the summands by e_k^{-1}, e_k^{-1}|log e_k|^2 and e_k^{-1-(gamma-beta)/(2 alpha)}, and use e_K of order eps^2; the same geometric-series argument then yields exactly the claimed rates.",
+      "overall_effect": "Only the proof of Corollary cor:complexity-result is affected; the stated complexity bounds are themselves correct and no other result depends on this derivation.",
+      "primary_affected_tag": "cor:complexity-result",
+      "target_type": "formal_result",
+      "title": "Cost summation in Corollary cor:complexity-result uses squared exponents and an inconsistent closing identity e_K ~ eps",
+      "why_classification": "The conclusion is correct as stated; the defect is a systematically squared exponent in one display plus the inconsistent final identity, and the forced correction is routine and local, changing no claim, rate, regime, or any other result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\texttt{while } \\tnorm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U > \\varepsilon \\colon",
+          "tag": "alg:mlsgd"
+        },
+        {
+          "quote": "smaller than some chosen accuracy $\\varepsilon > 0$",
+          "tag": null
+        },
+        {
+          "quote": "\\EE_k\\left[\\|\\nabla \\mathcal{J}(u_k)-\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)\\|_U^2 \\right]\\leq \\eta \\|\\mathcal{R}_{\\tau}(u_k)\\|_U^2,",
+          "tag": "thm:error"
+        },
+        {
+          "quote": "\\langle \\nabla \\mathcal{J}(u^\\star), u - u^\\star \\rangle_{U} \\ge 0 \\quad \\forall u \\in U_{\\mathrm{ad}},",
+          "tag": "eq:variational_inequality"
+        }
+      ],
+      "failure_explanation": "For the constrained problem the paper analyzes, optimality is the variational inequality eq:variational_inequality, so nabla J(u*) need not vanish; the quantity that vanishes at u* and against which Theorem thm:error scales the gradient-estimator accuracy (condition eq:conditionmeansquareerror) is the reduced projected gradient R_tau. Since u = Pi(u) for u in U_ad, nonexpansiveness gives ||R_tau(u)|| <= ||nabla J(u)||, with a possibly large gap when the constraint is active. Consequently the implemented target eps_k = eta||nabla J^ML(u_k)|| does not enforce the analyzed condition eq:conditionmeansquareerror, and the stopping test ||nabla J^ML(u_k)|| <= eps is unattainable for eps below ||nabla J(u*)|| when constraints are active at the solution. As specified, the algorithm is consistent with the convergence theory only in the unconstrained case, and its stated termination goal is ill-posed for genuinely constrained problems.",
+      "failure_location": {
+        "quote": "k \\leftarrow k + 1 \\quad \\varepsilon_k \\leftarrow \\eta \\tnorm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U",
+        "tag": "alg:mlsgd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace ||nabla J^ML(u_k)|| by the reduced projected gradient norm ||(u_k - Pi_{U_ad}(u_k - tau nabla J^ML(u_k)))/tau||, computable from the already evaluated gradient estimate, in both the stopping test and the update of eps_k; this aligns the algorithm with the quantity in eq:conditionmeansquareerror and restores a vanishing target at u*.",
+      "overall_effect": "For constrained instances, the paper's stated framework (projection in eq:gradientdescentMLMC), the link between the analyzed iteration and the implemented adaptive MLSGD is broken: the linear-convergence guarantee does not apply to the implemented adaptivity rule, and the gradient-norm stopping criterion may never trigger.",
+      "primary_affected_tag": "alg:mlsgd",
+      "target_type": "algorithm",
+      "title": "MLSGD stopping test and accuracy target use the plain gradient norm instead of the reduced projected gradient",
+      "why_classification": "The repair is a local swap of the norm in two lines of the algorithm using quantities already computed; it restores consistency with the conditional theory and a vanishing target at the solution without changing the method, the estimator, or any reported claim, so the substantive content is fully preserved."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2606.09291",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f995bc2781848745f7a0e9dc1ec709b3b392f7fb87821723f10dd174128e1d3c",
+  "status": "ok"
+}

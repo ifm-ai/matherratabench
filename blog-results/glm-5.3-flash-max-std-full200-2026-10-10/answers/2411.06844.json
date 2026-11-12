@@ -1,0 +1,158 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:fullydiscreteCFL",
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that from now on we assume periodic boundary conditions. For this reason we set",
+          "tag": null
+        },
+        {
+          "quote": "D_{1,2}^{x}= D_{1,N_x}^{x} = 0\\;,\\qquad D_{N_x,N_x-1}^{x} = D_{N_x,1}^{x} = 0\\;,",
+          "tag": null
+        },
+        {
+          "quote": "D_{1,1}^{xx}= 0\\;,\\ D_{1,2}^{xx} =0\\;,\\qquad D_{N_x,N_x-1}^{xx} = 0\\;, D_{N_x,N_x}^{xx} = 0.",
+          "tag": null
+        },
+        {
+          "quote": "D_{j,j}^{+}= \\frac{- 1}{\\Delta x}\\;,\\qquad D_{j,j + 1}^{+}= \\frac{ 1}{\\Delta x}\\;.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed boundary modification zeroes the complete first and last rows of D^x and D^{xx} (including D^x_{1,2}, D^x_{N_x,N_x-1}, D^{xx}_{1,1}, D^{xx}_{1,2}, D^{xx}_{N_x,N_x-1}, D^{xx}_{N_x,N_x}), while the corresponding columns keep the interior entries (e.g. D^x_{2,1} = -1/(2Δx), D^{xx}_{2,1} = 1/(Δx)^2). The resulting matrices are neither skew-symmetric nor symmetric: for N_x ≥ 2, y = e_1, z = e_2 gives Σ y_j D^x_{ji} z_i = D^x_{12} = 0 but -Σ z_j D^x_{ji} y_i = -D^x_{21} = 1/(2Δx); and z = e_1 gives Σ z_j D^{xx}_{ji} z_i = 0 ≠ -||D^+ e_1||^2 = -1/(Δx)^2 (D^+ as defined has no periodic wrap). Zeroing these entries is also inconsistent with the stated periodic boundary conditions, which would instead keep the interior stencil at the boundary rows and set the wrap-around entries. Hence all identities asserted in Lemma stencilmatrices are false for the matrices as defined.",
+      "failure_location": {
+        "quote": "Then it holds \\begin{align*} \\sum_{i,j=1}^{N_x} y_j D_{ji}^x z_i = - \\sum_{i,j=1}^{N_x} z_j D_{ji}^{x} y_i\\;,",
+        "tag": "lemma:stencilmatrices"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the zeroed boundary entries by the standard periodic stencils: keep the interior stencil in the first and last rows and set the wrap-around entries (D^x_{1,N_x} = -1/(2Δx), D^x_{N_x,1} = 1/(2Δx), D^{xx}_{1,N_x} = D^{xx}_{N_x,1} = 1/(Δx)^2), and give D^+ the corresponding periodic wrap. With these standard periodic matrices the SBP identities of Lemma lemma:stencilmatrices hold and all dependent proofs proceed unchanged.",
+      "overall_effect": "The summation-by-parts properties invoked in the proof of Theorem theorem:stabilityMg (vanishing of the antisymmetric transport term and the negative-definite term (III)) are unproven and false for the defined matrices; the Fourier diagonalization premise of Lemma lemma:fullydiscreteCFL (which requires circulant operators) also fails, so the CFL-based stability guarantees claimed for (eqs:KB-both) and (alg:DLRA) lose their foundation.",
+      "primary_affected_tag": "lemma:stencilmatrices",
+      "target_type": "formal_result",
+      "title": "SBP properties of the stencil matrices fail under the displayed boundary zeroing",
+      "why_classification": "Restoring the standard periodic stencil entries is a short, local, routine correction; the SBP lemma, the CFL lemma and both stability theorems survive with unchanged content and guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "we use a Gauss-Hermite quadrature providing the quadrature nodes $v_1,...,v_{N_v}$ and weights $\\omega_1,...,\\omega_{N_v}$ enabling us to approximate integrals as",
+          "tag": null
+        },
+        {
+          "quote": "\\int_\\mathbb{R} e^{-v^2} g(t,x,v) \\mathrm{d}v \\approx \\sum_{k=1}^{N_v} \\omega_k g(t,x,v_k).",
+          "tag": null
+        },
+        {
+          "quote": "for $g_{jk}^n = 1$ the condition $ \\frac{1}{\\sqrt{2\\pi}} \\sum_{k=1}^{N_v} g_{jk}^n \\omega_k e^{v_k^2/2} = 1$ holds",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof cancels the collision term using the exact identity (1/√(2π)) Σ_k ω_k e^{v_k^2/2} = 1. For the N_v-point Gauss–Hermite rule (exact only for polynomials of degree ≤ 2N_v−1, with Σ_k ω_k = √π), this identity is false: the rule applied to e^{-v^2/2} is inexact; e.g. for N_v = 1 (node 0, weight √π) the left side is 1/√2. Consequently the induction step actually yields (1+σΔt)ρ_j^{n+1}κ_j^{n+1} = ρ_j^n κ_j^n + σΔt γ ρ_j^{n+1} with γ = (1/√(2π))Σ_k ω_k e^{v_k^2/2} ≠ 1, so κ_j^{n+1} = (1+σΔtγ)/(1+σΔt) ≠ 1 even when κ_j^n = 1. A concrete counterexample: N_v = 1, g^0 = √2 (so κ^0 = 1), σ > 0 gives g^1 = (√2+σΔt)/(1+σΔt) ≠ √2, hence Σ_k f^1_{jk} ω_k e^{v_k^2} ≠ ρ_j^1.",
+      "failure_location": {
+        "quote": "We insert the induction assumption as well as $\\frac{1}{\\sqrt{2\\pi}} \\sum_{k=1}^{N_v} \\omega_k e^{v_k^2/2} = 1$.",
+        "tag": "lemma:fullydiscrete-rho"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Use a velocity quadrature for which the identity holds exactly, e.g. the N_v-point Gauss rule for the weight e^{-v^2/2} with weights normalized so that (1/√(2π)) Σ_k ω_k e^{v_k^2/2} = 1, propagate the changed weights through (eqs:rhoEH)/(eqs:rhoKB), the H-norm and both stability proofs, and re-verify quadrature consistency; alternatively weaken Lemma lemma:fullydiscrete-rho and the stability conclusions to hold only up to the (exponentially small) quadrature error, tracking the resulting residual in the collision-term cancellation.",
+      "overall_effect": "Lemma lemma:fullydiscrete-rho is false as stated, so the discrete mass relation Σ_k f^n_{jk} ω_k e^{v_k^2} = ρ_j^n is not exactly preserved by (eqs:KB-both). The cancellation of the Maxwellian collision term in the proof of Theorem theorem:stabilityMg (and the analogous step appealed to in the proof of Theorem thm:added-1) is unsupported, as is the advertised exact preservation of κ^± = 1 by the modified truncation.",
+      "primary_affected_tag": "lemma:fullydiscrete-rho",
+      "target_type": "formal_result",
+      "title": "Discrete mass relation is not preserved: proof of Lemma fullydiscrete-rho uses a false Gauss–Hermite identity",
+      "why_classification": "The repair is contained (renormalize/replace the quadrature weights and carry them through the scheme, norm and proofs, or weaken the exact-preservation claims to quadrature accuracy); no new global proof architecture is needed and comparable method, CFL condition and stability results survive, but the exact-preservation promise is withdrawn and must be re-derived ⇒ moderate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "E_{j\\alpha} = \\sqrt{\\Delta x}\\exp(i\\alpha\\pi x_j), \\quad j,\\alpha = 1,...,N_x,",
+          "tag": null
+        },
+        {
+          "quote": "choose a grid $x_1,...,x_{N_x}$ with equidistant spacing $\\Delta x = \\frac{1}{N_x}$",
+          "tag": null
+        },
+        {
+          "quote": "and $\\nu_{\\alpha}:=\\alpha\\pi \\Delta x$.",
+          "tag": null
+        },
+        {
+          "quote": "\\lambda^{x}_{\\alpha\\alpha} = \\ \\frac{1}{2\\Delta x}(e^{i\\alpha\\pi \\Delta x}-e^{-i\\alpha\\pi \\Delta x}) = \\frac{i}{\\Delta x} \\sin(\\nu_{\\alpha})",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With Δx = 1/N_x, the columns e^{iαπx_j} = e^{iπα j/N_x} have period 2 in x, while the periodic stencil has period N_xΔx = 1; for odd α, e^{iπα} = -1, so the column is not grid-periodic and is not an eigenvector of the circulant difference matrix, and columns with odd α−β are not orthogonal (Σ_j e^{i(α-β)πj/N_x} ≠ 0). Hence EE^H ≠ I, Parseval's identity cannot be applied, and the displayed eigenvalues λ = i sin(ν_α)/Δx etc. with ν_α = απΔx are not the eigenvalues of the periodic stencils (they would be correct only for a grid with Δx = 2/N_x). The diagonalization/Parseval step of the proof is therefore invalid as written, independently of the boundary-modification defect of Lemma lemma:stencilmatrices.",
+      "failure_location": {
+        "quote": "It is orthonormal, i.e. $\\mathbf E\\mathbf E^H = \\mathbf E^H\\mathbf E = \\mathbf I$, where the superscript $H$ stands for the complex transpose, and diagonalizes the stencil matrices",
+        "tag": "lemma:fullydiscreteCFL"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Use the discrete Fourier modes of the actual periodic grid, E_{jα} = √Δx e^{2πiαx_j} (ν_α = 2παΔx, α = 0,...,N_x−1), which are orthonormal and diagonalize the periodic stencils; redoing the computation with these eigenvalues yields the same per-mode condition Δt|v_k|(1-cos ν) ≤ Δx(1-cos ν) and the identical CFL restriction max_k|v_k| Δt ≤ Δx.",
+      "overall_effect": "The inequality of Lemma lemma:fullydiscreteCFL is not established by its proof, so the CFL restriction max_k |v_k| Δt ≤ Δx and the stability conclusions of Theorems theorem:stabilityMg and thm:added-1, which invoke it, are unsupported by this argument.",
+      "primary_affected_tag": "lemma:fullydiscreteCFL",
+      "target_type": "formal_result",
+      "title": "Fourier diagonalization in the CFL lemma uses modes that are not eigenvectors of the stencil",
+      "why_classification": "Replacing the mode functions by the correct discrete Fourier modes of the period-N_xΔx grid is a local, routine repair; the structure of the estimate and the resulting CFL condition are unchanged."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\doublehat{\\mathbf{X}}^{n+1}  = \\text{qr} \\left( [\\widehat{\\mathbf{X}}^{n+1}, \\left(\\boldsymbol{\\rho}^{n+1}\\right)^2 \\widehat{\\mathbf{X}}^{n+1}] \\right)",
+          "tag": "alg:KbasisAug"
+        },
+        {
+          "quote": "\\doublehat{\\mathbf{V}}^{n+1}  = \\text{qr} \\left([\\widehat{\\mathbf{V}}^{n+1}, \\mathbf{\\omega} e^{\\mathbf{v}^2/2} \\widehat{\\mathbf{V}}^{n+1}]\\right)",
+          "tag": "alg:LbasisAug"
+        },
+        {
+          "quote": "insert the expressions $g_{jk}^n = \\sum_{m,\\ell=1}^{4r} \\doublehat X_{jm}^{n+1} \\widetilde S_{m\\ell}^n \\doublehat V_{k\\ell}^{n+1}$ and $g_{jk}^{n+1} = \\sum_{m,\\ell=1}^{4r} \\doublehat X_{jm}^{n+1} \\doublehat S_{m\\ell}^{n+1} \\doublehat V_{k\\ell}^{n+1}$ into \\eqref{eqs:KBrefDLRA-g}",
+          "tag": "alg:Sstep"
+        },
+        {
+          "quote": "Analogously to the proof of Theorem \\ref{theorem:stabilityMg} and, as the truncation step is designed not to alter these expressions, we can conclude that the proposed DLRA scheme is numerically stable under the time step restriction $\\max_k(|v_k|) \\Delta t \\leq \\Delta x$.",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The proof requires Σ_α P^X_{αj} g^{n+1}_{αβ}(ρ^{n+1}_α)² = g^{n+1}_{jβ}(ρ^{n+1}_j)² and the analogous Z-weighted velocity identity, i.e. the weighted columns (ρ^{n+1})²⊙g^{n+1}_{·β} must lie in span(doublehat X^{n+1}) and Z⊙g^{n+1}_{j·} in the column span of doublehat V^{n+1}. The constructed augmentations only provide closure under ONE weighting of the rank-2r bases: span(doublehat X) = span(cols of widehat X, (ρ^{n+1})²⊙cols of widehat X). But g^{n+1} is represented in the double-hat bases (rank 4r), so writing g^{n+1}_{·β} = widehat X a + D²⊙(widehat X b), its weighted image contains D⁴⊙(widehat X b), which the constructed basis generically does not contain (for non-constant ρ); the same one-level shortfall holds for the Z-weighted velocity basis. Hence the two asserted identities are generically false, and the reduction to the stability argument of Theorem theorem:stabilityMg (which the proof merely invokes 'analogously', also without verifying that the modified truncation transfers the needed structure to the truncated factors) is unproven.",
+      "failure_location": {
+        "quote": "We now use the fact that we have augmented the bases in \\eqref{alg:KbasisAug} and \\eqref{alg:LbasisAug} such that \\begin{align*} \\sum_{\\alpha=1}^{N_x} P_{\\alpha j}^{X} g_{\\alpha \\beta}^{n+1} (\\rho_\\alpha^{n+1})^2 = g_{j \\beta}^{n+1} (\\rho_j^{n+1})^2",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must prove that the weighted quantities appearing in the proof, (ρ^{n+1})²⊙g^{n+1}_{·β} and Z⊙g^{n+1}_{j·}, remain in the spans of the augmented bases for the actual S-step output — which requires augmented bases closed under repeated weightings (not provided by the single augmentation (alg:KbasisAug)/(alg:LbasisAug)) — and must show the modified truncation transfers this structure to the truncated factors, or else replace the stability argument for the truncated scheme.",
+      "overall_effect": "Theorem thm:added-1 — numerical stability of the proposed rank-adaptive DLRA scheme (alg:DLRA) under the CFL condition — is unproven; the abstract's claim of a basis augmentation ensuring stability 'for which an analytical proof is given', the Section 5.3 heading claim, and the conclusion's stability assertion for the low-rank scheme are unsupported.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "DLRA stability proof asserts projector identities not delivered by the basis augmentation",
+      "why_classification": "The false/unestablished identities are precisely what the advertised augmentation was supposed to deliver; every supported resolution requires a new stability argument for the truncated scheme (or abandoning the stability guarantee for the variable-density regime), i.e. essentially new proof architecture or major loss of the advertised guarantee."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2411.06844",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "780b2cf3024e12cfc6d72a0fde531262cd22e612e80f614014249f83b60d5be5",
+  "status": "ok"
+}

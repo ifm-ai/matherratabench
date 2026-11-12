@@ -1,0 +1,149 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\phi(z)= \\langle \\nabla g(z^k), z \\rangle + \\frac{L_k}{2}\\|z - z^k\\|^2.",
+          "tag": "lambda-bound"
+        },
+        {
+          "quote": "z^{k+1} = \\mathop{\\arg\\min}_z \\widetilde{L}(z, \\lambda^k), ",
+          "tag": "lambda-bound"
+        }
+      ],
+      "failure_explanation": "The proof's function phi(z) = <grad g(z^k), z> + (L_k/2)||z - z^k||^2 excludes q, so the exact expansion is phi(y^k) - phi(z^{k+1}) = <grad g(z^k), y^k - z^{k+1}> + (L_k/2)(||y^k - z^k||^2 - ||z^{k+1} - z^k||^2); the displayed bound replaces the quadratic difference by (L_k/2)||y^k - z^{k+1}||^2 and inserts a q-difference, which is valid only if L_k<y^k - z^{k+1}, z^k - z^{k+1}> <= q(z^{k+1}) - q(y^k). This fails, e.g., for g(z) = -z (0-smooth), q = delta_{[-1,3]}, c = -1 (L_c = 1), z^k = 0, L_k = 1: the subproblem solution is z^{k+1} = 1, the Slater point y^k = 1.1 satisfies c-bar(y^k, z^k) = -0.395 < 0, and phi(y^k) - phi(z^{k+1}) = 0.095 while the claimed right-hand side is -0.2 + 0.02 + 0 = -0.18. (Also, the Lagrangian L-tilde used for 'z^{k+1} = argmin L-tilde(., lambda^k)' omits q, inconsistent with the KKT system (thm2_KKT_Stationary) that includes partial q.) The final constant A is nevertheless correct: dropping the nonpositive term gives zeta^{-1}(G D_Y + (L-bar/2)D_Y^2 + M_q).",
+      "failure_location": {
+        "quote": "\\leq \\zeta^{-1} \\Big(\\langle \\nabla g(z^k), \\hat{y}^k-z^{k+1} \\rangle + \\frac{L_k}{2}\\|\\hat{y}^k-z^{k+1}\\|^2 + q(\\hat{y}^k) - q(z^{k+1})\\Big)",
+        "tag": "lambda-bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the displayed step by the exact expansion phi(y^k) - phi(z^{k+1}) = <grad g(z^k), y^k - z^{k+1}> + (L_k/2)(||y^k - z^k||^2 - ||z^{k+1} - z^k||^2) (adding the q-difference), bound it by ||grad g(z^k)|| D_Y + (L-bar/2) D_Y^2 + M_q, and keep the definition of A unchanged.",
+      "overall_effect": "Only the written proof of Lemma lambda-bound is unsound; the stated bound and its later uses (constant omega in Lemma distBound / Theorem sub_iters, and the outer oracle counts) remain valid after the step is repaired.",
+      "primary_affected_tag": "lambda-bound",
+      "target_type": "formal_result",
+      "title": "False intermediate inequality in the proof of Lemma lambda-bound",
+      "why_classification": "A single local inference must be replaced by the exact (elementary) expansion; the lemma's statement, its constant A, and every downstream use survive unchanged, so this is a short routine repair."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:subsolver_output",
+        "thm:outer_bound",
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that Assumptions \\ref{ass:Lip_Smo_KL}, \\ref{ass:MFCQ}, and \\ref{assum:g-h} hold.",
+          "tag": "lambda-bound"
+        },
+        {
+          "quote": "such that $x^{\\ell} \\in \\cX^\\rc_\\epsilon$ for all $0\\leq \\ell < k$. Then, for all $0\\leq \\ell \\leq k$,  it holds that",
+          "tag": "lem:subsolver_output"
+        },
+        {
+          "quote": "\\overline{\\cL}(x)\n    := \\{(y, z): 0 < \\bF^*(x) - \\bF(x, y, z)\n         \\leq \\gamma\\,\\dist(0,\\partial\\bPsi(x))^\\sigma\\}.",
+          "tag": "poten_Lev"
+        },
+        {
+          "quote": "\\STATE Call Algorithm~\\ref{algo_implement:subsolver} with $g(\\cdot) \\gets -f(x^{k+1}, \\cdot)$, $q(\\cdot) \\gets q(\\cdot)$, $c(\\cdot) \\gets c(\\cdot)$, $z^0 \\gets y^k$,",
+          "tag": "algo_implement:whole"
+        },
+        {
+          "quote": "and $y^k$ satisfies",
+          "tag": "thm:outer_bound"
+        }
+      ],
+      "failure_explanation": "Lemma lambda-bound, Theorem sub_iters, and Lemma subsolver_output all assume Assumption assum:g-h, whose KL premise C(bh(z,w)-bh*)^theta <= dist(0, partial bh(z,w)) is inherited from Assumption Lip_Smo_KL(iv) only on the level set {0 < gap <= gamma*dist(0,partial Psi(x))^sigma}. Algorithm whole calls the subsolver at every outer iteration, including at the first stationary iterate x^k (the call at iteration k-1 solves the subproblem at x^k and outputs y^k). At such x^k one only has dist(0,partial Psi(x^k)) <= epsilon, so the KL-assured level gamma*dist^sigma can be strictly smaller than the levels up to ~3/4*gamma*eps^sigma visited by that call (the initialization y^{k-1} has gap up to 3/4*gamma*eps^sigma by the induction bound plus the drift L_f*||x^k - x^{k-1}|| <= gamma*eps^sigma/4); when dist(0,partial Psi(x^k)) < (3/4)^{1/sigma} eps the assumed KL premise fails and Assumption assum:g-h is not established for this call. Consequently the conclusions drawn from Theorem sub_iters for the final call -- finite termination within K-bar, the output bound, the multiplier bound, and hence the y-part of (yk-opt) and the terminal portion of the oracle count -- are not established by the given arguments.",
+      "failure_location": {
+        "quote": "Using this relation, the definition of $A_f$, and Lemma \\ref{lambda-bound} with $G$ replaced by $G_f$, we obtain that $\\|\\lambda^{\\bk,\\ell}\\|_1 \\leq A_f$ holds for all $\\ell$.",
+        "tag": "lambda-uniform-bound"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Weaken the statements: assert the y-quality bounds (lem9-ineq1-1)/(yk-opt) only for iterates x^l that are not (epsilon,r)-stationary (l < k) and count oracle evaluations only for calls at non-stationary iterates, stating the stationarity guarantee separately; or add a hypothesis verifying assum:g-h at every generated iterate. As written, the theorem's terminal-pair claims are not supported.",
+      "overall_effect": "The guarantees tied to the returned pair -- F*(x^k) - F(x^k,y^k) and dist(y^k,Y*(x^k)) bounds in Theorem outer_bound, their echo in Theorem operations, and the terminal portion of the oracle-evaluation count -- are unsupported; the existence of an (epsilon,r)-stationary x^k within K-hat-epsilon (proved by the induction without the final call) survives.",
+      "primary_affected_tag": "lambda-uniform-bound",
+      "target_type": "formal_result",
+      "title": "Subsolver theory applied at the terminal (stationary) iterate without the assumed KL premise",
+      "why_classification": "The supported resolution is a limited weakening (restrict the y-guarantees and the count to non-terminal iterates, or add the missing premise); the headline complexity guarantees for finding a stationary x^k survive, so the loss is contained but a promised output guarantee must be withdrawn -- more than minor, far from major."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that $G_f < \\infty$. Then it holds that",
+          "tag": "lambda-uniform-bound"
+        },
+        {
+          "quote": "G_f = \\max\\{\\|\\nabla_y f(x, y)\\|:(x, y) \\in\\ \\cX \\times \\cY\\}.",
+          "tag": "lambda-uniform-bound"
+        },
+        {
+          "quote": "A_f be given in \\eqref{Af}, and let",
+          "tag": "thm:operations"
+        }
+      ],
+      "failure_explanation": "The proof sketch of Theorem operations invokes Lemma lambda-uniform-bound, which explicitly supposes G_f = max{||grad_y f(x,y)|| : (x,y) in X x Y} < infinity; A_f in (Af) is finite only then, and omega_f, alpha_f, K-bar_{f,theta} and hence N-hat_epsilon are defined through A_f. Assumption Lip_Smo_KL does not imply this: X = dom p is not assumed compact, so sup_{X x Y}||grad_y f|| can be infinite for admissible instances, in which case A_f is undefined, the per-call subsolver iteration bound K-bar_{f,theta} is vacuous, and the advertised first-order oracle complexity (in the abstract, contributions, and the remark) is unsupported. The theorem as stated relies on a result outside its hypotheses.",
+      "failure_location": {
+        "quote": "Suppose that Assumptions \\ref{ass:Lip_Smo_KL} and \\ref{ass:MFCQ} hold. Then the total number of evaluations of the proximal operators of $p$ and $q$, and the gradient $\\nabla f$ performed by Algorithm~\\ref{algo_implement:whole} is at most $\\widehat{K}_\\epsilon$, $\\widehat{N}_\\epsilon$, and $\\widehat{K}_\\epsilon + \\widehat{N}_\\epsilon$, respectively",
+        "tag": "thm:operations"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the hypothesis 'grad_y f is bounded on X x Y' (equivalently, dom p bounded) to Theorem operations; the statement and its proof then go through verbatim. This narrows the advertised class, so it is a limited weakening rather than a local fix.",
+      "overall_effect": "The first-order oracle complexity guarantee of Theorem operations (and the corresponding claims in the abstract, introduction, and the closing remark) is established only under an unstated boundedness condition on grad_y f over X x Y (automatic, e.g., when dom p is compact); as stated, the guarantee is unsupported for instances with unbounded X and unbounded grad_y f.",
+      "primary_affected_tag": "thm:operations",
+      "target_type": "formal_result",
+      "title": "Theorem operations uses the finite constant A_f without assuming grad_y f is bounded",
+      "why_classification": "A missing standard hypothesis must be added to the main oracle-complexity theorem, excluding some instances of the advertised class; the method, rate type, and a recognizably comparable guarantee survive, so this is moderate rather than minor or serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:QG_pot",
+        "thm:Phi_QG",
+        "lem:PhiOver_localHolder",
+        "thm:Phi_localHolder",
+        "lem:subsolver_output",
+        "lem:gen_converge",
+        "thm:outer_bound",
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\overline{|\\nabla \\phi|}(x):= \\liminf_{z \\xrightarrow{\\phi} x} |\\nabla \\phi|(z).",
+          "tag": "limit-slope"
+        },
+        {
+          "quote": "By the definitions of slope and limiting slope in \\eqref{slope} and \\eqref{limit-slope}, one can observe that $|\\nabla \\phi_x|(\\by, \\bz) \\geq \\overline{|\\nabla \\phi_x|}(\\by, \\bz)$. Also, it follows from Lemma \\ref{lem:errbnd}(i) that $\\overline{|\\nabla \\phi_x|}(\\by, \\bz)=\\dist(0, \\partial \\phi_x(\\by, \\bz))$.",
+          "tag": "lem:QG_pot"
+        }
+      ],
+      "failure_explanation": "The identity is false for the paper's own definitions: take the proper closed function phi(u) = |u| on R and u-bar = 0. Then partial phi(0) = [-1,1], so dist(0, partial phi(0)) = 0, while |grad phi|(z) = 1 for every z != 0, whence overline{|grad phi|}(0) = liminf_{z->0}|grad phi|(z) = 1 != 0. The proof of Lemma lem:QG_pot chains two false links -- '|grad phi_x|(y-bar,z-bar) >= overline{|grad phi_x|}(y-bar,z-bar)' and the equality of item (i) -- to obtain |grad phi_x|(y-bar,z-bar) >= dist(0, partial phi_x(y-bar,z-bar)); both links fail in general (slopes can drop at a kink, and the limiting slope need not equal the subdifferential distance). The needed inequality dist(0, partial phi(u-bar)) <= |grad phi|(u-bar) is nevertheless true (a short Ekeland/fuzzy-sum-rule argument, consistent with the cited reference's actual statement), so the growth and error-bound conclusions remain true but are not established by the given proof.",
+      "failure_location": {
+        "quote": "\\item[(i)] $\\overline{|\\nabla \\phi|}(\\bu)=\\dist(0,\\partial \\phi(\\bu))$.",
+        "tag": "lem:errbnd"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace item (i) by the true one-sided relation dist(0, partial phi(u-bar)) <= |grad phi|(u-bar) (a short Ekeland variational-principle argument, which is what the cited literature supports) and, in Lemma lem:QG_pot's proof, use it directly instead of the two invalid links; all subsequent displays and theorems then go through unchanged.",
+      "overall_effect": "The supporting Lemma errbnd(i) is false as stated, so the proofs of Lemma lem:QG_pot and, through it, Lemma lem:EB_pot, Lemma lem:PhiOver_localHolder, Theorems thm:Phi_localHolder and thm:Phi_QG, and (transitively) the sketched proofs of the complexity results are unsound as written; the statements themselves remain true under the corrected slope inequality.",
+      "primary_affected_tag": "lem:errbnd",
+      "target_type": "formal_result",
+      "title": "Lemma errbnd(i) states a false equality between limiting slope and subdifferential distance",
+      "why_classification": "The repair is a local, standard correction (restate the misquoted identity as the true inequality and drop the spurious 'slope >= limiting slope' step); every substantive conclusion, rate, and downstream result is preserved with no new construction, so the issue is minor."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2510.01168",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d17b6d2db9f9f8947adf6598ba23ac99b5546b1c478249f69c37b19e3c5cf5a5",
+  "status": "ok"
+}

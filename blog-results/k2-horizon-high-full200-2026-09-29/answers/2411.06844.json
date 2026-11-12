@@ -1,0 +1,132 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:fullydiscreteCFL",
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that from now on we assume periodic boundary conditions. For this reason we set \n\\begin{align*}\nD_{1,2}^{x}= D_{1,N_x}^{x} &= 0\\;,\\qquad D_{N_x,N_x-1}^{x} = D_{N_x,1}^{x} = 0\\;,\\\\\nD_{1,1}^{xx}= 0\\;,\\ D_{1,2}^{xx} &=0\\;,\\qquad D_{N_x,N_x-1}^{xx} = 0\\;, D_{N_x,N_x}^{xx} = 0.\n\\end{align*}",
+          "tag": null
+        },
+        {
+          "quote": "It is orthonormal, i.e. $\\mathbf E\\mathbf E^H = \\mathbf E^H\\mathbf E = \\mathbf I$, where the superscript $H$ stands for the complex transpose, and diagonalizes the stencil matrices\n\\begin{align*}\n\\mathbf{D}^\\gamma\\mathbf E = \\mathbf E\\mathbf{\\Lambda}^\\gamma, \\qquad \\text{ with } \\gamma \\in \\{x,xx,+\\},\n\\end{align*}",
+          "tag": "lemma:fullydiscreteCFL"
+        }
+      ],
+      "failure_explanation": "The boundary modification zeroes the entire first and last rows of $\\mathbf D^x$ and $\\mathbf D^{xx}$ and removes the wrap-around entries, which is not the periodic (circulant) central stencil that the stated periodic boundary conditions and the whole subsequent analysis require. For the matrices as literally defined, $\\mathbf D^x$ is not skew-symmetric (e.g. $D^x_{2,1} = -1/(2\\Delta x)$ while $D^x_{1,2} = 0$), so the summation-by-parts identities of the lemma are false; likewise the rows are no longer shifts of one another, so the Fourier diagonalization $\\mathbf D^\\gamma \\mathbf E = \\mathbf E \\mathbf \\Lambda^\\gamma$ used in lemma:fullydiscreteCFL is invalid. Every downstream stability argument (CFL lemma, Theorem theorem:stabilityMg, thm:added-1) is built on the circulant stencils.",
+      "failure_location": {
+        "quote": "\\sum_{i,j=1}^{N_x} y_j D_{ji}^x z_i = - \\sum_{i,j=1}^{N_x} z_j D_{ji}^{x} y_i\\;, \\qquad \\sum_{i,j=1}^{N_x} z_j D_{ji}^{x} z_i = 0 \\;, \\qquad \\sum_{i,j=1}^{N_x} y_j D_{ji}^{xx} z_i = \\sum_{i,j=1}^{N_x} z_j D_{ji}^{xx} y_i.",
+        "tag": "lemma:stencilmatrices"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the zeroed boundary entries by the periodic wrap-around values of the standard circulant stencils ($D^x_{1,N_x} = -1/(2\\Delta x)$, $D^x_{N_x,1} = +1/(2\\Delta x)$, $D^{xx}_{1,N_x} = D^{xx}_{N_x,1} = 1/\\Delta x^2$, with the interior rows restored, and take $\\mathbf D^+$ periodic), exactly as the assumed periodic boundary conditions and the Fourier diagonalization require. With this local correction the summation-by-parts lemma, the CFL lemma, and both stability proofs hold as written.",
+      "overall_effect": "As literally defined, the stencil matrices do not satisfy the summation-by-parts identities, and the Fourier analysis behind the CFL condition does not apply; consequently the CFL restriction and the $\\mathscr H$-norm stability of the KB scheme (theorem:stabilityMg) and of the DLRA scheme (thm:added-1) are unproven for the scheme as defined.",
+      "primary_affected_tag": "lemma:stencilmatrices",
+      "target_type": "formal_result",
+      "title": "Stencil matrices are defined with zeroed boundary rows, contradicting the summation-by-parts lemma and the Fourier diagonalization",
+      "why_classification": "The complete resolution is a short, local, routine correction of the boundary entries to the forced periodic (circulant) values; it preserves every substantive claim, the method, the CFL rate, and the advertised scope with no new lemma or replacement argument, which is the definition of a minor issue despite the centrality of the affected lemma."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "K_{jp}^{n+1} =& \\ \\frac{\\rho_j^n}{\\rho_j^{n+1}} K_{jp}^n -\\Delta t \\frac{1}{\\rho_j^{n+1}} \\sum_{i=1}^{N_x} D_{ji}^x \\rho_i^n \\sum_{\\ell=1}^r K_{i\\ell}^n \\sum_{k=1}^{N_v} V_{k\\ell}^n v_k V_{kp}^n",
+          "tag": "alg:Kstep"
+        },
+        {
+          "quote": "Substituting $g_{jk}^n = \\sum_{m,\\ell=1}^r X_{jm}^n S_{m\\ell}^n V_{k\\ell}^n$ into the update equation \\eqref{alg:rho} yields",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Projecting the scheme's right-hand side onto the fixed spatial basis with the ansatz $g_{jk} = \\sum_m X_{jm} L_{mk}$ gives the first term $\\sum_m L_{mk}^n \\sum_j X_{jm}^n \\frac{\\rho_j^n}{\\rho_j^{n+1}} X_{pj}^n$ (the paper writes $X_{mj}^n$) and the advection term $-\\Delta t \\sum_m v_k L_{mk}^n \\sum_i X_{im}^n \\rho_i^n \\sum_j \\frac{D^x_{ji} X_{pj}^n}{\\rho_j^{n+1}}$ (the paper writes $X_{mi}^n$ and $D^x_{ij}$). Since $\\mathbf D^x$ is skew-symmetric, $D^x_{ij} = -D^x_{ji}$, so the written advection term has the opposite sign to the correct projection. The same transposition $X_{mi}$ for $X_{im}$ appears in the stabilization term. As written, the L-step computes a different update than the BUG projection it is claimed to implement (contrast the correct $D^x_{ji}$ in the K-step).",
+      "failure_location": {
+        "quote": "L_{pk}^{n+1}=& \\ \\sum_{m=1}^r L_{mk}^n \\sum_{j=1}^{N_x} X_{mj}^n \\frac{\\rho_j^n}{\\rho_j^{n+1}} X_{pj}^n - \\Delta t \\sum_{m=1}^r v_k L_{mk}^n \\sum_{i=1}^{N_x} X_{mi}^n \\rho_i^n \\sum_{j=1}^{N_x} D_{ij}^x \\frac{1}{\\rho_j^{n+1}} X_{pj}^n",
+        "tag": "alg:Lstep"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the L-step by the direct projection stated in the paper's own BUG definition: replace $X_{mj}$ by $X_{jm}$ and $D^x_{ij}$ by $D^x_{ji}$ in \\eqref{alg:Lstep} (the latter also removes the unintended sign flip of the advection term). No other block of the algorithm needs to change.",
+      "overall_effect": "The velocity basis produced by the L-step of algorithm alg:DLRA is not the one the DLRA construction analyzes, so the scheme as written does not implement the rank-adaptive BUG integrator it claims; its accuracy as a low-rank method and any results computed with the written formula are unreliable. The stability proof of thm:added-1 is formally unaffected because it starts from the S-step and never uses the L-step formula.",
+      "primary_affected_tag": "alg:Lstep",
+      "target_type": "algorithm",
+      "title": "L-step update is not the BUG projection: transposed indices and a sign-flipped advection term",
+      "why_classification": "The repair is a mechanical, local correction of the displayed update back to the unambiguous BUG projection; it restores the intended method and all analyzed guarantees with no new construction, reoptimization, or loss, which is minor even though the written formula is mathematically wrong rather than a mere typo."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\doublehat{\\mathbf{X}}^{n+1}  = \\text{qr} \\left( [\\widehat{\\mathbf{X}}^{n+1}, \\left(\\boldsymbol{\\rho}^{n+1}\\right)^2 \\widehat{\\mathbf{X}}^{n+1}] \\right)",
+          "tag": "alg:KbasisAug"
+        },
+        {
+          "quote": "\\doublehat{\\mathbf{V}}^{n+1}  = \\text{qr} \\left([\\widehat{\\mathbf{V}}^{n+1}, \\mathbf{\\omega} e^{\\mathbf{v}^2/2} \\widehat{\\mathbf{V}}^{n+1}]\\right)",
+          "tag": "alg:LbasisAug"
+        },
+        {
+          "quote": "insert the expressions $g_{jk}^n = \\sum_{m,\\ell=1}^{4r} \\doublehat X_{jm}^{n+1} \\widetilde S_{m\\ell}^n \\doublehat V_{k\\ell}^{n+1}$ and $g_{jk}^{n+1} = \\sum_{m,\\ell=1}^{4r} \\doublehat X_{jm}^{n+1} \\doublehat S_{m\\ell}^{n+1} \\doublehat V_{k\\ell}^{n+1}$ into \\eqref{eqs:KBrefDLRA-g}",
+          "tag": "alg:Sstep"
+        }
+      ],
+      "failure_explanation": "The claimed identities say that multiplication by $(\\rho^{n+1})^2$ (resp. $\\omega e^{v^2/2}$) leaves $\\mathrm{span}(\\doublehat{\\mathbf X}^{n+1})$ (resp. $\\mathrm{span}(\\doublehat{\\mathbf V}^{n+1})$) invariant, which is what the proof needs because $g^{n+1} = \\doublehat{\\mathbf X}\\doublehat{\\mathbf S}\\doublehat{\\mathbf V}^\\top$ has components in all $4r$ directions. But the augmentation $[\\widehat{\\mathbf X}, (\\boldsymbol\\rho^{n+1})^2 \\widehat{\\mathbf X}]$ only puts $(\\boldsymbol\\rho^{n+1})^2 \\widehat{\\mathbf X}_{\\cdot q}$ into the span for the first $2r$ directions; for $q > 2r$ the columns of $\\doublehat{\\mathbf X}$ contain $(\\boldsymbol\\rho^{n+1})^2 \\widehat{\\mathbf X}$ components, so $(\\boldsymbol\\rho^{n+1})^2 \\doublehat{\\mathbf X}_{\\cdot q}$ contains $(\\boldsymbol\\rho^{n+1})^4 \\widehat{\\mathbf X}$ components, which are not in the augmented span in general (e.g. $N_x=6$, $\\widehat{\\mathbf X} = [c_1, c_2]$ with $c_1=(1,0,1,0,1,0)^\\top$, $c_2=(0,1,1,1,0,1)^\\top$, $(\\rho^{n+1})^2=(1,\\dots,6)$: the third QR column is proportional to $(-1,0,0,0,1,0)^\\top$, and $(\\rho^{n+1})^2$ times it is not in $\\mathrm{span}([\\widehat{\\mathbf X}, (\\boldsymbol\\rho^{n+1})^2\\widehat{\\mathbf X}])$). Hence the identities used to reduce the S-step to the full-scheme stability computation are false in general, and the proof of thm:added-1 is invalid as written.",
+      "failure_location": {
+        "quote": "We now use the fact that we have augmented the bases in \\eqref{alg:KbasisAug} and \\eqref{alg:LbasisAug}\nsuch that \n\\begin{align*}\n\\sum_{\\alpha=1}^{N_x} P_{\\alpha j}^{X} g_{\\alpha \\beta}^{n+1} (\\rho_\\alpha^{n+1})^2 = g_{j \\beta}^{n+1} (\\rho_j^{n+1})^2 \\quad \\text{ and } \\quad \\sum_{\\beta=1}^{N_v} P_{k\\beta}^{V} g_{j\\beta}^{n+1} \\omega_\\beta e^{v_\\beta^2/2} = g_{jk}^{n+1} \\omega_k e^{v_k^2/2}\n\\end{align*}\nholds.",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Perform the S-step and the subsequent truncation in the unaugmented rank-$2r$ bases $\\widehat{\\mathbf X}^{n+1}, \\widehat{\\mathbf V}^{n+1}$ instead of the augmented $\\doublehat{\\mathbf X}^{n+1}, \\doublehat{\\mathbf V}^{n+1}$. Then $g^{n+1} = \\widehat{\\mathbf X}\\widehat{\\mathbf S}\\widehat{\\mathbf V}^\\top$, and the augmentations $[\\widehat{\\mathbf X}, (\\boldsymbol\\rho^{n+1})^2 \\widehat{\\mathbf X}]$ and $[\\widehat{\\mathbf V}, \\boldsymbol\\omega e^{\\mathbf v^2/2} \\widehat{\\mathbf V}]$ do deliver the projection identities, so the existing proof goes through unchanged.",
+      "overall_effect": "The headline guarantee of the paper — $\\mathscr H$-norm stability of the proposed rank-adaptive DLRA scheme under the CFL condition — is unproven: the key projection identities fail, so the S-step cannot be reduced to the full-scheme stability computation the proof relies on. The same augmentation insufficiency also undermines the claim that the truncation keeps the discrete moment condition exactly.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Basis augmentation does not deliver the projection invariance on which the DLRA stability proof relies",
+      "why_classification": "The central stability theorem is invalid as written, but a contained repair exists — re-basing the S-step and truncation on the rank-$2r$ bases makes the augmentation deliver the needed invariance and the existing proof works — which avoids new global proof architecture and keeps a recognizably comparable result, though it requires reworking part of the algorithm and its proof description; this is more than a local fix yet stops short of major loss."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Under the time step restriction $\\max_k(|v_k|) \\Delta t \\leq \\Delta x$, the fully discrete DLRA scheme \\eqref{alg:DLRA} is numerically stable in the $\\mathscr{H}$-norm",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "that ensures that $\\frac{1}{\\sqrt{2\\pi}} \\sum_{\\ell,m=1}^r \\sum_{k=1}^{N_v} X_{jm}^n S_{m\\ell}^n V_{k\\ell}^n \\omega_k e^{v_k^2/2} = 1$ stays valid in each time step",
+          "tag": null
+        },
+        {
+          "quote": "The new rank $r_1$ is then given by $r_1 = \\widetilde r_1 + 1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The computation in the proof analyzes the S-step output $g^{n+1} = \\doublehat{\\mathbf X}^{n+1}\\doublehat{\\mathbf S}^{n+1}\\doublehat{\\mathbf V}^{n+1,\\top}$, i.e., the pre-truncation iterate of rank $4r$. The scheme's actual output — and hence the $\\mathbf f^{n+1}$ in the theorem's stability claim — is the truncated rank-$r_1$ iterate ($r_1 = \\widetilde r_1 + 1$). The truncation is explicitly designed to preserve only the discrete moment condition $\\frac{1}{\\sqrt{2\\pi}}\\sum_k g_{jk}\\omega_k e^{v_k^2/2} = 1$, not the $\\mathscr H$-norm, and the final sentence invokes only this moment preservation ('designed not to alter these expressions'). No argument shows that the truncation does not increase $\\Vert\\cdot\\Vert_{\\mathscr H}$, so the stated stability of the full DLRA scheme does not follow from the proof.",
+      "failure_location": {
+        "quote": "Analogously to the proof of Theorem \\ref{theorem:stabilityMg} and, as the truncation step is designed not to alter these expressions, we can conclude that the proposed DLRA scheme is numerically stable under the time step restriction $\\max_k(|v_k|) \\Delta t \\leq \\Delta x$.",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either prove that the moment-preserving truncation is non-expansive in the $\\mathscr H$-norm (a new lemma not present in the source) or weaken the statement to stability of the untruncated update, which abandons the stability guarantee for the advertised rank-adaptive scheme.",
+      "overall_effect": "The theorem as stated — stability of the complete DLRA scheme including its truncation step — is not established; the proof establishes the $\\mathscr H$-norm estimate only for the untruncated rank-$4r$ update. The advertised rank-adaptive scheme therefore has no proven stability guarantee as stated.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Stability proof covers only the pre-truncation iterate; the truncation's effect on the H-norm is not addressed",
+      "why_classification": "Every complete resolution needs either a new argument (a lemma showing the truncation is an $\\mathscr H$-norm contraction, which the source does not supply and which is not obvious since the truncation is designed for the moment condition, not the weighted norm) or a weakening of the theorem to the untruncated scheme, which abandons the stability guarantee for the paper's advertised rank-adaptive method — a major loss of the central claim; no comparable version of the stated result survives within the source."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2411.06844",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "780b2cf3024e12cfc6d72a0fde531262cd22e612e80f614014249f83b60d5be5",
+  "status": "ok"
+}

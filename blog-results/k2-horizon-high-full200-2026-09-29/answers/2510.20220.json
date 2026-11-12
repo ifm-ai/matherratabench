@@ -1,0 +1,202 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\max_{H^TH =I} \\text{Tr} (H^T G H) \\quad \\text{subject to}\\quad  F^TH=\\mathbf{0}",
+          "tag": "SMW1"
+        },
+        {
+          "quote": "\\min_{H^TH =I} \\frac{1}{2}\\text{Tr} (H^T G^{-1} H) \\quad \\text{subject to}\\quad  F^TH=\\mathbf{0}.",
+          "tag": "SMW2"
+        },
+        {
+          "quote": "Since the eigenvalues of $Z^TGZ$ are all positive \\cite{horn2013matrix}, and using the fact that $Z^T=Z^{-1}$ we can reformulate this problem as follows:",
+          "tag": null
+        },
+        {
+          "quote": "\\min_{Y^TY =I} \\text{Tr} (Y^T Z^{-1}G^{-1}Z^{-T} Y ) = \\min_{Y^TY =I} \\text{Tr} (Y^T Z^TG^{-1}Z Y )",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "After H=ZY with Z^T Z=I, the maximizer of Tr(Y^T Z^T G Z Y) is the top eigenvector of Z^T G Z, while the minimizer of Tr(Y^T Z^T G^{-1} Z Y) is the bottom eigenvector of Z^T G^{-1} Z. These coincide only if Z^T G^{-1} Z = (Z^T G Z)^{-1}, which the paper justifies via Z^T=Z^{-1}; that inversion identity is valid only for square invertible Z, but Z is n x (n-h+1), so the two matrices differ in general. Counterexample: G = [[2,1,1],[1,2,0],[1,0,4/3]] (positive definite) with the legitimate fairness matrix F=(1/2,1/2,-1)^T (groups V_1={1,2}, V_2={3}); for an orthonormal basis {z_1,z_2} of ker F^T, the top eigenvector of Z^T G Z is proportional to z_1+3.02 z_2, whereas the bottom eigenvector of Z^T G^{-1} Z is proportional to z_1+1.57 z_2. Hence SMW2 does not share SMW1's maximizer. The entire subsequent chain (augmented Lagrangian, SMW3, SMW3b, the mu->infinity SMW limit, the reformulation problem, and the Fair-SMW algorithm) therefore solves min Tr(H^T G^{-1} H) s.t. F^T H=0, not the advertised fair normalized-cut relaxation min Tr(H^T L_sym H) s.t. F^T H=0.",
+      "failure_location": {
+        "quote": "Notice that \\eqref{SMW2} is equivalent to \\eqref{SMW1} in the sense that the maximizer $H$ is the same.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair; at minimum a repair must re-derive the constrained eigenproblem using the correct dual (Z^T G Z)^{-1} = Z^{-1} G^{-1} Z^{-T} (equivalently, work directly with Z^T G Z or an orthogonal projector onto ker F^T as in the cited S-Fair-SC), because Z^T G^{-1} Z and (Z^T G Z)^{-1} are genuinely different matrices.",
+      "overall_effect": "The paper's central theoretical claim -- that Fair-SMW (SYM, RW, AFF variants) solves the fairness-constrained spectral relaxation of normalized cut -- is unsupported: the derived objective is a different constrained eigenproblem, and every downstream step of the derivation inherits the wrong objective.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed equivalence of the G and G^{-1} fairness-constrained eigenproblems is false",
+      "why_classification": "The root claim is simply false and no local edit repairs it: the correct dualization requires a different derivation architecture, and the advertised guarantee (a solution of the fair spectral relaxation) is not delivered by the method as derived, even though a runnable algorithm remains."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{H^TH =I} \\text{Tr} [H^T (G^{-1} +\\mu FF^T) H]",
+          "tag": "SMW3"
+        },
+        {
+          "quote": "\\min_{H} \\left( \\frac{1}{2}\\text{Tr}(H^T G^{-1} H) - \\frac{\\mu}{2} \\text{Tr}(H^T F F^T H) \\right) = \\min_{H} \\frac{1}{2}\\text{Tr}\\left(H^T \\left( G^{-1} - \\mu F F^T \\right) H \\right)",
+          "tag": null
+        },
+        {
+          "quote": "&= G^{-1} H - F\\Lambda - \\mu F F^T H",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the constrained problem min (1/2)Tr(H^T G^{-1} H) s.t. F^T H=0, the augmented-Lagrangian penalty must be + (mu/2)||F^T H||_F^2; with the stated minus sign the term rewards violating the fairness constraint and the displayed function is not an augmented Lagrangian. Consequently the stated gradient G^{-1}H - F Lambda - mu F F^T H and the Lambda=0 subproblem both carry G^{-1} - mu F F^T, directly contradicting the plus sign in the paper's central equation SMW3. As written, the derivation does not produce SMW3.",
+      "failure_location": {
+        "quote": "\\mathcal{L}(H, \\Lambda, \\mu) = \\frac{1}{2}\\text{Tr}(H^T G^{-1} H) - \\text{Tr}(\\Lambda^T (F^T H)) - \\frac{\\mu}{2} \\|F^T H\\|_F^2",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Flip the penalty sign in the Lagrangian to + (mu/2)||F^T H||_F^2 and the corresponding signs in the gradient (G^{-1}H - F Lambda + mu F F^T H) and the block system ((G^{-1}+mu F F^T)H - F Lambda = 0); the Lambda=0 subproblem then coincides with SMW3 and every subsequent step (SMW3b, the SMW limit, the algorithm) is unchanged.",
+      "overall_effect": "The derivation of the central penalized problem SMW3 (and with it the SMW identity step and everything built on it) is invalid as written; a reader cannot verify the paper's key equation from the given argument.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Augmented Lagrangian has a negative penalty and the derived subproblem contradicts SMW3",
+      "why_classification": "The correction is a forced, local sign repair that leaves SMW3 and all downstream content intact; no substantive claim, rate, or scope is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $D^{-1}$ is an invertible diagonal matrix, it is of full rank, and multiplying by it from the right does not change the row space $ \\mathcal{R}(F^T D^{-1}) = \\mathcal{R}(F^T) $ and the identity \\eqref{eq:identity} holds.",
+          "tag": "thm:added-5"
+        },
+        {
+          "quote": "The expression $F^T D^{-1} = F^T D^{-1} P_F$ holds true if and only if every row vector of $F^T D^{-1}$ is invariant under the projection $P_F$.",
+          "tag": "thm:added-5"
+        },
+        {
+          "quote": "We notice that $\\mathcal{W}P$ is symmetric.",
+          "tag": "thm:added-5"
+        }
+      ],
+      "failure_explanation": "Right-multiplication by D^{-1} rescales the i-th entry of every row of F^T by 1/d_i; the row space is preserved only when the scaling is constant on each protected group, so the claimed identity holds only if degrees are constant within every group -- the paper's justification ('multiplying by it from the right does not change the row space') is false in general. Counterexample: n=4, V_1={1,2}, V_2={3,4}, degrees (1,2,1,1), F=(1/2,1/2,-1/2,-1/2)^T gives F^T D^{-1} = (1/2,1/4,-1/2,-1/2) but F^T D^{-1} F (F^T F)^{-1} F^T = (7/16,7/16,-7/16,-7/16). The identity then feeds the simplification P = I - F(F^T Wcal F)^{-1} F^T Wcal, the symmetry of Wcal P, and the similarity argument; with the identity false these steps collapse, so the claim that U_rw has real eigenvalues is unproven (the argument is valid only for graphs whose degrees are constant within each group).",
+      "failure_location": {
+        "quote": "F^T D^{-1} = F^T D^{-1} F (F^T F)^{-1} F^T",
+        "tag": "eq:identity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Either prove realness of the eigenvalues of U_rw by a correct argument (a new lemma, e.g. a valid symmetrization of D^{-1} Wcal P) or restrict the theorem to graphs whose degrees are constant within each protected group; both are contained but nontrivial repairs.",
+      "overall_effect": "The RW-Fair-SMW variant loses its only theoretical justification (a real spectrum for the nonsymmetric U_rw); the SYM and AFF variants retain theirs (thm:added-2, thm:added-3 and the symmetric argument).",
+      "primary_affected_tag": "thm:added-5",
+      "target_type": "formal_result",
+      "title": "thm:added-5 proof relies on a false identity, leaving realness of the U_rw spectrum unproven",
+      "why_classification": "The proof fails at a concrete step and the key identity is demonstrably false, but the claim may still be true and the damage is confined to one variant's spectral guarantee; a contained new argument or an added hypothesis repairs it without global rearchitecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State Construct the fairness-adjusted matrix $U_{\\text{sym}} = G_{\\mathrm{sym}} - M (F^T M)^{-1} F^T G_{\\mathrm{sym}}$",
+          "tag": "alg:smw-cluster"
+        },
+        {
+          "quote": "$$P = F(F^T GF)^{-1}F^T G \\quad \\text{and} \\quad U =G-GP.$$",
+          "tag": null
+        },
+        {
+          "quote": "& = G - GF  (\\mu^{-1}I + F^T GF )^{-1} F^T G.",
+          "tag": null
+        },
+        {
+          "quote": "(G^{-1}+\\mu FF^T)^{-1} &\\rightarrow G - GF (F^T GF)^{-1} F^T G\\",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The derivation fixes U = G - GF(F^T G F)^{-1} F^T G, which the algorithmic formula U = G - M(F^T M)^{-1} F^T G reproduces only when M = G F. The algorithm instead sets M = G_sym^{-1} F, yielding the different matrix G - G^{-1}F(F^T G^{-1}F)^{-1}F^T G; for symmetric G_sym this matrix is nonsymmetric (the derived U is symmetric), so 'top k eigenvectors corresponding to largest eigenvalues' is not even well-defined as stated, and the computed embedding differs from the paper's fairness-adjusted matrix. (G^{-1}F is also not a projection matrix, despite the step's name.)",
+      "failure_location": {
+        "quote": "\\State Compute the projection matrix $M = G_{\\mathrm{sym}}^{-1} F$",
+        "tag": "alg:smw-cluster"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Set M = G_sym F (a one-token correction forced by the text's own definition U = G - GP); the remaining steps then compute the derived U_sym.",
+      "overall_effect": "As specified, Fair-SMW does not implement the paper's derived fairness-adjusted matrix; its output contract (top eigenvectors of U = G - GP) fails, independently of the separate dualization defect in the derivation.",
+      "primary_affected_tag": "alg:smw-cluster",
+      "target_type": "algorithm",
+      "title": "Fair-SMW algorithm builds U from M = G_sym^{-1}F instead of the derived M = G_sym F",
+      "why_classification": "The fix is short, local, and forced by the paper's own definition of U; it preserves the intended construction and all subsequent steps, so no substantive claim is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&   = G_{\\text{sym}} - G_{\\text{sym}}F(F^TG_{\\text{sym}}F)^{-1}F^TG_{\\text{sym}}",
+          "tag": "thm:added-6"
+        },
+        {
+          "quote": "A similar statement holds for $G_{\\text{rw}}$ and $G_{\\text{aff}}$.",
+          "tag": "thm:added-6"
+        }
+      ],
+      "failure_explanation": "Sherman-Morrison-Woodbury gives (G_sym + mu F F^T)^{-1} = G_sym^{-1} - G_sym^{-1} F (mu^{-1} I + F^T G_sym^{-1} F)^{-1} F^T G_sym^{-1}, not the displayed right-hand side; the displayed expression is the mu -> infinity limit of (G_sym^{-1} + mu F F^T)^{-1} used in the main text, so the proof's starting equality is wrong. The remaining chain is correct under A_sym F = 0, so the main identity U = [I - F(F^T F)^{-1} F^T] G_sym survives, but the closing claim that a similar statement holds for G_rw and G_aff does not follow: A_sym F = D^{-1/2} W D^{-1/2} F = 0 only gives D^{-1/2} F in ker W, whereas the analogous simplification of U_aff or U_rw requires W F = 0 (i.e. F in ker W), a strictly stronger condition.",
+      "failure_location": {
+        "quote": "U &= (G_{\\text{sym}} + \\mu F F^T)^{-1}\\",
+        "tag": "thm:added-6"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the first display with the limit expression U = G_sym - G_sym F(F^T G_sym F)^{-1} F^T G_sym and delete (or re-prove under appropriate hypotheses) the sentence 'A similar statement holds for G_rw and G_aff.'",
+      "overall_effect": "Auxiliary supporting result: the special-case identity is recoverable after correcting the first display, but the stated analogies for the RW and AFF variants are unsupported and generally false.",
+      "primary_affected_tag": "thm:added-6",
+      "target_type": "formal_result",
+      "title": "thm:added-6 proof starts from a wrong expression for U and its generalization to G_rw and G_aff is unjustified",
+      "why_classification": "The main identity is correct under its hypothesis and only the proof's opening display plus an overbroad closing sentence need repair; the result is auxiliary and unused downstream."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\leq \\frac{\\sum_{i,j} W_{ij}(\\bm{y}_i^2 + \\bm{y}_j^2)}{\\sum_j \\bm{y}_j^2 d_j} \\quad \\text{(By Lemma \\ref{lem:diff-square})}",
+          "tag": "thm:added-7"
+        },
+        {
+          "quote": "& = \\frac{2\\sum_j \\bm{y}_j^2 d_j}{\\sum_j \\bm{y}_j^2 d_j} = 2",
+          "tag": "thm:added-7"
+        },
+        {
+          "quote": "For a weighted, undirected graph, the quadratic form of the unnormalized Laplacian, normalized by the degree matrix, is bounded by 2.",
+          "tag": "thm:added-7"
+        }
+      ],
+      "failure_explanation": "The proof establishes only the upper bound sup <= 2 (via (a-b)^2 <= 2(a^2+b^2)), but the displayed statement claims equality = 2 for every weighted undirected graph. Equality fails in general: for the triangle K_3, L_sym = I - A/2 has eigenvalues 0, 3/2, 3/2, so the supremum is 3/2 < 2; equality requires bipartite-type structure. The correct general statement is the inequality, which is all that downstream results (thm:added-2) actually use.",
+      "failure_location": {
+        "quote": "$$ \\sup_{\\bm{y} \\ne \\bm{0}} \\frac{\\bm{y}^T(D-W)\\bm{y}}{\\bm{y}^T D \\bm{y}} = 2 $$",
+        "tag": "thm:added-7"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Change the displayed equality to sup <= 2; a one-symbol repair with no downstream effect.",
+      "overall_effect": "The theorem as stated is false for non-bipartite graphs; the bound itself, the only part used downstream, remains valid, so no dependent result fails.",
+      "primary_affected_tag": "thm:added-7",
+      "target_type": "formal_result",
+      "title": "thm:added-7 asserts sup = 2 but proves only the bound <= 2, which fails to be equality for non-bipartite graphs",
+      "why_classification": "The argument is valid for the inequality and only the statement's equality overclaims; a one-symbol correction preserves every use of the result."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2510.20220",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7838ff1ebb2ad510c37241685362756b5cee8236d0d2169e81cb3c0265b11f0c",
+  "status": "ok"
+}

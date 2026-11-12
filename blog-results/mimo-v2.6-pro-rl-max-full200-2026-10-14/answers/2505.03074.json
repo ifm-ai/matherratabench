@@ -1,0 +1,97 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose $(\\sigma_k, u_k)$ be an eigenpair to the Steklov EVP~\\eqref{eqn: steklov} with $k\\geq 1$ so that $\\sigma_k > 0$.",
+          "tag": "thm: steklov"
+        },
+        {
+          "quote": "$\\Lambda \\coloneq (I-\\mathcal{M}) \\mathcal{S}\\left(\\mathcal{D}^*+ \\onehalf I \\right)^{-1} $",
+          "tag": "l:NtD"
+        }
+      ],
+      "failure_explanation": "The proof derives $u_k|_{\\partial\\Omega} = \\frac{1}{\\sigma_k}\\Lambda\\partial_\\nu u_k$ from Lemma l:NtD and the Steklov condition. But $\\Lambda\\partial_\\nu u_k = u_k|_{\\partial\\Omega}$ by the definition of $\\Lambda$ (zero-mean Neumann-to-Dirichlet map, and $u_k$ has zero mean for $\\sigma_k>0$). Substituting gives $u_k|_{\\partial\\Omega} = \\frac{1}{\\sigma_k}u_k|_{\\partial\\Omega}$, requiring $\\sigma_k = 1$. The correct relation is $u_k|_{\\partial\\Omega} = \\Lambda\\partial_\\nu u_k$. The subsequent proof step silently drops the $1/\\sigma_k$ and uses the correct relation, making the argument internally inconsistent. Additionally, the forward direction is restricted to $\\sigma_k > 0$ and never addresses the trivial eigenpair $\\sigma_k = 0$ with constant $u_k$, despite the theorem claiming 'if and only if' for all eigenpairs.",
+      "failure_location": {
+        "quote": "$u_k \\mid_{\\partial_\\Omega} = \\frac{1}{\\sigma_k} \\Lambda \\partial_\\nu u_k $",
+        "tag": "thm: steklov"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Remove the spurious $1/\\sigma_k$ factor from the derived formula to read $u_k|_{\\partial\\Omega} = \\Lambda\\partial_\\nu u_k$, and add one sentence handling $\\sigma_k = 0$ (constant eigenfunction maps to constant density $\\phi_k$).",
+      "overall_effect": "The forward direction of Theorem thm: steklov is not rigorously established: the key derived formula is wrong and the case $\\sigma_k = 0$ is uncovered. The subsequent reasoning implicitly uses the correct relation, so the result is salvageable.",
+      "primary_affected_tag": "thm: steklov",
+      "target_type": "formal_result",
+      "title": "Erroneous Neumann-to-Dirichlet relation and missing zero-eigenvalue case in Steklov proof",
+      "why_classification": "The erroneous formula is contradicted by the definition of $\\Lambda$ and the proof continues with the correct relation; the missing case is trivially fillable. Both fixes are local and preserve every claim."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem: properties double layer",
+        "lem: characteristic",
+        "thm: dirichlet"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$f_\\mathcal{D}[\\phi] (z) \\coloneq \\int_{\\partial\\Omega} \\frac{1}{2\\pi i} \\left[\\zeta(z - \\xi) - \\eta_1(z - \\xi) \\right] \\phi(\\xi) \\, |d\\xi|",
+          "tag": "eqn: complex double layer"
+        },
+        {
+          "quote": "$f_\\mathcal{D}[\\phi](z_0^{\\pm}) = f_\\mathcal{D}[\\phi](z_0) \\mp \\onehalf\\phi(z_0)$",
+          "tag": "lem: Complex layer"
+        }
+      ],
+      "failure_explanation": "The definition eqn: complex double layer uses $|d\\xi|$ (arc-length) in the first integral instead of $d\\xi$ (complex line element). The proof of Lemma lem: Complex layer(1) derives $\\mathcal{D}[\\phi] = \\Re[\\int(\\frac{1}{2\\pi i}(\\zeta-\\eta_1)+\\frac{\\Im(z-\\xi)}{b})\\phi\\,d\\xi]$ with $d\\xi$ and then equates it to $\\Re f_\\mathcal{D}[\\phi]$ as defined with $|d\\xi|$, an invalid inference. Since $d\\xi = i\\nu|d\\xi|$, the real part of $\\int(\\zeta-\\eta_1)\\phi\\,d\\xi/(2\\pi i)$ is $\\int\\Re[\\nu(\\zeta-\\eta_1)]\\phi|d\\xi|/(2\\pi)$, which differs from $\\int\\Im(\\zeta-\\eta_1)\\phi|d\\xi|/(2\\pi)$ (the real part of the $|d\\xi|$ version) for general $\\nu$. Likewise, the Sokhotski-Plemelj jump in part (2) requires a Cauchy integral with $d\\i$; with $|d\\xi|$ the jump is $i\\phi\\bar\\nu$ rather than $\\mp\\phi/2$.",
+      "failure_location": {
+        "quote": "In fact, $\\Re  f_\\mathcal{D}[\\phi] = \\mathcal{D}[\\phi]$, which is a function on $\\mathbb T_\\tau\\backslash\\partial\\Omega$.",
+        "tag": "lem: Complex layer"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Change $|d\\xi|$ to $d\\xi$ in the first integral of eqn: complex double layer and in the Sokhotski-Plemelj step of the proof of part (2). With this correction $f_\\mathcal{D}$ is analytic, $\\Re f_\\mathcal{D} = \\mathcal{D}$, and the jump holds by the standard Sokhotski-Plemelj formula; all downstream proofs then work as intended.",
+      "overall_effect": "Lemma lem: Complex layer parts (1) and (2) are false with the stated definition. Proofs of Lemma lem: properties double layer(4)-(5) and Lemma lem: characteristic(2) rely on $\\Re f_\\mathcal{D} = \\mathcal{D}$ and the jump relation and are therefore unreliable. Theorem thm: dirichlet depends on these lemmas.",
+      "primary_affected_tag": "lem: Complex layer",
+      "target_type": "formal_result",
+      "title": "Complex double-layer potential defined with arc-length instead of complex line element",
+      "why_classification": "The repair is a single-measure change ($|d\\xi| \\to d\\xi$) in one definition and one proof step. All proofs already use properties that hold with $d\\xi$, so no new lemma or construction is needed and every guarantee is preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$ (\\mathcal{D}^* + \\onehalf I )(I-\\mathcal{M})[\\phi_k](z_0) = \\sigma_k \\mathcal{S}_0[\\phi_k](z_0)$",
+          "tag": "thm: steklov"
+        },
+        {
+          "quote": "$u(z) = \\overline{\\phi} + \\sum_{k\\in [M]} \\sum_{j\\in [N_k]}G(z - z^k_j)(\\phi^k_j-\\overline{\\phi}) h^k_j , \\quad \\text{for } z\\in \\Omega,$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The continuous eigenproblem is $(\\mathcal{D}^* + \\frac{1}{2}I)(I-\\mathcal{M})\\phi = \\sigma\\mathcal{S}_0[\\phi]$ with $\\mathcal{S}_0[\\phi] = \\mathcal{S}[(I-\\mathcal{M})\\phi] + \\mathcal{M}\\phi$. Its discrete form is $(D_s + \\frac{1}{2}I)(I-M)\\vec\\phi = \\sigma[S(I-M) + M]\\vec\\phi$ because $M\\vec\\phi = \\bar\\phi\\mathbf{1}$ supplies the constant $\\bar\\phi$ in $\\mathcal{S}_0$. The stated discrete equation uses $\\sigma S(I-M)\\vec\\phi$ on the right, omitting $\\sigma M\\vec\\phi$. For $\\sigma > 0$ the eigenfunction $u = \\mathcal{S}_0[\\phi] = \\mathcal{S}\\psi + \\bar\\phi$ then satisfies $\\partial_\\nu u = \\sigma\\mathcal{S}\\psi \\neq \\sigma u$ unless $\\bar\\phi = 0$. Eigenvalues remain correct (the equation constrains only $\\psi = (I-M)\\vec\\phi$), but the eigenfunction formula and the stated eigenproblem are inconsistent.",
+      "failure_location": {
+        "quote": "$(D_s + \\onehalf I)(I - M) \\vec{\\phi} = \\sigma S (I - M) \\vec{\\phi}$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the matrix $M$ to the right-hand side: $(D_s + \\frac{1}{2}I)(I-M)\\vec\\phi = \\sigma[S(I-M) + M]\\vec\\phi$, which is consistent with $\\mathcal{S}_0 = \\mathcal{S}(I-\\mathcal{M}) + \\mathcal{M}$ and restores correct eigenfunctions.",
+      "overall_effect": "The discrete Steklov eigenproblem as written produces eigenfunctions that fail $\\partial_\\nu u_k = \\sigma_k u_k$ by a constant $\\sigma_k\\bar\\phi$. Eigenvalues are correct. The formula $u = \\mathcal{S}_0[\\phi]$ is inconsistent with the eigenproblem and can yield wrong eigenfunctions depending on the eigenvector normalization chosen by MATLAB's eig.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Discrete Steklov eigenproblem omits the $\\sigma M\\vec\\phi$ term from $\\mathcal{S}_0$",
+      "why_classification": "The error is in the algorithm specification and affects the computed output (eigenfunctions). The fix requires understanding the $\\mathcal{S}_0$ decomposition to identify the missing term and a choice between two repairs (add $M$ to the RHS or change the eigenfunction formula to $\\mathcal{S}\\psi$). The fix is contained but not purely typographical."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2505.03074",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "feb67f8f7e28afa6b260c876d29daee63a52f179fb97d102057fc41db7063dd8",
+  "status": "ok"
+}

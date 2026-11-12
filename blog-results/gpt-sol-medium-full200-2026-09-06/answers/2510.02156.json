@@ -1,0 +1,282 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the \\((i,j)^{th}\\) entry of $C$ is defined as $\\frac{|\\langle\\bar{A_i}, \\bar{A_j}\\rangle|}{\\|\\bar{A_i}\\|\\|\\bar{A_j}\\|}$",
+          "tag": null
+        },
+        {
+          "quote": "Centroid vectors are just a sum of row vectors in the given block.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A nonempty block can have rows summing to zero, making its centroid zero. The stated cosine then divides by zero, so C, the sampling probabilities, and the sampled update are undefined on allowed inputs.",
+      "failure_location": {
+        "quote": "\\State Compute the cosine value $C(i,j)$ of the effective angle between blocks $A_i$ and $A_j$ by the centroid coordinates, and the corresponding symmetric matrix $C$.",
+        "tag": "algo:roar-bk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Specify a defined treatment for zero-centroid blocks, such as a fallback similarity and sampling rule, and constrain k so the partition contains valid blocks.",
+      "overall_effect": "ROR-BK is not a well-defined algorithm for all square, overdetermined, or underdetermined systems in its advertised scope.",
+      "primary_affected_tag": "algo:roar-bk",
+      "target_type": "algorithm",
+      "title": "ROR-BK probabilities can be undefined for zero centroids",
+      "why_classification": "A local fallback convention can make the sampling construction well defined without changing the updates or advertised method."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We use the number of rows in a block $k=100$",
+          "tag": null
+        },
+        {
+          "quote": "In ROR-BK, for a chosen block $A_\\tau \\in \\mathbb{R}^{k\\times n}$",
+          "tag": null
+        },
+        {
+          "quote": "\\State \\label{step:roar-bk}$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$ where $i=1,2,\\dots m$",
+          "tag": "step:roar-bk"
+        }
+      ],
+      "failure_explanation": "The algorithm defines k as the number of blocks, so the nominal block size is floor(m/k), while the implementation and complexity discussion define k as the number of rows in a block and take A_tau to have k rows. These interpretations produce different partitions, dynamic block sizes, probability formulas, and regularization values.",
+      "failure_location": {
+        "quote": "\\Require $A, b, x_0, \\tilde{\\lambda},k$. \\Comment{ $k$, $\\tilde{\\lambda}$ refer to \\# of blocks and regularization parameter.}",
+        "tag": "algo:roar-bk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Choose separate symbols for the number of blocks and block size, rewrite all partition, dynamic-selection, probability, regularization, and complexity formulas consistently, and identify which values were used in the experiments.",
+      "overall_effect": "The implemented and experimentally tested procedure cannot be identified unambiguously with the stated algorithm, and its parameter-dependent cost claims are correspondingly uncertain.",
+      "primary_affected_tag": "algo:roar-bk",
+      "target_type": "algorithm",
+      "title": "The parameter k has incompatible meanings",
+      "why_classification": "The inconsistency spans the algorithm and experimental implementation, so resolving it requires more than a local notation edit and may require recomputing parameter-dependent results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:err_bound"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_n-\\frac{1}{\\tilde{\\lambda}^3}M^T\\{MM^T+\\tilde{\\lambda}I_r\\}M",
+          "tag": "eq:wi2"
+        }
+      ],
+      "failure_explanation": "The Woodbury formula requires an inverse of the middle matrix and different powers of tilde-lambda. For example, with scalar M=1 and tilde-lambda=1, the left side of eq:wi1 is 1/2 while its asserted right side is -1. Equating the two later expressions therefore does not prove the lemma, although the lemma's stated identity itself is true.",
+      "failure_location": {
+        "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T",
+        "tag": "eq:wi1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the displayed Woodbury calculations by a correct push-through proof, for example by multiplying both sides by the relevant invertible matrices.",
+      "overall_effect": "The lemma is unsupported as written, and the error-bound proof invokes it.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Woodbury expansions used to prove the push-through identity are false",
+      "why_classification": "The stated identity is elementary and true, and a short routine replacement proof preserves all intended uses."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=I-\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}",
+          "tag": "eq:errbound2"
+        },
+        {
+          "quote": "Equivalently, \\begin{align}\n\\mathbb{E}[\\|x_{t}-x_\\star\\|_2]\\le \\left( \\frac{\\tilde{\\lambda}}{\\lambda_{\\text{min}}^{\\text{block}}+\\tilde{\\lambda}} \\right)^t\\mathbb{E}[\\|x_0-x_\\star\\|_2]",
+          "tag": "thm:err_bound"
+        }
+      ],
+      "failure_explanation": "The matrix tilde-lambda(A_tau^T A_tau+tilde-lambda I)^{-1} has eigenvalue 1 on N(A_tau), not operator norm tilde-lambda/(lambda_min^++tilde-lambda). No hypothesis places x_t-x_star in R(A_tau^T). Thus an error component invisible to the chosen block is unchanged, contradicting the asserted strict contraction and its iterated expectation bound.",
+      "failure_location": {
+        "quote": "&\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2",
+        "tag": "ew:errbound3"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must analyze contraction accumulated across a covering random sequence of blocks, including their sampling probabilities and the dynamic updates, rather than assign a strict contraction to every individual block.",
+      "overall_effect": "The paper's principal geometric convergence estimate for ROR-BK is false, including the claimed block-independent expected rate.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "A single block update need not contract error outside that block's row space",
+      "why_classification": "Recovering a comparable convergence rate requires a new multi-block stochastic argument; the stated per-update contraction cannot survive."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\min}^{+}(A_\\tau^{T}A_\\tau)}\\lesssim \\|x_{t+1}-x_\\star\\|_2^2 & \\lesssim \\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\max}^{+}(A_\\tau^{T}A_\\tau)}",
+          "tag": "eq:errbound5"
+        },
+        {
+          "quote": "When $\\tilde{\\lambda}$ is sufficiently small, the update rule at \\cref{algo:roar-bk} reduces to :",
+          "tag": "thm:convergence_boost"
+        }
+      ],
+      "failure_explanation": "The eigenvalue denominators in eq:errbound5 depend on the selected row set. Maximizing the residual numerator alone does not maximize either quotient and hence does not minimize either bound; merely saying the eigenvalues are bounded does not permit comparison between blocks. Moreover, the proof replaces a positive finite regularization by an unquantified pseudoinverse approximation, so it establishes no stated finite-parameter guarantee.",
+      "failure_location": {
+        "quote": "we minimize the above upper and lower bounds of the error $\\|x_{t+1}-x_\\star\\|_2^2$ in \\cref{eq:errbound5}, as $\\lambda_{\\min}^{+}, \\lambda_{\\min}^{-}$ are bounded for a given system, and thus ensure faster convergence in general over many iterations.",
+        "tag": "thm:convergence_boost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a valid result must control the selected blocks' spectra relative to competing blocks and quantify the effect of nonzero regularization, or materially weaken the claim to a heuristic.",
+      "overall_effect": "The claimed theoretical acceleration from the residual-selected block, including improvement over other block choices in general, is unsupported.",
+      "primary_affected_tag": "thm:convergence_boost",
+      "target_type": "formal_result",
+      "title": "Largest residual block does not necessarily minimize the error bounds",
+      "why_classification": "The central comparison does not follow from residual ordering, and proving a comparable acceleration theorem would require new spectral assumptions and analysis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State $w_k = Az_k$",
+          "tag": "algo:fabgmres_dobk"
+        }
+      ],
+      "failure_explanation": "To remove the v_i component of the current vector w_k, the coefficient must be the inner product v_i^T w_k. The stated w_i^T v_k uses a previous work vector and the current basis vector, so the subtraction generally does not orthogonalize w_k and the resulting Hessenberg relation fails.",
+      "failure_location": {
+        "quote": "\\State $h_{i,k} = w_i^T v_k$, \\quad $w_k = w_k - h_{i,k}v_i$",
+        "tag": "algo:fabgmres_dobk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the coefficient computation by h_{i,k}=v_i^T w_k while retaining the stated subtraction and normalization.",
+      "overall_effect": "As written, the procedure is not the claimed flexible GMRES iteration and its least-squares residual guarantee is not justified.",
+      "primary_affected_tag": "algo:fabgmres_dobk",
+      "target_type": "algorithm",
+      "title": "The FAB-GMRES Arnoldi coefficient is computed from the wrong vectors",
+      "why_classification": "This is a local, standard correction to the orthogonalization step that preserves the intended algorithm."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, when $x_k$ is an approximate solution of \\eqref{eq:linear_system} obtained through \\cref{algo:fabgmres_dobk}, it is the minimum residual-norm solution, since $x_k \\in \\mathcal{R}(A^T) \\perp \\mathcal{N}(A)$.",
+          "tag": "thm:x_in_range_A_transpose-1"
+        }
+      ],
+      "failure_explanation": "Being in R(A^T), equivalently orthogonal to N(A), only removes null-space components and can characterize the minimum-norm representative among vectors with the same image. It does not imply the normal equation A^T(b-Ax_k)=0 or global minimization of the residual. The algorithm's small least-squares problem only minimizes over its generated affine search space.",
+      "failure_location": {
+        "quote": "If $z_0$ (the initial solution with which ROR-BK as an inner-iteration starts) and $x_0 \\in \\mathcal{R}(A^{T})$, FABGMRES with an inner iteration of ROR-BK (\\cref{algo:fabgmres_dobk}) gives a solution $x_k \\in \\mathcal{R}(A^T)$ minimizing $\\norm{b-Ax_k}_2$.",
+        "tag": "thm:x_in_range_A_transpose-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Retain the proved range-membership conclusion and state residual minimization only over x_0+span{z_1,...,z_k}, after correcting the Arnoldi step; alternatively add and prove the missing global optimality condition.",
+      "overall_effect": "The stated global minimum-residual characterization of FAB-GMRES iterates is false.",
+      "primary_affected_tag": "thm:x_in_range_A_transpose-1",
+      "target_type": "formal_result",
+      "title": "Range membership does not imply global residual minimization",
+      "why_classification": "A valid restricted minimization statement remains, but the claimed global guarantee must be materially weakened."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\label{step:roar-bk}$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$ where $i=1,2,\\dots m$",
+          "tag": "step:roar-bk"
+        },
+        {
+          "quote": "\\State $x_{j+1} \\leftarrow x_{j}+A_{\\mathcal{I}}^T(A_{\\mathcal{I}}A_{\\mathcal{I}}^T+\\tilde{\\lambda} I)^{-1}(b_{\\mathcal{I}}-A_{\\mathcal{I}}x_{j})$",
+          "tag": "algo:roar-bk"
+        }
+      ],
+      "failure_explanation": "The three fixed-block inverses can be stored, but the residual-selected index set I changes with the iterate. Its regularized matrix therefore generally changes every outer iteration and cannot be precomputed as claimed. The cost must include forming and solving or factoring this dynamic block system.",
+      "failure_location": {
+        "quote": "If the inversion is pre-computed and stored, each ROR-BK update costs $\\mathcal{O}(nk)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Distinguish fixed-block from dynamic-block costs and include the latter's factorization or solve cost, then state any assumptions under which residual evaluation still dominates.",
+      "overall_effect": "The per-update and per-iteration cost accounting understates the work of the defining dynamic update.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The dynamic block inverse cannot be precomputed",
+      "why_classification": "Correcting the local complexity accounting does not alter the algorithm, though it withdraws the blanket O(nk) claim for every update."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:initial_solution"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State Compute $y \\leftarrow$ sum of a set of rows in $A$.",
+          "tag": "algo:initial_solution"
+        },
+        {
+          "quote": "note that $y$ can be constructed such that $\\tilde{b} \\neq 0$, and is not orthogonal to $b$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The algorithm gives no rule ensuring that the chosen sum of rows is nonzero. Rows can cancel, yielding y=0 and tilde b=Ay=0, so the displayed quotient is undefined. The later assertion that a suitable y can be constructed is not implemented by the procedure.",
+      "failure_location": {
+        "quote": "\\State $x_0 \\leftarrow \\frac{\\langle b, \\tilde{b} \\rangle}{\\|\\tilde{b}\\|_2^2}y$",
+        "tag": "algo:initial_solution"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Specify selection of a nonzero row, or another explicit search that guarantees Ay is nonzero, and separately handle the zero-system or zero-right-hand-side case.",
+      "overall_effect": "The algorithm and its stated residual guarantee fail to be defined for some permitted choices of the unspecified row set.",
+      "primary_affected_tag": "algo:initial_solution",
+      "target_type": "algorithm",
+      "title": "The initial-solution construction may divide by zero",
+      "why_classification": "A short local selection rule and degenerate-case branch suffice to preserve the construction and bound."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\label{step:roar-bk}$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$ where $i=1,2,\\dots m$",
+          "tag": "step:roar-bk"
+        },
+        {
+          "quote": "\\bar{W}=\\mathbb{E}_{S \\sim \\mu}[W(S)], \\text{and} \\quad \\bar{P}=  \\mathbb{E}_{S\\sim \\mu}[P(S)]",
+          "tag": "eq:w_p"
+        },
+        {
+          "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}.",
+          "tag": "thm:dobk_for_least_square_problems"
+        }
+      ],
+      "failure_explanation": "ROR-BK alternates three samples from a fixed orthogonality distribution with a fourth block chosen deterministically from the current residual. The latter selection depends on x_j, so there is no single iterate-independent distribution mu producing fixed bar W and bar P as used in the theorem. The cited fixed-sampling result is therefore not shown to apply to the stated ROR-BK process. In addition, x^(mu) is defined by an unrestricted argmin and need not be unique for the rank-deficient and underdetermined systems within the paper's scope.",
+      "failure_location": {
+        "quote": "Consider the ROR-BK algorithm, namely \\cref{algo:roar-bk} with $M(A_S) = (A_S A_S^\\top + \\tilde{\\lambda} I)^{-1}$ and $\\mu$ be the sampling rule defined earlier.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, either restrict the theorem to an i.i.d. fixed-block variant and define the unique minimum-norm weighted solution, or develop a new state-dependent analysis covering the residual-adaptive updates.",
+      "overall_effect": "The claimed mean convergence of the actual ROR-BK iterates to a fixed weighted least-squares solution at rate (1-alpha)^T is unsupported.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "The weighted least-squares theorem treats adaptive ROR-BK sampling as a fixed distribution",
+      "why_classification": "Applying the available fixed-distribution argument requires removing a defining adaptive component of ROR-BK; retaining that component needs new convergence architecture."
+    }
+  ],
+  "issues_found": 10,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

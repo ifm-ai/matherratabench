@@ -1,0 +1,123 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$i=N-1,\\dots,0$}{",
+          "tag": "alg:dynamic-batching-final"
+        },
+        {
+          "quote": "In what follows, the forward process $X_{\\cdot}^{\\pi,m} $ is simulated by Monte Carlo method in the following manners, for $i=0,1,\\cdots,N-1$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The forward paths X_i^{π,m} are generated inside the backward loop (i = N-1,…,0) via X_{i+1}^m ← X_i^m + … . At the first backward step (i = N-1) the value X_{N-1}^m is needed but has not yet been generated (it would be produced at step i = N-2 later). Furthermore the derivation (SDE-M) generates the forward process in forward order for i = 0,…,N-1. The algorithm as written cannot execute: the Euler forward recursion runs backward and X_i^m is undefined at the first iteration.",
+      "failure_location": {
+        "quote": "X^{\\pi,m}_{i+1} \\gets X_{i}^{\\pi,m} + b(t_{i}, X_{i}^{\\pi,m})h + \\sigma(t_{i}, X_{i}^{\\pi,m}) \\Delta W_{i}^{m}$, $X_0=x_0",
+        "tag": "alg:dynamic-batching-final"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Generate all forward paths X_i^{π,m} for i = 0,…,N before the backward training loop (forward order, as in equation SDE-M), then inside the backward loop use the stored X_i^m to produce MC branch states X_{i+1}^{m,k}.",
+      "overall_effect": "Algorithm 1 is not executable as written; trained networks and all numerical results that rely on it are unreproducible from the stated procedure.",
+      "primary_affected_tag": "alg:dynamic-batching-final",
+      "target_type": "algorithm",
+      "title": "Algorithm 1 generates forward SDE paths inside the backward training loop in reverse time order",
+      "why_classification": "Moving the forward-path simulation to a separate pre-loop step preserves every claim and guarantee with no new mathematical content; it is a local restructuring of pseudocode."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "ae-DMCE-R"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "R_{i,2}^{y}&= \n \\frac{1}{K_i}\\sum\\limits_{k=1}^{K_i} Y_{i+1}^{\\pi,m,k}+hf(t_{i},X_{i}^{\\pi,m},Y_{i}^{\\pi,m},Z_{i}^{\\pi,m})- \\mathcal{NN}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i}^m,\\theta_{y,i}^*)",
+          "tag": null
+        },
+        {
+          "quote": "S_{y,i}\\left(p_i^m, X_{i+1}^{\\pi, m} \\right)\n&= \\frac{1}{K_i}\\sum\\limits_{k=1}^{K_i} \\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i+1}^{m,k},\\theta_{y,i+1}^*)\\\\\n&\\quad+hf(t_{i},X_{i}^{\\pi,m},\\mathcal{NN}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i}^{m},\\theta_{y,i}^{r_j}),\\mathcal{NN}_{z,i+1,1+d, n\\times d}^{\\varrho, L, \\mathbf{n}}(p_{i}^{m},\\theta_{z,i}^*))",
+          "tag": null
+        },
+        {
+          "quote": "=\\mathbb{E}\\left[\\left|\\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p^m_{i+1},\\theta_{y,i+1}^*) \\frac{(\\Delta W_{i}^m)^\\top}{h}-\\mathbb{E}_i\\left[\\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p^m_{i+1},\\theta^{*}_{y,i+1})\\frac{(\\Delta W_{i}^m)^\\top}{h}\\right]\\right|^2\\right]",
+          "tag": "ae-DMCE"
+        }
+      ],
+      "failure_explanation": "Two distinct errors in Steps 2 and 4 of the proof. (a) Deep-NN-E-9-1 and Deep-NN-E-9-1-z claim that |𝒴_i − S_{y,i}|² = |R_{i,2}^y|² and |𝒵_i − S_{z,i}|² = |R_{i,2}^z|². But R_{i,2}^y is defined in NS-MC-2-1 via true discrete quantities Y_{i+1}^{π,m,k}, Y_i^{π,m}, Z_i^{π,m}, whereas S_{y,i} uses neural-network outputs 𝒩𝒴(p_{i+1}^{m,k}), 𝒩𝒴(p_i^m), 𝒩𝒵(p_i^m). These expressions differ by the step-i and step-i+1 approximation errors and are not equal. (b) Deep-NN-E-9-3-z claims S_{z,i} − 𝒱_{t_i} = 𝒩𝒴(p^m_{i+1})·(ΔW_i^m)^⊤/h − 𝒱_{t_i}, replacing the K-sample Monte-Carlo average by a single sample and dropping the 1/K variance reduction. The same single-sample substitution occurs in Deep-NN-E-9-3. The omitted 1/K factor makes the bound on |𝒵_i − 𝒱_{t_i}|² equal to O(N) per step; multiplied by h and summed over N steps this yields O(1/h), which cannot be absorbed into the claimed O(h) terms and prevents the error estimate in Theorem ae-DMCE from being established.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Y}_{i}-S_{y,i}\\left(p_{i}^{m}, X_{i+1}^{\\pi,m} \\right)\\right|^2\\right] =\\mathbb{E}\\left[\\left|R_{i,2}^{y}\\right|^2\\right]",
+        "tag": "ae-DMCE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redefine R_{i,1} and R_{i,2} as the Monte-Carlo error and training residual of the neural-network conditional expectation (i.e., use 𝒩𝒴(p_{i+1}^{m,k}) in place of Y_{i+1}^{π,m,k}, and 𝒴_i, 𝒵_i in place of Y_i^{π,m}, Z_i^{π,m}). The decomposition then reads 𝒰_{t_i} − 𝒴_i = R̃_{i,1}^y + R̃_{i,2}^y with the 1/K Monte-Carlo variance built into R̃_{i,1}. Rework Steps 2 and 4 to use this direct decomposition (or bound the MC-averaged S terms with the 1/K factor included) and adjust the Gronwall accumulation accordingly.",
+      "overall_effect": "The upper error bound in Theorem ae-DMCE is not proved as stated. The convergence result of Theorem thm:added-1, which plugs approximation bounds into Theorem ae-DMCE's inequality, and Theorem ae-DMCE-R (whose Z-component proof explicitly invokes Steps 3–4 of ae-DMCE's proof), are correspondingly unestablished. The advertised half-order convergence rate rests on an invalid argument.",
+      "primary_affected_tag": "ae-DMCE",
+      "target_type": "formal_result",
+      "title": "Error analysis of Theorem ae-DMCE conflates true discrete quantities with neural-network outputs in the residual terms and drops the Monte-Carlo averaging factor",
+      "why_classification": "The proof needs redefining the residual terms and reworking two proof steps, but the overall architecture (Young decomposition, discrete Gronwall, residual bounds) is preserved and the convergence rate survives with no new global lemma or replacement argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+\\mathbb{E}\\left[\\left|(y(p^m_{i}) - \\mathcal{NN}_{y,i}(p^{m}_{i},\\theta_{y,i}))\\textbf{1}_{||X_i^{\\pi,m}||_2>R}\\right|^2 \\right]",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The displayed equality splits inf_θ [g(θ) + h(θ)] into inf_θ g(θ) + h(θ), but both g and h depend on θ. In general inf_θ(g(θ)+h(θ)) ≠ inf_θ g(θ) + h(θ₀) for any fixed θ₀; the infimum of a sum is not the sum of a partial infimum and the remaining summand at an unspecified θ. The tail term also uses the same free θ as the infimum, making the expression ill-defined.",
+      "failure_location": {
+        "quote": "\\inf_{\\mathcal{NN}_{y,i}\\in \\mathcal{G}_{\\mathcal{K}_i, 1+d, n}}\\mathbb{E}\\left[\\left|y(p^m_{i}) - \\mathcal{NN}_{y,i}(p^{m}_{i},\\theta_{y,i})\\right|^2\\right] = \\inf_{\\mathcal{NN}_{y,i}\\in \\mathcal{G}_{\\mathcal{K}_i, 1+d, n}}\\mathbb{E}\\left[\\left|(y(p^m_{i}) - \\mathcal{NN}_{y,i}(p^{m}_{i},\\theta_{y,i}))\\textbf{1}_{||X_i^{\\pi,m}||_2\\le R}\\right|^2\\right]",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the invalid equality by inf_θ f(θ) ≤ f(θ*) for a specific GroupSort network θ* provided by Lemma gropusort-est, then split f(θ*) = g(θ*) + h(θ*) and bound each summand separately on the same θ*. This yields the same numerical bound with a standard argument.",
+      "overall_effect": "The approximation estimate Deep-NN-E-r-7 and its Z-counterpart Deep-NN-E-r-8 are not derived as written, leaving the choice R = O(N^{3/2}), ε = O(N^{−3}), K = O(N^{3}) unsupported and the convergence conclusion of Theorem thm:added-1 unproved at this step.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Infimum decomposition in convergence proof of Theorem thm:added-1 is invalid",
+      "why_classification": "A short local reassignment of the infimum to a specific approximation from Lemma gropusort-est restores the bound with no new lemma or loss of content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "f(t, x, y, z)=\\hat{k}(t, x)-\\frac{y}{\\sqrt{d}}\\left(1_d \\cdot z\\right)-\\frac{y^2}{2},",
+          "tag": "PDE-2"
+        },
+        {
+          "quote": "Thus, the solution of PDE (\\ref{PDE-2}) is given by $u(t, x)=\\frac{T-t}{d} \\sum_{i=1}^d\\left(\\sin \\left(x_i\\right) 1_{x_i<0}+x_i 1_{x_i \\geq 0}\\right)+\\cos \\left(\\sum_{i=1}^d i x_i\\right)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With z = σ^⊤D_x u = D_x u / √d the generator f(t,x,u,σ^⊤D_x u) equals k̂(t,x) − (u/d)Σ_j D_{x_j}u − u²/2. For the PDE ∂_t u + (1/2d)Δu = f to hold at the claimed solution one needs k̂ = ∂_t u + (1/2d)Δu + (u/d)Σ_j D_{x_j}u + u²/2. The paper instead writes the term (u/√d)D_{x_i}u, which has a free index i and coefficient 1/√d instead of (1/d)Σ_j. The stated u therefore does not solve the PDE with the given f and k̂.",
+      "failure_location": {
+        "quote": "\\hat{k}(t, x)=\\partial_t u+\\frac{1}{2 d} \\operatorname{Tr}\\left(D_x^2 u\\right)+\\frac{u}{\\sqrt{d}} D_{x_i} u+\\frac{u^2}{2}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace (u/√d)D_{x_i}u in k̂ by (u/d)Σ_{j=1}^d D_{x_j}u so that f(t,x,u,σ^⊤D_x u) = ∂_t u + (1/2d)Δu at the claimed solution.",
+      "overall_effect": "The exact solution claimed for Example 2 is not a solution of the PDE as written. Numerical experiments based on the stated generator would benchmark against the wrong PDE.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Generator k̂ in Example 2 is incorrectly defined so the claimed exact solution does not satisfy the stated PDE",
+      "why_classification": "The correction is a local formula fix directly derivable from the stated PDE; no substantive claim, guarantee, or construction changes."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2603.14721",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "dd6bd1deacab2c05cf174a3acad690d6a89f2de12aae5840afd20a33b4928009",
+  "status": "ok"
+}

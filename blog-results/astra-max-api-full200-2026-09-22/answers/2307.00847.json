@@ -1,0 +1,244 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "J^{(i)}=\\int_{-1}^{1}g(t)d\\mu^{(i)}(h(t))",
+          "tag": null
+        },
+        {
+          "quote": "&=\\left(\\frac{\\lambda_{\\max}-\\lambda_{\\min}}{2}\\right)\\sum_{j=1}^n\\left[\\mu_j^{(i)}\\right]^2\\delta(t-h^{-1}(\\lambda_j))dt",
+          "tag": "chain_rule"
+        }
+      ],
+      "failure_explanation": "With the pulled-back measure used in J, affine changes preserve the integral and the corresponding Gaussian quadrature error for continuous measures as well. The delta calculation also omits its Jacobian: for h(t)=ct+d with c>0, delta(h(t)-lambda)=c^{-1}delta(t-h^{-1}(lambda)). This cancels h'=c. Thus the spurious factor is caused by incorrect delta rescaling, not by a discontinuous-measure exception to affine substitution.",
+      "failure_location": {
+        "quote": "Unlike the continuous measure case, under such a discontinuous measure the quadrature error will remain unchanged when an affine transformation from the reference domain $\\left[-1, 1\\right]$ to the physical domain $\\left[\\lambda_{\\min}, \\lambda_{\\max}\\right]$ is applied (this will be detailed in \\cref{sec:affine}).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "State affine invariance for the pulled-back measure without the continuity distinction, and correct the delta rescaling. Distinguish distributional derivatives from Radon–Nikodym densities.",
+      "overall_effect": "The asserted continuous/discontinuous distinction and its chain-rule explanation are incorrect. The actual affine-invariance identity used by the later error bounds remains valid.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Affine invariance is incorrectly attributed to discontinuity of the measure",
+      "why_classification": "This is a local correction to the change-of-variables reasoning; it does not alter the subsequent bounds, rates, algorithms, or applicable matrix regimes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "coro:UCS17",
+        "thm:correctedSaad",
+        "thm:ours",
+        "thm:ours_updated"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$k = 2$ to $m+1$}",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "\\State Obtain $\\boldsymbol{v}_{1} = \\boldsymbol{v}/\\| \\boldsymbol{v}\\|_2$ and compute $\\alpha_1 = {\\boldsymbol{v}_{1}}^T A \\boldsymbol{v}_{1}$.",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "\\State Apply $m$-step \\cref{alg:Lanc} to $A$ with the initial vector $\\boldsymbol{v}^{(i)}$ and obtain $\\{\\theta^{(i)}_k\\}_{k=1}^{m+1}$ and $\\{\\tau_k^{(i)}\\}_{k=1}^{m+1}$.",
+          "tag": "alg:SLQ"
+        }
+      ],
+      "failure_explanation": "An initial eigenvector gives beta_1=0, so the next normalization divides by zero. This occurs even for the prescribed probes: every normalized two-dimensional Rademacher vector is an eigenvector of A=(1/5)[[3,1],[1,3]]. More generally, exact Lanczos must terminate at the active spectral dimension, while m is unrestricted. The advertised real-vector input also permits v=0, making the initial normalization undefined.",
+      "failure_location": {
+        "quote": "\\State Obtain $\\boldsymbol{v}_k = \\tilde{\\boldsymbol{v}}_{k}/\\beta_{k-1}$.",
+        "tag": "alg:Lanc"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Require a nonzero starting vector. On a zero residual, terminate and diagonalize the current tridiagonal matrix, returning its smaller, exact quadrature rule; adapt the SLQ sums to the returned number of nodes.",
+      "overall_effect": "The SLQ output used in the probabilistic guarantees is undefined on legitimate SPD inputs, including inputs with distinct eigenvalues.",
+      "primary_affected_tag": "alg:Lanc",
+      "target_type": "algorithm",
+      "title": "Lanczos normalizations have no zero-residual termination branch",
+      "why_classification": "Standard exact-breakdown handling is a local repair that preserves every accuracy guarantee and can only reduce the required work."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\#nz(A)$ denotes the number of non-zeros in symmetric matrix $A$",
+          "tag": null
+        },
+        {
+          "quote": "\\For{$k = 2$ to $m+1$}",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "\\State Obtain $\\tilde{\\boldsymbol{v}}_{k+1} = A \\boldsymbol{v}_{k} - \\alpha_{k} \\boldsymbol{v}_{k} - \\beta_{k-1}\\boldsymbol{v}_{k-1}$.",
+          "tag": "alg:Lanc"
+        }
+      ],
+      "failure_explanation": "Each query performs order-m matrix-vector products, not one. Consequently the matrix-product contribution is order m times #nz(A). The omitted factor is not generally absorbed by nm^2: for a dense matrix and m of order sqrt(n), the products cost order n^(5/2) per query, whereas the displayed bound is only order n^2.",
+      "failure_location": {
+        "quote": "the computational cost of stochastic Lanczos quadrature is $\\mathcal{O}((\\#nz(A)+nm^2)N)$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the cost by a bound including (m+1)#nz(A) per query, such as O(((m+1)#nz(A)+n(m+1)^2)N) in the usual iteration regime.",
+      "overall_effect": "The stated total arithmetic-complexity guarantee substantially underestimates work for allowed dense and moderately dense matrices.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The computational-cost bound omits the number of matrix-vector products",
+      "why_classification": "The supported correction worsens the advertised complexity by an unbounded factor in an admitted regime; no source-supported implementation achieves the stated bound there."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "coro:UCS17"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "|I-I_m| \\le \\frac{4M_\\rho}{1 - \\rho^{-2}} \\rho^{-2m -2}.",
+          "tag": "eq:UCSthm4.2"
+        },
+        {
+          "quote": "The proofs of \\cref{thm:CK21thm3} and \\cref{thm:UCSthm4.2} differ by a single step, namely the calculation of an infinite geometric progression",
+          "tag": "thm:CK21thm3"
+        }
+      ],
+      "failure_explanation": "The even-index geometric progression requires cancellation of odd contributions to the integration error, not merely symmetric node locations. For example, the probability measure (1/4)delta_{-1}+(1/3)delta_{-1/2}+(5/12)delta_1 has one-point Gaussian node 0, but its integral of t^3 is 1/8 while the quadrature gives zero. Thus even symmetric nodes and weights do not make the underlying integration functional even. The theorem supplies no measure-symmetry hypothesis, and the paper gives no alternative argument establishing its sharper constant under the advertised node-only condition.",
+      "failure_location": {
+        "quote": "It should be pointed out that the result of \\cref{thm:UCSthm4.2} assumes that the quadrature nodes are symmetric.",
+        "tag": "thm:UCSthm4.2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use the general bound in thm:CK21thm3 for node-symmetric rules unless reflection symmetry of the entire measure is established, and use the corrected corollary parameters already provided in thm:correctedSaad.",
+      "overall_effect": "The claimed justification of the sharper symmetric-node estimate, its derived corollary, and the prose asserting sufficiency of symmetric nodes are unsupported.",
+      "primary_affected_tag": "thm:UCSthm4.2",
+      "target_type": "formal_result",
+      "title": "Symmetric nodes do not supply the parity condition needed by the sharper bound",
+      "why_classification": "The source supplies a comparable general estimate and replacement parameter bounds, so no new global proof architecture is needed, but the sharper guarantee cannot be retained under the advertised node-only hypothesis."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{P}\\Big\\{ \\left| \\log \\det A -  \\left[\\log \\det A \\right]_L \\right| \\le \\epsilon  \\left| \\log \\det A  \\right| \\Big\\} \\ge 1-\\eta.",
+          "tag": "eq4"
+        },
+        {
+          "quote": "$\\lambda_{\\max}<1$",
+          "tag": "thm:ours"
+        }
+      ],
+      "failure_explanation": "For B=A/s, undoing the scaling adds n log(s) and preserves absolute error. However, the theorem's allowance becomes epsilon times |logdet(A)-n log(s)|, not epsilon times |logdet(A)|. These can differ arbitrarily; a determinant-one SPD matrix makes the latter zero while the former is positive. Consequently scaling does not make the relative-error restriction harmless.",
+      "failure_location": {
+        "quote": "This assumption is mild since for any SPD matrix with $\\lambda_{\\max} > 1$, it can be simply scaled to have eigenvalues $\\lambda \\in (0,1)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the relative-error scope to the stated spectral regime and explicitly describe the additive guarantee obtained after undoing scaling. A relative guarantee for the original matrix would additionally require a nonzero lower bound on |logdet(A)| and a corresponding tolerance adjustment.",
+      "overall_effect": "The suggestion that the relative-error results extend to arbitrary SPD matrices by simple scaling is unsupported. The formal results restricted to lambda_max<1 are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Scaling does not transfer the claimed relative-error guarantee to arbitrary SPD matrices",
+      "why_classification": "The source-supported qualification withdraws the advertised general-SPD relative-error transfer and changes the guarantee for that regime from relative to additive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:ours_updated"
+      ],
+      "diagnostic_evidence": [],
+      "failure_explanation": "The hypotheses allow A=cI with 0<c<1. Then lambda_min=lambda_max=c, so rho_2 divides by zero and the subsequent definitions of K_rho2 and the lower bound on m are undefined. This defect remains even after the Lanczos algorithm is given proper early-termination handling.",
+      "failure_location": {
+        "quote": "\\rho_2 = \\frac{\\lambda_{\\max}+\\sqrt{2\\lambda_{\\min}\\lambda_{\\max}-\\lambda_{\\min}^{2}}}{\\lambda_{\\max}-\\lambda_{\\min}}",
+        "tag": "thm:ours"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Handle lambda_min=lambda_max separately: the one-node quadrature and each normalized Rademacher query are exact for A=cI. Apply the displayed ellipse formulas only when lambda_min<lambda_max.",
+      "overall_effect": "The stated relative-error parameter prescriptions do not cover the condition-number-one case that their hypotheses include.",
+      "primary_affected_tag": "thm:ours",
+      "target_type": "formal_result",
+      "title": "The relative-error parameters are undefined for scalar SPD matrices",
+      "why_classification": "A routine scalar-matrix case split restores the full stated scope without changing any nondegenerate bound or rate."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then from the perspective of minimizing MVMs with respect to $\\alpha$, the problem can be viewed as",
+          "tag": null
+        },
+        {
+          "quote": "\\alpha^* = 2\\log \\alpha^* + 2 \\log C + 1,",
+          "tag": "alpha*"
+        },
+        {
+          "quote": "\\State Obtain $\\boldsymbol{v}_{1} = \\boldsymbol{v}/\\| \\boldsymbol{v}\\|_2$ and compute $\\alpha_1 = {\\boldsymbol{v}_{1}}^T A \\boldsymbol{v}_{1}$.",
+          "tag": "alg:Lanc"
+        }
+      ],
+      "failure_explanation": "The objective treats a possibly negative real lower bound on m as an actual iteration cost. Admissible choices n=2, lambda_min=0.49, lambda_max=0.5 and epsilon=0.5 give C approximately 0.00396. For C<1 the displayed objective tends to minus infinity as alpha approaches 1 from above, so no minimizer exists; in this example the proposed stationary equation has no solution with alpha>1. Moreover, the displayed Lanczos convention uses m+1 matrix-vector products per probe, not m. Thus the reduction does not establish minimum realizable MVM counts even in regimes where the surrogate has a minimizer.",
+      "failure_location": {
+        "quote": "\\min_{\\alpha>1} \\, \\log\\left(C \\alpha\\right) \\left(\\alpha/(\\alpha-1) \\right)^2.",
+        "tag": "optimization"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Reoptimize the certified integer cost. For each admissible m with q_m=C rho_2^(-2m)<1, use N_m=ceil[(6/epsilon^2)log(2/eta)/(1-q_m)^2] and compare (m+1)N_m, including the exact Lanczos-termination option. This handles feasibility and boundary cases instead of universally solving the stationary equation.",
+      "overall_effect": "The optimized parameter-selection recipe is unavailable on legitimate nondegenerate inputs and does not establish the advertised overall MVM minimum. The conditional accuracy implication for an admissible allocation is not itself disproved.",
+      "primary_affected_tag": "optimization",
+      "target_type": "algorithm",
+      "title": "The allocation objective is not a realizable MVM cost and may have no minimizer",
+      "why_classification": "A contained discrete or piecewise reoptimization using the existing error estimates can restore a comparable allocation method and cost guarantee without changing the underlying convergence analysis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Given $\\epsilon, \\eta \\in (0,1)$, if the Lanczos iteration step $m$ and the query number $N$ satisfy",
+          "tag": "thm:correctedSaad"
+        },
+        {
+          "quote": "SPD matrix $A_3 \\in \\mathbb{R}^{5000 \\times 5000}$ with eigenvalues $\\lambda_i = 0.99/i^3, i = 1, \\ldots, 5000$;",
+          "tag": null
+        },
+        {
+          "quote": "In the test, we set different levels of relative error $\\epsilon^* = 0.01, 0.02, \\ldots, 0.2$, with fixed failure probability $\\eta = 0.1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "All synthetic matrices have negative log determinants, so the displayed conversion produces a negative tolerance. More importantly, even after the evident absolute-value correction, the theorem's upper restriction is violated: for A_3 and epsilon*=0.2, epsilon*|logdet(A_3)|/5000 is approximately 4.51, not less than 1. Thus fixing the sign alone does not justify the claimed theorem-backed comparison over the stated test range.",
+      "failure_location": {
+        "quote": "\\epsilon = \\epsilon^* \\log \\det A / n.",
+        "tag": "eq_eps"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Use |logdet(A)| in the conversion and explicitly extend the absolute-error theorem to the needed positive tolerances. Below log(kappa), its existing argument applies with the normalized Hutchinson tolerance; at or above log(kappa), the elementary deterministic range bound |logdet(A)-estimate|<=n log(kappa) suffices.",
+      "overall_effect": "The benchmark's claimed use of thm:correctedSaad to guarantee the requested relative error is not justified for all listed decay rates and tolerance levels.",
+      "primary_affected_tag": "eq_eps",
+      "target_type": "algorithm",
+      "title": "The benchmark tolerance conversion leaves the theorem's admissible parameter range",
+      "why_classification": "A routine parameter-range extension and case split can validate the same benchmark formulas without weakening the convergence guarantees or requiring a new optimization."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2307.00847",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c42e539abecf88a44de72f2dedfec14703df372008f57b75de751f59b08fac16",
+  "status": "ok"
+}

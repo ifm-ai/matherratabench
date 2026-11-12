@@ -1,0 +1,158 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2",
+        "thm:subspaceembed"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Apply matrix Chernoff inequality (\\cref{thm:chernoff}) conditionally, and then removing the conditioning",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "\\mu_{\\min} = \\lambda_{\\min} (\\expect \\M{Y}) \\qquad \\mu_{\\max} = \\lambda_{\\max}(\\expect \\M{Y})",
+          "tag": "thm:chernoff"
+        }
+      ],
+      "failure_explanation": "Matrix Chernoff is invoked for the law of the summands conditioned on the event that every summand has norm at most Delta, which is what supplies the uniform bound L = Delta. Under that conditional law the mean is E[S_k | ||S_k|| <= Delta], not W^T E[w w^T] W = I. Truncating PSD summands removes mass E[S_k 1{||S_k||>Delta}], so the conditional lambda_min can be below ell. Thus mu_min = ell, and similarly mu_max = ell||Z||_2^2, are not verified for the conditional distribution. The tail bounds in Steps 1 and 2 are therefore unsupported.",
+      "failure_location": {
+        "quote": "Therefore, $\\mu_{\\min} = \\ell$.",
+        "tag": "thm:tantheta"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Apply Chernoff to truncated summands S_k 1{||S_k||<=Delta}, which coincide with S_k on the event E. Bound ||E[S_k 1{||S_k||>Delta}]|| via Cauchy-Schwarz, using the moment bounds from lem:kronrank1 and the tail probability delta/(4 ell). Then use the adjusted mu_min = ell(1-eta) and mu_max, and adjust the sample-size constants.",
+      "overall_effect": "The probabilistic guarantees of the key lemma are unproven, and with them the range-finder, single-view, RHOSVD-KRP, RSTHOSVD-KRP and subspace-embedding results, all of which reuse this conditioning argument.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "Matrix Chernoff applied conditionally on a truncation event but with the unconditional mean",
+      "why_classification": "The fix needs a contained new truncation lemma and some constant changes. The proof architecture and the rates survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We can bound $f(\\varepsilon) \\leq e^{-\\varepsilon^2/(2+\\varepsilon)}$ for $\\varepsilon \\geq 0$.",
+          "tag": "thm:tantheta"
+        }
+      ],
+      "failure_explanation": "Setting (N-r)exp(-eps^2 mu_max/((2+eps)Delta)) = delta/4 gives eps^2/(2+eps) = Gamma. The positive root is eps* = (Gamma + sqrt(Gamma^2+8Gamma))/2. One has eps* <= 2Gamma only if Gamma >= 1. For Gamma < 1, which is the typical regime since Gamma is O(ln N/ell), eps* is approximately sqrt(2Gamma) and exceeds 2Gamma. Taking eps = 2Gamma therefore does not make the failure probability at most delta/4, and the bound (1+2Gamma)ell||Z||_2^2 is not established.",
+      "failure_location": {
+        "quote": "and choose the positive root to get $\\varepsilon = 2 \\Gamma$",
+        "tag": "thm:tantheta"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Use eps* <= Gamma + sqrt(2Gamma) <= 1/2 + 2Gamma, which follows from AM-GM. Restate the lemma and the downstream bounds with 1+Gamma+sqrt(2Gamma), or with 3/2+2Gamma, in place of 1+2Gamma.",
+      "overall_effect": "The explicit factor 2(1+2Gamma) in the lemma, and the factors 1+2r(1+2Gamma_i) in all downstream error bounds, are unsupported in the main regime.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "Incorrect root of the quadratic: epsilon = 2*Gamma fails when Gamma < 1",
+      "why_classification": "The repair is local, but every explicit stated bound must be weakened by a constant-level change. This is a limited weakening, and the O(r) form of the bound survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "r (1 + C_{K,d}\\ln^d(16\\ell_r/\\delta))\\ln(8r/\\delta)",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "8(r + rC_{K,d}\\ln^d(8\\ell/\\delta))\\ln(4r/\\delta)",
+          "tag": "thm:rrf"
+        },
+        {
+          "quote": "\\|\\M{M}-\\M{QQ}\\t\\M{M}\\|_F^2 \\le (1 + 2r(1+\\Gamma_r))\\|\\M\\Sigma_\\perp\\|_F^2.",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "(1+2r(1+2\\Gamma_r) ( 1 + 2\\ell_r(1+\\Gamma_l) )",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "With delta replaced by delta/2, thm:rrf and thm:tantheta require ell_r >= 8(r + rC ln^d(16ell_r/delta))ln(8r/delta), and the analogous condition for ell_l. The stated conditions omit the factor 8, so the invoked results are used outside their hypotheses. In addition, the event E uses (1+Gamma_r) whereas thm:rrf only gives (1+2Gamma_r). The final statement has (1+Gamma_l) while the proof yields (1+2Gamma_l), and the right-hand side is written with the undefined ||Sigma_F||_2^2 instead of ||Sigma_perp||_F^2. The stated bound is therefore not what the argument supports.",
+      "failure_location": {
+        "quote": "The assumptions on $\\ell_r$ ensure that, by \\cref{thm:rrf}, $\\prob\\{\\mc{E}^c\\}\\le \\delta/2$.",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Require ell_r and ell_l to satisfy the thm:rrf and thm:tantheta conditions with the factor 8 at level delta/2. Restate the bound as (1+2r(1+2Gamma_r))(1+2ell_r(1+2Gamma_l))||Sigma_perp||_F^2, which is still subject to ISSUE-001 and ISSUE-002.",
+      "overall_effect": "The single-view guarantee for block-structured matrices is unproven as stated: both its sample sizes and its error constant are unsupported.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Single-view theorem's sample-size hypotheses and constants do not match the invoked results",
+      "why_classification": "The theorem must be weakened to require larger sketch sizes and a larger constant. The result remains comparable, and no new argument is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\le & \\>  (1 + 2r_{t+1}(1+\\Gamma_{t+1}))",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "E_t bounds a partial sum of mode errors. E_t does not imply E_{t+1}, because the (t+1)-th error can exceed its bound; if the inclusions held, P(E_d) >= P(E_1) would be trivial. The correct relation is E_t ∩ {mode-(t+1) bound} ⊆ E_{t+1}. In addition, the conditional step silently replaces (1+2Gamma_{t+1}) by the smaller (1+Gamma_{t+1}), which is not justified.",
+      "failure_location": {
+        "quote": "note that $ \\mc{E}_1 \\subseteq \\dots \\subseteq \\mc{E}_t \\subseteq \\mc{E}_{t+1} \\subseteq \\dots \\subseteq \\mc{E}_d$",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the nesting claim by E_t ∩ F_{t+1} ⊆ E_{t+1}, where F_{t+1} is the mode-(t+1) range-finder event. Note that P(F_{t+1}|E_t) >= 1-delta/d by the independence of the fresh sketches, and keep the factor (1+2Gamma_{t+1}).",
+      "overall_effect": "The probability chaining argument for the RSTHOSVD-KRP bound rests on a false claim and contains an unjustified constant reduction.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "False nesting of events in the RSTHOSVD-KRP proof",
+      "why_classification": "A short local correction restores the argument, and the statement is unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "2.6\\epsilon^{-2} (r + rC_{K,d}\\ln^d(8N/\\delta))\\ln(4r/\\delta)",
+          "tag": null
+        },
+        {
+          "quote": "This is slightly more favorable than our result which predicts $\\ell = \\mc{O}(r\\ln^2(N/\\delta))$ for $d=2$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims the paper's bound is O(r ln^d(N/delta)). The bound actually established, cor:subspaceembed, is O(r ln^d(N/delta) ln(r/delta)). The comparison with other subspace-embedding results therefore drops a ln(r/delta) factor from the paper's own requirement.",
+      "failure_location": {
+        "quote": "which predicts the number of samples to be $\\mc{O}( r \\ln^d (N/\\delta))$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "State the complexity as O(r ln^d(N/delta) ln(r/delta)), and O(r ln^2(N/delta) ln(r/delta)) for d=2, and adjust the comparative remarks accordingly.",
+      "overall_effect": "The comparisons in the discussion against Gaussian, SRHT, d=2 KRP and JL-based results understate the paper's sample requirement.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Paper's own subspace-embedding sample complexity misstated in literature comparison",
+      "why_classification": "Correcting the stated complexity is a local edit, and no formal result changes."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2507.23207",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "35f9666b0e59513382f1e39876245c9aa4f2c7bded3e783f01beb294b5f7ba3d",
+  "status": "ok"
+}

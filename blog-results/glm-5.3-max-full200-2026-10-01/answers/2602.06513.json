@@ -1,0 +1,128 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mbf{D}^{\\pm}(\\bB{u}^-, \\bB{u}^+) = \\frac{1}{2} \\mbf{B}(\\bB{u}^{\\pm})\\jump{\\bB{u}} \\pm \\left( \\mbf{f}(\\bB{u}^{\\pm}) - \\mbf{f}^*(\\bB{u}^-, \\bB{u}^+)\\right)",
+          "tag": "eq:fluctuation_definition"
+        },
+        {
+          "quote": "\\mbf{D}^{-}(\\bB{u}^-, \\bB{u}^+) + \\mbf{D}^+(\\bB{u}^-, \\bB{u}^+) = \\jump{\\mbf{f}} + \\int_0^1 \\mbf{B}(\\Phi(s)) \\partial_s \\Phi(s) \\, \\text{d}s",
+          "tag": "eq:path_conservation_cond"
+        },
+        {
+          "quote": "if the fluctuations \\eqref{eq:fluctuation_definition} are constructed from an EC numerical flux $\\mbf{f}^{\\tt EC}:=\\mbf{f}^{\\tt EC}(\\bB{u}^-,\\bB{u}^+)$ that satisfies the entropy conservation condition",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed formula equals only the minus fluctuation of (eq:fluctuation_definition) with f* = f^EC, yet it is written with a \\pm superscript defining both EC fluctuations. The correct plus fluctuation is (1/2)B(u^+)[[u]] + f(u^+) - f^EC, which differs in the sign of the flux difference. Read literally for the plus sign, D_EC^- + D_EC^+ = 2 f^EC - f(u^-) - f(u^+) + avg(B)[[u]], which violates the path-conservation condition (eq:path_conservation_cond) (which requires [[f]] plus the path integral) and destroys the interface identity w^-T D_EC^- + w^+T D_EC^+ = [[F]] on which the semi-discrete entropy conservation of the scheme rests.",
+      "failure_location": {
+        "quote": "\\mbf{D}_{\\tt EC}^{\\pm}(\\bB{u}^-, \\bB{u}^+) = \\mbf{f}^{\\tt EC}(\\bB{u}^-, \\bB{u}^+) - \\mbf{f}(\\bB{u}^-) + \\frac{1}{2} \\mbf{B}(\\bB{u}^-)\\jump{\\bB{u}}",
+        "tag": "eq:ec_fluctuation_definition"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Define D_EC^+ (and hence D_ES^+) from (eq:fluctuation_definition) with f* = f^EC, i.e. D_EC^+(u^-,u^+) = (1/2)B(u^+)[[u]] + f(u^+) - f^EC(u^-,u^+), and restrict (eq:ec_fluctuation_definition) to the minus sign.",
+      "overall_effect": "The surface fluctuation applied at the left boundary of each element in (eq:dgsem)/(eq:es_dgsem) and reused in (eq:es_fluctuation_definition) is not correctly defined; a literal implementation yields a scheme that is neither path-conservative nor entropy conservative, so the EC/ES guarantees are unsupported until the definition is repaired.",
+      "primary_affected_tag": "eq:ec_fluctuation_definition",
+      "target_type": "algorithm",
+      "title": "EC fluctuation definition assigns the minus-fluctuation formula to both signs, contradicting the general fluctuation definition and path conservation",
+      "why_classification": "A one-formula local correction, forced by (eq:fluctuation_definition), restores a consistent definition; with it all stated guarantees (entropy conservation/stability, well-balancedness) hold unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\avg{hu_m}\\avg{\\bB{\\alpha}} + \\avg{h\\bB{\\alpha}}\\avg{u_m}",
+          "tag": "eq:swme_ec_fluxes"
+        },
+        {
+          "quote": "\\jump{u_m}\\avg{h\\alpha_j}\\avg{\\alpha_j} + \\jump{\\alpha_j}\\avg{h\\alpha_j}\\avg{u_m}",
+          "tag": "eq:leftside:EC:P"
+        },
+        {
+          "quote": "\\jump{\\bB{w}}^{\\rm T} \\mbf{\\bar{f}}^{\\tt EC, SWE}",
+          "tag": "eq:leftside:EC:linearity"
+        }
+      ],
+      "failure_explanation": "For the SWME entropy variables, w_1 = g(h+b) - u_m^2/2 - (1/2) sum alpha_i^2/(2i+1) contains moment terms, so the SWE bracket in (eq:entropy_conservation_condition_swe) equals -avg(hu_m) sum_j avg(alpha_j)[[alpha_j]]/(2j+1), nonzero whenever moments jump (the identity holds only when all moments vanish; e.g. for states (h,u_m,alpha_1,alpha_2) = (1,0,0,0) and (2,1,1,1) with b=0, g=1 it equals -4/15). The proof discards this bracket in (eq:leftside:EC:linearity). Moreover, contracting the moment flux component avg(hu_m)avg(alpha_j) of (eq:swme_ec_fluxes) with [[w_{j+2}]] = [[alpha_j]]/(2j+1) produces the additional term sum_j [[alpha_j]]avg(hu_m)avg(alpha_j)/(2j+1), which is omitted in the first equality of (eq:leftside:EC:P) (in the example the true bracket is 4/3, not the displayed 16/15 = [[P^LM]]). The two errors cancel exactly (the omitted term is +avg(hu_m) sum avg(alpha_j)[[alpha_j]]/(2j+1)), so the statement of thm:ec_flux is in fact true, but its proof establishes the conclusion through two false identities.",
+      "failure_location": {
+        "quote": "\\jump{\\bB{w}}^{\\rm T} \\mbf{f}^{\\tt EC,SWE} - \\avg{\\bB{w}^{\\rm T} \\mbf{B}^{\\tt SWE}} \\jump{\\bB{u}} = 0",
+        "tag": "eq:entropy_conservation_condition_swe"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redo the hierarchical decomposition in the proof: retain the nonzero SWE bracket in (eq:leftside:EC:linearity) and include the omitted term sum_j [[alpha_j]]avg(hu_m)avg(alpha_j)/(2j+1) in (eq:leftside:EC:P), then verify the two contributions cancel so the total equals [[P^LM]] + [[Pbar^LM]] = [[w^T f - F]].",
+      "overall_effect": "The central entropy-conservation property of the flux f^EC (thm:ec_flux), on which the semi-discrete entropy conservation of the EC scheme and the entropy stability of the ES scheme rest, is left without a valid proof as written; no other labelled result uses the false identity.",
+      "primary_affected_tag": "thm:ec_flux",
+      "target_type": "formal_result",
+      "title": "Proof of the entropy-conservative flux theorem invokes a false SWE identity and drops a compensating term",
+      "why_classification": "The proof of a central theorem fails at two compensating steps (a false premise and a dropped term); the repair needs a contained but nontrivial rederivation of the cancellation, although no claim, guarantee, or scope is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "that for  constant bottom topography satisfies the relation $\\text{diag}(\\bar{\\mbf{H}}, 1) \\jump{\\bB{w}} = \\jump{\\bB{u}}$",
+          "tag": null
+        },
+        {
+          "quote": "w_1 & = -\\frac{u_m^2}{2}- \\frac{1}{2}\\sum\\limits_{i=1}^N\\frac{\\alpha_i^2}{2i+1}+g(h+b)",
+          "tag": "eq:SWME:Entropy:Variables"
+        }
+      ],
+      "failure_explanation": "The exact inverse Hessian of E with respect to (h, hu_m, h alpha) is (1/g) y y^T + diag(0, h, 3h, ..., (2N+1)h) with y = (1, u_m, alpha)^T; correspondingly, for constant bottom the jump relation diag(Hbar,1)[[w]] = [[u]] requires the first diagonal entry of (1/g)diag(avg z) to be 0, since [[h]] = (1/g) avg(y)^T [[w]] already supplies the (1,1) contribution. With the stated z_1 = 1 one gets Hbar_11 = 2/g instead of 1/g: for two states with constant b, equal u_m and alpha but h^- != h^+ (so [[w]] = (g[[h]],0,...,0)), the relation yields 2[[h]] != [[h]]. Hbar is then also not the inverse Hessian at any state. The matrix remains positive definite, so the entropy-stability and well-balancedness arguments (which use only Hbar > 0 and the zero block for the b component) are unaffected.",
+      "failure_location": {
+        "quote": "with vectors $\\mbf{y} = (1, u_m, \\bB{\\alpha}^{\\rm T})^{\\rm T}$ and $\\mbf{z} = (1, gh, 3gh, \\dots, (2n+1)gh)^{\\rm T}$ is the positive definite inverse of the Hessian of the entropy function $\\mathbb{E}\\big((h, hu_m, h\\bB{\\alpha}^{\\rm T})\\big)$",
+        "tag": "eq:es_fluctuation_definition"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Set the first component of z to 0, i.e. z = (0, gh, 3gh, ..., (2N+1)gh)^T (also correcting (2n+1) to (2N+1)); then diag(Hbar,1)[[w]] = [[u]] holds exactly for constant bottom and Hbar coincides with the inverse Hessian at the averaged-primitive state.",
+      "overall_effect": "The stated design properties of the ES dissipation (the exact relation diag(Hbar,1)[[w]] = [[u]] to conservative-variable jumps for constant bottom, and the inverse-Hessian/intermediate-state interpretation) are false as written, and the dissipation actually defined differs from the intended Rusanov-type dissipation by an extra 1/g in the (1,1) entry; no advertised guarantee of the ES scheme is lost.",
+      "primary_affected_tag": "eq:es_fluctuation_definition",
+      "target_type": "algorithm",
+      "title": "Wrong first component of z in the ES dissipation matrix Hbar falsifies the claimed jump relation and inverse-Hessian property",
+      "why_classification": "A single-entry local correction (z_1: 1 -> 0) restores both claimed properties; positive definiteness, entropy stability, and well-balancedness hold with either value, so no substantive guarantee depends on the erroneous entry."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\widetilde{B}_{ijk} +  \\widetilde{A}_{kji} + \\widetilde{B}_{kji} & = 0.",
+          "tag": "eq:condition"
+        },
+        {
+          "quote": "where the unscaled coefficients are $\\widetilde{A}_{ijk}\\coloneqq A_{ijk}/(2i+1)$ and $\\widetilde{B}_{ijk} \\coloneqq B_{ijk}/(2i+1)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "From (eq:condition) with the tilde definitions, A_{kji} = -((2k+1)/(2i+1)) B_{ijk} - B_{kji}; the displayed formula drops the factor (2k+1)/(2i+1) on B_{ijk} and is therefore false whenever i != k. Concretely, for the shifted Legendre basis B_{112} = 1/5 and B_{211} = -1, so the true value is A_{211} = 2/3, while the formula gives A_{211} = -(1/5 - 1) = 4/5. Computing the A tensor with this formula yields wrong coefficients, corrupting the mathfrak A_i terms, the physical and EC fluxes, and the identity (eq:condition) on which the entropy analysis relies.",
+      "failure_location": {
+        "quote": "{A}_{kji} = -({B}_{ijk} +{B}_{kji})",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the formula by A_{kji} = -((2k+1)/(2i+1)) B_{ijk} - B_{kji} (equivalently, state the relation for the scaled coefficients: Atilde_{kji} = -(Btilde_{ijk} + Btilde_{kji})).",
+      "overall_effect": "The tensor-computation instruction of Appendix B, if implemented as written, produces an incorrect A_{ijk} tensor (for i != k), so the discretized system would not be the SWME and the entropy-conservative property of the flux would be lost; the paper's theoretical results are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Appendix B computes A_{kji} from B_{ijk} with a missing scaling factor",
+      "why_classification": "A one-line local correction to the computational formula, forced by (eq:condition); no theorem, proof, or guarantee changes."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2602.06513",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n01-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "810b42c0d1a411f7078d093af1727e25d2bc6a95ced53efff237797d3b11ab31",
+  "status": "ok"
+}

@@ -1,0 +1,311 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nabla H^n(y^n) -\\nabla F^n(u^n)+ M(y^n - u^n) = 0.",
+          "tag": "prop:descent"
+        },
+        {
+          "quote": "which only uses 50 parallel preconditioned Jacobi iterations.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims that any finite number of preconditioned iterations, with no error control, still guarantees global convergence. Every convergence proof instead relies on the exact first-order optimality condition for y^n. No inexact-oracle, perturbation, or error-control argument is supplied, so the advertised guarantee is unsupported.",
+      "failure_location": {
+        "quote": "It is important to note that we will prove that any finite and feasible preconditioned iterations can ensure the global convergence of the whole nonlinear second-order convex splitting method.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Either add an inexact-oracle analysis showing sufficient decrease and KL properties under bounded subproblem error, or restrict the claims to exact subproblem solves.",
+      "overall_effect": "The abstract and preliminary claims overstate the scope; the numerical experiments that stop the subproblem solver after a fixed number of preconditioned iterations are not covered by the convergence theory.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unsupported claim that finitely many preconditioned iterations without error control preserve global convergence",
+      "why_classification": "A supported resolution requires a new inexact-oracle proof architecture; the advertised finite-iteration guarantee is not a minor repair."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "otherwise, we terminate the line search and set $\\lambda_n=0$",
+          "tag": null
+        },
+        {
+          "quote": "\\lambda_n=  \n     \\begin{cases}\n              \\lambda_n, \\ \\ \\text{if there exists a positive $\\lambda_n>0$} \\\\\n             0, \\ \\ \\ \\ \\text{otherwise}\n     \\end{cases}",
+          "tag": "eq:line:search:til"
+        }
+      ],
+      "failure_explanation": "Step 6 of Algorithm alg:cap backtracks lambda by beta but has no stopping rule if no positive lambda satisfies the Armijo inequality. For the extrapolated case hat u = tilde u, d^n need not be a descent direction, so the loop can run forever. The lambda=0 fallback introduced later in eq:line:search:til is not part of the algorithm.",
+      "failure_location": {
+        "quote": "Set $\\lambda_n := \\bar \\lambda_{\\max}$. WHILE $E^n(y_n + \\lambda_nd^n)>E^n(y^n) - \\alpha\\lambda_n\\|d^n\\|^2$ DO $\\lambda_n:=\\beta\\lambda_n$",
+        "tag": "alg:cap"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add a termination rule to Step 6, e.g., if lambda falls below a prescribed tolerance, set lambda=0.",
+      "overall_effect": "The algorithm is not well-defined for the tilde u case, and Theorems thm:square:sum:til and thm:globalconverg:M assume a fallback that the algorithm does not implement.",
+      "primary_affected_tag": "alg:cap",
+      "target_type": "algorithm",
+      "title": "Algorithm line search has no termination rule when no positive step satisfies Armijo",
+      "why_classification": "A contained algorithmic fix restores well-definedness and aligns the algorithm with the later line-search rule, without changing the mathematical framework."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "With the energy $E(x)$ being level-bounded on $x$, it can be checked that $A(x,y)$ is thus level-bounded on $(x,y)$.",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "The theorems conclude that A (or tilde A) has a finite limit and that u^n is bounded, but the proof uses level-boundedness of E, which is not among the stated assumptions. Without it, the monotone sequence may be unbounded below and the summability bound is unjustified.",
+      "failure_location": {
+        "quote": "Assuming $h(u)$ and $f(u)$ are Lipschitz continuous, $A(x,y) = E(x) + (\\frac{L}{2}+\\frac{1}{3\\delta t})\\|x-y\\|^2$ is a KL function and  $0\\le\\lambda_n< \\lambda_{\\max} =\\sqrt{\\frac{4}{3\\delta tL} - \\frac12}-1$.",
+        "tag": "thm:globalconverg"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add level-boundedness (or boundedness below) of E to the hypotheses of the three theorems.",
+      "overall_effect": "The limit, boundedness, and summability conclusions of thm:globalconverg, thm:square:sum:til, and thm:globalconverg:M are unsupported as stated.",
+      "primary_affected_tag": "thm:globalconverg",
+      "target_type": "formal_result",
+      "title": "Convergence theorems omit the level-boundedness hypothesis needed for the monotone limit",
+      "why_classification": "Adding a standard level-boundedness condition preserves all conclusions and the proof already uses it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{2}{3\\delta t}(3y^n - 4u^n + u^{n-1}) + M(y^n - \\hat{u}^n) + h(y^n) + (2f(u^n) - f(u^{n-1}))=0.",
+          "tag": "eq:solve:y:pre:general"
+        },
+        {
+          "quote": "\\|u^{n+2}-u^{n+1}\\|^2\\leq \\Tilde{C}(\\|u^{n+2} - u^{n+1}\\| + \\|u^{n+1} - u^{n}\\|)\\Psi(u^n, u^{n+1}, u^{n+2}, \\zeta), where $\\tilde{C} = \\frac{\\alpha\\lambda_{\\min} + c(\\lambda_{\\max}, \\delta t, L)}{(1+\\lambda_{\\max})^2}$.",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "The proof derives an algebraically false identity for f(u^{n+1}) from eq:solve:y:pre:general; the correct identity contains one-half factors and +1/2 f(u^n). Later it sets tilde C to the reciprocal of the constant that should multiply Psi, dropping C_L. The displayed inequalities are invalid as written, though the conclusions can be repaired with the correct identity and a redefined constant.",
+      "failure_location": {
+        "quote": "f(u^{n+1}) = -\\frac{1}{3\\delta t}(3y^{n+1} - 4u^{n+1} + u^{n})  - \\left(f(u^{n+1}) - f(u^{n})\\right) -h(y^{n+1}) - M(y^n - u^n).",
+        "tag": "thm:globalconverg"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the false identity with the correct update equation and redefine tilde C to include C_L.",
+      "overall_effect": "The proof of thm:globalconverg contains invalid inference steps; the theorem's conclusions remain true after local repair.",
+      "primary_affected_tag": "thm:globalconverg",
+      "target_type": "formal_result",
+      "title": "Invalid algebraic steps in the proof of thm:globalconverg",
+      "why_classification": "Both errors are local algebraic mistakes; the stated conclusions survive with a short correction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\rho := \\frac{1-\\theta}{2\\theta-1}",
+          "tag": null
+        },
+        {
+          "quote": "\\Omega_{n} \\leq C_3n^{-\\frac{1-\\theta}{2\\theta -1}}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Statement (iii) gives the rate n^{-(1-theta)/(2theta-2)}. Since 2theta-2<0 for theta<1, this is n^{1/2}, a growing and trivial bound. The appendix proof derives the correct exponent rho=(1-theta)/(2theta-1).",
+      "failure_location": {
+        "quote": "\\|u^n-u^*\\| < c_2 n^{-\\frac{1-\\theta}{2\\theta-2}} $ for $n>n_2$.",
+        "tag": "them:local:rate"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Change the denominator in statement (iii) from 2theta-2 to 2theta-1.",
+      "overall_effect": "The advertised local convergence rate for theta in (1/2,1) is false as stated; the correct rate appears only in the appendix proof.",
+      "primary_affected_tag": "them:local:rate",
+      "target_type": "formal_result",
+      "title": "Local rate theorem states a trivial exponent for theta in (1/2,1)",
+      "why_classification": "The correction is a one-symbol repair that restores the rate already proved in the appendix, with no loss of content."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "M(y^n - \\hat{u}^n)",
+          "tag": "eq:solve:y:pre:general"
+        },
+        {
+          "quote": "where $\\hat{u}$ can be chosen from the set $\\{u^n, \\frac{4}{3}u^{n}-\\frac{1}{3}u^{n-1}\\}$.",
+          "tag": "alg:cap"
+        }
+      ],
+      "failure_explanation": "Substituting hat u^n = tilde u^n into eq:solve:y:pre:general gives M(y^n-tilde u^n), not (2M/delta t)(y^n-tilde u^n). The factor 2/delta t is unexplained and changes the proximal term. All subsequent tilde u estimates in prop:til:1, prop:til2, coro:til1, thm:square:sum:til, and thm:globalconverg:M are built on the scaled equation, so they analyze a different algorithm.",
+      "failure_location": {
+        "quote": "\\frac{2}{3\\delta t}(3y^{n} - 4u^n + u^{n-1}) + \\frac{2M}{\\delta t}(y^{n} - \\Tilde u^n) + h( y^{n}) + (2f(u^n) - f(u^{n-1})) = 0.",
+        "tag": "eq:til:yn"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Correct eq:til:yn to use M and redo the tilde u analysis with the resulting constants; no complete source-supported repair exists.",
+      "overall_effect": "The entire convergence theory for the extrapolated case hat u = tilde u is invalid for the actual Algorithm alg:cap.",
+      "primary_affected_tag": "eq:til:yn",
+      "target_type": "other",
+      "title": "Equation eq:til:yn uses 2M/delta t instead of M for the extrapolated case",
+      "why_classification": "The central extrapolated case is analyzed for a different scheme; repairing it requires redoing the analysis, and the advertised case is not currently proved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "E(u) = \\frac12\\|Au-b\\|^2 + \\mu \\mathcal{H}_{\\alpha}(u) - \\tilde P(u)",
+          "tag": "eq:lsp"
+        },
+        {
+          "quote": "\\tilde P(u)= \\mu \\|u\\|_1 -P(u)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed splitting eq:another:split places mu*tilde P(u) in the concave part, but eq:lsp defines the objective with -tilde P(u). Expanding the split gives mu H_alpha + 1/2||Au-b||^2 - mu*tilde P, which is not the objective of eq:lsp unless mu=1.",
+      "failure_location": {
+        "quote": "E(u) =\\mu \\mathcal{H}_{\\alpha}(u) + \\frac{L}{2}\\|u\\|^2 - \\left(\\frac{L}{2}\\|u\\|^2 + \\mu \\tilde P(u)  - \\frac12\\|Au-b\\|^2\\right)",
+        "tag": "eq:another:split"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace mu*tilde P by tilde P in eq:another:split and regenerate the BDCA results.",
+      "overall_effect": "The BDCA comparison is performed on a different objective, so the numerical comparison with BapDCA_ls-t is unreliable.",
+      "primary_affected_tag": "eq:another:split",
+      "target_type": "other",
+      "title": "BDCA splitting uses mu*tilde P instead of tilde P, changing the objective",
+      "why_classification": "The repair is a one-term correction, but it changes the comparison algorithm and requires new numerical results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Specifically, $\\Lambda(i) = 2y(i) - 1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prior term is eta/2 sum Lambda(i)(u(i)-y(i))^2 with Lambda(i)=2y(i)-1. For y(i)=0, Lambda(i)=-1, making the term -eta/2 u(i)^2, which is concave. Thus H is not convex, violating a core assumption of the method.",
+      "failure_location": {
+        "quote": "H(u) =  \\sum_{ij}\\frac{\\epsilon}{2}w_{ij}(u(i)-u(j))^2 + \\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Use nonnegative prior weights or restrict the label set; this changes the model or the experiment.",
+      "overall_effect": "The Ginzburg-Landau numerical example does not satisfy the convexity assumption required by the convergence theory.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Ginzburg-Landau prior term can make H nonconvex",
+      "why_classification": "The defect is concrete and requires modifying the model or the experiment, but it does not affect the general convergence theory."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{W}(u) = \\frac14\\sum_{i=1}^{n}(u(i)^2 - 1)^2",
+          "tag": "eq:nonlocalGL"
+        }
+      ],
+      "failure_explanation": "F(u)=1/epsilon W(u) with W(u)=1/4 sum (u_i^2-1)^2 has gradient component (1/epsilon) u_i(u_i^2-1), whose derivative (1/epsilon)(3u_i^2-1) is unbounded. Hence grad F is not globally Lipschitz, contradicting the standing assumption that grad F has a Lipschitz constant L.",
+      "failure_location": {
+        "quote": "F(u) = \\frac{1}{\\epsilon}\\mathbb{W}(u)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Restrict to a bounded domain or iterate set and add a local Lipschitz analysis, or modify the model.",
+      "overall_effect": "The convergence theory does not apply to the Ginzburg-Landau model as stated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Ginzburg-Landau double-well gradient is not globally Lipschitz",
+      "why_classification": "The violation is clear and requires a new boundedness argument or model change, but it is confined to one numerical example."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "E(u) = \\sum_{i,j}\\frac{\\epsilon}{2}w_{ij}(u(i)-u(j))^2 +\\frac{1}{\\epsilon}\\bb{W}(u) + \\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2",
+          "tag": "eq:nonlocalGL"
+        }
+      ],
+      "failure_explanation": "The displayed splitting expands to graph plus prior minus (1/epsilon)W, while the original functional eq:nonlocalGL has plus (1/epsilon)W. The sign of the double-well term is wrong, so the other algorithms solve a different functional.",
+      "failure_location": {
+        "quote": "E(u) = \\sum_{i,j}\\frac{\\epsilon}{2}w_{ij}(u(i)-u(j))^2 + \\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2 + \\frac{L}{2}\\sum_i u(i)^2 - \\left(\\frac{L}{2}\\sum_i u(i)^2 +\\frac{1}{\\epsilon}\\bb{W}(u)\\right).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Correct the sign in the concave part and rerun the comparison algorithms.",
+      "overall_effect": "The DCA, pDCA_e, BDCA, and BaDCA_ls comparison in Table tab:nonlocalGLmodel is invalid.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Ginzburg-Landau comparison splitting has the wrong sign for the double-well term",
+      "why_classification": "The error is a clear sign mistake, but fixing it changes the comparison experiments and requires new numerical results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $H(u) = \\mu \\mathcal{H}_{\\alpha}(u) + \\frac12\\|Au-b\\|^2$ and $F(u) =  - \\tilde P(u)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Proposition prop:proximal_to_pre requires h(u)=Au-b_0. For the SCAD problem, H(u)=mu H_alpha(u)+1/2||Au-b||^2, so h(u)=mu grad H_alpha(u)+A^T(Au-b) is nonlinear. The paper's use of preconditioned Jacobi iterations for BapDCA is therefore not justified by the stated preconditioned iteration.",
+      "failure_location": {
+        "quote": "The update of $y^n$ becomes the preconditioned iteration $y^n =  \\hat{u}^n + \\mathbb{M}^{-1}(b^n - T\\hat{u}^n)$ as in Proposition \\ref{prop:proximal_to_pre} while $h(u) = Au-b_0$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Either restrict to a linear h or provide a nonlinear preconditioned method for the subproblem.",
+      "overall_effect": "The implementation and numerical results for the preconditioned SCAD variants are not supported by the preconditioned iteration formula.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Preconditioned iteration is applied to a nonlinear h in the SCAD experiment",
+      "why_classification": "The gap is a missing nonlinear preconditioning construction; supplying one is contained but not present in the source."
+    }
+  ],
+  "issues_found": 11,
+  "paper_id": "2411.07661",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "82023cb4a713f803031fb66ea375960c872e0ef9830eb307112b4b7b18610917",
+  "status": "ok"
+}

@@ -1,0 +1,155 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "La:Psbg_B",
+        "th:wbg_hilbert",
+        "col:wbg_hilbert",
+        "th:wbg_banach",
+        "theo:Banach",
+        "Cor:expDecay"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\abs{a_{n,n}} = \\sigma_n(f_n) \\geq \\sigma_{\\widetilde{n}}(f_n) \\geq \\sigma_{\\widetilde{n}+1}(f_{\\widetilde{n}+1})",
+          "tag": "La:Psbg"
+        },
+        {
+          "quote": "V_{\\widetilde{n}} := \\spann (V_{\\undertilde{n}}\\oplus \\{ f_{\\undertilde{n}}, \\ldots, f_{\\widetilde{n}}\\} )",
+          "tag": "alg:wbg"
+        },
+        {
+          "quote": "we actually do not need to fix how the remaining $b-1$ elements are chosen",
+          "tag": null
+        },
+        {
+          "quote": "\\abs{a_{n,n}} = \\dist(f_n,V_n)_X = \\sigma_n(f_n) \\geq \\sigma_{\\widetilde{n}+1} (f_{\\widetilde{n}+1})",
+          "tag": "La:Psbg_B"
+        }
+      ],
+      "failure_explanation": "For a non-first batch element $f_n$ ($\\undertilde{n}<n\\le\\widetilde{n}$) the batch update adds all $b$ elements at once, so $f_n\\in V_{\\widetilde{n}}$ and $\\sigma_{\\widetilde{n}}(f_n)=0$, whereas $\\sigma_{\\widetilde{n}+1}(f_{\\widetilde{n}+1})\\ge\\gamma\\sigma_{\\widetilde{n}+1}>0$; the displayed chain is false. The conclusion (P1) itself fails: for $b=2$, $\\gamma=1$, $\\cF=\\{0,e_1,e_2,c_1,c_2\\}\\subset\\ell_2$ with $c_i=\\sqrt{1-\\epsilon^2}e_0+\\epsilon e_i'$, the algorithm may pick $f_0=c_1$, $f_1=c_2$ (both maximize $\\sigma_0=\\|\\cdot\\|$), giving $a_{1,1}=\\operatorname{dist}(c_2,\\operatorname{span}(c_1))=\\epsilon\\sqrt{1+(1-\\epsilon^2)^2}<\\gamma\\sigma_2=1$. The same defect occurs in the Banach analogue (La:Psbg_B), and remark (c) after Algorithm alg:wbg is wrong: the analysis does depend on how the remaining $b-1$ elements are chosen, and even the surrogate-based choice does not yield (P1).",
+      "failure_location": {
+        "quote": "the diagonal elements satisfy $\\gamma \\sigma_{n\\hue{+b-1}} \\leq \\abs{a_{n,n}} \\leq \\sigma_n$",
+        "tag": "La:Psbg"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Re-derive the analysis at batch granularity: only batch-start elements satisfy the weak greedy condition, so apply the classical matrix argument (Lemma lemma:main) to the subsequence $(f_{b\\ell})$ with the frozen spaces $V_{b\\ell}$, yielding $\\prod_{i=1}^{q}\\sigma_{b(L+i)}^2 \\le \\gamma^{-2q}[q/m]^m[q/(q-m)]^{q-m}\\sigma_{bL}^{2m}d_m^{2(q-m)}$; restrict (P1) to batch-start indices and derive all rates from this batch-granularity product inequality.",
+      "overall_effect": "The key lower bound on the Gram–Schmidt (and Banach functional) diagonal entries fails for all non-first batch elements, so the matrix-based error analysis of the batch greedy loses its main ingredient; the product inequalities and rate theorems built on it are unproven and in fact false as stated for large batch sizes (counterexamples in ISSUE-002/003/004).",
+      "primary_affected_tag": "La:Psbg",
+      "target_type": "formal_result",
+      "title": "Lower bound (P1) on diagonal entries is false for non-first batch elements (Hilbert and Banach)",
+      "why_classification": "The central structural lemma is false and its proof uses an invalid inference ($\\sigma_{\\widetilde{n}}(f_n)=0$ since $f_n\\in V_{\\widetilde{n}}$); the only correct repair is a different proof architecture (batch-start subsequence), and that repair changes the main rate guarantees (constants acquire $b^{-\\alpha}$ factors). No local fix preserves (P1) together with the advertised rates."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "col:wbg_hilbert",
+        "Cor:expDecay"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\prod_{i=1}^K \\abs{a_{n+i,n+i}} = \\prod_{i=1}^K \\sigma_{n+i}(f_{n+i}) \\geq \\gamma^K \\prod_{i=1}^K \\sigma_{N\\hue{+b-1}+i}",
+          "tag": "th:wbg_hilbert"
+        },
+        {
+          "quote": "the diagonal elements satisfy $\\gamma \\sigma_{n\\hue{+b-1}} \\leq \\abs{a_{n,n}} \\leq \\sigma_n$",
+          "tag": "La:Psbg"
+        },
+        {
+          "quote": "f_{{n}} := \\argmax_{f \\in \\cF \\setminus \\{f_{\\undertilde{n}}, \\ldots, f_{n-1} \\}} r_{\\undertilde{n}}(f)",
+          "tag": "alg:wbg"
+        }
+      ],
+      "failure_explanation": "The proof uses the false (P1) via $\\prod_i|a_{n+i,n+i}|\\ge\\gamma^K\\prod_i\\sigma_{N+b-1+i}$, which fails for non-first batch elements. The inequality is independently false: in $\\ell_2$ let $\\cF=\\{0\\}\\cup\\bigcup_{j\\ge1}\\{c_{j,1},c_{j,2}\\}$ with $c_{j,k}=e^{-j^2}e_j+\\epsilon e'_{j,k}$, $b=2$, $\\gamma=1$. In batch $\\ell$ the two points of cluster $\\ell+1$ are the unique top two by the frozen surrogate $\\sigma_{2\\ell}$, so the algorithm is forced to pick both; hence $\\sigma_{2\\ell}=e^{-(\\ell+1)^2}$ and $d_m\\approx e^{-(m+1)^2}$. With $N=0$, $K=20$, $m=13$: LHS $=\\prod_{i=1}^{20}\\sigma_{1+i}^2=e^{-4\\sum_{\\ell=1}^{10}(\\ell+1)^2}=e^{-2020}$ but RHS $=[20/13]^{13}[20/7]^7\\sigma_1^{26}d_{13}^{14}\\approx e^{5.60+7.35-26-2744}\\approx e^{-2757}$, so LHS $>$ RHS, a contradiction.",
+      "failure_location": {
+        "quote": "\\prod_{i=1}^K \\sigma_{N\\hue{+b-1}+i}^2 \\leq \\gamma^{-2K} \\left[ \\frac{K}{m}\\right]^m \\left[ \\frac{K}{K-m}\\right]^{K-m} \\sigma_{N+1}^{2m}\\, d_m^{2(K-m)}.",
+        "tag": "th:wbg_hilbert"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the false inequality by the batch-granularity product inequality $\\prod_{i=1}^q\\sigma_{bL+i}^2 \\le \\gamma^{-2q}[q/m]^m[q/(q-m)]^{q-m}\\sigma_{bL}^{2m}d_m^{2(q-m)}$, proved by applying Lemma lemma:main to the batch-start subsequence $(f_{b\\ell})$; this is strictly weaker and yields rate constants with a factor $b^{-\\alpha}$.",
+      "overall_effect": "The paper's central technical inequality is false for $b\\ge2$ whenever the Kolmogorov $n$-width decays exponentially with $\\alpha(b-1)>1$ (e.g. $b=2$, $\\alpha=2$); the rate theorems in Theorem col:wbg_hilbert and Corollary Cor:expDecay, which are proved from it, are unproven and in fact false for large $b$, and the numerical upper bound $\\widetilde\\sigma(n)=Ce^{-c(2/3)^\\alpha n^\\alpha}$ fitted from the false Corollary is theoretically unjustified.",
+      "primary_affected_tag": "th:wbg_hilbert",
+      "target_type": "formal_result",
+      "title": "Product inequality in Theorem th:wbg_hilbert is false for $b\\ge2$ (exponential width regime)",
+      "why_classification": "The main technical inequality of the paper is false in a regime the paper explicitly targets (exponential $n$-widths); every repair replaces it by a strictly weaker batch-granularity inequality and materially worsens the derived rates for large $b$, so the advertised guarantee is abandoned."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "Cor:expDecay",
+        "Rem:c1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sigma_n(\\cF) \\leq C_1 e^{-c_1(n,\\hue{b})\\, n^{\\alpha}}",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "c_1(n,\\hue{b}) = \\left[\\frac{2}{3}\\right]^\\alpha c_1(n,1)",
+          "tag": "Cor:expDecay"
+        },
+        {
+          "quote": "\\prod_{i=1}^K \\sigma_{N\\hue{+b-1}+i}^2 \\leq \\gamma^{-2K} \\left[ \\frac{K}{m}\\right]^m \\left[ \\frac{K}{K-m}\\right]^{K-m} \\sigma_{N+1}^{2m}\\, d_m^{2(K-m)}.",
+          "tag": "th:wbg_hilbert"
+        },
+        {
+          "quote": "only need to be modified in a minor manner to obtain corresponding results for the batch greedy case",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "(i) is false for large $b$: in the cluster example with $b=16$, $\\alpha=1$ ($c_{j,k}=e^{-j}e_j+\\epsilon e'_{j,k}$, sixteen points per cluster) each batch is forced to pick one cluster, so $\\sigma_{16\\ell+15}=e^{-(\\ell+1)}$ while $\\min_{m<16\\ell}d_m^{(16\\ell-m)/(16\\ell)}\\approx e^{-4\\ell}$, and $e^{-(\\ell+1)}>\\sqrt2\\,e^{-4\\ell}$. (iii) and Corollary Cor:expDecay are false for large $b$: on this example the actual exponential rate constant of the batch algorithm is $c_0b^{-\\alpha}$ (e.g. $c_0/16$ for $b=16$, $\\alpha=1$), but (iii) claims the $b$-independent $c_02^{-(\\alpha+1)}3^{-\\alpha}$ and the Corollary claims a loss of only $(2/3)^\\alpha$; for $b>3\\cdot2^{1+1/\\alpha}$ with $c_0<\\ln C_1$ the claimed constant is below the actual one, so the bound fails. (The exponent in the printed statement of (i) is $\\frac{n-m}{m}$ while its proof derives $\\frac{n-m}{n}$.) Part (ii) is unproven: its proof relies on the false product inequality, and the correct batch-granularity analysis yields only $\\sigma_{bq}\\lesssim(q/\\ln q)^{-\\alpha}$ for polynomial widths, a logarithmic loss that (ii) does not contain.",
+      "failure_location": {
+        "quote": "\\sigma_{n\\hue{+b-1}}(\\cF) \\leq \\sqrt{2}\\gamma^{-1} \\min_{1 \\leq m < n} d_m(\\cF)^{\\frac{n-m}{m}}.",
+        "tag": "col:wbg_hilbert"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate (i), (iii) and the Corollary from the batch-granularity product inequality $\\prod_{i=1}^q\\sigma_{bL+i}^2\\le\\gamma^{-2q}[q/m]^m[q/(q-m)]^{q-m}\\sigma_{bL}^{2m}d_m^{2(q-m)}$, giving $\\sigma_{bq}\\le\\sqrt2\\gamma^{-1}\\min_{m<q}d_m^{(q-m)/q}$ and the exponential rate constant $c_0b^{-\\alpha}\\frac{\\alpha^\\alpha}{(\\alpha+1)^{\\alpha+1}}$ instead of the $b$-independent $c_02^{-(\\alpha+1)}3^{-\\alpha}$; replace the Corollary's $(2/3)^\\alpha$ loss by the true $b^{-\\alpha}$-type loss; re-prove or weaken (ii) (the correct argument available gives a logarithmic loss).",
+      "overall_effect": "The advertised rates — $\\sigma_{n+b-1}\\le\\sqrt2\\gamma^{-1}\\min_m d_m^{(n-m)/n}$ in (i), the stretched-exponential rate with $b$-independent constant in (iii), and the Corollary's claim that batching costs only a factor $(2/3)^\\alpha$ in the rate constant — are false for large $b$ (e.g. $b\\ge5$ for $\\alpha=1$ in (i); $b\\ge3$ for $\\alpha=2$ in (i); $b\\ge9$ for $\\alpha=2$ in (iii); $b\\ge13$ for the Corollary at $\\alpha=1$, the regime used in the numerics): the true rate constant can be as bad as $c_0b^{-\\alpha}$. The introduction's claim that the classical proofs 'only need to be modified in a minor manner' is thereby misleading, and the numerical upper bound fitted from Corollary Cor:expDecay is unjustified.",
+      "primary_affected_tag": "col:wbg_hilbert",
+      "target_type": "formal_result",
+      "title": "Rate bounds in Theorem col:wbg_hilbert (i), (iii) and Corollary Cor:expDecay are false for large batch sizes",
+      "why_classification": "The headline theoretical guarantees (rate preservation with only a $(2/3)^\\alpha$ constant loss) are false for large batch sizes — the true loss is $b^{-\\alpha}$ — and repairing them needs a new proof architecture with $b$-dependent constants, a major loss of the paper's main result."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "theo:Banach"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\gamma^{2K} \\prod_{i=1}^K \\sigma_{n \\hue{+b-1}+i} \\leq \\bigg[ \\frac{K}{m} \\sum_{i=1}^K \\sigma_{n+i}^2 \\bigg]^m \\Big[ \\frac{K}{K-m} \\left(\\sqrt{K} d_m \\right)^2 \\Big]^{K-m}",
+          "tag": "th:wbg_banach"
+        },
+        {
+          "quote": "the diagonal elements satisfy $\\gamma \\sigma_{n\\hue{+b-1}} \\leq \\abs{a_{n,n}} \\,\\hue{\\leq}\\, \\sigma_n$",
+          "tag": "La:Psbg_B"
+        }
+      ],
+      "failure_explanation": "The proof relies on the same false (P1) from Lemma La:Psbg_B. The inequality is independently false by the same cluster example, which lives in the Banach space $\\ell_2$: with $b=2$, $\\alpha=2$, $N=0$, $K=20$, $m=13$, LHS $=e^{-2020}$ while RHS $=2^{20}20^7(\\sum_{i=1}^{20}\\sigma_i^2)^{13}d_{13}^{14}\\approx2^{20}20^7(2e^{-2})^{13}e^{-2744}\\approx e^{-2726}$, so LHS $>$ RHS. Consequently theo:Banach (i) and (iii) are false for large $b$ (e.g. $b=16$, $\\alpha=1$: $\\sigma_{16\\ell+15}=e^{-(\\ell+1)}$ exceeds the claimed bound $\\approx(16\\ell)^{1/4}e^{-4\\ell}$), and the polynomial rate (ii) is unproven (the correct batch-granularity analysis gives a weaker bound).",
+      "failure_location": {
+        "quote": "\\prod_{i=1}^K \\sigma_{N\\hue{+b-1}+i}^2 \\leq 2^K K^{K-m} \\gamma^{-2K} \\bigg[ \\sum_{i=1}^K \\sigma_{N+i}^2 \\bigg]^m d_m^{2(K-m)}.",
+        "tag": "th:wbg_banach"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Prove the batch-granularity product inequality in Banach spaces via the batch-start subsequence $(f_{b\\ell})$ with the functionals $\\lambda_j$, and restate theo:Banach with $b$-dependent rate constants (exponential rate constant $\\sim c_0b^{-\\alpha}$).",
+      "overall_effect": "The Banach-space counterparts inherit the same false ingredient: the product inequality th:wbg_banach is false, and theo:Banach (i) and (iii) are false for large batch sizes; the appendix's claim to generalize the classical Banach results is not valid as stated.",
+      "primary_affected_tag": "th:wbg_banach",
+      "target_type": "formal_result",
+      "title": "Banach-space product inequality (th:wbg_banach) and rate theorem (theo:Banach) are false for large batch sizes",
+      "why_classification": "Same root and same counterexample as the Hilbert case: the Banach product inequality and the advertised Banach rates are false for large $b$ and require the batch-granularity re-proof with $b$-dependent constants; the appendix's guarantees are abandoned as stated."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2407.11631",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d942da78b6d3f0bc052d9ae20b8d6e239b06f446de6c697976c8f7fe512a4ec",
+  "status": "ok"
+}

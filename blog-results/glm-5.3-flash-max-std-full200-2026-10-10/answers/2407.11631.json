@@ -1,0 +1,141 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "La:Psbg_B",
+        "th:wbg_hilbert",
+        "col:wbg_hilbert",
+        "Cor:expDecay",
+        "th:wbg_banach",
+        "theo:Banach"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$f_{{n}} := \\argmax_{f \\in \\cF \\setminus \\{f_{\\undertilde{n}}, \\ldots, f_{n-1} \\}} r_{\\undertilde{n}}(f)$",
+          "tag": "alg:wbg"
+        },
+        {
+          "quote": "\\abs{a_{n,n}} = \\sigma_n(f_n) \\geq \\sigma_{\\widetilde{n}}(f_n) \\geq \\sigma_{\\widetilde{n}+1}(f_{\\widetilde{n}+1}) = \\abs{a_{\\widetilde{n}+1,\\widetilde{n}+1}} \\geq \\gamma \\sigma_{\\widetilde{n}+1} \\geq \\gamma \\sigma_{n\\hue{+b-1}},",
+          "tag": "La:Psbg"
+        },
+        {
+          "quote": "For our analysis in Section \\ref{Sec:Analysis} below, we actually do not need to fix how the remaining $b-1$ elements are chosen as long as the first one is chosen according to line \\ref{line:eq:batchfirst}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Part (P1) asserts gamma*sigma_{n+b-1} <= |a_{n,n}| = dist(f_n,V_n) for every n. Such a lower bound is guaranteed only for the first element of each batch, which is selected by the weak-greedy criterion at level n-tilde (line 4 of Algorithm alg:wbg). The remaining b-1 elements are selected by maximizing the stale surrogate r_{n-tilde} over F minus the earlier picks, which gives no lower bound on dist(f_n,V_n): the pick can be nearly parallel to earlier same-batch elements that already lie in V_n, collapsing its distance. The proof bridges this with the unjustified step sigma_{n-tilde}(f_n) >= sigma_{n-tilde+1}(f_{n-tilde+1}), which relates distances of different elements to different spaces. Counterexample: X = R^3, F = {e_1, cos(theta) e_1 + sin(theta) e_2, e_3}, b = 2, gamma = 1. Batch 0 selects f_0 = e_1 (maximizer of sigma_0) and, by the stale rule r_0 = ||.||, f_1 = cos(theta) e_1 + sin(theta) e_2 (norm 1). Then |a_{1,1}| = dist(f_1, span{f_0}) = sin(theta), while sigma_{1+b-1} = sigma_2(F) = ||e_3|| = 1 because e_3 is orthogonal to span{f_0,f_1}. (P1) reads 1 <= sin(theta), false for theta < pi/2; for any gamma in (0,1] pick sin(theta) < gamma. The same false claim and the same invalid step are repeated in Lemma La:Psbg_B, and every subsequent result invokes (P1).",
+      "failure_location": {
+        "quote": "the diagonal elements satisfy $\\gamma \\sigma_{n\\hue{+b-1}} \\leq \\abs{a_{n,n}} \\leq \\sigma_n$;",
+        "tag": "La:Psbg"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace (P1) by a property the batch greedy actually satisfies (the gamma-lower bound holds only at the first index of each batch, where the weak-greedy selection applies) and rebuild the rate analysis on that weaker basis; the source contains no such argument, and the resulting guarantees would be materially weaker than advertised.",
+      "overall_effect": "The central property (P1) is false, so the proofs of Theorems th:wbg_hilbert and col:wbg_hilbert (all three parts), of Corollary Cor:expDecay, and of the Banach-space chain (La:Psbg_B, th:wbg_banach, theo:Banach) collapse. The paper's advertised convergence-rate guarantees for the batch greedy (abstract, Sections 1 and 4, including the quantified (2/3)^alpha loss) are unsupported.",
+      "primary_affected_tag": "La:Psbg",
+      "target_type": "formal_result",
+      "title": "Property (P1) of Lemma La:Psbg is false for batch elements that are not first in their batch",
+      "why_classification": "The lemma's statement is false (explicit counterexample for every b >= 2 and every gamma in (0,1]), so no local edit preserves it; all rate results of the paper depend on (P1), and no alternative argument is available in the source, so every resolution requires essentially new proof architecture and loses the advertised guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theo:Banach"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$C_1(n, \\hue{b}) := \\max \\left\\lbrace C_0\\, 2^{\\alpha + 1} \\gamma^{-2} \\left\\lceil 4 + \\frac{\\hue{b-1}}{n}\\right\\rceil^{2\\alpha}, \\, (\\hue{b}+2)^\\alpha \\right\\rbrace.$",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "By using $\\sigma_{2s} \\leq C_1 (2s)^{-\\alpha}$ and $d_s \\leq C_0 s^{-\\alpha}$ we get",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "c_1 > \\frac{1}{2} \\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil^{-\\alpha} c_0 > 2^{-1-\\alpha} \\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil^{-\\alpha} c_0.",
+          "tag": "col:wbg_hilbert"
+        }
+      ],
+      "failure_explanation": "In the contradiction arguments of the proof of Theorem col:wbg_hilbert (ii) and (iii) the claimed constant depends on the index via ceil(4+(b-1)/n) (resp. ceil(2+(b-1)/n)). At the first violator M = ceil(4+(b-1)/s)s one has M >= 4s+b-1, so the statement's constant at M involves ceiling 5, whereas the derivation produces a bound involving the ceiling at s, which is larger whenever s < (b-1)/5 (resp. s < (b-1)/3 in (iii)). Additionally, the bootstrap uses sigma_{2s} <= C_1(2s)(2s)^{-alpha} with C_1(2s,b) >= C_1(M,b) (the constant is non-increasing in n), yet the displayed chain identifies the two constants. Example: (b,gamma,alpha,C_0,s) = (16,1,1,1,1), M = 19: the derivation yields C_1 < 2^{0}*19^{2}*C_0 = 361 C_0, while the statement asserts C_1(19,16) = max{4 C_0 * 25, 18} = 100 C_0, so no contradiction follows and a first violation at M is not excluded; the same happens in Case 2 and in (iii) (Cases 1-2, and Case 3's 'monotonicity' step C_1 e^{-c_1 M^alpha} >= C_1 e^{-c_1 b^alpha}, which fails when C_1 < 1 makes c_1 negative). The proofs of Theorem theo:Banach (ii)/(iii) repeat the same mismatch. Hence the sharp index-dependent constants are not established by these arguments.",
+      "failure_location": {
+        "quote": "This yields the desired contradiction $C_1 < 2^{\\alpha + 1} \\gamma^{-2} \\left\\lceil 4 + \\frac{b-1}{s}\\right\\rceil^{2\\alpha} C_0$.",
+        "tag": "col:wbg_hilbert"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate (ii) and (iii), and the Banach analogues, with index-independent constants (ceiling bounded by its worst case b+3), so the derived bounds are compared against the constant at the violator's own index and all cases close; this contained re-derivation preserves polynomial and exponential rates in slightly weaker form. The source performs no such repair.",
+      "overall_effect": "The polynomial statement (ii) and the exponential statement (iii) of Theorem col:wbg_hilbert, and the corresponding statements (ii)/(iii) of Theorem theo:Banach, are not established by their proofs for first violators with small s (indices M up to roughly 2b); the sharp index-dependent constants advertised in the surrounding remarks are unsupported. These results are additionally unsupported via property (P1), reported separately.",
+      "primary_affected_tag": "col:wbg_hilbert",
+      "target_type": "formal_result",
+      "title": "First-violator case analyses do not establish the index-dependent constants of Theorem col:wbg_hilbert",
+      "why_classification": "The gap is confined to the constant bookkeeping of the case analyses; restating the rates with worst-case (index-independent) constants, as the paper itself does in a reformulation remark, is a contained re-derivation that keeps recognizably comparable polynomial and exponential results, so the issue is more than minor but causes no major loss."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "c_1(n,\\hue{b}):= \\min \\left\\lbrace c_0\\, 2^{- (\\alpha+1)} \\left\\lceil 2 + \\frac{\\hue{b-1}}{n}\\right\\rceil^{-\\alpha},\\, \\ln(C_1)\\,\\hue{b}^{-\\alpha} \\right\\brace.",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "We have $c_1(n,1) = \\frac{c_0}{2} 4^{-\\alpha}$ and for $c_1(n,\\hue{b}) = \\frac{c_0}{2} 6^{-\\alpha}$.",
+          "tag": "Cor:expDecay"
+        }
+      ],
+      "failure_explanation": "The corollary states the identity c_1(n,b) = [2/3]^alpha c_1(n,1). By Theorem col:wbg_hilbert(iii), c_1(n,1) = min{(c_0/2)4^{-alpha}, ln C_1} and, using n >= b so that ceil(2+(b-1)/n) = 3, c_1(n,b) = min{(c_0/2)6^{-alpha}, b^{-alpha} ln C_1}. The one-line proof silently drops both minima and evaluates only the c_0-terms. Whenever the logarithmic terms attain the minima, i.e. ln C_1 < (c_0/2)4^{-alpha} and b^{-alpha} ln C_1 < (c_0/2)6^{-alpha}, the identity fails: for c_0 = 1, alpha = 1, gamma = 1, C_0 = 0.6 (so C_1 = sqrt(1.2), ln C_1 ~ 0.095 < 0.125), one obtains c_1(n,1) = ln C_1 and c_1(n,2) = (ln C_1)/2, whereas the corollary claims (2/3) ln C_1; the true batch constant is smaller (slower decay) by the factor (2b/3)^alpha. The stated '=' overstates the guaranteed batch rate in this regime.",
+      "failure_location": {
+        "quote": "c_1(n,\\hue{b}) = \\left[\\frac{2}{3}\\right]^\\alpha c_1(n,1).",
+        "tag": "Cor:expDecay"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the asserted equality by the valid inequality c_1(n,b) <= [2/3]^alpha c_1(n,1) (true whenever ln C_1 > 0, since b^{-alpha} <= 2^{-alpha} < (2/3)^alpha), or keep the equality under the explicit additional hypothesis that the c_0-terms attain both minima; both are one-line, contained repairs.",
+      "overall_effect": "The quantified batch loss (eq:loss) is not valid outside the regime where the c_0-terms attain both minima; the prose claim that the asymptotic rate decays like e^{-c_1 (2n/3)^alpha} and the fitted upper bound built on the factor 2/3 in the numerical section overstate the guaranteed decay there. (The corollary is additionally unsupported through Theorem col:wbg_hilbert, reported separately.)",
+      "primary_affected_tag": "Cor:expDecay",
+      "target_type": "formal_result",
+      "title": "Identity c_1(n,b) = (2/3)^alpha c_1(n,1) in Corollary Cor:expDecay is false as stated",
+      "why_classification": "The repair is a one-line weakening ('=' to '<=') or a local hypothesis, but the unconditional identity as advertised is false in a non-exotic parameter regime and the corrected statement is materially weaker, which exceeds a routine local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $q \\in \\left\\lbrace 1, 2, \\ldots, \\left\\lceil 2 + \\frac{b-1}{s}\\right\\rbrace - 1 \\right\\rbrace$ for $s \\geq 1$",
+          "tag": "theo:Banach"
+        },
+        {
+          "quote": "Note that $\\left\\lceil 4 + \\frac{b-1}{s}\\right\\rceil s + q < 2 \\left\\lceil 4 + \\frac{b-1}{s}\\right\\rceil s$.",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "1 \\geq \\sigma_0 \\geq \\sigma_M > C_1 \\sqrt{M} e^{-c_1 M^\\alpha} \\geq C_1 \\sqrt{\\hue{b}} e^{-c_1 {\\hue{b}}^\\alpha} \\geq 1",
+          "tag": "theo:Banach"
+        }
+      ],
+      "failure_explanation": "In Case 2 of the proof of Theorem theo:Banach(iii) the note 'ceil(2+(b-1)/s) s + q >= 2 ceil(2+(b-1)/s) s' is false: q <= ceil(2+(b-1)/s) - 1 gives ceil(.)*s + q < 2 ceil(.), s, exactly the strict inequality the paper states in the parallel Hilbert case. The next displayed step, C_1 sqrt(2 ceil(.),s) e^{-c_1(2 ceil(.),s)^alpha} <= C_1 sqrt(M) e^{-c_1 M^alpha}, is additionally unjustified since x -> sqrt(x) e^{-c_1 x^alpha} need not be decreasing. In Case 3 the step C_1 sqrt(M) e^{-c_1 M^alpha} >= C_1 sqrt(b) e^{-c_1 b^alpha} for M <= b is likewise unjustified and fails when c_1 < 0 (possible when ln(C_1 sqrt(b)) < 0, e.g. C_1 < 1/sqrt(b), M = 1, b = 16 gives sqrt(1)e^{0} < 4 e^{-c_1 16^alpha} only for suitable c_1, and for c_1 = 0 the inequality 1 >= 2 fails). Hence Cases 2 and 3 of the Banach exponential statement are not established by the displayed reasoning.",
+      "failure_location": {
+        "quote": "Note, that $\\left\\lceil 2 + \\frac{b-1}{s}\\right\\rceil s + q\\geq 2\\left\\lceil 2 + \\frac{b-1}{s}\\right\\rceil s$.",
+        "tag": "theo:Banach"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the false note by the correct relation M < 2 ceil(2+(b-1)/s) s and derive the exponent comparison directly at M, and replace the unjustified Case 3 monotonicity step by a valid comparison; both are local edits within the existing proof.",
+      "overall_effect": "The proof of Theorem theo:Banach (iii) does not establish its statement in Cases 2 and 3 (in addition to the failure inherited from Lemma La:Psbg_B through (P1)); the Banach exponential guarantee is unsupported by the source's argument for those indices.",
+      "primary_affected_tag": "theo:Banach",
+      "target_type": "formal_result",
+      "title": "False inequality and unjustified comparison in Cases 2-3 of the proof of Theorem theo:Banach (iii)",
+      "why_classification": "Both flawed comparisons are local steps inside a single case analysis; correcting them (direct exponent comparison at M, and a valid handling of the sqrt-factor) is a short, routine repair that leaves the theorem's rate content intact apart from the separately reported issues."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2407.11631",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d942da78b6d3f0bc052d9ae20b8d6e239b06f446de6c697976c8f7fe512a4ec",
+  "status": "ok"
+}

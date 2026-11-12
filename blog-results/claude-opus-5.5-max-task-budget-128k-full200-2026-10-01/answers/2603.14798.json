@@ -1,0 +1,243 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dfrac{x-\\mu_x}{\\sigma_x}, & \\text{if } \\rho=\\rho_W,",
+          "tag": "eq:x_norm"
+        },
+        {
+          "quote": "For an anisotropic reference $\\rho=\\gamma$, a unit-Gaussian (pointwise) normalizer erase the",
+          "tag": "rem:normalizer_choice"
+        },
+        {
+          "quote": "On periodic domains, we adopt a GRF prior diagonalized by Fourier modes.",
+          "tag": null
+        },
+        {
+          "quote": "because unit-Gaussian normalization and the KL truncation $N_\\mathrm{KL}=64$ in the MCMC reference generator suppress high-frequency mismatch",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The normalizer is a pointwise affine map (x-mu_x)/sigma_x, i.e. a diagonal rescaling in physical space. It turns covariance C into D^{-1}CD^{-1}, which keeps the correlation and spectral decay. It neither whitens nor erases correlation structure; the remark asserts both. For the Fourier-diagonal periodic prior the pointwise variance is constant, so the normalizer is a scalar rescaling that cannot change relative high-frequency content. The paper uses this whitening/preconditioning to explain why the white reference performs well in Encode-only, and that explanation is unsupported.",
+      "failure_location": {
+        "quote": "In contrast, for a discretization-level white reference $\\rho_W$, a unit-Gaussian normalizer acts as a whitening",
+        "tag": "rem:normalizer_choice"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Withdraw the whitening/preconditioning explanation. Describe the normalizer as marginal-scale matching only, and attribute the white-reference behaviour to other causes (e.g., KL truncation) or leave it unexplained.",
+      "overall_effect": "The stated mechanism ('finite-resolution preconditioner', suppression of high-frequency mismatch by normalization) behind the Encode-only white-reference results is unfounded.",
+      "primary_affected_tag": "rem:normalizer_choice",
+      "target_type": "prose_claim",
+      "title": "Pointwise unit-Gaussian normalization is claimed to act as whitening",
+      "why_classification": "Only an explanatory claim is withdrawn. No formal result or reported number depends on it."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:avg_velocity_lipschitz",
+        "cor:exists_lipschitz_onestep"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "z_t = (1-t)x + t\\xi, \\quad v(z_t,t)= \\xi - x,\\quad t\\in[0,1].",
+          "tag": "eq:linear_path"
+        },
+        {
+          "quote": "The resulting one-step sampler evaluates the model at $(r,t)=(0,1)$ (so that $z_1=\\xi$) and outputs",
+          "tag": null
+        },
+        {
+          "quote": "\\mathrm{Lip}\\big(v(t,\\cdot)\\big)\\le L_0\\,t,\\quad \\forall\\,t\\in[0,1],",
+          "tag": "thm:dimfree_lip_velocity"
+        },
+        {
+          "quote": "Assume Theorem~\\ref{thm:dimfree_lip_velocity}. Then average velocity $w(\\cdot;r,t)$ for $0\\le r\\le t\\le 1$ is globally Lipschitz and",
+          "tag": "lem:avg_velocity_lipschitz"
+        }
+      ],
+      "failure_explanation": "The paper's averaged velocity comes from the independent linear interpolation, with z_0=x (target) and z_1=xi (reference). The invoked theorem bounds the Föllmer velocity, which belongs to a different interpolation with the opposite orientation (reference to target). The bound cannot hold for the paper's field. At tau=0, v(z,0)=E[xi-x|z_0=z]=-z because xi is centred and independent, so Lip=1, whereas the theorem requires Lip<=L_0*0=0. Conversely, if w averages the Föllmer field with the Mean-Flow convention z_r=z_t-(t-r)w, then T(xi)=xi-w(xi;0,1) maps the time-1 (target) state to time 0, i.e., the wrong direction. T_#rho=pi is never shown.",
+      "failure_location": {
+        "quote": "$w(\\cdot;0,1)$ is globally Lipschitz on $\\mathcal{H}$ and the one-step map",
+        "tag": "thm:lipschitz_onestep_main"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must prove Lipschitz bounds for the marginal velocity of the linear interpolation z_t=(1-t)x+t xi under the Gaussian-tail assumption, or switch the method to the Föllmer interpolant. It must also prove that the resulting T pushes rho to pi.",
+      "overall_effect": "Neither Lipschitz regularity of the learned Mean-Flow average velocity nor the existence of a Lipschitz reference-to-posterior one-step map is established. The paper's central theoretical guarantee is lost.",
+      "primary_affected_tag": "thm:lipschitz_onestep_main",
+      "target_type": "formal_result",
+      "title": "Föllmer-velocity Lipschitz bound applied to the Mean-Flow linear-interpolation velocity",
+      "why_classification": "The required repair is a new regularity analysis for a different flow, or a change of the method. The main theorem has no supported proof as stated."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{T}:\\mathcal{H}^{-s}\\to \\mathcal{H}^{-s}, \\quad \\mathcal{T}(\\xi)=C^{1/2}\\xi,",
+          "tag": "ex:direct_singular_map"
+        },
+        {
+          "quote": "cannot be realized as a continuous or Lipschitz map $\\mathcal{H}\\to\\mathcal{H}$",
+          "tag": "ex:direct_singular_map"
+        },
+        {
+          "quote": "we justified the necessity of a prior-aligned trace-class base measures to ensure the well-posedness in function space while white noise is not;",
+          "tag": null
+        },
+        {
+          "quote": "transports are well-posed under trace-class references but can be intrinsically ill-posed under white-noise references due to measure singularity",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proposition shows only that rho_W(H)=0 while rho_A(H)=1. Mutual singularity of source and target never obstructs deterministic transport. The paper's own example gives a bounded linear, hence Lipschitz, map C^{1/2} on H^{-s} with T_#rho_W=rho_A, and C^{1/2} is also bounded linear H->H. Since white noise does not charge H, a map on H is simply irrelevant; on H^{-s} regular transports exist. Neither necessity of a trace-class reference nor ill-posedness of white-noise transport is proved.",
+      "failure_location": {
+        "quote": "and rules out any regular deterministic one-step transport realized as a map $\\mathcal{H}\\to\\mathcal{H}$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the claim as a support statement: white noise is not H-valued, so transports from it must be posed on H^{-s}. Drop claims of necessity and ill-posedness, and correct the example's claim that the map is not continuous/Lipschitz.",
+      "overall_effect": "The advertised 'reference measure principle' (necessity of a trace-class reference, intrinsic ill-posedness under white noise) is unsupported. Only the support mismatch is established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Mutual singularity claimed to rule out regular transport from white noise",
+      "why_classification": "The formal proposition survives, but an advertised theoretical contribution must be withdrawn or substantially weakened."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$1.63\\times10^{-1}$",
+          "tag": null
+        },
+        {
+          "quote": "$6.08\\times10^{-2}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose asserts that white-reference errors stay close to anisotropic-reference errors for all problems. In the Encode-only table, Advection has epsilon_mu = 1.63e-1 (white) versus 6.08e-2 (anisotropic), almost a threefold gap.",
+      "failure_location": {
+        "quote": "With the white-reference, $\\epsilon_\\mu^{\\mathrm{eval}}$ and $\\epsilon_\\sigma^{\\mathrm{eval}}$ remain close to those of the anisotropic-reference baseline at the tested resolutions",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Qualify the sentence to exclude Advection epsilon_mu, or report the discrepancy.",
+      "overall_effect": "The summary of the white-reference results misstates the paper's own data for Advection.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "White-reference errors claimed close to anisotropic ones, contradicted by Advection",
+      "why_classification": "This is a local wording correction; no result depends on it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:avg_velocity_lipschitz",
+        "cor:exists_lipschitz_onestep",
+        "thm:lipschitz_onestep_main"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "is stated and proved in finite dimensions in \\cite{meng2025pathway}",
+          "tag": null
+        },
+        {
+          "quote": "We therefore interpret it as a function-space stability statement.",
+          "tag": null
+        },
+        {
+          "quote": "$w(\\cdot;0,1)$ is globally Lipschitz on $\\mathcal{H}$ and the one-step map",
+          "tag": "thm:lipschitz_onestep_main"
+        }
+      ],
+      "failure_explanation": "The theorem is stated on a separable infinite-dimensional H with a trace-class (compact, non-invertible) reference covariance, but the cited result is finite-dimensional. In infinite dimensions, N(0,C) has no Lebesgue density, and the assumption involves the unbounded C^{-1} and B^{-1}. Existence of the Föllmer velocity on H and passage of the bound to the limit are not argued. Dimension-independent constants alone do not prove the infinite-dimensional statement.",
+      "failure_location": {
+        "quote": "$v(t,\\cdot)$ associated with transporting $\\rho=\\mathcal N(0,C)$ to $\\pi(\\cdot\\mid y_{\\mathrm{obs}})$",
+        "tag": "thm:dimfree_lip_velocity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add a Galerkin/projection argument. Apply the finite-dimensional theorem to projected problems with uniform constants, prove convergence of the projected velocity fields and flows on H, and pass the Lipschitz bound to the limit.",
+      "overall_effect": "The function-space (resolution-robust) Lipschitz guarantees are unsupported beyond finite discretizations.",
+      "primary_affected_tag": "thm:dimfree_lip_velocity",
+      "target_type": "formal_result",
+      "title": "Finite-dimensional Föllmer Lipschitz theorem asserted on infinite-dimensional H",
+      "why_classification": "A contained but nontrivial limiting argument is needed. The dimension-free constants make a comparable result plausible without new global architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:exists_lipschitz_onestep",
+        "thm:lipschitz_onestep_main"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": ":=&\\frac{1}{t-r}\\int_r^t v(z_\\tau,\\tau)\\mathrm{d}\\tau",
+          "tag": "eq:avg_velocity_def"
+        },
+        {
+          "quote": "\\le 1+\\frac{L_0}{2}.",
+          "tag": "cor:exists_lipschitz_onestep"
+        }
+      ],
+      "failure_explanation": "As a function of the state z at time t, w averages v(Phi_{t->tau}(z),tau), where Phi is the flow map. Its Lipschitz constant therefore involves Lip(v)*Lip(Phi), and Lip(Phi) can exceed 1. Counterexample satisfying Lip(v(tau,.))<=L_0 tau: take v(tau,x)=-L_0 tau x. Then z_0=e^{L_0/2}xi, so w(xi;0,1)=(1-e^{L_0/2})xi with Lip=e^{L_0/2}-1>L_0/2, and Lip(T)=e^{L_0/2}>1+L_0/2.",
+      "failure_location": {
+        "quote": "\\le \\frac{1}{t-r}\\int_r^t \\mathrm{Lip}\\big(v(\\tau,\\cdot)\\big)\\,d\\tau",
+        "tag": "lem:avg_velocity_lipschitz"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Use Grönwall: T is the flow map Phi_{1->0}, so Lip(T)<=exp(L_0/2). Then Lip(w(.;0,1))<=1+exp(L_0/2), with analogous bounds for general (r,t). Restate the lemma, corollary and main theorem with these dimension-free constants.",
+      "overall_effect": "The stated constants L_0(t+r)/2, L_0/2 and 1+L_0/2 are false in general.",
+      "primary_affected_tag": "lem:avg_velocity_lipschitz",
+      "target_type": "formal_result",
+      "title": "Lipschitz bound for averaged velocity ignores flow-map composition",
+      "why_classification": "A standard argument restores dimension-free Lipschitz continuity, but the stated quantitative bounds must be replaced by exponentially larger ones."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$9.90\\times10^{-2}$ & $4.30\\times10^{-2}$",
+          "tag": null
+        },
+        {
+          "quote": "$5.09\\times10^{-2}$",
+          "tag": null
+        },
+        {
+          "quote": "our one-step generative transport yields faster sampling and more accurate posterior summaries",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For Advection with the anisotropic reference, multistep diffusion gives epsilon_sigma = 4.30e-2, lower than the one-step model's 5.09e-2 in the Encode-only table. The claimed uniform superiority in posterior statistics therefore does not hold.",
+      "failure_location": {
+        "quote": "the multistep baseline consistently underperforms our one-step model in posterior statistics",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace 'consistently underperforms' with 'mostly underperforms' and note the Advection epsilon_sigma exception.",
+      "overall_effect": "The comparative accuracy claim against diffusion is overstated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that multistep diffusion consistently underperforms is contradicted by tables",
+      "why_classification": "This is a local wording fix; the speed advantage and most comparisons remain."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2603.14798",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0f6ec979e47d2519e2c412057c0f5825f3ea8b1152a13eeb5f936f507299fc73",
+  "status": "ok"
+}

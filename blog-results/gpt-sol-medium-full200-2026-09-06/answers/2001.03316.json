@@ -1,0 +1,217 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Now at $\\bar{w}$, we have $\\nabla \\widetilde{F}(\\bar{\\w}) = 0$.",
+          "tag": "sec:vector"
+        },
+        {
+          "quote": "\\sum_{i\\notin \\mathbb{O}} p_i(\\w_C) \\nabla f_i(\\bar{\\w}) &= - \\sum_{j \\in \\mathbb{O}}  p_j(\\w_C) \\nabla f_j(\\bar{\\w})",
+          "tag": "sec:vector"
+        },
+        {
+          "quote": "&l_i \\norm{\\w -\\ws}^2 ~~\\forall~i \\in \\mathbb{O} \\notag \\\\\n&l_i \\norm{\\w -\\w_{b_i}}^2 ~~ \\forall~i \\notin \\mathbb{O},  \\notag",
+          "tag": "sec:vector"
+        },
+        {
+          "quote": "&l_i \\norm{\\w -\\ws}^2 ~~\\forall~i \\notin \\mathbb{O}  \\\\\n&l_i \\norm{\\w -\\w_{b_i}}^2 ~~ \\forall~i \\in \\mathbb{O},",
+          "tag": "eq:vectorloss"
+        }
+      ],
+      "failure_explanation": "Stationarity at $\\bar w$ involves the selection probabilities $p_i(\\bar w)$, but the proof replaces them by $p_i(w_C)$ for an unrelated landscape point without justification. The appendix also reverses the clean and outlier index sets relative to the lemma's defining equation. The ensuing weighted-average calculation therefore does not describe a stationary point of MKL-SGD, and the final assertion that the analysis can simply be repeated recursively does not establish that every attained stationary point lies in the ball.",
+      "failure_location": {
+        "quote": "Starting from any initialization $\\w_0$, for any stationary point $\\bar{\\w}$ attained by \\mkl, we have that $\\bar{\\w} \\in \\mathcal{B}_r(\\ws)$",
+        "tag": "lemma:vector"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must analyze the actual probabilities at each candidate stationary point and supply a global argument excluding every stationary point outside $\\mathcal{B}_r(\\ws)$.",
+      "overall_effect": "The claimed initialization-independent guarantee that all stationary points enter the clean-sample ball is unproved, as are the surrounding worst-case assertions based on this lemma.",
+      "primary_affected_tag": "lemma:vector",
+      "target_type": "formal_result",
+      "title": "The proof of the vector stationary-point guarantee evaluates probabilities at the wrong point",
+      "why_classification": "The existing argument does not address the stationarity equation it needs, and repairing it requires a new global landscape argument rather than a local algebraic correction."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{ \\sum_{i\\in\\mathcal{O}} \\nabla f_i(\\wsgd)} &\\leq\\sum_{i\\in\\mathcal{O}}  \\norm{  \\nabla f_i(\\wsgd)} \\notag \\\\\n\t&\\leq \\sum_{i\\in\\mathcal{O}} G(\\wsgd) \\notag\\\\\n\t&\\leq \\epsilon  G(\\wsgd)",
+          "tag": "sec:lemmasgdbound"
+        },
+        {
+          "quote": "$$\\norm{ \\sum_{i\\in\\mathcal{O}} \\nabla f_i(\\wsgd)} = \\min\\left(\\epsilon n  G(\\wsgd), (1 - \\epsilon) n L \\norm{\\wsgd - \\ws}\\right)$$",
+          "tag": "sec:lemmasgdbound"
+        }
+      ],
+      "failure_explanation": "The proof obtains two upper bounds on the norm of the summed outlier gradient. It neither proves equality with their minimum nor provides a lower bound by $\\epsilon G$. Since $G$ is only an upper bound on individual outlier gradients, those gradients may be small or cancel; symmetric outliers can even have zero summed gradient at $\\ws$. Thus no positive lower bound on $\\|\\wsgd-\\ws\\|$ follows from the assumptions.",
+      "failure_location": {
+        "quote": "\\epsilon G \\leq (1 - \\epsilon)  L \\norm{\\wsgd - \\ws}",
+        "tag": "lemma:sgdbound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, one must add a non-cancellation or directional lower-bound assumption on the aggregate outlier gradient and rederive the comparison theorem.",
+      "overall_effect": "The lower bound needed to compare SGD with MKL-SGD fails, so the theorem claiming that every specified MKL-SGD stationary point is strictly closer than the SGD stationary point is unsupported.",
+      "primary_affected_tag": "lemma:sgdbound",
+      "target_type": "formal_result",
+      "title": "The SGD-distance lemma reverses an upper bound into the claimed lower bound",
+      "why_classification": "The assumptions permit the exact opposite degenerate behavior, and obtaining the advertised relative guarantee requires a new substantive hypothesis that excludes outlier cancellation."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\norm{ \\wsm - \\ws} &\\leq \\epsilon^k G(\\wsgd)",
+          "tag": "sec:lemmam2lboundstrongconvexity"
+        },
+        {
+          "quote": "There exists a ball around the optimum of radius $r$ such that $f_i(\\bs{w}) \\leq f_j(\\bs{w}) ~\\forall i \\notin \\mathbb{O}, j\\in \\mathcal{O}, \\bs{w} \\in \\mathbb{O}_r(\\ws)$.",
+          "tag": "sec:lemmam2lbound"
+        }
+      ],
+      "failure_explanation": "The factor $\\epsilon^k$ is the total probability of selecting an outlier only when every draw must be an outlier for an outlier to win, which requires all good losses to be below all outlier losses at $\\wsm$. That ordering is guaranteed only in the local ball, but the lemma quantifies over every stationary point and never assumes membership in the ball. At a stationary point near an outlier minimum, outliers can instead have the lowest losses and be selected with high probability.",
+      "failure_location": {
+        "quote": "Let $\\wsm$ be any first order stationary point attained by \\mkl.\n\tUnder assumptions 1-3, for a given $\\epsilon <1$ and $\\lambda$ as defined in equation \\eqref{eq:lambdasc}, there exists a $k'$ such that for all $k \\geq k'$,\n\t\\begin{align*}\n\t\t\\norm{\\wsm -\\ws}  \\leq \\dfrac{\\epsilon^k G}{\\lambda}\n\t\\end{align*}",
+        "tag": "lemma:m2lboundstrongconvexity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict the lemma to stationary points in $\\mathcal{B}_r(\\ws)$, explicitly assume the good-versus-outlier loss ordering and an appropriate positive curvature bound for the weighted good loss, and then restate the comparison theorem with those local hypotheses.",
+      "overall_effect": "The global bound on arbitrary MKL-SGD stationary points is invalid, and the relative-comparison theorem's invocation of this lemma is not justified even for its locally conditioned statement without restating and proving the required local curvature and ordering conditions.",
+      "primary_affected_tag": "lemma:m2lboundstrongconvexity",
+      "target_type": "formal_result",
+      "title": "The MKL stationary-point bound uses an outlier-selection probability valid only inside the clean-loss ball",
+      "why_classification": "The least supported repair withdraws the central quantifier over arbitrary stationary points and replaces the global guarantee by a conditional local one."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& + 2\\eta_t^2\\sum_{i\\in \\mathcal{G}} p_i(\\bs{w_t}) \\norm{\\nabla f_{i}( \\wg)}^2 + \\eta_t^2\\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t})\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+2  \\eta_t \\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t}) \\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right)",
+          "tag": "lem:R"
+        }
+      ],
+      "failure_explanation": "In the noisy setting, individual good-sample gradients need not vanish at the optimum of their average. Expanding one stochastic update therefore produces the nonnegative term $2\\eta_t^2\\sum_{i\\in\\mathcal G}p_i\\|\\nabla f_i(\\wg)\\|^2$, which appears in the appendix version but is absent from the main theorem. With no outliers and $\\w_t=\\wg$, the stated right-hand side is zero while the next stochastic iterate has positive expected squared distance whenever the individual gradients at $\\wg$ are nonzero.",
+      "failure_location": {
+        "quote": "R_t \n\t=\t& - 2  \\sum_{i\\notin \\mathbb{O}} p_i(\\bs{w_t}) \\langle{ \\bs{w_t} - \\wg,\\nabla f_{i}( \\wg)\\rangle}+ \\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t}) \\left(2\\eta_t\\norm{\\nabla f_{i}( \\wg)}^2+ \\eta_t\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+2\\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right) \\right)",
+        "tag": "thm:R"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the missing good-sample variance term, consistently rescale the definition of $R_t$, and revise the subsequent noisy-residual discussion to account for it.",
+      "overall_effect": "The stated bound is false in the noisy regime and understates the residual neighborhood caused by ordinary good-sample noise.",
+      "primary_affected_tag": "thm:R",
+      "target_type": "formal_result",
+      "title": "The noisy convergence bound omits the variance from good samples",
+      "why_classification": "A contained correction modeled by the appendix theorem can restore a valid recurrence, but it materially changes the displayed noisy residual and conclusions drawn from it."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In the rest of the paper, we will focus on the ``with replacement\" scenario for ease of presentation; this choice does not change our main ideas or results.",
+          "tag": null
+        },
+        {
+          "quote": "&\\dfrac{(n - (i-1))^k - (n-i)^k}{n^k}\n\\qquad \\qquad \\text{with replacement}",
+          "tag": "eq:probability"
+        },
+        {
+          "quote": "In all other cases, there will be a non-zero contribution from the outliers which keeps the \\mkl~solution from exactly converging to $\\ws$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Under sampling with replacement, even if $k$ exceeds the number $n\\epsilon$ of outlier samples, all $k$ draws are outliers with probability $\\epsilon^k>0$. Hence an outlier with nonzero gradient at $\\ws$ still contributes to the expected update, and $k\\ge n\\epsilon+1$ does not ensure exact consistency. That threshold would instead guarantee inclusion of a good sample only for sampling without replacement.",
+      "failure_location": {
+        "quote": "To ensure consistency, i.e. $\\norm{\\wsm -\\ws} \\rightarrow 0$, we require that $k \\geq n\\epsilon + 1$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Either change the guarantee and relevant analysis to sampling without replacement, or weaken exact consistency to a nonzero bias controlled by $\\epsilon^k$ under sampling with replacement.",
+      "overall_effect": "The conclusion's guarantee of exact convergence with a finite, corruption-dependent choice of $k$ is false for the sampling model used in the analysis.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The claimed finite-k consistency contradicts sampling with replacement",
+      "why_classification": "Every available repair changes either the paper's stated sampling regime or the guarantee type from exact consistency to approximation."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that $N'\\geq N$ and $\\epsilon' \\leq \\epsilon$, such that $\\norm{ \\wsm-\\ws}\\leq r$.",
+          "tag": "sec:lemmam2lbound"
+        },
+        {
+          "quote": "\\norm{\\sum_{i\\notin\\mathbb{O}} p_i(\\wsm) \\nabla f_i(\\wsm)} \\leq \\min\\left\\{(1 - \\epsilon^k) L \\norm{\\wsm - \\ws}, \\epsilon^k G(\\w)\\right\\}",
+          "tag": "lemma:m2lbound"
+        }
+      ],
+      "failure_explanation": "The source never defines assumptions N1, N2, A4, or A5, nor the quantities $N$ and $N'$ used here. The proof simply assumes that changing $N'$ and $\\epsilon'$ makes the already fixed stationary point lie in the ball, without a mathematical connection. Consequently the result's hypotheses and existential claim are not well-defined, even though part of its inequality could be proved from explicit local ordering and gradient-bound assumptions.",
+      "failure_location": {
+        "quote": "For any $\\wsm \\in  \\mathcal{B}_r(\\ws)$ that satisfies assumptions N1, N2, A4 and A5, there exists $N'\\geq N$ and $\\epsilon' \\leq \\epsilon$ such that,",
+        "tag": "lemma:m2lbound"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the undefined assumptions and irrelevant $N',\\epsilon'$ assertion by explicit hypotheses that $\\wsm$ lies in the clean-loss-ordering ball, outlier gradients are bounded there, and sampling is uniform with replacement; then restate the bound with consistently defined quantities.",
+      "overall_effect": "This standalone appendix lemma cannot be applied or verified as stated.",
+      "primary_affected_tag": "lemma:m2lbound",
+      "target_type": "formal_result",
+      "title": "An appendix gradient bound relies on undefined assumptions and an unexplained sample enlargement",
+      "why_classification": "The proof suggests a contained local lemma can be recovered, but doing so requires reconstructing its hypotheses rather than making a forced typographical correction."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that M$K$L-SGD for $K=2$ have \n\t\\begin{align}\n\tp_{m_i(\\bs{w})}(\\bs{w}) = \\dfrac{2(n-i)}{n(n-1)} \n\t\\end{align}",
+          "tag": null
+        },
+        {
+          "quote": "&\\dfrac{(n - (i-1))^k - (n-i)^k}{n^k}\n\\qquad \\qquad \\text{with replacement}",
+          "tag": "eq:probability"
+        },
+        {
+          "quote": "& \n\t+ \\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{\\eta_t^2}{n}\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+  \\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{2  \\eta_t}{n} \\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof switches to the without-replacement rank probability $2(n-i)/(n(n-1))$, despite the paper's stated focus on replacement. More importantly, it bounds every outlier-weighted contribution by replacing its rank probability with $1/n$. Under the corollary's assumption $|\\mathcal G|\\le n/2$, the first outlier can have rank $|\\mathcal G|+1$ and probability exceeding $1/n$; for example, with $n=10$ and one good sample, rank 2 has without-replacement probability $16/90>1/10$. An outlier's gradient contribution can therefore be larger than in SGD, so the displayed residual comparison does not follow.",
+      "failure_location": {
+        "quote": "R_t^{(MKL_2)} &\\leq R_t^{(SGD)}.",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, the proof must use the chosen sampling model and impose conditions controlling each outlier's probability-weighted gradient and loss contribution, then rederive the admissible corruption regime.",
+      "overall_effect": "The appendix claim that MKL-SGD is always better than SGD under the stated good-initialization and noise conditions, even when more than half the data are corrupted, is unsupported.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "The corollary's MKL-versus-SGD comparison uses the wrong sampling probabilities and an invalid residual comparison",
+      "why_classification": "The advertised majority-corruption guarantee relies on a false termwise probability comparison; restoring it requires new assumptions or a substantially narrower regime."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2001.03316",
+  "question_id": "Q1",
+  "run_name": "gpt-sol-medium-2026-09-06-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d10c7474fbe52751d29cd038f650e3f1381876416035c1862f7697927c71b083",
+  "status": "ok"
+}

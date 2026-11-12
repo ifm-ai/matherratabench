@@ -1,0 +1,110 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "with output $\\|{\\rm T}(\\theta;\\cdot)\\|_{L^{\\infty}(\\mathbb{R}^D)}\\leq R$",
+          "tag": "TNC"
+        },
+        {
+          "quote": "$\\|f\\|_{L^{\\infty}(\\mathcal{M}(q))}\\le R$ for some $R>0$",
+          "tag": "assumpf"
+        },
+        {
+          "quote": "$\\|{\\rm T}(\\theta;\\cdot)-f\\|_{\\mathcal{L}^{\\infty}(\\mathcal{M}(q))}\\leq\\epsilon$",
+          "tag": "thmApprox"
+        }
+      ],
+      "failure_explanation": "The class TNC requires the output bound ||T||_{L^\\infty(R^D)} <= R. The construction guarantees ||T - f||_{L^\\infty(M(q))} <= epsilon while Assumption assumpf gives ||f||_{L^\\infty(M(q))} <= R, hence ||T||_{L^\\infty(M(q))} <= R + epsilon. For epsilon > 0 the constructed network can exceed R and therefore need not lie in the claimed class. The class bound is moreover stated over all of R^D while the construction only controls the output on the bounded input domain.",
+      "failure_location": {
+        "quote": "there exists a transformer network ${\\rm T}(\\theta;\\cdot)\\in\\mathcal{T}(L_{\\rm T}, m_{\\rm T},d_{embed},\\ell,L_{\\rm FFN},w_{\\rm FFN},R,\\kappa)$ with parameters",
+        "tag": "thmApprox"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Clip the network output to [-R, R] (or rescale it by R/(R+epsilon)), or replace R by R+epsilon in the class definition. This preserves the approximation error bound, all complexity parameters, and the generalization rate.",
+      "overall_effect": "The membership claim T in T(..., R, kappa) is unsupported. The generalization theorem thmGeneralization, whose empirical risk minimizer ranges over this class and whose bias argument requires the class to contain a good approximant to f, becomes unreliable.",
+      "primary_affected_tag": "thmApprox",
+      "target_type": "formal_result",
+      "title": "Constructed transformer may violate the network class output bound",
+      "why_classification": "A one-line clipping layer or a constant adjustment to R restores class membership with no change to the approximation rate, complexity bounds, or generalization rate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemadd",
+        "lemcmulti",
+        "lemsq",
+        "lempp",
+        "lemrpower",
+        "lemdiv",
+        "repetatildei",
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "h_t & \\text{if}\\text{  } t\\in\\{1,\\cdots,k\\}",
+          "tag": "Gatinglemma"
+        },
+        {
+          "quote": "{\\rm B}(H) = {\\rm FFN}({\\rm MHA}(H) + H) + {\\rm MHA}(H) + H",
+          "tag": null
+        },
+        {
+          "quote": "For the feed-forward layer of $B_8$, we take the weight matrix equals to identity and bias equals to zero, so that it implements the identity operation.",
+          "tag": "repetatildei"
+        }
+      ],
+      "failure_explanation": "The block B(H) = FFN(MHA(H)+H) + MHA(H)+H adds the FFN output to the residual MHA(H)+H. The Gating Lemma's FFN outputs h_t for preserved tokens (t <= k), so the block output is 2h_t instead of h_t. Likewise, the identity-weight zero-bias FFN in repetatildei's block B_{d+8} acts as the identity (or ReLU) map, so the block output is 2 eta-tilde_i(x) rather than eta-tilde_i(x). The claimed arithmetic outputs and the exact representation claim in repetatildei are therefore not established by the cited FFN constructions. The correct FFN should output 0 for preserved entries and specific corrections (e.g. -DM) for entries to be modified.",
+      "failure_location": {
+        "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $DM$ in the $D+1$-th column.",
+        "tag": "lemsumD"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace each FFN that outputs h_t for preserved tokens (and the identity FFN in B_{d+8}) with an FFN that outputs 0 for preserved tokens and specific corrections for modified tokens. This is a routine extension of the Gating Lemma's positional-encoding technique and preserves every arithmetic lemma claim and all downstream rates.",
+      "overall_effect": "All arithmetic lemma outputs are doubled if the cited FFNs are used literally. Proposition repetatildei's exact representation is off by a constant factor and its identity FFN doubles the positional encoding and constant rows, potentially breaking the Interaction Lemma in Proposition approxetai. Downstream approximation and generalization results become unreliable.",
+      "primary_affected_tag": "lemsumD",
+      "target_type": "formal_result",
+      "title": "FFN constructions ignore the residual connection in Transformer blocks",
+      "why_classification": "The fix is a local change to each FFN's output values (zero instead of h_t for preserved tokens, zero instead of identity in B_{d+8}), using the same positional-encoding construction already in the proofs. No new lemma, replacement argument, or reoptimization is needed and all claims and rates survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "setting $\\epsilon^2=\\frac{\\epsilon^{-\\frac{d}{\\alpha}}}{n}$, we get $\\epsilon=n^{-\\frac{\\alpha}{2\\alpha+d}}$",
+          "tag": "thmGeneralization"
+        }
+      ],
+      "failure_explanation": "The remark claims the factor of two in the decomposition E||T_hat-f||^2 = 2E[R_hat] + (E||T_hat-f||^2 - 2E[R_hat]) improves the statistical convergence rate. However, the combined bound is O(epsilon^2) + O(D^2 d^3 epsilon^{-d/alpha}/n) with or without the factor, and the balancing step yields the same rate n^{-2alpha/(2alpha+d)}. The factor merely shifts a constant between the bias and variance terms.",
+      "failure_location": {
+        "quote": "It is worth pointing out that the factor of two included in the proof is intended to enhance the rate of convergence of the statistical error.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Delete or correct the remark to state that the factor of two does not change the convergence rate.",
+      "overall_effect": "The remark misleads readers about the effectiveness of a proof device. No formal result is affected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Remark falsely claims the factor of two enhances the convergence rate",
+      "why_classification": "A one-sentence correction removes the false claim; every mathematical guarantee is already correct."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2505.03205",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e251cd718a4c2fe4d9791d1e58d8251eec6a75089c28852e7c9426637e3b810a",
+  "status": "ok"
+}

@@ -1,0 +1,251 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$\\beta(s,x) =  \\frac{\\mathbb E\\left[ e^{-\\frac{1}{\\eps}G(W_1-W_s+x)}(W_1 - W_s+x)  \\right]}{ \\mathbb E\\left[ e^{-\\frac{1}{\\eps}G(W_1-W_s+x)}   \\right]} .$$",
+          "tag": null
+        },
+        {
+          "quote": "$$ \\overline X^{\\eps}_s = \\frac{\\mathbb E\\left[ e^{-\\frac{1}{\\eps}G(W_1-W_s+X_s^{0,x_0;\\theta_{\\eps}^*})}(W_1 - W_s+X_s^{0,x_0;\\theta_{\\eps}^*})  \\right]}{ \\mathbb E\\left[ e^{-\\frac{1}{\\eps}G(W_1-W_s+X_s^{0,x_0;\\theta_{\\eps}^*})}   \\right]},$$",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, the iteration step combining terminal states and their mean can be viewed as a coupling mechanism among particles to enhance exploration and accelerate convergence to the global minimizer.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The display asserts \\E[\\beta(s,X_s)] = \\overline X^\\eps_s. But \\beta(s,x)=A(s,x)/B(s,x) where A,B are expectations over the Brownian increment only, while \\overline X^\\eps_s = \\E_{W,X}[A]/\\E_{W,X}[B] is the ratio of the joint expectations. The claimed equality \\E_X[A/B] = \\E_X[A]/\\E_X[B] is false in general. Concrete check: d=1, G(x)=cx gives \\beta(s,x) = x - c(1-s)/\\eps, so \\E[\\beta(s,X_s)] = \\E X_s - c(1-s)/\\eps, whereas \\overline X^\\eps_s = \\E X_s - c(1-s+\\mathrm{Var}(X_s))/\\eps; the two differ whenever \\mathrm{Var}(X_s)>0.",
+      "failure_location": {
+        "quote": "&= \\frac{1}{1-s }\\left(  \\overline X^{\\eps}_s - \\E\\left[X_s^{0,x_0;\\theta_{\\eps}^*}\\right] \\right),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Delete the second equality, keeping only \\frac{d}{ds}\\E X_s = \\frac{1}{1-s}(\\E[\\beta(s,X_s)] - \\E X_s), and motivate the coupling step heuristically without the false identity.",
+      "overall_effect": "The asserted deterministic evolution of the mean of the optimal state is incorrect, and the stated justification for the empirical-mean coupling step in Algorithm \\ref{alg:particle_method} (\"can be viewed as a coupling mechanism ... accelerate convergence\") loses its basis. No theorem, convergence rate, or stated accuracy guarantee depends on this identity.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False identity equating \\E[\\beta(s,X_s)] with a ratio of joint expectations, used to justify the coupling step",
+      "why_classification": "A localized false identity in a heuristic motivation; removing or correcting it leaves every formal result, the algorithm, and its stated guarantees unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "        \\State $t \\leftarrow m \\Delta t$, $\\tau \\leftarrow T - t$",
+          "tag": "alg:particle_method"
+        },
+        {
+          "quote": "            \\State Compute drift $\\hat{\\theta} \\leftarrow \\frac{E - X_t^{(i)}}{\\tau}$",
+          "tag": "alg:particle_method"
+        },
+        {
+          "quote": "Given a time step size $\\Delta t = 1/M$ for some integer $M>0$, we define the time grid $t_k = k \\Delta t$ for $k=0,1,\\ldots,M$.",
+          "tag": null
+        },
+        {
+          "quote": "\\State \\textbf{Initialize:} $X_0^{(i)} \\leftarrow x_{\\text{start}}$, $\\Delta t \\leftarrow T/M$.",
+          "tag": "algorithm:mean-field"
+        }
+      ],
+      "failure_explanation": "With \\Delta t = T/(M-1) and the loop running over m = 0,...,M-1, the last iteration sets t = (M-1)\\Delta t = T and \\tau = T - t = 0; then all weights w_j = e^{-G(X_t^{(i)})/\\eps} are equal, so E = X_t^{(i)} and the drift \\hat\\theta = (E - X_t^{(i)})/\\tau is 0/0, undefined (and the update would step past the horizon). The in-text scheme \\eqref{Euler-scheme-1} and Algorithm \\ref{algorithm:mean-field} both use \\Delta t = T/M (resp. 1/M), for which every computed step has \\tau \\ge \\Delta t > 0.",
+      "failure_location": {
+        "quote": "\\State $\\Delta t \\leftarrow T/(M-1)$",
+        "tag": "alg:particle_method"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Set \\Delta t \\leftarrow T/M (equivalently, run the loop only to m = M-2 while keeping T/(M-1)).",
+      "overall_effect": "As written, the pseudocode's final step performs an undefined operation; the reported experiments (e.g., M = 4001, T = 1.0) include the singular grid point.",
+      "primary_affected_tag": "alg:particle_method",
+      "target_type": "algorithm",
+      "title": "Algorithm 1 evaluates the drift at \\tau=0 (a 0/0) in its final time step",
+      "why_classification": "A one-line off-by-one correction; the discretization \\eqref{Euler-scheme-1}, the second algorithm, and all theoretical guarantees are unaffected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "and the equality holds when choosing the optimal feedback control $\\theta^*=-\\Lions \\tilde{\\mathcal{V}}_{\\eps}(s, \\mathcal{L}(X^{t,\\xi;\\theta^*}_s), X^{t,\\xi;\\theta^*}_s)$.",
+          "tag": "lem:uniqueness"
+        },
+        {
+          "quote": "    \\displaystyle \\partial_t \\mathcal{V}_\\eps - \\frac{1}{2\\eps} \\int_{\\bR^d} |\\Lions \\mathcal{V}_\\eps|^2 d\\mu + \\frac{1}{2} \\int_{\\bR^d} \\text{div}_x (\\Lions \\mathcal{V}_\\eps) d\\mu = 0, & (t, \\mu) \\in [0, 1) \\times \\Pcal \\\\",
+          "tag": "Master-eq"
+        },
+        {
+          "quote": "        \\theta^*_s = - \\frac{1}{\\eps} Y^{t,\\xi;\\theta^*}_s, \\quad \\forall\\, s\\in[t,T].",
+          "tag": "eq:fbsde"
+        },
+        {
+          "quote": "    \\Lions \\mathcal V_{\\eps}(t, \\mu, x) =  Y_t^{t,x;\\theta^*}.",
+          "tag": "Lions-derivative-value-function"
+        }
+      ],
+      "failure_explanation": "With running cost \\frac{\\eps}{2}|\\theta|^2, the Itô--Kunita--Wentzell formula applied to a classical solution \\tilde{\\mathcal V} together with the master equation gives J^\\theta(t,\\mu) = \\tilde{\\mathcal V}(t,\\mu) + \\E\\int_t^1 \\frac{\\eps}{2}|\\theta_s + \\frac{1}{\\eps}\\Lions\\tilde{\\mathcal V}|^2 ds = \\tilde{\\mathcal V}(t,\\mu) + \\E\\int_t^1 \\frac{1}{2\\eps}|\\eps\\theta_s + \\Lions\\tilde{\\mathcal V}|^2 ds. The displayed identity instead contains \\frac{1}{2\\eps}|\\theta_s + \\Lions\\tilde{\\mathcal V}|^2, which is a different expression whenever \\eps \\neq 1; correspondingly the minimizer is \\theta^* = -\\frac{1}{\\eps}\\Lions\\tilde{\\mathcal V}, not -\\Lions\\tilde{\\mathcal V} as stated. The stated formula also contradicts the paper's own relations \\theta^* = -\\frac{1}{\\eps}Y and \\Lions\\mathcal V = Y in \\eqref{eq:fbsde} and \\eqref{Lions-derivative-value-function}.",
+      "failure_location": {
+        "quote": "J^{\\theta}_{\\eps}(t, \\mu) \n     =  \\tilde{\\mathcal{V}}_{\\eps}(t, \\mu) + \\mathbb{E} \\left[ \\int_t^T \\frac{1}{2\\eps} \\left| \\theta_s + \\Lions \\tilde{\\mathcal{V}}_{\\eps}(s, \\mathcal{L}(X^{t,\\xi;\\theta}_s), X^{t,\\xi;\\theta}_s) \\right|^2 ds \\right].",
+        "tag": "lem:uniqueness"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the penalty term by \\frac{\\eps}{2}|\\theta + \\frac{1}{\\eps}\\Lions\\tilde{\\mathcal V}|^2 (equivalently \\frac{1}{2\\eps}|\\eps\\theta + \\Lions\\tilde{\\mathcal V}|^2) and the optimal feedback by \\theta^* = -\\frac{1}{\\eps}\\Lions\\tilde{\\mathcal V}.",
+      "overall_effect": "The lemma's key identity and its characterization of the optimal feedback control are wrong as written (and inconsistent with the master equation and the paper's FBSDE relations). The lemma's conclusion—every classical solution coincides with the value function, hence uniqueness—survives once the square is completed with the correct weights, so its use in Proposition \\ref{prop-well-posedness-mfc} is unaffected; no later result uses the incorrect formula.",
+      "primary_affected_tag": "lem:uniqueness",
+      "target_type": "formal_result",
+      "title": "Verification identity in Lemma \\ref{lem:uniqueness} has wrong powers of \\eps; stated optimal feedback off by a factor 1/\\eps",
+      "why_classification": "A contained algebraic error (mismanaged completion of squares) in a proof-sketch display; the correction is forced, the lemma's conclusion stands, and its only downstream use (uniqueness) is unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "    \\E \\left| \\frac{v^N(t, \\mathbf{X})}{N} - \\mathcal{V}_\\eps(t, \\mu) \\right| \\le \\frac{L_\\eps}{2N} + L_G \\cdot \\E [\\mathcal W_2(\\mu^N_{\\mathbf{X}}, \\mu)]",
+          "tag": "cor:general_measure"
+        }
+      ],
+      "failure_explanation": "For p = 2, Fournier–Guillin (2015) give \\E\\mathcal W_2^2(\\mu^N,\\mu) \\lesssim N^{-1/2} (d<4), N^{-1/2}\\log N (d=4), and N^{-2/d} (d>4) under sufficient moments, hence \\E\\mathcal W_2 \\lesssim N^{-1/4} (d<4), N^{-1/4}\\sqrt{\\log N} (d=4), N^{-1/d} (d>4). The quoted d \\le 4 bound C_\\alpha N^{-1/2-\\alpha} for every \\alpha > 0 is impossible: e.g., for \\mu uniform on [0,1] (d=1, all moments finite) \\E\\mathcal W_2(\\mu^N,\\mu) \\asymp N^{-1/2}, which is not O(N^{-1/2-\\alpha}) for any \\alpha>0; likewise the true rate is \\asymp \\sqrt{\\log N/N} in d=2 and \\asymp N^{-1/3} in d=3.",
+      "failure_location": {
+        "quote": "\\E[\\mathcal W_2(\\mu^N_{\\mathbf{X}}, \\mu)] \\le  \\begin{cases}\nC_{\\alpha }N^{-1/2-\\alpha}, \\quad \\forall\\, \\alpha > 0, & \\text{if } d \\leq 4, \\\\\nC_2N^{-1/d}, & \\text{if } d > 4,\n\\end{cases}",
+        "tag": "rmk:sampling_error"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the quoted rates by the correct ones (\\E\\mathcal W_2 \\lesssim N^{-1/4} for d<4, N^{-1/4}\\sqrt{\\log N} for d=4, N^{-1/d} for d>4), or restate the bounds for \\E\\mathcal W_2^2.",
+      "overall_effect": "The remark overstates the decay of the sampling-error term appearing in Corollary \\ref{cor:general_measure}. No formal result depends on the quoted rates (the main results use common-point initialization), but a reader combining the remark with the corollary infers a wrong total rate for i.i.d. initialization.",
+      "primary_affected_tag": "rmk:sampling_error",
+      "target_type": "other",
+      "title": "Remark \\ref{rmk:sampling_error} misstates the Fournier–Guillin rates for \\E\\mathcal W_2 of the empirical measure",
+      "why_classification": "A self-contained misquotation of a cited rate in a remark; the correction is a short local edit with no dependents and no effect on any theorem."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "    G(\\mu) = \\frac{1}{2} \\iint_{\\bR^{2d}} \\left(\\frac{|x-y|^2}{2}-\\ln(|x-y|)\\right) \\, d\\mu(x) \\, d\\mu(y).",
+          "tag": null
+        },
+        {
+          "quote": "\\State Compute weights $w_{i,j} \\propto \\exp\\left( -NG(Y_{i,j}; \\tilde{\\mu}_T) / \\eps \\right)$",
+          "tag": "algorithm:mean-field"
+        },
+        {
+          "quote": "    + \\frac{1}{2N} \\sum_{j=1}^N \\Phi(Y_{i,l} - Y_{j,l})",
+          "tag": null
+        },
+        {
+          "quote": "\\Phi(x)&= - \\ln(|x|),",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed empirical evaluation includes the diagonal i = j. For \\Phi(x) = -\\ln|x|—used in both the 2D Newtonian swarm and the Double Hula Hoop examples—\\Phi(0) = +\\infty, so G(\\mu^N) \\equiv +\\infty; hence every weight \\exp(-NG/\\eps) (and the factor arising from \\frac{1}{2N}\\sum_{j=1}^N \\Phi(Y_{i,l}-Y_{j,l}) at j=i in the simplified \\beta^i) is 0, the drift \\hat\\theta_i = \\frac{\\sum w_{i,j}Y_{i,j}}{\\sum w_{i,j}} is a 0/0 ratio, and the scheme is undefined as written. Under the same definition, U(\\mathbf x) = NG(\\mu^N) \\equiv +\\infty would also make the N-particle value v^N_\\eps in \\eqref{eq:feynman_kac_N} degenerate for these examples. The reported experiments necessarily exclude self-interaction, but no such convention is stated anywhere in the paper.",
+      "failure_location": {
+        "quote": "    G(\\mu^N) = \\frac{1}{N} \\sum_{i=1}^N F(x_i) + \\frac{1}{2N^2} \\sum_{i=1}^N \\sum_{j=1}^N \\Phi(x_i - x_j).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "State and use the standard exclusion of diagonal/self-interaction terms, i.e., G(\\mu^N) = \\frac1N\\sum_i F(x_i) + \\frac{1}{2N^2}\\sum_{i\\neq j}\\Phi(x_i-x_j) (and the corresponding j\\ne i sums in the drift formulas), or regularize \\Phi near 0.",
+      "overall_effect": "The numerical method as literally specified cannot compute the two logarithmic-interaction examples that showcase it; the reported figures (circle-law distribution, O(1/N) rate study, Double Hula Hoop) rely on an unstated modification of the displayed formulas.",
+      "primary_affected_tag": "algorithm:mean-field",
+      "target_type": "algorithm",
+      "title": "Self-interaction (diagonal) singularity makes the numerical scheme undefined for the showcased logarithmic kernels",
+      "why_classification": "The repair is the standard, purely local diagonal-exclusion convention routinely used in particle methods; once stated, the scheme, the reported numerical results, and all theorems (which never cover these singular functionals) are unaffected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "    \\beta^i(t_k, X_{t_k}^i) \\approx \\frac{\\sum_{l=1}^S \\exp\\left(-\\frac{1  }{\\eps} \\left( F(Y_{i,l}) \n    + \\frac{1}{2N} \\sum_{j=1}^N \\Phi(Y_{i,l} - Y_{j,l})\n    + \\frac{1}{2N} \\sum_{j\\neq i} \\Phi(Y_{j,l} - Y_{i,l})\n     \\right) \\right) Y_{i,l}}{\\sum_{l=1}^S ",
+          "tag": null
+        },
+        {
+          "quote": "where $Y_{j,l} = \\sqrt{1-t_k} \\xi_{j,l} + X_{t_k}^j$, for $j=1,\\dots,N$ and $l=1,\\dots,S$.",
+          "tag": null
+        },
+        {
+          "quote": "    \\beta^i\\!\\left(t_k,X_{t_k}^i\\right)\n    &= \\frac{\\mathbb E\\!\\left[ \\exp\\!\\left(-\\frac{N}{\\eps}G( \\frac{1}{N} \\sum_{j=1}^N\\delta_{\\{\\sqrt{1-t_k} \\xi^j+x^j\\}})\\right)\\,( \\sqrt{1-t_k} \\xi^i+x^i) \\right]}\n    {\\mathbb E\\!\\left[ \\exp\\!\\left(-\\frac{N}{\\eps}G(\\frac{1}{N} \\sum_{j=1}^N\\delta_{\\{\\sqrt{1-t_k} \\xi^j+x^j\\}})\\right) \\right]}",
+          "tag": "beta"
+        }
+      ],
+      "failure_explanation": "In the estimator \\eqref{beta}, the exponent for Monte-Carlo sample l is -\\frac{1}{\\eps}[\\sum_{j=1}^N F(Y_{j,l}) + \\frac{1}{2N}\\sum_{j,m=1}^N \\Phi(Y_{j,l}-Y_{m,l})], with Y_{j,l} resampled for every l as defined. The displayed simplification keeps only the terms involving particle i and drops \\sum_{j\\ne i}F(Y_{j,l}) and \\frac{1}{2N}\\sum_{j,m\\ne i}\\Phi(Y_{j,l}-Y_{m,l}); but these dropped terms depend on l, so the factor e^{-(\\text{dropped terms})/\\eps} does not cancel between numerator and denominator, and 'independence of noises' does not justify the omission. The simplification is valid only under the different frozen-context sampling used in Algorithm \\ref{algorithm:mean-field} (a single projected context \\tilde\\mu_T), under which the dropped terms are l-independent; as displayed, with Y_{j,l} defined for all (j,l), the formula does not compute the \\beta^i of \\eqref{beta}.",
+      "failure_location": {
+        "quote": "Then for each particle $i$, the independence of noises gives us the following simplified computation for $\\beta^i$:",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "State the frozen-context convention (one projected sample per context particle, as in the pseudocode) when passing to the simplified formula, or retain the full exponent from \\eqref{beta}.",
+      "overall_effect": "The drift estimator is inconsistently specified across \\eqref{beta}, the simplified display, and the pseudocode; a literal implementation of the displayed formula computes a differently (incorrectly) weighted drift.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Simplified \\beta^i formula drops sample-dependent terms; it is not the estimator of \\eqref{beta}",
+      "why_classification": "A local inconsistency in the specification of the estimator with a straightforward conventional fix; the pseudocode already implements the consistent frozen-context variant, and no formal result is affected."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "    G(\\mu) = \\frac{1}{2} \\iint_{\\bR^{2d}} \\left(\\frac{|x-y|^2}{2}-\\ln(|x-y|)\\right) \\, d\\mu(x) \\, d\\mu(y).",
+          "tag": null
+        },
+        {
+          "quote": "     \\includegraphics[width=0.9\\textwidth]{F_UnitDisk.png}",
+          "tag": null
+        },
+        {
+          "quote": "the corresponding Monte Carlo estimates of $\\frac{1}{N} v^N_{\\eps}(0, \\mathbf{x})$ minus the minimum value ($=0.75$) of $G$ are plotted as a function of $1/N$;",
+          "tag": null
+        },
+        {
+          "quote": "Moreover, extrapolating the fitted line to the limit $N\\to\\infty$ yields a vanishing asymptotic error.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the stated functional G(\\mu) = \\frac12\\iint (\\frac{|x-y|^2}{2} - \\ln|x-y|) d\\mu d\\mu, the unique (up to translation) minimizer is the uniform area measure on the unit disk: for that \\mu, \\int \\ln|x-y| \\mu(dy) = \\frac{|x|^2-1}{2} on |x|\\le 1, so U(x) := \\int (\\frac{|x-y|^2}{2} - \\ln|x-y|)\\mu(dy) = \\frac34 on the disk and U(x) = \\frac{|x|^2}{2} + \\frac14 - \\ln|x| > \\frac34 for |x|>1, whence G(\\mu) = \\frac12\\int U d\\mu = \\frac38 = 0.375; global minimality follows since for any (mean-zero-shifted) competitor \\nu, G(\\nu) - G(\\mu) = \\int U d(\\nu-\\mu) + \\frac12\\iint \\ln\\frac{1}{|x-y|} d(\\nu-\\mu)^{\\otimes 2} \\ge 0. The uniform measure on the unit circle has energy \\frac12, and the best circle (radius 1/\\sqrt2) has energy (1+\\ln 2)/4 \\approx 0.42—neither is the minimizer, and 0.75 equals 2\\min G (the minimum only if the prefactor \\frac12 is dropped). The claims also contradict the paper's own figure file 'F_UnitDisk.png'.",
+      "failure_location": {
+        "quote": "it is the uniform probability measure supported on a unit circle, with minimal energy equal to $0.75$, \ncommonly referred to as the \\emph{circle law} \\cite{carrillo2020ellipse}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Amend the example to name the true minimizer (the uniform measure on the unit disk) and the true minimum 3/8 of the stated functional (or, equivalently, remove the factor \\frac12 from G and keep 0.75), and redo the reference value used in Figure \\ref{fig:convergence_rate}'s error analysis accordingly.",
+      "overall_effect": "The example misidentifies both the minimizer and the minimum of the stated functional. The convergence-rate study uses 0.75 as the reference minimum, so for the functional as stated the reported 'vanishing asymptotic error' contradicts the paper's own theory (\\frac1N v^N_\\eps \\to \\mathcal V_\\eps \\approx \\min G = 0.375), leaving the numerical corroboration of Theorem \\ref{thm:value_convergence} unreliable as presented; the claim that the terminal distribution approximates 'the uniform measure on the unit circle' also conflicts with the actual minimizer (and the paper's UnitDisk figure).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "2D Newtonian swarm example: the minimizer is the unit disk, not the unit circle, and the minimum is 3/8, not 0.75",
+      "why_classification": "The defect is confined to an illustrative example—no theorem or algorithm is logically affected—but repairing it requires the contained equilibrium-measure computation identifying the true minimizer, and the quantitative validation of Theorem \\ref{thm:value_convergence} must be reinterpreted or recomputed with the corrected reference minimum; a purely textual one-line edit does not suffice."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2601.01248",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "2e0dc5a1b1022fe148ff3d932499137e629ddbfa4da37497228cd4c61b1dd23f",
+  "status": "ok"
+}

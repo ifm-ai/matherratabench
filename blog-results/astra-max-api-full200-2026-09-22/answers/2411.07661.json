@@ -1,0 +1,425 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exist a small positive parameter $\\alpha$ and a positive line search step $\\lambda_n $ such that",
+          "tag": "lem:LSbase"
+        },
+        {
+          "quote": "WHILE $E^n(y_n + \\lambda_nd^n)>E^n(y^n) - \\alpha\\lambda_n\\|d^n\\|^2$ DO $\\lambda_n:=\\beta\\lambda_n$",
+          "tag": "alg:cap"
+        }
+      ],
+      "failure_explanation": "The feasibility proof requires a sufficiently small alpha, but the algorithm permits every positive alpha. For example, take H(x)=x^2/2, F(x)=x^2/4, delta t=2/3, L=1/2, M=0, hat u=u, and alpha=1. For a nonzero direction, the quadratic line function satisfies E^n(y+lambda d)-E^n(y)=(-lambda/2+7 lambda^2/4)||d||^2, which never meets the prescribed bound -lambda||d||^2 for positive lambda.",
+      "failure_location": {
+        "quote": "\\State Choose $u^0$, $0<dt<2/(3L)$, $\\alpha>0$, $0<\\beta<1$, $\\lambda_{\\max}>0$. Set $u^{-1}=u^0$",
+        "tag": "alg:cap"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Require 0<alpha<2/(3 delta t)-L for the non-extrapolated branch, or supply an equivalent certified direction-dependent restriction before backtracking.",
+      "overall_effect": "The algorithm need not produce its next iterate even in a coercive scalar quadratic problem satisfying the stated model assumptions.",
+      "primary_affected_tag": "alg:cap",
+      "target_type": "algorithm",
+      "title": "The permitted Armijo parameter can make backtracking fail indefinitely",
+      "why_classification": "A standard local parameter restriction restores finite backtracking without changing the problem class, method, or convergence-rate guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{2}{3\\delta t}(3y^n - 4u^n + u^{n-1}) + M(y^n - \\hat{u}^n) + h(y^n) + (2f(u^n) - f(u^{n-1}))=0.",
+          "tag": "eq:solve:y:pre:general"
+        }
+      ],
+      "failure_explanation": "When hat u^n=u^n and d^n=0, the update gives grad E(u^n)=2(u^n-u^{n-1})/(3 delta t)-(f(u^n)-f(u^{n-1})), not necessarily zero. This occurs on an actual accepted run: take H(x)=5x^2, F(x)=x^2/4, delta t=2/3, L=1/2, M=0, alpha=1/10, initial trial lambda=1/25, and u^{-1}=u^0=1. Armijo accepts this trial, u^1=4/25 and u^2=-1/125, and then y^2=u^2. The algorithm returns u^2 although grad E(u^2)=-21/250.",
+      "failure_location": {
+        "quote": "\\State Set $d^n := y^n - u^n$. IF $d^n = 0$ STOP and RETURN $u^n$. Otherwise, go to Step 6.",
+        "tag": "alg:cap"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Stop only when d^n=0 and u^n=u^{n-1}, or directly verify stationarity. Otherwise permit the zero update and continue the two-step iteration.",
+      "overall_effect": "Exact termination can return a noncritical point; the asymptotic arguments for a continuing sequence do not certify this finite output.",
+      "primary_affected_tag": "alg:cap",
+      "target_type": "algorithm",
+      "title": "A zero trial direction is not a stationarity certificate for a two-step method",
+      "why_classification": "An additional local stopping guard preserves the iteration and all substantive convergence claims."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:globalconverg",
+        "rem:un:mul",
+        "them:local:rate",
+        "rem:KL:conver:two:models"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$0\\le\\lambda_n< \\lambda_{\\max}:=\\sqrt{\\frac{4}{3\\delta tL} - \\frac12}-1$",
+          "tag": "lem:square:summable"
+        },
+        {
+          "quote": "the coefficient $c(\\lambda_n, \\delta t, L) := \\frac{4}{3\\delta t} - \\frac{L}{2} - L(1+\\lambda_n)^2$ satisfies $c(\\lambda_n, \\delta t, L) > 0$",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{\\alpha\\lambda_{\\min} + c(\\lambda_{\\max},\\delta t, L)}{(1+\\lambda_{\\max})^2}",
+          "tag": "ineq:quad_A"
+        }
+      ],
+      "failure_explanation": "At the explicitly defined endpoint B=lambda_max, c(B,delta t,L)=0. The allowed case lambda_n=0 gives lambda_min=0, so the displayed denominator is zero. Pointwise positivity of c(lambda_n) does not justify the positive uniform constant used in the summation.",
+      "failure_location": {
+        "quote": "\\frac{(1+\\lambda_{\\max})^2}{\\alpha\\lambda_{\\min} + c(\\lambda_{\\max},\\delta t, L)}(A(u^1,u^0) - \\liminf_{n\\to \\infty}A(u^{n+1},u^n))<\\infty.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Put C=4/(3 delta t)-L/2 and B=sqrt(C/L)-1. The numerator C-L(1+lambda)^2+alpha lambda is concave on [0,B], so use the positive uniform constant min{C-L,alpha B}/(1+B)^2 instead, and propagate it through the later estimates.",
+      "overall_effect": "The asserted square-summability estimate and the downstream constants supporting finite length and rates are not established as written, including the explicitly advertised no-line-search case.",
+      "primary_affected_tag": "lem:square:summable",
+      "target_type": "formal_result",
+      "title": "The square-summability proof divides by a possibly zero descent constant",
+      "why_classification": "A routine uniform lower-bound calculation repairs the argument while retaining the entire stated step-size range."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "rem:un:mul",
+        "them:local:rate",
+        "thm:globalconverg:M",
+        "rem:KL:conver:two:models"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "for any $x \\in \\mathcal{O}$ with $h(\\bar x) < h(x) <h(\\bar x) + \\nu$, one has",
+          "tag": "def:KL"
+        },
+        {
+          "quote": "The sequence $\\{A(u^{n+1}, u^n)\\}_n$ is monotone decreasing with a limit and the sequence $\\{u^n\\}_n$ is bounded.",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "The stated KL property is local at an individual critical point and supplies a point-dependent neighborhood, energy interval, and desingularizing function. The proof has not yet shown convergence to one such point and does not establish a common psi valid for all sufficiently late pairs. Consequently the KL inequality used in the telescoping finite-length argument is an unestablished premise.",
+      "failure_location": {
+        "quote": "where the second inequality employs $\\psi'(A(u^{n+1}, u^{n}) - \\zeta)\\|\\nabla A(u^{n+1},u^{n})\\| \\geq 1$ with  the KL-property of $A(x,y)$",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Show that the cluster set of the iterate pairs is compact, consists of critical points, and has constant A-value zeta. Use a finite cover of its KL neighborhoods and a common concave desingularizer, then apply the inequality only on the eventual tail. Handle attainment of zeta separately by sufficient decrease.",
+      "overall_effect": "The passage from square summability to finite length, global convergence, and the resulting rate analysis has a missing substantive localization step.",
+      "primary_affected_tag": "thm:globalconverg",
+      "target_type": "formal_result",
+      "title": "A single KL inequality is used along the tail without localization or uniformization",
+      "why_classification": "A contained uniform-KL lemma and its application are needed, but the existing descent and relative-error architecture can be retained."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We perform the line search along $d^n$ no matter whether $d^n$ is a descent direction or not.",
+          "tag": null
+        },
+        {
+          "quote": "WHILE $E^n(y_n + \\lambda_nd^n)>E^n(y^n) - \\alpha\\lambda_n\\|d^n\\|^2$ DO $\\lambda_n:=\\beta\\lambda_n$",
+          "tag": "alg:cap"
+        }
+      ],
+      "failure_explanation": "If no positive trial satisfies Armijo, the stated backtracking loop continues forever. The existence/nonexistence case distinction does not specify an executable finite test that reaches the zero-step branch. This matters precisely in the extrapolated case, where the source acknowledges that d^n need not be a descent direction.",
+      "failure_location": {
+        "quote": "\\text{if there exists a positive $\\lambda_n>0$}",
+        "tag": "eq:line:search:til"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Before backtracking, test whether <grad E^n(y^n),d^n><-alpha||d^n||^2; otherwise set lambda_n=0. Under the existing step restriction E^n is strongly convex, so failure of this strict slope condition precludes a positive Armijo step, while satisfaction ensures sufficiently small trials succeed.",
+      "overall_effect": "The claimed fallback does not make the extrapolated algorithm well defined as a finite procedure.",
+      "primary_affected_tag": "eq:line:search:til",
+      "target_type": "algorithm",
+      "title": "The extrapolated line-search fallback has no finite failure-detection rule",
+      "why_classification": "An explicit local test using already available gradients supplies finite failure detection without changing the convergence conditions or requiring an M-norm computation."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:globalconverg:M",
+        "rem:KL:conver:two:models"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{5}{3\\delta t}||d_n||_M^2 - \\frac{1}{3\\delta t}||u^n - u^{n-1}||^2_M",
+          "tag": null
+        },
+        {
+          "quote": "E^n(y^n + \\lambda_n d^n)  \\leq   E^n(y^n) -\\alpha\\lambda_n\\|d^n\\|^2",
+          "tag": "eq:line:search:til"
+        },
+        {
+          "quote": "-\\frac{1 + \\lambda_n}{3\\delta t}||u^n - u^{n-1}||^2_M",
+          "tag": "eq:minmax:control"
+        }
+      ],
+      "failure_explanation": "Substituting d_n=(u^{n+1}-u^n)/(1+lambda_n) into the preceding bound gives coefficients 5/[3 delta t(1+lambda_n)^2] and -1/(3 delta t), not the displayed coefficients. The additional weighted decrease would require the stronger small-step estimate to hold at the accepted step, which the implemented unweighted Armijo test does not enforce. The resulting monotonicity claim is actually false: with F=0, H(u)=800u^2, delta t=2/3, valid Lipschitz bound L=0.1, M=1000/3, alpha=0.01, lambda_max=lambda_0=1.23, and u^{-1}=u^0=1, Armijo accepts the step but the stated tilde A increases from 800 to approximately 809.30.",
+      "failure_location": {
+        "quote": "\\frac{5}{3\\delta t(1+\\lambda_n)}||u^{n+1} - u^n||^2_M",
+        "tag": "eq:minmax:control"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Retain the actually obtained weighted coefficients and use A_0(x,y)+||x-y||_M^2/(3 delta t). Its weighted decrease coefficient is 5/[3 delta t(1+lambda_max)^2]-1/(3 delta t), positive under the stated sqrt(5)-1 cap. Revise the subsequent Lyapunov statement and proof accordingly; the KL assumption transfers between these positive quadratic augmentations by an invertible linear change of the difference variable.",
+      "overall_effect": "The extrapolated square-summability proof is invalid, and the particular Lyapunov monotonicity asserted in the subsequent global theorem fails under its stated step bounds.",
+      "primary_affected_tag": "thm:square:sum:til",
+      "target_type": "formal_result",
+      "title": "The extrapolated summability proof inserts unsupported weighted decrease",
+      "why_classification": "A contained Lyapunov reoptimization and revision of a false monotonicity claim are necessary, but comparable convergence results can be preserved without a new global proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "rem:KL:conver:two:models"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\psi'(h(x)-h(\\bar x)) \\|\\nabla h(x)\\|\\geq 1",
+          "tag": "eq:kl:def"
+        },
+        {
+          "quote": "\\geq &\\tilde A(u^{n}, u^{n-1}) - \\tilde A(u^{n+1}, u^{n})\\geq C_{1,\\max}\\|u^{n+1}-u^n\\|^2,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "KL controls the energy gap and gradient at the same point. It does not imply that the displayed mixed-iterate product is at least one. Even for the quadratic q(z)=z^2/2 with its square-root desingularizer, the corresponding product at positive z_{n+1}<z_n equals z_{n+1}/z_n<1. This error remains after uniformizing the KL property and correcting the Lyapunov function.",
+      "failure_location": {
+        "quote": "\\psi'( \\tilde A(u^{n}, u^{n-1}) - \\zeta)\\cdot\\|\\nabla \\tilde A(u^{n+1},u^{n})\\|",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Apply KL to the pair (u^n,u^{n-1}), use the relative-error estimate at that same pair, and align the resulting step indices and the tilde-A desingularizer differences with the earlier finite-length proof.",
+      "overall_effect": "The displayed KL-to-step-length inequality does not follow, so the stated finite-length conclusion is not proved by this argument.",
+      "primary_affected_tag": "thm:globalconverg:M",
+      "target_type": "formal_result",
+      "title": "The extrapolated KL proof pairs an energy value with the gradient at another iterate",
+      "why_classification": "The already established form of the relative-error estimate supports a local reindexing and alignment of the proof; no new convergence argument or rate loss is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{E}_n(\\lambda) = \\frac{e_n(\\bar{\\lambda}) - e_n(0) - \\bar{\\lambda}e_n'(0)}{\\bar{\\lambda}^2}\\lambda^2 + e_n'(0)\\lambda + e_n(0).",
+          "tag": null
+        },
+        {
+          "quote": "$\\lambda_n:=\\max\\{\\bar \\lambda_{\\max},\\lambda^*_n\\}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Differentiating the displayed interpolant gives a minimizer with a minus sign in front of e_n'(0), not the stated sign. For a descent direction and positive interpolating curvature, the implemented formula returns a negative value; the subsequent maximum therefore simply restores the original initial step rather than using the advertised interpolated minimum. The erroneous value is explicitly incorporated into Step 6, so this is an operative construction error.",
+      "failure_location": {
+        "quote": "\\lambda^*_n = \\frac{e_n'(0)\\bar{\\lambda}^2}{2(e_n(\\bar{\\lambda}) - e_n(0) - e_n'(0)\\bar{\\lambda})}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Use the correctly signed minimizer and safeguard the selected positive trial within the prescribed admissible line-search cap, rather than choosing the larger of the cap and the proposed minimum.",
+      "overall_effect": "The proposed initialization does not compute or use the claimed quadratic minimum, and its stated interpolation-based acceleration is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The executable quadratic line-search initialization uses the wrong minimizer",
+      "why_classification": "Correcting and safeguarding this local scalar calculation preserves the surrounding algorithm and convergence theory."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "E(u) = \\frac12\\|Au-b\\|^2 + \\mu \\mathcal{H}_{\\alpha}(u) - \\tilde P(u)",
+          "tag": "eq:lsp"
+        },
+        {
+          "quote": "we employ distinct convex splitting to sidestep equation solving.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proposed BDCA splitting cancels to the least-squares term plus mu times the Huber term minus mu times tilde P, whereas the specified objective subtracts tilde P without that extra factor. Its value differs from the target by (1-mu)tilde P. Thus the stated comparator updates use a different concave component and, for the reported mu=5×10^-4, a materially different optimization problem.",
+      "failure_location": {
+        "quote": "E(u) =\\mu \\mathcal{H}_{\\alpha}(u) + \\frac{L}{2}\\|u\\|^2 - \\left(\\frac{L}{2}\\|u\\|^2 + \\mu \\tilde P(u)  - \\frac12\\|Au-b\\|^2\\right)",
+        "tag": "eq:another:split"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Remove the extra factor mu from the comparator construction and its updates, then verify or recompute the numerical comparisons using that corrected objective.",
+      "overall_effect": "The DCA/BDCA computations described by this construction do not establish the reported comparisons for the same SCAD objective solved by the proposed methods.",
+      "primary_affected_tag": "eq:another:split",
+      "target_type": "algorithm",
+      "title": "The SCAD comparator splitting defines a different objective",
+      "why_classification": "Although the identity has a simple correction, the operative comparator and the same-objective numerical comparison must be repaired or revalidated."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "E(u) = \\sum_{i,j}\\frac{\\epsilon}{2}w_{ij}(u(i)-u(j))^2 +\\frac{1}{\\epsilon}\\bb{W}(u) + \\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2",
+          "tag": "eq:nonlocalGL"
+        },
+        {
+          "quote": "$\\mathbb{W}(u) = \\frac14\\sum_{i=1}^{n}(u(i)^2 - 1)^2$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The L-quadratics cancel, leaving the graph and fidelity terms minus W/epsilon, while the target contains plus W/epsilon. The specified comparator objective consequently has a negative quartic leading term and is unbounded below. This is not a DC decomposition of the model being compared, independently of the separate Lipschitz problem for the proposed method.",
+      "failure_location": {
+        "quote": "E(u) = \\sum_{i,j}\\frac{\\epsilon}{2}w_{ij}(u(i)-u(j))^2 + \\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2 + \\frac{L}{2}\\sum_i u(i)^2 - \\left(\\frac{L}{2}\\sum_i u(i)^2 +\\frac{1}{\\epsilon}\\bb{W}(u)\\right).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Use a genuine DC decomposition of the positive-quartic objective, for example placing the quartic contribution in the convex part and subtracting the quadratic contribution, and recompute the corresponding comparator updates and comparisons.",
+      "overall_effect": "The stated comparator construction cannot substantiate same-model performance claims in the graph Ginzburg–Landau experiment.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The graph-model comparator splitting reverses the double-well potential",
+      "why_classification": "A corrected convex splitting and renewed computational comparison are needed, but a comparable model and comparison remain available through a contained construction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Additionally, we make the assumption that the energy $E(x)$ is level-bounded",
+          "tag": null
+        },
+        {
+          "quote": "$(m,k,s) = (720i,2560i,80i)$",
+          "tag": null
+        },
+        {
+          "quote": "(\\mu(\\theta+1) - \\alpha)/{2} &\\text{if}\\ \\ \\ |u_i|\\geq\\theta\\mu",
+          "tag": "eq:huber-scad"
+        }
+      ],
+      "failure_explanation": "The experimental matrices have m<k and hence a nonzero kernel vector z. Along u=tz the least-squares term is constant, while every nonzero coordinate of z eventually reaches the constant tail of the modified SCAD penalty. Thus E(tz) is constant for sufficiently large |t|, giving an unbounded sublevel set. Semialgebraicity and KL alone do not supply the boundedness used in the global convergence theorem.",
+      "failure_location": {
+        "quote": "the global convergence of these two models thus follows.",
+        "tag": "rem:KL:conver:two:models"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Exploit the finite piecewise-quadratic structure to add a boundedness-free convergence lemma. On each quadratic piece, either its affine gradient is bounded away from zero or its value differs from its quadratic critical value by at most a constant times the squared gradient. Finitely many pieces, convergence of the energy, and vanishing gradients then yield a common exponent-1/2 KL bound along the tail, allowing the existing finite-length argument to prove boundedness and convergence.",
+      "overall_effect": "The stated convergence theorem cannot be applied directly to the advertised underdetermined SCAD models.",
+      "primary_affected_tag": "rem:KL:conver:two:models",
+      "target_type": "formal_result",
+      "title": "The underdetermined SCAD model violates the level-boundedness hypothesis",
+      "why_classification": "A new contained lemma is required, but the source's finite piecewise-quadratic structure supports a repair retaining the underdetermined regime and the same convergence architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\delta t= 6-10^{-15}$), $\\bar \\lambda_{\\text{max}} = 5$",
+          "tag": null
+        },
+        {
+          "quote": "The Lipschitz constant $L$ of $\\nabla F$ is $1/(\\theta-1)$ \\cite[Example 4.3]{Wen2018} with $L=1/9$.",
+          "tag": null
+        },
+        {
+          "quote": "$0\\le\\lambda_n< \\lambda_{\\max} =\\sqrt{\\frac{4}{3\\delta tL} - \\frac12}-1$",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "For the stated delta t and L, the proved cap is approximately 0.224745, not 5. Armijo backtracking does not enforce this independent cap. For example, in the quadratic Huber region, a mode with A^T A eigenvalue 1 and maximum eigenvalue 9 has line curvature approximately 29/9 and descent slope magnitude 73/9 times ||d||^2. With the stated alpha=0.2 and beta=0.8, trial 5 fails but trial 4 passes. Hence the specified procedure can accept steps far outside the convergence theorem's hypotheses.",
+      "failure_location": {
+        "quote": "the global convergence of these two models thus follows.",
+        "tag": "rem:KL:conver:two:models"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Explicitly enforce a cap below the theorem's bound. Until computations with that safeguard are supplied, distinguish the reported experiments from the parameter-compliant runs covered by the convergence theorem.",
+      "overall_effect": "KL verification does not confer the claimed convergence guarantee on the reported experimental parameter choices.",
+      "primary_affected_tag": "rem:KL:conver:two:models",
+      "target_type": "formal_result",
+      "title": "The experimental line-search setup does not enforce the proved step cap",
+      "why_classification": "The safeguard itself is local, but the theorem-backed status of the reported accelerated experiments must be withdrawn or revalidated; it cannot be preserved merely by verifying KL."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Specifically, $\\Lambda(i) = 2y(i) - 1$.",
+          "tag": null
+        },
+        {
+          "quote": "$H(u) =  \\sum_{ij}\\frac{\\epsilon}{2}w_{ij}(u(i)-u(j))^2 + \\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2$",
+          "tag": null
+        },
+        {
+          "quote": "where $H(u)$ is a convex function",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The specified Lambda can have negative entries, and no assumption establishes convexity of H. For the allowed choice y(i)=0 at every vertex, Lambda=-I; along constant vectors the graph term vanishes and H is a negative quadratic. Thus the convex-H hypothesis, and potentially convexity and solvability of the proximal subproblem, fail independently of the quartic-gradient issue.",
+      "failure_location": {
+        "quote": "the global convergence of these two models thus follows.",
+        "tag": "rem:KL:conver:two:models"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Split Lambda into positive and negative parts, keep the nonnegative fidelity contribution in H, and move the negative quadratic contribution into F. Update the explicit-gradient bound and the associated splitting and preconditioner accordingly.",
+      "overall_effect": "The proposed graph-model splitting and its invocation of the convergence and positive-preconditioner framework are not justified for the data allowed by the source.",
+      "primary_affected_tag": "rem:KL:conver:two:models",
+      "target_type": "formal_result",
+      "title": "The signed fidelity weights need not give a convex implicit component",
+      "why_classification": "A contained new convex splitting preserves the objective and graph-model regime, but the specified implicit component and its supporting parameter calculations must change."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$F(u) = \\frac{1}{\\epsilon}\\mathbb{W}(u)$",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathbb{W}(u) = \\frac14\\sum_{i=1}^{n}(u(i)^2 - 1)^2$",
+          "tag": null
+        },
+        {
+          "quote": "Assuming $h(u)$ and $f(u)$ are Lipschitz continuous",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "Here f_i(u)=(u_i^3-u_i)/epsilon and its derivative is (3u_i^2-1)/epsilon, which is unbounded on the stated domain R^n. No finite global L exists, and F^n contains a negative quartic term, so it is not globally convex for any delta t. Polynomial KL does not remedy these missing hypotheses, and no invariant bounded region with a valid local L is proved.",
+      "failure_location": {
+        "quote": "the global convergence of these two models thus follows.",
+        "tag": "rem:KL:conver:two:models"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "Add an initial-energy localization argument using a quadratic continuation of the explicit polynomial potential outside a sufficiently large box. Choose the continuation below the original potential, coercive, with bounded Hessian, and with energy above the initial level outside the box. Apply the corrected descent argument to this semialgebraic continuation: the no-search point and every accepted capped Armijo step must remain inside, where the original and continued algorithms agree. This supplies a certified finite L without changing realized iterates.",
+      "overall_effect": "The central splitting, line-search feasibility arguments, and convergence theorems do not directly cover the advertised quartic graph Ginzburg–Landau application.",
+      "primary_affected_tag": "rem:KL:conver:two:models",
+      "target_type": "formal_result",
+      "title": "The quartic graph potential has no global Lipschitz gradient",
+      "why_classification": "A nontrivial but contained continuation and invariance lemma is needed. The explicit polynomial structure supports this route without abandoning the quartic model or replacing the overall convergence architecture."
+    }
+  ],
+  "issues_found": 14,
+  "paper_id": "2411.07661",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "82023cb4a713f803031fb66ea375960c872e0ef9830eb307112b4b7b18610917",
+  "status": "ok"
+}

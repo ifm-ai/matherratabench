@@ -1,0 +1,175 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(B\\) is the \\( N \\times N \\) diagonal random sampling matrix with i.i.d. Bernoulli random variables with success probability \\(m/N\\)",
+          "tag": null
+        },
+        {
+          "quote": "Lastly, We retain the non-zero rows of the matrix \\(S\\), which forms the SRHT matrix, and still denote it as \\(S\\).",
+          "tag": null
+        },
+        {
+          "quote": "Let \\( S \\) be a SRHT sketching matrix of size \\( m \\times N \\)",
+          "tag": "thm:bigtheorem"
+        }
+      ],
+      "failure_explanation": "B has i.i.d. Bernoulli(m/N) diagonal entries, so its number of non-zero rows is a single Bin(N, m/N) random variable, not a prescribed size. For one fixed B there are no \"the m_i non-zero rows\" for each of the K different nested sizes m_1 < ... < m_K, and the realized count is random rather than equal to m_i. Hence the constructed S_i = sqrt(N/m_i) B_i HDP are not the exactly-m_i-row SRHT matrices to which the embedding theorem (thm:bigtheorem, used via Lemma lemma1) applies, so the described procedure does not deliver the objects the theory requires.",
+      "failure_location": {
+        "quote": "by sampling the rows of the data \\((S_0X, S_0Y)\\), namely by left-multiplying the random matrix \\(B_i \\in \\mathbb{R}^{m_i \\times N}\\), which is consisted of the \\(m_i\\) non-zero rows of \\(B\\)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the row-extraction description by nested exact-size uniform subsampling: define B_i as selecting exactly m_i of the retained rows (nested across i), or sample S_i directly at size m_i from HDP; then Theorem thm:bigtheorem applies verbatim and all guarantees and cost figures survive.",
+      "overall_effect": "The claimed efficient construction of the K sketched subproblems (and thus the input of Algorithm Alg-SRHT and the Nd log2 N sketching-cost accounting) is not well defined as written, and the embedding-based guarantees are not attached to the described procedure.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Sketched-data construction via 'the m_i non-zero rows of B' is ill-defined",
+      "why_classification": "A local definitional repair (specify exact-size nested sampling) preserves every guarantee, rate, and complexity claim; no new lemma or construction is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "finalerror",
+        "M-IHS converging rate",
+        "Thf"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\beta_{t+1} \\leftarrow \\beta_t - \\mu \\hat{H}^{-1} \\nabla f(\\beta_t; S_i X, S_i Y) + \\eta (\\beta_t - \\beta_{t-1})$",
+          "tag": "Alg-SRHT"
+        },
+        {
+          "quote": "Together with \\({\\beta_{-1}^{i}} = {\\beta_{0}^{i}} = {\\beta_{a_{i-1}}^{i-1}}\\), we obtain",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Algorithm Alg-SRHT uses a single global counter t and never resets the momentum at subproblem boundaries, so at the first iteration of subproblem i (i >= 2) the term eta(beta_t - beta_{t-1}) uses beta_{t-1} = the (a_{i-1}-1)-th iterate of subproblem i-1. The proof instead analyzes the recursion initialized with the duplicated pair beta_{-1}^i = beta_0^i, which is what makes the initial two-vector norm reduce to sqrt(2)*||X(beta_0^i - beta_tilde^i)||. The recursion actually defined by the algorithm is a different two-step system, so the proved contraction does not apply to the stated algorithm; the missing step is a bound on the carried-over component ||X(beta_{a_{i-1}-1}^{i-1} - beta_tilde^i)||. The same mismatch occurs at the 1st-to-2nd stage transition in Lemma finalerror, Lemma 'M-IHS converging rate', and hence Theorem Thf.",
+      "failure_location": {
+        "quote": "In the case \\(i > 1\\), we set the initial iterates \\({\\beta_{-1}^{i}} = {\\beta_{0}^{i}} = {\\beta_{a_{i-1}}^{i-1}}\\) based on the iterates from the previous sketched LS subproblem.",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Either add the reset (set beta_{t-1} := beta_t at the start of each subproblem and of the 2nd stage) to Algorithms Alg-framework/Alg-SRHT, or keep the algorithm and add the short argument bounding the carried-over component by the already-proven contraction and the delta_{i-1} control; the stated bounds then hold with at most constant-factor changes.",
+      "overall_effect": "The convergence guarantees of Theorems thm:convergence_theorem1 and Thf are established only for a modified iteration with momentum reset at each subproblem/stage, not for Algorithm Alg-SRHT as written; the advertised guarantees for the implemented scheme are unsupported until this gap is closed.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "Convergence proof analyzes a momentum-reset variant, not Algorithm Alg-SRHT",
+      "why_classification": "A one-line pseudocode change or a short supplementary bound using already-established estimates resolves it; every substantive claim and guarantee is preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "we obtain\n\t r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}} \\geq \\frac{\\mathbb{E}\\|X({\\tilde{\\beta}^{i-1}} - {\\beta})\\|}{\\mathbb{E}\\|X({\\tilde{\\beta}^{i}} - {\\beta})\\|},",
+          "tag": null
+        },
+        {
+          "quote": "it holds that $\\log_3(1/\\omega)<a_i<\\alpha$ ($i=1,\\ldots,K$) with $\\alpha=\\log_3\\{[1+(1+\\omega)/\\sqrt{2}]/\\omega\\}$",
+          "tag": "cmpxtyAlgSLSE"
+        },
+        {
+          "quote": "it follows that $r(i-1,i)=\\sqrt{(1-2^{K+2-i}\\gamma)/(2-2^{K+2-i}\\gamma)}$ ($i=2,\\ldots,K$)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof needs an upper bound on delta_{i-1}/delta_i and derives r(i-1,i) = sqrt((m_i - d)/(m_{i-1} - d)) > 1 (equality under the paper's PE analysis). The statement instead defines r = sqrt((m_{i-1} - d)/(m_i - d)) < 1, the reciprocal. With the statement's r the decisive step ((1/3)^{a_i}[(1+omega)r+1]delta_i <= omega*delta_i) does not follow, so counts a_i set at the stated smaller lower bounds do not fulfill (14)/(23). Downstream, Theorem cmpxtyAlgSLSE uses the statement's formula to conclude a_i < alpha with alpha = log_3{[1+(1+omega)/sqrt2]/omega} and a_2 < ... < a_K; with the corrected ratio these are false: the required counts are larger (a_2 -> infinity as gamma -> 2^{-K}), decrease rather than increase in i, and no uniform alpha exists.",
+      "failure_location": {
+        "quote": "where \\( r(i-1,i) = \\sqrt{m_{i-1} - d / m_{i} - d} \\) .",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the ratio's direction in Theorem lowerBoundai's statement to sqrt((m_i - d)/(m_{i-1} - d)) as in its proof, and recompute Theorem cmpxtyAlgSLSE with the corrected, larger, decreasing counts (alpha becomes the i = 2 value, depending on gamma); a comparable complexity statement survives.",
+      "overall_effect": "The advertised iteration-count guidance of Theorem lowerBoundai does not deliver the precision (14); the alpha-bound, the 'log_3(1/omega) < a_i < alpha' conclusion and the first-stage cost 4*alpha*Nd in Theorem cmpxtyAlgSLSE, and the claimed increasing sequence a_2 < ... < a_K (main text and Appendix cmpxtyAlgSLSEPrf) are invalid.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "Ratio r(i-1,i) in Theorem lowerBoundai is the reciprocal of the derived/needed ratio",
+      "why_classification": "The repair is contained (one corrected formula plus recomputation of the downstream constants), but a stated quantitative guarantee (the alpha-bound and the monotonicity) is withdrawn, so it exceeds a minor local fix while a comparable result survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "it is equivalent to require the factor $(1/3)^T$ reduces to \\(\\sigma\\)-level, i.e., $(1/3)^T\\le\\sigma$. Therefore, the total count $T$ of iteration is bounded below by $T\\ge \\log_3(1/\\sigma)$.",
+          "tag": null
+        },
+        {
+          "quote": "the iterates are expected to achieve the LS error, defined as \\(\\Delta:=\\)\\(\\|X( \\hat{\\beta}- \\beta)\\|^{2}\\), which is approximately equal to \\(\\sigma^2 d \\)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prediction error E||X(beta_T - beta)|| has noise floor equal to the OLS error E||X(beta_hat - beta)||, which the paper itself computes as Delta = ||X(beta_hat - beta)||^2 ~ sigma^2 d, i.e., level ~ sigma*sqrt(d) > sigma for d > 1. Hence 'terminate when the estimator achieves the noise level sigma' is unattainable as written, and the proof's translation '(1/3)^T <= sigma' both drops the initial-error factor E||X(beta_0 - beta)|| (only asserted to be a constant) and uses the wrong scale. The derived T = log_3(1/sigma), the bound T - T^dagger < log_3(omega^K/sigma), the condition omega > sigma^{1/K}, and the listed second-stage cost 4[log_3(omega^K/sigma)]Nd are therefore miscomputed.",
+      "failure_location": {
+        "quote": "let Algorithm \\ref{Alg-SRHT} terminate when it finds an estimator that achieves the noise level \\(\\sigma\\)",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the termination level by a constant multiple of the OLS prediction error (E||X(beta_hat - beta)|| ~ sigma*sqrt(d)) and redo the two-line count: T = log_3(c*E||X(beta_0-beta)||/E||X(beta_hat-beta)||), giving the corresponding second-stage count and cost; the theorem's structure and its headline conclusion (initialization dominates) survive.",
+      "overall_effect": "The second-stage iteration count and cost item of Theorem cmpxtyAlgSLSE (and the associated condition omega > sigma^{1/K}) are incorrect; the per-stage complexity accounting of Algorithm Alg-SRHT is unreliable as stated.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "Termination 'noise level sigma' is below the attainable OLS/noise floor; derived counts are wrong",
+      "why_classification": "A local substitution of the correct threshold level repairs the itemized costs; no substantive claim, rate, or advertised scope is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "remarkA7",
+        "finalerror",
+        "Thf",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The expectation \\(\\mathbb{E}[\\cdot]\\) is taken over the random noise \\(\\zeta\\).",
+          "tag": null
+        },
+        {
+          "quote": "Lemma \\ref{lemma:lemma3} is a reformulation of Theorem 2.4 from \\citep{dobriban2019asymptotics}.",
+          "tag": null
+        },
+        {
+          "quote": "According to Lemma \\ref{lemma:lemma3}, when \\( \\xi > m_i / N > d/N > \\gamma \\), it follows that",
+          "tag": "remarkA7"
+        },
+        {
+          "quote": "According to Theorem \\ref{thm:convergence_theorem1} and Lemma \\ref{lemma:lemma3}, there exists a constant \\({M_1} >0\\), such that if \\(a_1 > M_1\\), it holds that",
+          "tag": "finalerror"
+        }
+      ],
+      "failure_explanation": "The paper fixes E[.] over the noise zeta only. For fixed sketches, beta_tilde^i - beta = (X^T S_i^T S_i X)^{-1} X^T S_i^T S_i zeta and X(beta_hat - beta) = U_X U_X^T zeta, so E||X(beta_tilde^i - beta)||^2 / E||X(beta_hat - beta)||^2 = tr[(U_X^T S_i^T S_i U_X)^{-1}]/d exactly. Under the paper's own embedding guarantee (Theorem thm:bigtheorem, in force in its regime m_i >= m_1 > r = O(d log d)), this ratio is <= 1/(1-eps) ~ 1.1, contradicting the claimed limit (1-gamma)/(xi-gamma) > 1.1 whenever xi < 1 - eps(1-gamma) (e.g. gamma = 1/8, xi = 1/2 gives 7/3). In the lemma's own regime the correct in-sample limit of this ratio is xi/(xi-gamma), not (1-gamma)/(xi-gamma): the displayed value is the out-of-sample (population) prediction efficiency of Dobriban-Liu, a different functional from the in-sample ratio written in the lemma. Hence the lemma is false as stated, and the finite-N, high-probability bounds built on it (the sqrt((N-d)/(m_i-d)) factors) are unsupported; moreover Remark remarkA7 adds two extra conditions (the xi > m_i/N > d/N > gamma ordering and a variance comparison) that the consuming theorems never assume.",
+      "failure_location": {
+        "quote": "$\\mathrm{PE}(i) = \\frac{\\mathbb{E}\\|X\\tilde{\\beta}^i - X\\beta\\|^2}{\\mathbb{E}\\|X\\hat{\\beta} - X\\beta\\|^2} = \\frac{1 - \\gamma}{\\xi - \\gamma}.$",
+        "tag": "lemma:lemma3"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Drop Lemma lemma:lemma3 and bound the sketched error directly from the paper's own embedding result: E||X(beta_tilde^i - beta)||^2 = sigma^2 tr[(U_X^T S_i^T S_i U_X)^{-1}] <= sigma^2 d/(1-eps), so delta_i <= (1-eps)^{-1/2}(1+o(1)) E||X(beta_hat - beta)||; rerun the proofs of remarkA7, finalerror, Thf, lowerBoundai and cmpxtyAlgSLSE with this constant (the variance conditions of Remark remarkA7 become unnecessary).",
+      "overall_effect": "The quantitative loss analysis of Sketch-and-Solve (the PE narrative, the sqrt((N-d)/(m_i-d)) factors in Lemma finalerror and Theorem Thf, the delta_i-based stopping criterion, the ratio step in the proof of Theorem lowerBoundai, and the r(i-1,i)/alpha figures of Theorem cmpxtyAlgSLSE) rests on a false lemma and is unsupported. The headline qualitative guarantees (exponential contraction, OLS-level final precision, initialization-dominated cost) survive, since a stronger in-source bound is available.",
+      "primary_affected_tag": "lemma:lemma3",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:lemma3 misstates the in-sample prediction efficiency of Sketch-and-Solve",
+      "why_classification": "The false lemma and its PE-based narrative must be replaced, but the replacement is a contained, in-source argument (Neumann bound from Lemma lemma1) that preserves every headline guarantee with comparable constants; no advertised regime or guarantee type is lost."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2509.06856",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "981b8984cdca82ea93a1c8e2f7a3a3ff16d853374c7f5e11ece8d6b29bfd4d2f",
+  "status": "ok"
+}

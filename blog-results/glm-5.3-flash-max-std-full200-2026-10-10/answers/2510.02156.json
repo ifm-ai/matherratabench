@@ -1,0 +1,159 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=(\\tilde{\\lambda}I_r)^{-1}-(\\tilde{\\lambda}I_r)^{-1}M\\{M^T (\\tilde{\\lambda}I_r)^{-1}M+(I_n)^{-1} \\}M^T(\\tilde{\\lambda}I_r)^{-1}\\notag \\\\",
+          "tag": "eq:wi1"
+        },
+        {
+          "quote": "As R.H.S of \\cref{eq:wi3}, and \\cref{eq:wi4} are identical, the lemma holds.",
+          "tag": "thm:woodberry_identity"
+        }
+      ],
+      "failure_explanation": "The Woodbury middle factor is inverted: {M^T(tilde_lambda I_r)^{-1}M + I_n}^{-1} = tilde_lambda (M^T M + tilde_lambda I_n)^{-1}, so the correct expansion is (1/tilde_lambda)I_r - (1/tilde_lambda) M (M^T M + tilde_lambda I_n)^{-1} M^T. The displayed eq:wi1 instead has coefficient 1/tilde_lambda^3 with the inverse dropped; e.g. M=[1], tilde_lambda=2 gives 1/2-(1/8)(3)=1/8 while (MM^T+2)^{-1}=1/3. Both (eq:wi1) and (eq:wi2) are false, so (eq:wi3) and (eq:wi4) miscompute the two sides of the lemma (identically wrongly), and the final 'identical, hence the lemma holds' step proves nothing. The lemma statement itself is the true standard push-through identity, so only the proof fails.",
+      "failure_location": {
+        "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T\\label{eq:wi1}",
+        "tag": "eq:wi1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the Woodbury computation by the direct verification (MM^T + tilde_lambda I_r)M^T = M^T(M^T M + tilde_lambda I_n) and multiply by the two inverses (both factors are invertible for tilde_lambda>0); a local, one-line repair with no downstream changes.",
+      "overall_effect": "The lemma's written proof is invalid; the lemma statement is a true standard identity, and all later uses (err_bound proof, implementation notes) rely only on that true statement, so no downstream labelled result is invalidated.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Woodbury expansion misapplied: proof of the push-through identity lemma uses false intermediate identities",
+      "why_classification": "A short, routine two-line direct verification replaces the flawed Woodbury computation; the lemma statement and every downstream use are preserved with no new lemma, construction, or loss."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Here, $\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau)$ is the smallest non-zero eigenvalue of $A_\\tau^T A_\\tau$.",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "Here, $\\lambda_{\\text{min}}^{\\text{block}}$ is the minimum non-zero eigenvalue of all $A_\\tau^TA_\\tau$.",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "In ROR-BK, for a chosen block $A_\\tau \\in \\mathbb{R}^{k\\times n}$ if $k<n$ we compute and use",
+          "tag": null
+        },
+        {
+          "quote": "&= x_t - x_\\star - A_\\tau^T(A_\\tau A_\\tau^T+\\tilde{\\lambda}I)^{-1}A_{\\tau}(x_t-x_\\star) \\label{eq:errbound0}",
+          "tag": "eq:errbound0"
+        }
+      ],
+      "failure_explanation": "The update matrix is I - M with M = (A_tau^T A_tau + tilde_lambda I)^{-1} A_tau^T A_tau; on ker(A_tau) the matrix tilde_lambda(A_tau^T A_tau + tilde_lambda I)^{-1} acts as the identity (eigenvalue exactly 1, since the zero eigenvalues were excluded from lambda_min^+), so the operator norm of I - M is 1, not tilde_lambda/(lambda_min^+ + tilde_lambda) < 1. The estimate at (ew:errbound3) silently drops the zero eigenvalues. Whenever a block has fewer rows than columns (the paper's own regime: blocks of floor(m/k) rows with k < n, e.g. k = 100 rows against n up to 60000), ker(A_tau) intersects R(A^T) nontrivially and error components there are uncontracted. Counterexample: A = I_2, b = (1,1)^T (consistent, x_star = (1,1)^T), block = first row, x_0 = 0 in R(A^T): after one update ||x_1 - x_star||_2 = sqrt(1 + tilde_lambda^2/(1+tilde_lambda)^2), far exceeding the claimed bound sqrt(2) tilde_lambda/(1+tilde_lambda) for every tilde_lambda > 0. The step (eq:errbound0) additionally uses b_tau = A_tau x_star, i.e. consistency of the full system, a hypothesis neither stated nor established (and false for the least-squares settings the paper targets).",
+      "failure_location": {
+        "quote": "&\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2\\label{ew:errbound3}",
+        "tag": "ew:errbound3"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that every sampled block has full column rank (equivalently ker(A_tau) intersects R(A^T) only at 0) and restate the guarantee for that regime; this necessarily excludes the underdetermined/large-n cases the paper advertises. Otherwise a genuinely new sampling-averaged convergence analysis for the full algorithm (including the greedy block) is required.",
+      "overall_effect": "Neither the displayed per-step contraction nor the 'Equivalently' geometric bound E[||x_t - x_star||] <= (tilde_lambda/(lambda_min^block + tilde_lambda))^t E[||x_0 - x_star||] holds in the paper's advertised regimes (underdetermined and large-n systems with rank-deficient blocks); the paper's theoretical convergence analysis of Algorithm 1 (abstract, Section 2, conclusion) is unsupported there.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "Convergence bound of thm:err_bound is false: kernel directions of the block are not contracted",
+      "why_classification": "Every complete resolution either excludes an advertised regime (full-rank blocks are impossible for the k=100-row blocks with n in the thousands used throughout, so the advertised guarantee vanishes there) or requires an essentially new averaged convergence analysis; no comparable version of the stated per-step geometric error bound survives in the paper's main setting."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\min}^{+}(A_\\tau^{T}A_\\tau)}\\lesssim \\|x_{t+1}-x_\\star\\|_2^2 & \\lesssim \\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\max}^{+}(A_\\tau^{T}A_\\tau)}\\label{eq:errbound5}",
+          "tag": "eq:errbound5"
+        },
+        {
+          "quote": "reduces the upper and lower bounds of the error thus improving convergence in general.",
+          "tag": "thm:convergence_boost"
+        },
+        {
+          "quote": "But, these dynamic blocks can yield more ill-conditioned least-square problems.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The upper bound in (eq:errbound5) is ||e_t||^2 - ||r_tau||^2 / lambda_max^+(A_tau^T A_tau); minimizing it over row sets requires maximizing the ratio residual^2 / lambda_max^+, not the residual alone. The proof maximizes only the numerator and disposes of the block-dependent denominators by saying the extreme eigenvalues are 'bounded'; boundedness does not make them comparable, so a block with slightly smaller residual but much larger lambda_max^+ gives a strictly larger (worse) upper bound, and the greedy choice does not minimize the displayed bounds. The 'lower bound' shrinks (becomes less informative) for every update, so reducing it is no evidence of faster convergence. The derivation also rests on heuristic '~'/'less-sim' steps valid only for sufficiently small tilde_lambda, so the stated theorem is not established (and is false as a universal claim).",
+      "failure_location": {
+        "quote": "we minimize the above upper and lower bounds of the error $\\|x_{t+1}-x_\\star\\|_2^2$ in \\cref{eq:errbound5}, as $\\lambda_{\\min}^{+}, \\lambda_{\\min}^{-}$ are bounded for a given system, and thus ensure faster convergence in general over many iterations.",
+        "tag": "thm:convergence_boost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Reformulate the theorem under an explicit comparability assumption on the blocks' extreme nonzero eigenvalues (or state that the greedy block maximizes a lower bound on the per-step error decrease up to spectral constants), and redo the comparison with the block-dependent denominators; the qualitative message survives in this weakened, contained form.",
+      "overall_effect": "The paper's theoretical claim that residue-based dynamic blocks reduce the error bounds and accelerate convergence relative to other block selections (including SOBK's sampling, as promised in the introduction) is unsupported; only the experimental comparison remains.",
+      "primary_affected_tag": "thm:convergence_boost",
+      "target_type": "formal_result",
+      "title": "Greedy residual block does not minimize the displayed error bounds: proof of thm:convergence_boost is invalid",
+      "why_classification": "A contained reformulation with an added comparability hypothesis (or an up-to-constants bound) yields a recognizably comparable qualitative result without new global proof architecture and without excluding any advertised regime; more than a routine local edit, but no major loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, when $x_k$ is an approximate solution of \\eqref{eq:linear_system} obtained through \\cref{algo:fabgmres_dobk}, it is the minimum residual-norm solution, since $x_k \\in \\mathcal{R}(A^T) \\perp \\mathcal{N}(A)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof only establishes membership x_k in R(A^T). From 'x_k in R(A^T) perpendicular to N(A)' it concludes that x_k is 'the minimum residual-norm solution'. That inference is invalid: orthogonality to N(A) characterizes the minimum-norm element among exact solutions and implies nothing about the residual of a finite iterate. The algorithm's argmin step minimizes the residual only over the generated subspace span{z_1,...,z_k} (contained in R(A^T)), not over all of R(A^T), and the paper gives no convergence argument that would make the iterate attain the global minimum residual norm. What is provable is only: if the outer iteration converges, the limit lies in R(A^T) and equals the minimum-norm solution A^dagger b.",
+      "failure_location": {
+        "quote": "If $z_0$ (the initial solution with which ROR-BK as an inner-iteration starts) and $x_0 \\in \\mathcal{R}(A^{T})$, FABGMRES with an inner iteration of ROR-BK (\\cref{algo:fabgmres_dobk}) gives a solution $x_k \\in \\mathcal{R}(A^T)$ minimizing $\\norm{b-Ax_k}_2$.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate the Remark as the limit statement: provided the outer iteration converges (residual tending to the minimum), the limit lies in the closed space R(A^T) and hence equals the minimum-norm solution A^dagger b; a one-line restatement, no substantive loss.",
+      "overall_effect": "The Remark's guarantee that FAB-GMRES with ROR-BK inner iterations outputs a residual-minimizing solution is unsupported as stated; the membership part of the proof remains valid.",
+      "primary_affected_tag": null,
+      "target_type": "formal_result",
+      "title": "Unlabelled FAB-GMRES remark: residual minimality inferred from range membership (non sequitur)",
+      "why_classification": "A short local restatement (limit claim conditional on convergence) preserves all content; no new argument, construction, or loss of guarantee is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\label{step:roar-bk}$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$ where $i=1,2,\\dots m$",
+          "tag": "step:roar-bk"
+        },
+        {
+          "quote": "\\bar{W}=\\mathbb{E}_{S \\sim \\mu}[W(S)], \\text{and} \\quad \\bar{P}=  \\mathbb{E}_{S\\sim \\mu}[P(S)]",
+          "tag": "eq:w_p"
+        },
+        {
+          "quote": "\\textit{Consider the ROR-BK algorithm, namely \\cref{algo:roar-bk} with $M(A_S) = (A_S A_S^\\top + \\tilde{\\lambda} I)^{-1}$ and $\\mu$ be the sampling rule defined earlier. Let $\\alpha = \\sigma^+_{\\min}(\\bar{P})$ and assume $x_0 \\in \\mathcal{R}(A^T)$. Then the expectation of the ROR-BK iterates $x_T$ converges to $x^{(\\mu)}$ as}",
+          "tag": "thm:dobk_for_least_square_problems"
+        }
+      ],
+      "failure_explanation": "The theorem claims geometric mean convergence of Algorithm 1's iterates to x^(mu) with fixed objects W-bar and P-bar defined as expectations under a sampling rule mu, citing Theorem 4.1 of [ReRBK] as the entire proof. The cited framework covers blocks drawn from a fixed distribution independent of the iterates. In Algorithm 1, one of the four updates per iteration deterministically selects the floor(m/k) rows with largest current squared residuals (step roar-bk), so the law of the selected block depends on the current iterate x_j; mu is then not a fixed distribution, W-bar and P-bar are not well-defined constant matrices, and the fixed-point/contraction argument of the cited theorem does not transfer. The composed map of three orthogonality updates plus the greedy update is likewise not covered by the cited single-update analysis. The stated mean-convergence guarantee for Algorithm 1 is therefore unproven as written.",
+      "failure_location": {
+        "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}. Appendix at \\cite{ReRBK} outlines the analysis of the convergence of $x^{(\\mu)}$ to $x_\\star$ as $m \\rightarrow \\infty$.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the theorem to the fixed orthogonality-based sampling (with the regularized proximal updates) and adapt the cited proof to the composed per-iteration map, treating the state-dependent greedy block either by excluding it from the guarantee or by a separate contained adaptive-sampling argument; this keeps a comparable mean-convergence statement without new global architecture.",
+      "overall_effect": "The appendix guarantee of mean convergence to the weighted least-squares solution x^(mu) is unsupported for Algorithm 1 as specified, and with it the prose claims that ROR-BK 'can also solve a weighted least square solution of the blocks with the required convergence properties' and that the limitation of prohibitive sampling costs 'can be overcome... establishing that the iterates converge in the mean to a weighted least-squares solution'.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "Weighted least-squares convergence theorem unproven: cited theorem does not cover the residue-adaptive sampling of Algorithm 1",
+      "why_classification": "A contained, nontrivial re-analysis (or a limited weakening excluding the greedy component from the guarantee) suffices; no main advertised regime, algorithm, or rate of the main results is lost, but the repair exceeds a routine local edit."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

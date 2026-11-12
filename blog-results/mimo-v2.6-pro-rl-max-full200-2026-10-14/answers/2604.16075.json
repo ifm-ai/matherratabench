@@ -1,0 +1,104 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE",
+        "c:minberr"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\lambda_{\\min} =  (\\berr_{\\A,\\b}(\\x_k))^2$",
+          "tag": null
+        },
+        {
+          "quote": "$\\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}$",
+          "tag": "l:quotient"
+        },
+        {
+          "quote": "$\\berr_{\\A,\\b}(\\widehat\\x) = \\|\\tilde \\T_k\\widehat\\v\\|_2/\\|\\widehat \\v\\|_2$",
+          "tag": "l:quotient"
+        }
+      ],
+      "failure_explanation": "The proof equates \\|M[-1;ŷ]\\|_2 with berr_{A,b}(x̂) = \\|Ax̂-b\\|/(\\|A\\|_2\\|x̂\\|), but \\|M[-1;ŷ]\\|_2 = \\|Ax̂-b\\|_2 = \\|A\\|_2\\|x̂\\|\\,\\mathrm{berr}(x̂). The missing factor 1/\\|A\\|_2 propagates: λ_min equals \\|A\\|_2^2\\,\\mathrm{berr}(x_k)^2 (not \\mathrm{berr}(x_k)^2); σ_min(T̃_k) equals \\|A\\|_2\\,\\mathrm{berr}(x_k) (not \\mathrm{berr}(x_k)); and berr(x̂) equals \\|T̃_k v̂\\|/(\\|A\\|_2\\|v̂\\|) (not \\|T̃_k v̂\\|/\\|v̂\\|). The formula is correct only when \\|A\\|_2 = 1, which is not assumed.",
+      "failure_location": {
+        "quote": "$\\left\\|\\M\\begin{bmatrix} -1 \\\\ \\widehat\\y \\end{bmatrix}\\right\\|_2=\\berr_{\\A,\\b}(\\widehat\\x)$",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Divide all backward-error formulas by \\|A\\|_2 (equivalently normalize \\|A\\|_2 = 1 before the GEP analysis), and scale the convergence tolerance to ε\\|A\\|_2 in the Cholesky/dqds checks of Algorithms 1 and 2.",
+      "overall_effect": "All backward-error formulas in Lemma l:quotient and Proposition prop:minberrNE are off by a factor of \\|A\\|_2. Algorithms MINBERR (step 5) and MINBERR-NE (step 5) test σ_min < ε when they should test σ_min < ε\\|A\\|_2, so they may terminate with backward error exceeding ε when \\|A\\|_2 < 1 or run unnecessarily long when \\|A\\|_2 > 1. Corollary c:minberr's guarantee of achieving ε backward error within the stated complexity is unsupported.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Backward error formulas in MINBERR omit 1/||A||_2 normalization",
+      "why_classification": "Dividing by \\|A\\|_2 (or normalizing \\|A\\|_2 = 1) is a short, local change that preserves every substantive claim, convergence rate, and the advertised O(n²/√ε) complexity; no new lemma or argument is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE",
+        "thm:minberrcost",
+        "c:minberr"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\x_k = \\frac1\\alpha\\Q_k\\v_{\\min}$",
+          "tag": "l:quotient"
+        },
+        {
+          "quote": "$\\frac1\\alpha\\Q_k\\v_{\\min}$",
+          "tag": "prop:minberrNE"
+        }
+      ],
+      "failure_explanation": "From the congruence, W[0;v_min] = [α;v_min] where α = -(1/\\|b\\|)((T_k)_{1,1}(v_min)_1+(T_k)_{1,2}(v_min)_2). For the GEP eigenvector [-1;y] to be proportional to [α;v_min] requires y = -v_min/α, so x_k = -(1/α)Q_k v_min. The proof asserts the first element of (1/α̂)W[0;v̂] is -1, but (1/α̂)[α̂;v̂] = [1;v̂/α̂] has first element +1. Consequently the derived formula x_k = (1/α)Q_k v_min has the wrong sign, producing a vector whose backward error can far exceed the Krylov-space minimum.",
+      "failure_location": {
+        "quote": "the first element of $\\frac{1}{\\widehat\\alpha}\\W\\begin{bmatrix}0\\\\ \\widehat\\v\\end{bmatrix}$ is $-1$",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Flip the sign in the solution formula: use x_k = -(1/α)Q_k v_min (equivalently, redefine α without the leading minus sign) and propagate the correction to Proposition prop:minberrNE and the output steps (step 12) of Algorithms 1 and 2.",
+      "overall_effect": "The output formulas in Lemma l:quotient and Proposition prop:minberrNE produce vectors with the wrong sign. Algorithms MINBERR (step 12) and MINBERR-NE (step 12) therefore output solutions with potentially large backward error instead of near-optimal ones, invalidating Theorem thm:minberrcost's (1+1/2)-approximation guarantee and Corollary c:minberr's ε-backward-error guarantee.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Sign error in MINBERR solution formula",
+      "why_classification": "A single sign correction in one derivation step, propagated mechanically to the lemma statement, proposition, and two algorithm output lines, preserves every claim and guarantee; no new argument is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\ell\\geq \\frac{1}{2} \\Big[ 1 + \\frac{\\ln\\left( \\frac{32n \\ln(2/\\delta)}{\\pi \\delta^2 \\Delta} \\right)}{\\ln(1 + \\Delta/2)} \\Big]$",
+          "tag": "lemma:invit"
+        },
+        {
+          "quote": "In particular, for a $1/2$-relative error ($\\Delta = 0.5$), we require $\\ell \\geq 2.23 \\ln(n/\\delta^2)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Lemma lemma:invit gives the exact requirement ℓ ≥ (1/2)[1 + ln(32n ln(2/δ)/(πδ²Δ))/ln(1+Δ/2)]. Substituting Δ = 1/2 and n = k yields ℓ ≈ 2.24 ln(k/δ²) + 2.24 ln(64 ln(2/δ)/π) + 0.5, which strictly exceeds 2.23 ln(k/δ²). The simplification drops the additive constant and the log-log term, underestimating the required iterations. Thus 2.23 ln(k/δ²) steps do not guarantee Δ = 1/2 accuracy.",
+      "failure_location": {
+        "quote": "$\\ell \\geq 2.23 \\ln(k / \\delta^2)$ steps of inverse iteration suffice to get $\\Delta=1/2$ relative accuracy",
+        "tag": "thm:minberrcost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace 2.23 ln(k/δ²) with the exact bound from Lemma lemma:invit at Δ = 1/2 (or any valid upper bound that retains the additive and log-log terms) in the proof of Theorem thm:minberrcost and in Algorithm 1's loop condition.",
+      "overall_effect": "The (1+1/2)-approximation guarantee in Theorem thm:minberrcost is unsupported at the stated iteration count. Algorithm MINBERR's inverse-iteration loop (step 7) may terminate before achieving the Rayleigh-quotient accuracy needed for the claimed constant-factor approximation.",
+      "primary_affected_tag": "thm:minberrcost",
+      "target_type": "formal_result",
+      "title": "Insufficient inverse-iteration count in MINBERR complexity analysis",
+      "why_classification": "The exact bound is already proved in Lemma lemma:invit; substituting it (or a slightly larger constant) is a local correction that preserves the asymptotic O(k log(k/δ)) cost and all guarantees with no new argument."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2604.16075",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e8809ffebe5951ca04910fb6d942792c2e647636a18f4a3772a38aab1b066ff9",
+  "status": "ok"
+}

@@ -1,0 +1,181 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "k(x,x')  &= \\frac{\\sigma^{2(s-d)}}{|D_1|} \\int_{D_1}  \\hat{\\varphi}((x-y)/\\sigma) \\hat{\\varphi}((x'-y)/\\sigma) \\de y \\\\\n    &\\approx \\frac{\\sigma^{2(s-d)}}{|D_1|}  \\int_{\\R^d}  \\hat{\\varphi}((x-y)/\\sigma) \\hat{\\varphi}((x'-y)/\\sigma) \\de y",
+          "tag": null
+        },
+        {
+          "quote": "\\hat{\\varphi}(x') = \\frac{1}{\\left(\\sqrt{2\\pi}\\right)^d} \n    \\exp\\left(- \\frac{\\norm{x'}^2_2}{2}\\right).",
+          "tag": null
+        },
+        {
+          "quote": "This yields a Gaussian kernel with a fixed scale parameter.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The exact Gaussian product integral is \\int_{\\R^d} \\hat\\varphi((x-y)/\\sigma)\\hat\\varphi((x'-y)/\\sigma)dy = \\sigma^d (\\hat\\varphi * \\hat\\varphi)((x-x')/\\sigma) = \\sigma^d 2^{-d/2}\\hat\\varphi((x-x')/(\\sqrt{2}\\sigma)) = \\sigma^d (4\\pi)^{-d/2} e^{-|x-x'|^2/(4\\sigma^2)}. The display asserts instead the width 2\\sigma (i.e. exponent -|x-x'|^2/(8\\sigma^2), off by a factor of 2), drops the factor |D_1|^{-1}, and uses the constant 2^{-d} in place of 2^{-d/2}/|D_1|. The claimed equality is therefore false as written.",
+      "failure_location": {
+        "quote": "    &=  \\frac{\\sigma^{2s}}{(2\\sigma)^d}\\hat{\\varphi}((x-x')/(2\\sigma))",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the final equality by the correct identity \\frac{\\sigma^{2s-d}2^{-d/2}}{|D_1|}\\hat\\varphi((x-x')/(\\sqrt{2}\\sigma)).",
+      "overall_effect": "The explicit covariance kernel identified with the GP method in the related-work comparison is wrong (kernel width off by \\sqrt{2}, wrong constants). Only the qualitative takeaway (GP uses a Gaussian kernel with one fixed scale parameter) survives; no labelled result or other part of the paper uses this identity.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Gaussian convolution identity in the GP-kernel comparison is computed incorrectly",
+      "why_classification": "A one-line correction to a heuristic motivational display; no formal result, algorithm, or advertised guarantee depends on the erroneous formula, and the qualitative conclusion of the paragraph is unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:existence",
+        "thm:representer"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "(u,g,H) &\\mapsto E(x, u, g, H) &&\\text{is continuous for almost all } x \\in D, \\\\",
+          "tag": "assu:caratheodory"
+        },
+        {
+          "quote": "The result follows directly from the pointwise convergence \\eqref{eq:continuity} and \\Cref{assu:caratheodory}.",
+          "tag": "lem:continuity"
+        },
+        {
+          "quote": "\\eqref{eq:empirical_sparse_min} admits at least one global minimizer.",
+          "tag": "thm:existence"
+        }
+      ],
+      "failure_explanation": "Assumption assu:caratheodory only requires continuity of E(x,\\cdot) and B(x,\\cdot) for almost every x. On the exceptional null set the composition can fail to converge: e.g. a Carathéodory map with E(x_0,u) discontinuous in u at a single point x_0 and \\cN\\mu_k(x_0) converging to the discontinuity satisfies all hypotheses while \\cE[\\cN\\mu_k](x_0) diverges. The proof therefore establishes convergence only for \\nu_D-a.e. x in D and \\nu_{\\partial D}-a.e. x on \\partial D, not for every x as stated.",
+      "failure_location": {
+        "quote": "&\\cE[\\cN \\mu_k](x) \\to \\cE[\\cN \\mu](x)  \\quad \\forall x \\in D, \\\\\n& \\cB[\\cN \\mu_k](x) \\to \\cB[\\cN \\mu](x)  \\quad \\forall x \\in \\partial D.",
+        "tag": "lem:continuity"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate the lemma with a.e. convergence (sufficient for every Fatou-type application), and for the empirical problem either strengthen Assumption assu:caratheodory to continuity in the state variables for every x, or require the collocation points to be chosen from the full-measure set of continuity points.",
+      "overall_effect": "The lemma overstates its conclusion. All Fatou-type uses (existence for the continuous problem, the limit step in thm:convergence) only need the a.e. version and are unaffected, but lower semicontinuity of the empirical loss requires convergence at the fixed collocation points, which may lie in the exceptional null set; hence existence of minimizers for the empirical problem (second half of thm:existence) is not established as written, and thm:representer, which cites thm:existence for a solution of the empirical problem, inherits the gap.",
+      "primary_affected_tag": "lem:continuity",
+      "target_type": "formal_result",
+      "title": "Residual convergence lemma claims convergence for all x, but the Carathéodory assumption only gives convergence a.e.",
+      "why_classification": "The repair is a forced local weakening of the lemma plus a standard, locally checkable assumption tweak; all stated conclusions (existence for both problems, and the downstream representer theorem) survive with no change of method, rates, or scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "rmk:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Consider the unrestricted dictionary \\(\\Omega = \\R^d \\times (0, \\sigma_{\\max}]\\)  with \\(\\sigma_{\\max} = 1\\).",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "\\Omega =  D_1 \\times (0, \\sigma_{\\max}].",
+          "tag": null
+        },
+        {
+          "quote": "This inclusion can be justified in certain cases, such as the example provided in \\Cref{subsec:functional_setup}.",
+          "tag": "rmk:convergence"
+        }
+      ],
+      "failure_explanation": "The appendix (thm:added-1) proves B^s_{1,1}(\\R^d) \\hookrightarrow \\cV(\\R^d) only for the unrestricted dictionary \\Omega = \\R^d \\times (0,1], whose representing measures are spread over all of \\R^d, whereas the paper's space is defined with \\Omega = D_1 \\times (0,\\sigma_{\\max}] (centers restricted to a bounded neighborhood of D); no restriction, truncation, or extension argument linking the two is given, and truncation of the constructed measures to D_1 changes the represented function. Moreover, read literally on \\R^d the first arrow is false: H^k(\\R^d) \\not\\subset L^1(\\R^d) \\supset B^s_{1,1}(\\R^d) for any k (e.g. smooth functions decaying like |x|^{-a}, d/2 < a \\le d, lie in every H^k but not in L^1). On a bounded domain the first arrow holds for k > s, but then the appendix result does not apply. Under either reading the chain does not establish u \\in \\cV(D).",
+      "failure_location": {
+        "quote": "H^k = B^k_{2,2} \\hookrightarrow B^s_{1,1} \\hookrightarrow \\cV.\n\\]\nIn this case, the PDE solution $u\\in \\cU_o$ also lies in the RKBS $\\cV$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Prove a localized representation lemma (e.g. extend u \\in B^s_{1,1}(D) to \\R^d and construct a representing measure with centers restricted to D_1 with controlled norm, or prove H^k(D) \\hookrightarrow \\cV(D) directly), or else withdraw the example-based justification and state the case-(2) convergence as conditional on the hypothesis u \\in \\cV.",
+      "overall_effect": "Membership of the exact solution in \\cV is the enabling hypothesis for the case-(2) convergence statements (u_\\alpha \\to u when \\cF does not contain L^2_\\lambda) in rmk:convergence(2) and in the remark following thm:error_bound; those convergence upgrades lose the justification advertised for the semilinear example. The main results thm:convergence and thm:error_bound, which only use density of \\cV in \\cU_o, are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that smooth PDE solutions lie in the RKBS \\cV is unsupported: the Besov embedding is proved only for unrestricted centers, and H^k \\hookrightarrow B^s_{1,1} fails on \\R^d",
+      "why_classification": "No routine repair is available in the source: the appendix construction fundamentally uses centers over all of \\R^d and cannot be truncated to D_1 without changing the function, so a contained but new lemma or a limited weakening of the advertised case-(2) convergence for the example is required; the main convergence theorems and their rates survive, so the issue is not serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1",
+        "thm:error_bound"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "[\\cL_E u](x) &= [c_i(x)u(x) + b_i(x)\\cdot \\nabla u(x) + \\tr [A_i(x) \\nabla^2 u(x)]_{i=1,\\ldots,N_E} \\\\",
+          "tag": null
+        },
+        {
+          "quote": "by assuming that the functions \\( \\hat{E}(x, l_E) \\) and \\( \\hat{B}(x, l_B) \\) are $C^{0,\\gamma}$ in their first variable.",
+          "tag": null
+        },
+        {
+          "quote": "\\norm{e}_{C^{0,\\gamma}} =\\norm{\\cR[u_\\mu]}_{C^{0,\\gamma}} \\leq C \\norm{u_\\mu}_\\cV.",
+          "tag": null
+        },
+        {
+          "quote": "x &\\mapsto E(x, u, g, H) &&\\text{is bounded and $\\nu_D$-measurable for all } (u,g,H) \\in \\R\\times \\R^{d} \\times \\R^{d^2}, \\\\",
+          "tag": "assu:caratheodory"
+        }
+      ],
+      "failure_explanation": "The paper never states any hypothesis on the coefficients c_i, b_i, A_i, d_i, e_i (not even boundedness or measurability), and the assumptions on \\hat E, \\hat B (Carathéodory slice boundedness, gradients bounded in x for each fixed l, C^{0,\\gamma} in x) are not required to hold uniformly in l on bounded sets. Consequently, for v \\in C^{2,\\gamma}(\\bar D) the composed residual x \\mapsto \\cR[v](x) need not be bounded or Hölder continuous: e.g. unbounded coefficients make \\cL_E v unbounded, and one can construct \\hat E satisfying all stated conditions (per-l bounded slices, per-l bounded x-gradients) with \\hat E(x,l(x)) unbounded for a continuous l(x). Yet thm:convergence needs \\cE[u^*]^2 bounded and measurable for the quadrature convergence and uniform boundedness of \\hat L(u^*) (the step that bounds \\|\\mu_{K,\\alpha}\\| and yields limit points), and the bound \\|\\cR[v]\\|_{C^{0,\\gamma}} \\le C\\|v\\|_\\cV underlying eq:generalization and lem:added-1 requires C^{0,\\gamma} coefficients and uniform Hölder/Lipschitz control, none of which is assumed.",
+      "failure_location": {
+        "quote": "This term converges to $L(u^\\ast)$ as $K_1, K_2 \\to \\infty$, and is therefore uniformly bounded in $K$.",
+        "tag": "thm:convergence"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add standard hypotheses: coefficients c_i, b_i, A_i \\in C^{0,\\gamma}(\\bar D) and d_i, e_i \\in C^{0,\\gamma}(\\partial D) (bounded measurable suffices for thm:convergence), and \\hat E, \\hat B Hölder continuous in x uniformly on bounded sets of l with gradients locally bounded in l (equivalently, a standard growth condition on E, B). All statements, rates, and the advertised scope survive unchanged.",
+      "overall_effect": "The boundedness of the minimizing measures (and hence the existence of limit points) in thm:convergence, and the equicontinuity input to the quadrature discussion summarized by lem:added-1 and used in thm:error_bound, rest on hypotheses that are not stated and do not follow from the stated assumptions.",
+      "primary_affected_tag": "thm:convergence",
+      "target_type": "formal_result",
+      "title": "Missing regularity/boundedness hypotheses on the linear-operator coefficients and on \\hat E, \\hat B, needed for quadrature convergence and the C^{0,\\gamma} residual bound",
+      "why_classification": "Adding standard local regularity/growth conditions closes every affected step without altering any conclusion, rate, or regime; no new proof architecture or nontrivial lemma is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:error_bound"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "C(K, \\| e\\|_{C^{0,\\gamma}})^{-1} \\norm{e}_{2,\\lambda,K}^2\\leq \\norm{e}_{L^2_\\lambda}^2 \\leq C(K, \\| e\\|_{C^{0,\\gamma}}) \\norm{e}_{2,\\lambda,K}^2 ,",
+          "tag": "eq:generalization"
+        },
+        {
+          "quote": "For fixed $\\| e\\|_{C^{0,\\gamma}}$,\none can choose $K$ large enough such that the constant $C(K, \\| e\\|_{C^{0,\\gamma}})\\leq 2$.",
+          "tag": null
+        },
+        {
+          "quote": "L(u_{K,\\alpha}) \\leq 2 \\hat{L}(u_{K,\\alpha})  \\leq 6\\delta.",
+          "tag": "thm:error_bound"
+        }
+      ],
+      "failure_explanation": "The lemma asserts that one fixed quadrature grid makes the continuous and empirical losses relatively equivalent (factor 2) uniformly over all v with \\|v\\|_\\cV \\le M. The justification eq:generalization is only a per-function asymptotic statement (ratio tending to 1 as K \\to \\infty for a fixed e); it does not hold uniformly over the ball at any fixed K. Concrete obstruction: take a linear PDE in the framework whose exact solution u lies in \\cV (a regime the paper explicitly relies on, e.g. manufactured Gaussian-mixture solutions), and any nonzero w \\in \\cV annihilated by the K collocation functionals (the kernel is nontrivial because \\cV is infinite-dimensional, and \\cR[w] \\ne 0 by uniqueness). Then v = u + \\eps w satisfies \\|v\\|_\\cV \\le M for small \\eps, \\hat L(v) = 0, but L(v) = (\\eps^2/2)\\|\\cE[w]\\|_{L^2}^2 + (\\lambda\\eps^2/2)\\|\\cB[w]\\|_{L^2}^2 > 0, violating L(v) \\le 2\\hat L(v) for every grid; hence no such K(M) exists. In general, Hölder-bounded residuals can concentrate between (or on) grid points, so only an additive uniform error |\\hat L(v) - L(v)| \\le \\eps(K,M) is available.",
+      "failure_location": {
+        "quote": "Given $M>0$, there exists $K = K(M) \\in \\N$, such that for any $v\\in \\cV$ with $\\| v\\|_{\\cV} \\leq M$\n\\[\n\\frac{1}{2} \\hat{L}(v) \\leq  L(v) \\leq 2 \\hat{L}(v)\n\\]",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the lemma by the uniform additive quadrature estimate \\sup_{\\|v\\|_\\cV \\le M} |L(v) - \\hat L(v)| \\le \\eps(K,M) with \\eps(K,M) \\to 0 as K \\to \\infty (valid for uniformly Hölder families once the hypotheses of ISSUE-004 are added), and rework the proof of thm:error_bound by choosing K so that \\eps(K, 3\\|u^\\delta\\|_\\cV) \\le \\delta; the theorem's statements and convergence rates are preserved.",
+      "overall_effect": "The proof of thm:error_bound applies the lemma to bound L(u_{K,\\alpha}) by 2\\hat L(u_{K,\\alpha}) precisely in the regime \\hat L \\approx 0 where relative control fails, so the finite-K convergence guarantee (one of the paper's main advertised results) is unproven as written.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Uniform two-sided quadrature equivalence over a \\cV-ball (lem:added-1) is false, breaking the finite-K error bound",
+      "why_classification": "The false lemma must be replaced by a new (standard but nontrivial) uniform quadrature lemma and the dependent proof re-parameterized; this is a contained correction with no loss of the theorem statements or advertised rates, so it is more than minor but does not require new global architecture or cause major loss."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2505.07765",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s3",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c2bc7cf361cb6e12142408073cedacd29d8351e355b3347316c7065908358592",
+  "status": "ok"
+}

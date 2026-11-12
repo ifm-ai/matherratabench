@@ -1,0 +1,150 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:til:1",
+        "prop:til2",
+        "coro:til1",
+        "thm:square:sum:til",
+        "thm:globalconverg:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{2}{3\\delta t}(3y^n - 4u^n + u^{n-1}) + M(y^n - \\hat{u}^n) + h(y^n) + (2f(u^n) - f(u^{n-1}))=0.",
+          "tag": "eq:solve:y:pre:general"
+        },
+        {
+          "quote": "y^{n} = \\argmin_u \\left\\{H^n(u) - \\langle \\nabla F^n(u^{n}),u\\rangle + \\frac12\\|u-\\hat{u}\\|^2_M\\right\\}",
+          "tag": "alg:cap"
+        },
+        {
+          "quote": "where $\\hat{u}$ can be chosen from the set $\\{u^n, \\frac{4}{3}u^{n}-\\frac{1}{3}u^{n-1}\\}$.",
+          "tag": "alg:cap"
+        }
+      ],
+      "failure_explanation": "Substituting \\hat u^n = \\tilde u^n into the general optimality equation yields M(y^n-\\tilde u^n), not (2M/\\delta t)(y^n-\\tilde u^n). Thus the equation and all subsequent analysis in Section 3.2 are for a different update than the algorithm's subproblem when \\hat u^n=\\tilde u^n.",
+      "failure_location": {
+        "quote": "\\frac{2}{3\\delta t}(3y^{n} - 4u^n + u^{n-1}) + \\frac{2M}{\\delta t}(y^{n} - \\Tilde u^n) + h( y^{n}) + (2f(u^n) - f(u^{n-1})) = 0.",
+        "tag": "eq:til:yn"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the coefficient \\frac{2M}{\\delta t} by M in \\eqref{eq:til:yn} and rederive the estimates in Propositions \\ref{prop:til:1}, \\ref{prop:til2}, Corollary \\ref{coro:til1}, and Theorems \\ref{thm:square:sum:til}, \\ref{thm:globalconverg:M} with the corrected M terms.",
+      "overall_effect": "All convergence guarantees for the case \\hat u^n=\\tilde u^n (Theorems \\ref{thm:square:sum:til} and \\ref{thm:globalconverg:M}) are not established for the algorithm as defined.",
+      "primary_affected_tag": "eq:til:yn",
+      "target_type": "other",
+      "title": "Incorrect M coefficient in update equation for \\hat u^n=\\tilde u^n",
+      "why_classification": "The error invalidates the entire second case of the convergence analysis, which is a central claimed contribution."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:square:summable",
+        "thm:globalconverg",
+        "thm:square:sum:til",
+        "thm:globalconverg:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "and  $0\\le\\lambda_n< \\lambda_{\\max} =\\sqrt{\\frac{4}{3\\delta tL} - \\frac12}-1$.",
+          "tag": "thm:globalconverg"
+        },
+        {
+          "quote": "$\\lambda_{\\max} < \\min\\{\\sqrt{\\frac{8-3\\deltat L}{6\\deltat L}}-1, \\sqrt{5}-1\\}$",
+          "tag": "thm:square:sum:til"
+        },
+        {
+          "quote": "Choose $u^0$, $0<dt<2/(3L)$, $\\alpha>0$, $0<\\beta<1$, $\\lambda_{\\max}>0$.",
+          "tag": "alg:cap"
+        }
+      ],
+      "failure_explanation": "The convergence theorems require the accepted line-search step \\lambda_n to be strictly below a small \\delta t,L-dependent bound. The algorithm allows any positive \\bar \\lambda_{\\max} and does not cap the final \\lambda_n by that bound. The Armijo condition can be satisfied for larger steps, so the hypotheses of the convergence theorems are not guaranteed.",
+      "failure_location": {
+        "quote": "Set $\\lambda_n := \\bar \\lambda_{\\max}$. WHILE $E^n(y_n + \\lambda_nd^n)>E^n(y^n) - \\alpha\\lambda_n\\|d^n\\|^2$ DO $\\lambda_n:=\\beta\\lambda_n$",
+        "tag": "alg:cap"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add an input condition or cap that enforces \\lambda_n < the minimum of the bounds required in Theorems \\ref{thm:globalconverg} and \\ref{thm:square:sum:til} for the relevant case, or prove convergence without this bound.",
+      "overall_effect": "The global convergence guarantees do not apply to the algorithm as written unless the user independently chooses \\bar \\lambda_{\\max} within the theoretical bound; the numerical experiments use \\bar \\lambda_{\\max}=5, violating the bound.",
+      "primary_affected_tag": "alg:cap",
+      "target_type": "algorithm",
+      "title": "Algorithm does not enforce required line-search step-size bound",
+      "why_classification": "The main convergence guarantee is conditional on a step-size bound not enforced by the proposed algorithm."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Solve the following subproblem \n\\begin{equation}\\label{eq:algorithmic:update}\n    y^{n} = \\argmin_u \\left\\{H^n(u) - \\langle \\nabla F^n(u^{n}),u\\rangle + \\frac12\\|u-\\hat{u}\\|^2_M\\right\\}\n\\end{equation}",
+          "tag": "alg:cap"
+        },
+        {
+          "quote": "note that $y^n$ is a critical point of this convex function and $y^n$ satisfies the following optimality condition\n    \\begin{equation}\\label{eq:subpro:optcon}\n    \\nabla H^n(y^n) -\\nabla F^n(u^n)+ M(y^n - u^n) = 0.\n    \\end{equation}",
+          "tag": "prop:descent"
+        },
+        {
+          "quote": "If $h(u)=Au -b_0$, the equation \\eqref{eq:solve:y:pre:general} can be reformulated as the following preconditioned iteration \n\\begin{equation}\n    y^n =  \\hat{u}^n + \\mathbb{M}^{-1}(b^n - T\\hat{u}^n),\n\\end{equation}",
+          "tag": "prop:proximal_to_pre"
+        }
+      ],
+      "failure_explanation": "The convergence proofs require y^n to be an exact critical point of the subproblem. The one-step preconditioned formula in Proposition \\ref{prop:proximal_to_pre} solves the subproblem exactly only when h is affine. If only finitely many preconditioned iterations are performed without error control, the optimality condition has a nonzero residual, and the paper provides no inexact convergence analysis. Thus the claimed global convergence for the practical finite-iteration algorithm is unsupported.",
+      "failure_location": {
+        "quote": "By conducting a finite number of preconditioned iterations without error control, we can guarantee global convergence along with line search accelerations.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Either prove convergence with inexact subproblem solves and explicit error-control/conditions, or restrict the claim to exact solves and provide an exact solver for the subproblem.",
+      "overall_effect": "The advertised practical guarantee that finite, error-uncontrolled preconditioned iterations retain global convergence is not established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unsupported claim that finite error-uncontrolled preconditioned iterations preserve global convergence",
+      "why_classification": "The claim is a central advertised feature; without it, the practical algorithm's global convergence guarantee is missing."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:square:sum:til",
+        "thm:globalconverg:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "E^n(y^n + \\lambda_n d^n)  \\leq   E^n(y^n) -\\alpha\\lambda_n\\|d^n\\|^2, \\ \\lambda_n=  \n     \\begin{cases}\n              \\lambda_n, \\ \\ \\text{if there exists a positive $\\lambda_n>0$} \\\\\n             0, \\ \\ \\ \\ \\text{otherwise}\n     \\end{cases}",
+          "tag": "eq:line:search:til"
+        },
+        {
+          "quote": "If the line search succeeds with a positive step $\\lambda_n$ as in \\eqref{eq:line:search:2}, there is an energy decrease; otherwise, we terminate the line search and set $\\lambda_n=0$, i.e., \\eqref{eq:line:search:til}.",
+          "tag": null
+        },
+        {
+          "quote": "With the line-search rule in \\eqref{eq:line:search:til} and assumptions",
+          "tag": "thm:square:sum:til"
+        }
+      ],
+      "failure_explanation": "For \\hat u^n=\\tilde u^n, d^n is not guaranteed to be a descent direction, so the standard Armijo while loop may never terminate (the inequality can fail for all positive \\lambda_n). The analysis of the \\tilde u case assumes the modified rule that sets \\lambda_n=0 when no positive step exists. Algorithm \\ref{alg:cap} does not include this fallback, so the analyzed procedure is not the one in the algorithm block.",
+      "failure_location": {
+        "quote": "WHILE $E^n(y_n + \\lambda_nd^n)>E^n(y^n) - \\alpha\\lambda_n\\|d^n\\|^2$ DO $\\lambda_n:=\\beta\\lambda_n$",
+        "tag": "alg:cap"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Modify Algorithm \\ref{alg:cap} to include the fallback: if no positive step satisfies the Armijo inequality, set \\lambda_n=0 and u^{n+1}=y^n.",
+      "overall_effect": "The algorithm as written may not terminate for the \\hat u^n=\\tilde u^n case, and the convergence theorems for that case do not apply to it.",
+      "primary_affected_tag": "alg:cap",
+      "target_type": "algorithm",
+      "title": "Algorithm lacks the modified line-search fallback used in the \\hat u=\\tilde u analysis",
+      "why_classification": "The algorithm's well-definedness/termination fails for one of the two main cases."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2411.07661",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n02b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "82023cb4a713f803031fb66ea375960c872e0ef9830eb307112b4b7b18610917",
+  "status": "ok"
+}

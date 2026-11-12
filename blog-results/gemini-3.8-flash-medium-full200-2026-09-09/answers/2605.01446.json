@@ -1,0 +1,116 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\alpha_k = 0$     & $\\Iup$ only          & $\\tau_k \\le -\\rho$",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "$\\alpha_k = C_k$   & $\\Idown$ only        & $\\tau_k \\ge -\\rho$",
+          "tag": "tab:kkt"
+        }
+      ],
+      "failure_explanation": "Equation (21) asserts that \\tau_{i^*} \\ge -\\rho \\ge \\tau_{j^*}. However, by the KKT optimality conditions shown in Table 1, every element of \\Iup satisfies \\tau_i \\le -\\rho, implying \\tau_{i^*} = \\max_{i \\in \\Iup} \\tau_i \\le -\\rho, while every element of \\Idown satisfies \\tau_j \\ge -\\rho, implying \\tau_{j^*} = \\min_{j \\in \\Idown} \\tau_j \\ge -\\rho. Therefore, the true KKT bounds satisfy \\tau_{i^*} \\le -\\rho \\le \\tau_{j^*}. Both inequalities in (21) are reversed, which also leads to the erroneous statement in Section 7.1 that -\\rho lies in [\\tau_{j^*}, \\tau_{i^*}].",
+      "failure_location": {
+        "quote": "\\max_{i \\in \\Iup} \\tau_i = \\tau_{i^*}\n  \\;\\geq\\; -\\rho \\;\\geq\\;\n  \\min_{j \\in \\Idown} \\tau_j = \\tau_{j^*}",
+        "tag": "eq:bias-bounds"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Reverse the inequality signs in (21) to \\tau_{i^*} \\le -\\rho \\le \\tau_{j^*} and update the corresponding prose in Section 7.1 to state that -\\rho lies in [\\tau_{i^*}, \\tau_{j^*}].",
+      "overall_effect": "The stated bounds on -\\rho in Remark 3 and the interval rationale motivating the shrinking criteria in Section 7.1 are mathematically inverted.",
+      "primary_affected_tag": "eq:bias-bounds",
+      "target_type": "other",
+      "title": "Reversed bounding inequalities for optimal threshold in bias recovery and shrinking",
+      "why_classification": "Correcting the inequality directions is a local repair that preserves the midpoint heuristic formula and the rest of the algorithm without requiring new proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\alpha_k = 0: &\\qquad\n    \\text{freeze if } \\tau_k < \\tau_{j^*}",
+          "tag": "eq:s1"
+        },
+        {
+          "quote": "\\alpha_k = C_k: &\\qquad\n    \\text{freeze if } \\tau_k > \\tau_{i^*}",
+          "tag": "eq:s2"
+        }
+      ],
+      "failure_explanation": "Lemma 3 asserts that variables \\alpha_k^* = 0 are easier to freeze compared to the corresponding \\alpha-criterion \\eqref{eq:s1} because the effective threshold is \\tau_{i^*} - 2y_k\\varepsilon/100 < \\tau_{i^*}. However, criterion \\eqref{eq:s1} for \\alpha_k = 0 is \\tau_k < \\tau_{j^*}, which is an upper bound on \\tau_k involving \\tau_{j^*}, whereas \\tau_{i^*} comes from criterion \\eqref{eq:s2} for \\alpha_k = C_k. Similarly, for \\alpha_k^* = C_k, the threshold is compared to \\tau_{j^*} from \\eqref{eq:s1} rather than \\eqref{eq:s2}. The comparison cross-matches upper-bound and lower-bound variables with opposite inequality directions, making the claimed comparative ease of freezing mathematically unsupported.",
+      "failure_location": {
+        "quote": "Compared with the corresponding $\\alpha$-criteria~\\eqref{eq:s1}--\\eqref{eq:s2}:\nvariables $\\alpha_k^* = 0$ are \\emph{easier} to freeze (effective threshold\n$\\tau_{i^*} - 2y_k\\varepsilon/100 < \\tau_{i^*}$), while variables\n$\\alpha_k^* = C_k$ are \\emph{harder} to freeze (effective threshold\n$\\tau_{j^*} - 2y_k\\varepsilon/100 < \\tau_{j^*}$, which is more negative).",
+        "tag": "lem:asymmetry"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate Lemma 3 to describe the shift in the freezing threshold relative to the symmetric unshifted threshold (or the standard SVR case) rather than asserting an invalid direct comparison between cross-matched \\alpha and \\alpha^* boundary criteria.",
+      "overall_effect": "The comparative narrative and claim in Lemma 3 about relative ease of freezing between corresponding \\alpha and \\alpha^* variables is invalid as stated.",
+      "primary_affected_tag": "lem:asymmetry",
+      "target_type": "formal_result",
+      "title": "Invalid comparison with cross-matched criteria in shrinking asymmetry lemma",
+      "why_classification": "The algebraic relations (20c-rewritten) and (20d-rewritten) are correct; modifying the comparative explanation leaves all algorithmic steps and guarantees intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$t = 1, 2, \\ldots, \\mathrm{maxiter}$}",
+          "tag": "alg:smo"
+        },
+        {
+          "quote": "\\EndFor\n\n\\State \\textbf{Reconstruction:} compute $F_k^{\\mathrm{full}}$ and\n       $\\tau$ via \\eqref{eq:reconstruct}",
+          "tag": "alg:smo"
+        }
+      ],
+      "failure_explanation": "Algorithm 1 executes a single `for` loop (lines 4-23). The unshrinking check on lines 24-29 occurs after the loop has already terminated. Line 28 specifies `continue outer loop`, but no outer loop encloses lines 4-29. As a result, the control flow is invalid: an execution hitting this branch either errors out or falls through to lines 30-31, returning a solution that violates \\varepsilon_{\\mathrm{tol}}-optimality on the full set.",
+      "failure_location": {
+        "quote": "\\If{$\\Delta^{\\mathrm{full}} > \\varepsilon_{\\mathrm{tol}}$}\n  \\State Reset $\\Aactive \\leftarrow \\{1,\\ldots,N\\}$, $\\Afrozen \\leftarrow \\emptyset$;\n         continue outer loop\n\\EndIf",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Wrap the inner working-set loop and reconstruction step in an outer loop (e.g., `repeat ... until \\Delta^{\\mathrm{full}} \\le \\varepsilon_{\\mathrm{tol}}`) so that resetting \\Aactive restarts optimization on the full training set as described in Section 7.3.",
+      "overall_effect": "The algorithm pseudocode fails to re-enter the optimization loop upon finding KKT violations on the full variable set, undermining finite termination guarantees to \\varepsilon_{\\mathrm{tol}}-optimality.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Missing outer loop structure in Algorithm 1 makes unshrinking branch ill-defined",
+      "why_classification": "Enclosing the pseudocode in a standard outer loop is a routine, local fix that aligns the pseudocode with the text of Section 7.3 without changing any underlying mathematics."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bigl(\\Omega_s\\bigr)_{k\\ell} =\n  \\tfrac{1}{2}\\!\\left(K(\\mathbf{x}_k,\\mathbf{x}_\\ell) +\n                a\\,K(\\mathbf{x}_k,-\\mathbf{x}_\\ell)\\right)",
+          "tag": "eq:sym-kernel"
+        }
+      ],
+      "failure_explanation": "The text claims that \\Omega^*, defined by \\Omega^*_{k\\ell} = K(\\mathbf{x}_k, -\\mathbf{x}_\\ell), is positive semi-definite. This is false. For example, for the Gaussian RBF kernel K(\\mathbf{x}, \\mathbf{x}') = \\exp(-\\gamma\\|\\mathbf{x}-\\mathbf{x}'\\|^2) with N=2 and training points x_1 = 1, x_2 = -1, the matrix is \\Omega^* = [e^{-4\\gamma}, 1; 1, e^{-4\\gamma}]. Its determinant is e^{-8\\gamma} - 1 < 0, so \\Omega^* is indefinite with one strictly negative eigenvalue.",
+      "failure_location": {
+        "quote": "For $a = +1$ (even symmetry), $\\Omega_s \\succeq 0$ follows from the fact that $\\Omega$ and $\\Omega^*$ are individually PSD.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the incorrect claim that \\Omega^* \\succeq 0 with the direct proof that \\Omega_s is PSD via the feature representation \\varphi_s(\\mathbf{x}) = \\frac{1}{\\sqrt{2}}(\\varphi(\\mathbf{x}) + \\varphi(-\\mathbf{x})).",
+      "overall_effect": "The stated justification for \\Omega_s \\succeq 0 when a = +1 fails, although \\Omega_s itself remains PSD because \\mathbf{v}^\\top \\Omega_s \\mathbf{v} = \\frac{1}{4}\\|\\sum_k v_k(\\varphi(\\mathbf{x}_k) + \\varphi(-\\mathbf{x}_k))\\|^2 \\ge 0.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that the cross-reflection kernel matrix is positive semi-definite",
+      "why_classification": "The result \\Omega_s \\succeq 0 is true and easily substantiated by a standard one-line feature-space argument; no downstream claims or guarantees are lost."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

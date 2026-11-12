@@ -1,0 +1,141 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "La:Psbg_B",
+        "th:wbg_hilbert",
+        "col:wbg_hilbert",
+        "Cor:expDecay",
+        "th:wbg_banach",
+        "theo:Banach"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\geq \\sigma_{\\widetilde{n}}(f_n)",
+          "tag": "La:Psbg"
+        },
+        {
+          "quote": "\\geq \\sigma_{\\widetilde{n}+1}(f_{\\widetilde{n}+1})",
+          "tag": "La:Psbg"
+        },
+        {
+          "quote": "f_{{n}} := \\argmax_{f \\in \\cF \\setminus \\{f_{\\undertilde{n}}, \\ldots, f_{n-1} \\}} r_{\\undertilde{n}}(f)",
+          "tag": "alg:wbg"
+        },
+        {
+          "quote": "we actually do not need to fix how the remaining $b-1$ elements are chosen",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For n in the interior of a batch the proof asserts sigma_{n-tilde}(f_n) >= sigma_{n-tilde+1}(f_{n-tilde+1}), i.e. that a within-batch element f_n — selected only as an approximate maximizer of the surrogate at the batch-start index — carries at least the error of the next batch's greedy element. This inference is invalid (for n < n-tilde one even has sigma_{n-tilde}(f_n)=0 because f_n lies in V_{n-tilde}), and (P1) is false. Counterexample: X = R^3, F = {e_1, 0.99(cos10deg e_1 + sin10deg e_2), 0.5 e_3}, b = 2, gamma = 1, r = sigma. Line 4 selects f_0 = e_1 and line 5 uniquely selects f_1 = 0.99(cos10deg e_1 + sin10deg e_2); then |a_{1,1}| = sigma_1(f_1) = 0.99 sin10deg = 0.172, whereas sigma_{1+b-1} = sigma_2(F) = dist(0.5 e_3, span(e_1,e_2)) = 0.5, contradicting gamma sigma_{n+b-1} <= |a_{n,n}|. For the same reason the remark's claim that the analysis does not depend on how the remaining b-1 elements are chosen is false.",
+      "failure_location": {
+        "quote": "the diagonal elements satisfy $\\gamma \\sigma_{n\\hue{+b-1}} \\leq \\abs{a_{n,n}} \\leq \\sigma_n$",
+        "tag": "La:Psbg"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair keeps both the stated selection rule and the stated rates; at minimum a repair must make the within-batch elements non-redundant, e.g. select each f_n as a gamma-approximate maximizer of sigma_n with respect to the already updated space (then |a_{n,n}| = sigma_n(f_n) >= gamma sigma_n(F) >= gamma sigma_{n+b-1} and (P1) and all proofs are restored). That change forces the new snapshots to be available before the remaining selections, so the parallel snapshot computation and the measured offline speed-up (including the numerical section) are lost. Alternatively the analysis must be redone for the batch-start subsequence only (a weak greedy with n/b effective steps), which replaces the claimed (2/3)^alpha rate loss by a b^{-alpha} loss.",
+      "overall_effect": "(P1) is the only lower bound on the diagonal of A and is the decisive input (eq:prod_p2) of th:wbg_hilbert; hence th:wbg_hilbert, all three parts of col:wbg_hilbert, Cor:expDecay and the Banach counterparts La:Psbg_B, th:wbg_banach, theo:Banach become unreliable. The advertised rates genuinely fail for Algorithm alg:wbg: with clusters of b nearly parallel points (F = {q^k(u_k + j eta w_k)}) every batch wastes b-2 slots, sigma_n decays like q^{n/b} while d_m decays like q^{m/2}, so the exponential-rate guarantee of (iii)/Cor:expDecay is violated for large batch sizes.",
+      "primary_affected_tag": "La:Psbg",
+      "target_type": "formal_result",
+      "title": "Batch property (P1) is false: within-batch diagonal entries are not bounded below by gamma*sigma_{n+b-1}",
+      "why_classification": "Every complete resolution either changes the algorithm so that its advertised parallel offline phase disappears or replaces the stated rate guarantees by materially worse n/b-scale ones; no local repair of the lemma can restore (P1) for the stated selection rule, since within-batch elements may be arbitrarily close to earlier batch elements while sigma stays large."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\leq \\sqrt{2}\\, \\gamma^{-1} \\min_{1 \\leq m < n} d_m^{\\frac{n-m}{n}}.",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "\\sigma_{n\\hue{+b-1}} \\leq \\sqrt{2} \\gamma^{-1} \\min_{1 \\leq m <n} n^{\\frac{n-m}{2n}} \\left[ \\sum_{i=1}^n \\sigma_i^2 \\right]^{\\frac{m}{2n}} d_m^{\\frac{n-m}{n}}.",
+          "tag": "theo:Banach"
+        }
+      ],
+      "failure_explanation": "The proof derives d_m^{(n-m)/n} (twice) and the Banach analogue theo:Banach (i) uses the same exponent, but the statement claims d_m^{(n-m)/m}, which is a strictly stronger (and false) bound. Counterexample: F = {f_i = (e_0+e_i)/sqrt(2)}_{i=1..M} (unit vectors, pairwise inner product 1/2) has d_m = sqrt((M-m)/(2M)) while the strong greedy gives sigma_n = sqrt((n+2)/(2(n+1))) for all n < M; for M = 100, n = 10, b = 1, gamma = 1 the stated right-hand side is sqrt(2) min_m d_m^{(10-m)/m} = sqrt(2) d_1^9 = 0.06, whereas sigma_10 = 0.74.",
+      "failure_location": {
+        "quote": "\\sigma_{n\\hue{+b-1}}(\\cF) \\leq \\sqrt{2}\\gamma^{-1} \\min_{1 \\leq m < n} d_m(\\cF)^{\\frac{n-m}{m}}.",
+        "tag": "col:wbg_hilbert"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Change the exponent (n-m)/m in the statement of (i) to (n-m)/n, matching the proof and the Banach counterpart.",
+      "overall_effect": "As written, (i) asserts a materially stronger approximation rate than anything proved in the paper; only sigma_{n+b-1}(F) <= sqrt(2) gamma^{-1} min_m d_m^{(n-m)/n} is established. The 'in particular' clause and all later arguments already use the weaker proved form, so the loss is confined to the stated bound.",
+      "primary_affected_tag": "col:wbg_hilbert",
+      "target_type": "formal_result",
+      "title": "Theorem (i) states the exponent (n-m)/m while the proof only yields (n-m)/n",
+      "why_classification": "A one-symbol, local correction of the statement makes it coincide with the complete proof and with the Banach analogue; every subsequent claim already uses the corrected form, so no argument, construction or guarantee is lost apart from the false stronger bound."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theo:Banach"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": ":= \\max \\left\\lbrace C_0\\, 2^{\\alpha + 1} \\gamma^{-2} \\left\\lceil 4 + \\frac{\\hue{b-1}}{n}\\right\\rceil^{2\\alpha}, \\,",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "\\emph{Case 1:} $M = \\left\\lceil 4 + \\frac{\\hue{b-1}}{s}\\right\\rceil s$ with $s\\geq 1$",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "c_1 > \\frac{1}{2} \\left\\lceil 2 + \\frac{\\hue{b-1}}{s}\\right\\rceil^{-\\alpha} c_0",
+          "tag": "col:wbg_hilbert"
+        }
+      ],
+      "failure_explanation": "The 'desired contradiction' compares the derived bound C_1 < 2^{1-alpha} gamma^{-2} L^{2alpha} C_0 (L = ceil(4+(b-1)/s)) with the definition of the constant. The definition only gives C_1(n,b) >= 2^{alpha+1} gamma^{-2} ceil(4+(b-1)/n)^{2alpha} C_0 at the index n = M = L s of the first violation, and M > s forces ceil(4+(b-1)/M) <= ceil(4+(b-1)/s), strictly so as soon as s < b-1 (e.g. b = 16, s = 1 gives 5 < 19). Hence no contradiction is obtained in that regime. The identical mismatch occurs in (iii) ('c_1 > (1/2) ceil(2+(b-1)/s)^{-alpha} c_0' versus the definition at n = M) and in the Banach parts (ii)-(iii); moreover the proof inserts the n-dependent C_1(n,b) at the two different indices M and 2s as if it were a constant.",
+      "failure_location": {
+        "quote": "< 2^{\\alpha + 1} \\gamma^{-2} \\left\\lceil 4 + \\frac{\\hue{b-1}}{s}\\right\\rceil^{2\\alpha} C_0.",
+        "tag": "col:wbg_hilbert"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Rework the case split so that the constant is evaluated at a single index, e.g. replace ceil(4+(b-1)/n) in C_1(n,b) and ceil(2+(b-1)/n) in c_1(n,b) by a uniformly larger factor (of the order ceil(4+c(b-1)/n) with c about 4 to 5, or take the constant uniform in n over each case range) and re-run the same estimates; the same reoptimization is required for the Banach statements.",
+      "overall_effect": "Parts (ii) and (iii) of col:wbg_hilbert — and therefore the reformulated piecewise constants in the following remark and the constant quantified in Cor:expDecay — as well as (ii)-(iii) of theo:Banach are not established for first violations M with b+3 <= M up to about 5b; the advertised n- and b-dependent constants C_1(n,b), c_1(n,b) may be too small there.",
+      "primary_affected_tag": "col:wbg_hilbert",
+      "target_type": "formal_result",
+      "title": "Contradiction arguments for the polynomial/exponential rates compare the n-dependent constants at inconsistent indices",
+      "why_classification": "The gap affects only a bounded range of n relative to b and can be closed by redefining/over-estimating the constants, a contained reoptimization that leaves the rate forms n^{-alpha} and exp(-c n^alpha) and the qualitative b-dependence intact; no new global proof architecture is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "c_1(n,\\hue{b}):= \\min \\left\\lbrace c_0\\, 2^{- (\\alpha+1)} \\left\\lceil 2 + \\frac{\\hue{b-1}}{n}\\right\\rceil^{-\\alpha},\\, \\ln(C_1)\\,\\hue{b}^{-\\alpha} \\right\\rbrace.",
+          "tag": "col:wbg_hilbert"
+        },
+        {
+          "quote": "We have $c_1(n,1) = \\frac{c_0}{2} 4^{-\\alpha}$ and for $c_1(n,\\hue{b}) = \\frac{c_0}{2} 6^{-\\alpha}$.",
+          "tag": "Cor:expDecay"
+        }
+      ],
+      "failure_explanation": "By (iii), c_1(n,1) = min{c_0 2^{-2alpha-1}, ln C_1} and, for b >= 2 and n >= b, c_1(n,b) = min{c_0 2^{-(alpha+1)} 3^{-alpha}, ln(C_1) b^{-alpha}}. The claimed identity is only the relation between the first terms of the two minima; the proof simply asserts these first terms and discards the terms ln C_1 and ln(C_1) b^{-alpha}. Whenever the second terms are active the displayed equality is false and the corollary claims a decay constant larger than the one (iii) supplies (e.g. alpha = 1, gamma = 1, C_0 = 1, c_0 = 10, b = 2 gives c_1(n,2) = min{0.833, 0.174} = 0.174 but (2/3) c_1(n,1) = (2/3)(0.347) = 0.231).",
+      "failure_location": {
+        "quote": "c_1(n,\\hue{b}) = \\left[\\frac{2}{3}\\right]^\\alpha c_1(n,1).",
+        "tag": "Cor:expDecay"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Keep the second term in the identity, i.e. state c_1(n,b) = min{(2/3)^alpha c_1(n,1), ln(C_1) b^{-alpha}} for b >= 2, n >= b (noting that c_1(n,1) is itself a minimum), or add the hypothesis that the first term of the minimum in (iii) is the smaller one.",
+      "overall_effect": "The exact loss factor (2/3)^alpha in the exponential rate, advertised in the corollary, in the prose following it and used in the numerical section to fit the upper bound sigma-tilde(n), is not supplied by (iii) except when the first term of the minimum is the smaller one; only a relation of the form c_1(n,b) = min{(2/3)^alpha c_1(n,1), ln(C_1) b^{-alpha}} is supported.",
+      "primary_affected_tag": "Cor:expDecay",
+      "target_type": "formal_result",
+      "title": "Corollary's identity c_1(n,b) = (2/3)^alpha c_1(n,1) drops the second term of the defining minimum",
+      "why_classification": "A local correction of the constant preserves the exponential rate form and the (2/3)^alpha factor in the dominant term; only the unconditional exact identity of constants is given up, with no change to any proof architecture or to the qualitative conclusion."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2407.11631",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n01",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d942da78b6d3f0bc052d9ae20b8d6e239b06f446de6c697976c8f7fe512a4ec",
+  "status": "ok"
+}

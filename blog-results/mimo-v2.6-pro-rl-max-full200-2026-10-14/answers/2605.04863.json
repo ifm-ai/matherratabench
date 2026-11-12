@@ -1,0 +1,285 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "finite-volume update—as is the case for the shut-off mechanism we",
+          "tag": null
+        },
+        {
+          "quote": "with $\\eta_j$ derived from local update magnitudes, satisfies this scaling for any $p \\ge 1$ under a standard CFL condition.",
+          "tag": null
+        },
+        {
+          "quote": "scaling $s_j^n = \\mathcal{O}(h^p)$ in smooth regions with nonzero updates.",
+          "tag": null
+        },
+        {
+          "quote": "is not $\\mathcal{O}(h^p)$ in smooth regions with nonzero updates; instead,",
+          "tag": "cor:normalized-accuracy"
+        }
+      ],
+      "failure_explanation": "The abstract claims the truncation-error modification is higher order in smooth regions, the introduction says the blending parameter 'scales with the magnitude of the finite-volume update — as is the case for the shut-off mechanism we propose', and the conclusion says the defined s_j = eta_j^p/(eta_j^p+tau^p) satisfies the O(h^p) scaling. The paper's own Section 4.7 and Corollary cor:normalized-accuracy state the opposite for the defined (normalized) indicator: s_j^n ≈ 1/(1+tau^p) = O(1) and the modification is only O(h). The higher-order statement (prop:local-consistency) holds only for the unnormalized indicator, which the paper says it does not implement, and even there 'higher order' fails for p = 1 against the Theta(h^2) one-step base error. The prose claims more than the formal content supports.",
+      "failure_location": {
+        "quote": "We show the local truncation error modification is higher-order in smooth regions.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Qualify abstract, introduction and conclusion: state the O(h^{p+1}) bound only for the unnormalized indicator (with p ≥ 2 for 'higher order'), and state that the implemented normalized indicator yields only an O(h) modification, as Section 4.7 shows.",
+      "overall_effect": "The advertised analytical contribution 'higher-order local truncation error in smooth regions' is unavailable for the method actually defined and implemented; only an O(h) perturbation bound (cor:normalized-accuracy) and a scaled-indicator variant (prop:local-consistency) are established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Higher-order truncation-error claim does not hold for the implemented indicator",
+      "why_classification": "A local restatement of the summary claims preserves every formal result and guarantee exactly as proved; only an unsupported summary promise is withdrawn, with no new lemma, construction or rate change."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For the one-neighborhood case $W_i = \\{j\\}$ for all $i \\in M_j$, so",
+          "tag": "prop:conservation"
+        },
+        {
+          "quote": "  U^{n+1}_i = (1 - s_j) U^*_i + s_j \\sum_{k \\in W_i} w_{i,k} \\hat{Q}^*_k,",
+          "tag": null
+        },
+        {
+          "quote": "which ensures conservation on the original mesh.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The statement is made in the general weighted framework, where sum_{j in W_i} w_{i,j} = 1 allows a cell to belong to several neighborhoods with fractional weights, but the proof only treats W_i = {j}, where w_{i,j} = 1. With overlapping neighborhoods the component formula is ambiguous (a cell in M_j and M_{j'} is assigned two different values for s_j ≠ s_{j'}), and the stated neighborhood-wise identity is false: mass leaves M_j through the terms sum_{k ≠ j} w_{i,k} Qhat_k^* appearing in the update of cells of M_j. Only global mass conservation survives, and only once the cell-level blend is made well defined.",
+      "failure_location": {
+        "quote": "For any $s_j \\in [0,1]$, the blended operator $R_j(s_j)$ is conservative:",
+        "tag": "prop:conservation"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict the statement and the algorithm to configurations where every cell belongs to exactly one neighborhood (which covers all tests and the 1D analysis), or define a single cell-level blend parameter and prove global conservation, restating the neighborhood-wise identity accordingly.",
+      "overall_effect": "The 'conservative by construction' guarantee (abstract, algorithm section) is unestablished outside the one-neighborhood-per-cell case, and the step 'Identify the neighborhood j containing i (if any)' of alg:added-1 is undefined for multiply-covered cells.",
+      "primary_affected_tag": "prop:conservation",
+      "target_type": "formal_result",
+      "title": "Conservation proved only for the one-neighborhood case; general weighted case fails",
+      "why_classification": "The restriction keeps every analyzed and tested result intact but narrows the advertised weighted-SRD scope; the alternative needs a new blending definition and a contained conservation argument. No global proof architecture or rate is lost, so it is not serious."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Neighborhood finite volume update on the merged mesh: $Q^{n,-1} \\mapsto Q^n$. By Proposition~\\ref{prop:TVD-Q-update},",
+          "tag": "thm:TVD-UMSRD"
+        },
+        {
+          "quote": "the merged neighborhood cell has width $\\Delta x_{\\mathrm{merged}} \\ge h$, so choosing $\\Delta t$ to satisfy $a \\Delta t / h \\le 1$ automatically enforces $0 \\le a \\Delta t / \\Delta x_i \\le 1$ for all merged cells.",
+          "tag": "prop:TVD-Q-update"
+        },
+        {
+          "quote": "$U^*_i \\leftarrow U^n_i - \\dfrac{\\Delta t}{V_i} \\displaystyle\\sum_{f \\in \\partial i} F_{i,f}$",
+          "tag": "alg:added-1"
+        },
+        {
+          "quote": "  U^*_i = U^n_i - \\frac{\\Delta t}{V_i} \\sum_{f \\in \\partial i} F_{i,f},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "UM-SRD as defined in Section 3 and alg:added-1 computes U* with the original cell volumes (including alpha*h) and then blends redistribution with identity (the accuracy section's U^{n+1,UM} = (1-s_j^n)U^{n+1,base} + s_j^n S_j(U^{n+1,base}) is exactly this update-then-blend form). The proof instead splits one step as pre-merge -> FV update on the merged mesh (width ≥ h) -> blended redistribution, a different scheme in which the small cell never carries its own update. For the defined operator the conclusion is false at the stated CFL: with alpha = 0.05, a·Δt/h = 1/2 and U_{j-3}=U_{j-2}=U_{j-1}=0, U_j=U_{j+1}=U_{j+2}=1 (TV = 1), upwinding gives U*_j = 1-10 = -9 and Qhat* = -0.45/1.05 = -0.4286, so with s_j = 1/(1+tau^p) ≈ 0.99 one gets U_{j-1} ≈ -0.424, U_j ≈ -0.513 and TV ≈ 2.03 > 1 (TV ≈ 1.86 > 1 even for s_j = 1). prop:TVD-Q-update covers only the merged-mesh update and prop:TVD-R only the redistribution step, so the chain never applies to the defined time step.",
+      "failure_location": {
+        "quote": "the UM-SRD time-stepping operator is TVD on the original mesh:",
+        "tag": "thm:TVD-UMSRD"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified for the stated claim; at minimum, a repair must either restrict the CFL to Δt = O(alpha h) (excluding the advertised small-cell regime), or redefine the time step as pre-merge plus merged-mesh update plus redistribution as analyzed in the proof (changing the method and its small-cell experiments), or drop the TVD claim for the defined operator.",
+      "overall_effect": "The headline guarantee that UM-SRD is TVD under the same CFL as the base upwind scheme (abstract, introduction, Experiment 3's 'confirming the TVD property proved in Theorem', the algorithm section's 'inherits the TVD property') is not established for the method that is defined, implemented and tested, and is false for that method at the advertised full-cell time step.",
+      "primary_affected_tag": "thm:TVD-UMSRD",
+      "target_type": "formal_result",
+      "title": "TVD theorem proved for a pre-merged merged-mesh update, not for the defined UM-SRD step",
+      "why_classification": "The defined scheme is genuinely non-TVD at the full-cell CFL (explicit counterexample from the paper's own formulas), so no proof can restore the theorem as stated; every supported resolution either excludes the advertised regime, changes the algorithm, or abandons the guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:srd-steady",
+        "cor:steady-accumulation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "  = \\frac{h\\,V_{j-1} + \\alpha h\\, V_j}{h + \\alpha h}",
+          "tag": "prop:local-consistency"
+        },
+        {
+          "quote": "= (1-\\alpha)U^n_{j-1} + \\alpha U^n_j.",
+          "tag": "prop:srd-steady"
+        },
+        {
+          "quote": "$w_{i,j} = 1$ (by the conservation constraint) and",
+          "tag": "prop:conservation"
+        },
+        {
+          "quote": "$U_{j-1} = U_j = \\hat{Q}^* = (1 \\cdot 1.5 + 0.2 \\cdot 2.5)/(1 + 0.2)",
+          "tag": null
+        },
+        {
+          "quote": "$w_{-1,-1} = \\alpha$ (Berger \\& Giuliani, equation (4.2); pre-merging equation (4.1)).",
+          "tag": "prop:TVD-SRD"
+        }
+      ],
+      "failure_explanation": "(h V_{j-1} + alpha h V_j)/(h + alpha h) = (V_{j-1} + alpha V_j)/(1+alpha), which equals (1-alpha)V_{j-1} + alpha V_j only for alpha ∈ {0,1} or V_{j-1} = V_j. The paper's definitions plus the conservation constraint force w_{i,j} = 1 in the single-neighborhood case (as prop:conservation's proof itself states), giving the (1+alpha) denominator, and Experiment 6 uses exactly that value (5/3 for its data), contradicting prop:srd-steady's formula which gives 1.7. The weight convention is moreover inconsistent across the paper: prop:TVD-SRD imports TVD for w_{-1,-1} = alpha, prop:conservation needs w = 1, and the analysis uses implicit convex weights (1-alpha, alpha). With any consistent choice the qualitative conclusions survive, but the displayed closed forms are false as written.",
+      "failure_location": {
+        "quote": "= (1-\\alpha)V_{j-1} + \\alpha V_j.",
+        "tag": "prop:local-consistency"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Fix the weight convention (w_{i,j} = 1 in the one-neighborhood model case) and replace (1-alpha)V_{j-1} + alpha V_j by (V_{j-1} + alpha V_j)/(1+alpha) in the two computations, restating the formulas of prop:srd-steady and cor:steady-accumulation; TVD of S_j with these weights follows from a one-line triangle inequality.",
+      "overall_effect": "The explicit steady-state values in prop:srd-steady and cor:steady-accumulation are wrong (the SRD value is (U_{j-1}+alpha U_j)/(1+alpha)); prop:local-consistency's O(h) bound and all qualitative conclusions survive the correction.",
+      "primary_affected_tag": "prop:local-consistency",
+      "target_type": "formal_result",
+      "title": "Neighborhood average evaluated by a false identity with inconsistent weights",
+      "why_classification": "Local algebra plus a consistent weight choice preserves every claim, rate and scope (the qualitative conclusions and the O(h) bound are unchanged), with no new lemma, construction or replacement argument."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "= \\mathcal{O}(1) \\cdot \\mathcal{O}(h) = \\mathcal{O}(h). \\qedhere",
+          "tag": "cor:normalized-accuracy"
+        },
+        {
+          "quote": "$B(u^n) = u^{n+1} + \\mathcal{O}(h)$",
+          "tag": "prop:local-consistency"
+        },
+        {
+          "quote": "$u(x_{j-1}, t) - u(x_j, t) = \\mathcal{O}(h)$ since the",
+          "tag": "prop:local-consistency"
+        }
+      ],
+      "failure_explanation": "With tau = B(u^n) - u^{n+1} as defined in the proof of prop:local-consistency and Δt = Theta(h), the one-step truncation error of first-order upwind is Theta(h^2); only the loose bound O(h) quoted there makes the O(h) modification look comparable, so the modification is one order larger than the base truncation error, not 'the same order' (with the tau/Δt convention it is O(1) per unit time versus O(h) for the base). Moreover the modification does not decay with Δt ((S_j - I) applied to smooth data is Theta(h) even at zero update), so over O(1/h) steps the standard accumulation bound is O(1), and no stability/consistency argument for the composite operator is supplied (the 'Expected global accuracy' remark concedes a global error estimate is out of scope). The proof establishes only the O(h) perturbation bound, not the stated first-order accuracy.",
+      "failure_location": {
+        "quote": "which is the same order as the base first-order scheme",
+        "tag": "cor:normalized-accuracy"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Weaken the corollary to the proved O(h) perturbation bound and correct the order comparison with the Theta(h^2) one-step base error, leaving first-order convergence as the numerical observation of Section 5; a stronger repair would need a global error/stability analysis of the composite operator that the source explicitly does not provide.",
+      "overall_effect": "The guarantee 'UM-SRD with the normalized indicator is still first-order accurate' is unsupported; only an O(h) local perturbation bound remains, and the abstract's and conclusion's accuracy claims rest on numerics alone.",
+      "primary_affected_tag": "cor:normalized-accuracy",
+      "target_type": "formal_result",
+      "title": "First-order accuracy does not follow from the O(h) truncation-error perturbation",
+      "why_classification": "Dropping the unproved accuracy conclusion is a limited weakening that leaves a recognizably comparable result (perturbation bound plus observed first-order convergence); restoring the guarantee would require new global analysis, so the issue is not minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\eta_j \\approx 1$ and $s_j^n \\approx 1/(1+\\tau^p) \\approx 1$.",
+          "tag": "rem:stability-mechanism"
+        },
+        {
+          "quote": "U^*_j = U^n_j - \\frac{\\nu}{\\alpha}(U^n_j - U^n_{j-1}),",
+          "tag": "rem:stability-mechanism"
+        },
+        {
+          "quote": "$\\tau = 0.5$ gives $s_j \\approx 0.80$.",
+          "tag": null
+        },
+        {
+          "quote": "show that UM-SRD stabilizes the base scheme near arbitrarily small cut cells",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The argument dichotomizes into 'large update, s_j ≈ 1 (SRD active, stable)' and 'zero update, s_j = 0 (base stable)', but s_j = 1/(1+tau^p) is strictly below 1 and the residual fraction (1-s_j) multiplies the small-cell update amplified by nu/alpha. Linearizing the paper's own update and blending formulas about a constant state with zero inflow perturbation gives a 2x2 map on (U_{j-1}, U_j) with det = (1-nu)(alpha-nu)(1-s_j)/alpha and a stability threshold 1-s_j = O(alpha). With the defaults p = 2, tau = 0.1 (s_j ≈ 0.9901), alpha = 10^{-3}, nu = 1/2, neighborhood perturbations grow by a factor ≈ 4.9 per step; already at Experiment 5's alpha = 0.05 the appendix's tau = 0.5 (s_j ≈ 0.80) gives an amplification factor ≈ 1.79. Thus partial shut-off does let the small-cell instability re-emerge, in the near-static regime the remark calls safe and for parameters the paper recommends.",
+      "failure_location": {
+        "quote": "The answer is no, and the normalized indicator is precisely why.",
+        "tag": "rem:stability-mechanism"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the blanket claim by a quantified condition (require 1-s_j ≤ c(nu)·alpha at full activation, e.g. tau^p = O(alpha), or make the shut-off exactly binary with s_j ∈ {0,1}) and support it with a neighborhood stability computation such as the 2x2 analysis above; adjust the parameter guidance and the 'arbitrarily small' claim accordingly.",
+      "overall_effect": "The advertised stability for arbitrarily small cut cells (abstract, stated goals, Experiment 5's framing) holds only when 1-s_j is tied to alpha (tau^p = O(alpha)) or when SRD is applied in full; the blanket claim and the practical parameter guidance up to tau = 0.5 are unsafe.",
+      "primary_affected_tag": "rem:stability-mechanism",
+      "target_type": "prose_claim",
+      "title": "Stability under partial shut-off is asserted but fails for small cut cells",
+      "why_classification": "A parameter-scaling rule (or binary shut-off) plus a contained neighborhood stability argument restores the advertised regime, but it is a reoptimization that restricts the stated parameter range and withdraws the unconditional claim, so it exceeds a minor edit without requiring new global architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:steady-accumulation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "F(U_i, U_{i+1}) = a U_i, \\qquad a > 0.",
+          "tag": null
+        },
+        {
+          "quote": "$U^n_{j-1} \\ne U^n_j$, then $U^{n+1} \\ne U^n$ even though",
+          "tag": "prop:srd-steady"
+        },
+        {
+          "quote": "operators directly with $U^* = U$ (zero finite-volume update) for 100",
+          "tag": null
+        },
+        {
+          "quote": "For a smooth steady state $u(x)$ on the cut-cell mesh, let",
+          "tag": "cor:steady-accumulation"
+        }
+      ],
+      "failure_explanation": "In the stated 1D model problem the base scheme is first-order upwind, so U*_i - U^n_i = -(a Δt/Δx_i)(U^n_i - U^n_{i-1}); requiring U* = U^n for all i forces U^n to be spatially constant, contradicting the proposition's own case U^n_{j-1} ≠ U^n_j (and, locally, vanishing updates in M_j force U_{j-2} = U_{j-1} = U_j). Likewise the model PDE u_t + a u_x = 0 with a > 0 has only constant steady solutions, so cor:steady-accumulation's 'smooth steady state u(x)' with u(x_{j-1}) ≠ u(x_j) does not exist. In the analyzed setting SRD is the identity on all zero-update states, so the claimed steady-state deficiency never occurs; Experiment 6 realizes the scenario only by imposing U* = U by hand.",
+      "failure_location": {
+        "quote": "$U^*_i = U^n_i$ for all $i$",
+        "tag": "prop:srd-steady"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Restate prop:srd-steady and cor:steady-accumulation for a base scheme admitting non-constant zero-update states (the general finite-volume setting of Section 3, or the 2D setting), keeping the computation unchanged and qualifying the steady-state claims for the 1D upwind model.",
+      "overall_effect": "The motivating claim that SRD fails to preserve steady states and causes O(1) changes 'even when the physics dictates no evolution' is unsupported in the analyzed model; it survives only for base schemes with non-constant zero-update states (general or 2D settings), and the shut-off property is vacuous there.",
+      "primary_affected_tag": "prop:srd-steady",
+      "target_type": "formal_result",
+      "title": "Steady-state hypothesis is unsatisfiable for the model problem's upwind scheme",
+      "why_classification": "A local change of the stated setting makes the computation non-vacuous and preserves the claim and all UM-SRD guarantees in recognizable form, with no new argument or construction; the loss is limited to the 1D upwind instantiation of the motivating example."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "U^N_j - u(x_j) = (1-\\alpha)\\varepsilon_{j-1} + \\alpha\\varepsilon_j.",
+          "tag": "cor:steady-accumulation"
+        },
+        {
+          "quote": "U^{n+1}_{j-1} = U^{n+1}_j = (1-\\alpha)U^n_{j-1} + \\alpha U^n_j,",
+          "tag": "prop:srd-steady"
+        }
+      ],
+      "failure_explanation": "SRD gives U^N_{j-1} = U^N_j = Qhat, so the two stated errors must differ by u(x_j) - u(x_{j-1}) and cannot both equal (1-alpha)eps_{j-1} + alpha eps_j unless u is constant. Writing U^0_i = u(x_i) + eps_i and using the paper's own redistribution value, the errors are (1-alpha)eps_{j-1} + alpha eps_j + alpha(u(x_j) - u(x_{j-1})) at cell j-1 and (1-alpha)eps_{j-1} + alpha eps_j - (1-alpha)(u(x_j) - u(x_{j-1})) at cell j (with the corrected neighborhood average the coefficients change accordingly). The displayed formulas therefore fail for every non-constant profile, independently of the weight error.",
+      "failure_location": {
+        "quote": "U^N_{j-1} - u(x_{j-1}) = (1-\\alpha)\\varepsilon_{j-1} + \\alpha\\varepsilon_j,",
+        "tag": "cor:steady-accumulation"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Recompute the two errors from U^N_{j-1} = U^N_j = Qhat and state them including the u(x_j) - u(x_{j-1}) terms (and the corrected weights).",
+      "overall_effect": "The quantitative steady-state error claim of cor:steady-accumulation is false; its qualitative conclusion (redistribution replaces local discretization errors by an averaged value and prevents machine-precision convergence) survives.",
+      "primary_affected_tag": "cor:steady-accumulation",
+      "target_type": "formal_result",
+      "title": "Steady-state error formulas are mutually inconsistent and omit the solution gradient",
+      "why_classification": "A local recomputation preserves the corollary's qualitative conclusion and every guarantee; no new lemma, construction or replacement argument is needed."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2605.04863",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7818cd4cd642c55846288cd8538a55a3a2f19a519b1a0153dbaf44ab1fba0b17",
+  "status": "ok"
+}

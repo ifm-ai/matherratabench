@@ -1,0 +1,169 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\nabla\\cdot(\\diffusivity\\nabla u) + \\rho u &= f",
+          "tag": null
+        },
+        {
+          "quote": "- \\int\\limits_{\\Gamma_D} (\\nabla v\\cdot \\normal)g_D\\d{s}",
+          "tag": null
+        },
+        {
+          "quote": "This way, a strong solution of the diffusion problem is also a weak solution and the weak formulation is consistent with the strong formulation.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Nitsche consistency terms for the Dirichlet boundary must use the co-normal flux \\kappa\\nabla u\\cdot n, but the source uses \\nabla u\\cdot n. Integrating by parts gives an extra boundary term \\int_{\\Gamma_D} ((\\kappa\\nabla u\\cdot n) - (\\nabla u\\cdot n))v\\,ds, so a strong solution is not a weak solution unless \\kappa=I on \\Gamma_D. The linear functional and energy functional have the same missing \\kappa.",
+      "failure_location": {
+        "quote": "- \\int\\limits_{\\Gamma_D} (\\nabla u\\cdot \\normal)v\\d{s} - \\int\\limits_{\\Gamma_D} (\\nabla v\\cdot \\normal)u\\d{s}",
+        "tag": "equ:definition-bilinear-form"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Insert \\kappa in the boundary flux terms in the bilinear form, linear functional, and energy functional (replace \\nabla u\\cdot n by \\kappa\\nabla u\\cdot n in the \\Gamma_D terms).",
+      "overall_effect": "The general formulation for variable diffusivity is inconsistent with the strong PDE. The claimed consistency and applicability to general elliptic problems with non-identity \\kappa fail. The numerical examples use \\kappa=I and are unaffected.",
+      "primary_affected_tag": "equ:definition-bilinear-form",
+      "target_type": "other",
+      "title": "Missing diffusivity in Nitsche boundary flux terms",
+      "why_classification": "The repair is a local insertion of the diffusivity tensor in the boundary terms; it preserves the method, proofs, and numerical results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "for every real~$0\\leq r\\leq t$ it holds",
+          "tag": "thm:approximation-error-estimate"
+        },
+        {
+          "quote": "$\\tau\\geq m>d/2$ for some~$m\\in\\R$",
+          "tag": "thm:a-priori-error-estimate-h1"
+        },
+        {
+          "quote": "\\norm{u-u_h}_{H^1(\\Omega)} \\leq c_{H^1}h^{m-1}\\norm{u}_{H^m(\\Omega)}",
+          "tag": "thm:a-priori-error-estimate-h1"
+        }
+      ],
+      "failure_explanation": "The approximation theorem requires r\\leq t. Setting r=1 and t=m requires m\\geq1. The theorem only assumes m>d/2, which for d=1 allows 0.5<m<1. In that regime, u may not be in H^1 and V_{X,k} may not be in H^1, so the H^1 estimate and the negative exponent h^{m-1} are invalid.",
+      "failure_location": {
+        "quote": "applying first~Céa's~Lemma with~$V_h=V_{X,k}$, see~\\Cref{thm:ceas-lemma}, and then the approximation error estimate from~\\Cref{thm:approximation-error-estimate} with~$\\tau=t=m$ and~$r=1$",
+        "tag": "thm:a-priori-error-estimate-h1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis m\\geq1 (or restrict to d\\geq2) to Theorem 3.1.",
+      "overall_effect": "Theorem 3.1 is not valid for d=1 and 0.5<m<1. The L2 theorem assumes m\\geq2, so it is unaffected.",
+      "primary_affected_tag": "thm:a-priori-error-estimate-h1",
+      "target_type": "formal_result",
+      "title": "H1 error theorem misapplies approximation theorem when m<1 in 1D",
+      "why_classification": "The invalid regime is a boundary case in dimension one; adding m\\geq1 is a local condition that does not affect the main results in d\\geq2."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left(\\coercivity-\\frac{\\continuity}{2}\\right)\\norm{u_h-\\tilde{u}_h}_V^2\\leq I(\\tilde{u}_h)-I(u_h).",
+          "tag": "lem:inexact-solution-optimization-problem"
+        },
+        {
+          "quote": "Dividing by~$\\coercivity-\\frac{\\continuity}{2}$ yields the claimed result.",
+          "tag": "lem:inexact-solution-optimization-problem"
+        },
+        {
+          "quote": "\\leq I(\\tilde{u}_h) - I(u_h) + \\frac{\\continuity}{2}\\norm{u_h-\\tilde{u}_h}_V^2.",
+          "tag": "lem:inexact-solution-optimization-problem"
+        }
+      ],
+      "failure_explanation": "The proof only yields (\\alpha-\\gamma/2)\\|e\\|^2 \\leq \\Delta. This implies the claimed bound only if \\alpha>\\gamma/2. For general coercive continuous bilinear forms, \\alpha can be \\leq\\gamma/2, making the denominator non-positive and the inequality false. The correct bound is \\|e\\|^2 \\leq 2\\Delta/\\alpha, using I(\\tilde{u}_h)-I(u_h)=1/2 a(e,e).",
+      "failure_location": {
+        "quote": "\\norm{u_h-\\tilde{u}_h}_V^2 \\leq \\frac{I(\\tilde{u}_h)-I(u_h)}{\\coercivity-\\frac{\\continuity}{2}}",
+        "tag": "lem:inexact-solution-optimization-problem"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the denominator \\alpha-\\gamma/2 with \\alpha/2 (or 2/\\alpha) and adjust Proposition 3.4 accordingly.",
+      "overall_effect": "Lemma 3.3 and Proposition 3.4 are invalid when \\alpha\\leq\\gamma/2. The error bounds with the denominator \\alpha-\\gamma/2 are not established.",
+      "primary_affected_tag": "lem:inexact-solution-optimization-problem",
+      "target_type": "formal_result",
+      "title": "Inexact optimization lemma divides by possibly non-positive denominator",
+      "why_classification": "The repair is a one-line correction using an identity already in the proof; it strengthens the bound and preserves all substantive guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that the positive definite radial basis function kernel~$k\\colon\\Omega\\times\\Omega\\to\\R$ has an algebraically decaying Fourier transform of order~$\\tau\\geq m>d/2$ for some~$m\\in\\R$",
+          "tag": "thm:a-priori-error-estimate-h1"
+        },
+        {
+          "quote": "In this example the solution is smooth and we have in particular that~$m>\\tau$ for the considered values of~$\\tau$.",
+          "tag": null
+        },
+        {
+          "quote": "In the first experiment we considered a~PDE with a smooth solution such that the convergence rate is limited by the smoothness of the kernel according to~\\Cref{thm:a-priori-error-estimate-h1,thm:a-priori-error-estimate-l2}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The table and conclusion claim the convergence rates for the case m\\geq\\tau (solution smoother than kernel) are according to Theorems H1 and L2. But those theorems assume \\tau\\geq m (kernel at least as smooth as solution). In the first numerical example, m>\\tau, so the theorems do not apply. The rates for that case come from standard kernel approximation theory/superconvergence, not the paper's theorems.",
+      "failure_location": {
+        "quote": "The aforementioned relations regarding the regularity of the kernels together with the expected convergence rates according to~\\Cref{thm:a-priori-error-estimate-h1,thm:a-priori-error-estimate-l2} are summarized in~\\Cref{tab:matern-kernels-regularity}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Clarify that the m\\geq\\tau rates are not covered by Theorems H1/L2 and that the first experiment is outside their assumptions.",
+      "overall_effect": "The scope of the a priori error estimates is overstated. The first numerical example is outside the proven regime of the theorems.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Scope overclaim: theorems do not cover solution smoother than kernel",
+      "why_classification": "A prose clarification about scope; the theorems themselves remain valid and the numerical example still illustrates expected/superconvergent behavior."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Omega = \\{(r\\cos(\\varphi),r\\sin(\\varphi))\\in\\R^2:0<r<1.5,0<\\varphi<\\alpha\\}\\subset\\R^2.",
+          "tag": null
+        },
+        {
+          "quote": "We set the angle to~$\\alpha=\\frac{3\\pi}{2}$.",
+          "tag": null
+        },
+        {
+          "quote": "The solution is again given as~$u=g$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "On the sector 0<\\varphi<3\\pi/2, \\arctan(x_2/x_1) returns a value in (-\\pi/2,\\pi/2), not the polar angle \\varphi. Thus g as defined is not the harmonic function r^{1/\\alpha}\\sin(\\varphi/\\alpha)+1; it is not harmonic and does not solve the PDE with u=g. The claimed regularity and numerical test case are based on an incorrect definition.",
+      "failure_location": {
+        "quote": "g(x) = \\norm{x}_2^{1/\\alpha}\\cdot\\sin\\left(\\frac{\\arctan(x_2/x_1)}{\\alpha}\\right) + 1",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace \\arctan(x_2/x_1) with atan2(x_2,x_1) or explicitly use the polar angle \\varphi.",
+      "overall_effect": "The description and claimed regularity of the singular test case are unreliable as written. The numerical results may not correspond to the stated function.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Singular example uses arctan instead of polar angle",
+      "why_classification": "The correction is a standard local replacement of \\arctan with atan2; the intended harmonic function and all subsequent analysis remain valid."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2410.03503",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n01b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "ba49ab7b358aed008adeb0a7ae63850130a333050bb18442945fbb7a5fcbde7e",
+  "status": "ok"
+}

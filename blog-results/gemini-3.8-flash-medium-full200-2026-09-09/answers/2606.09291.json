@@ -1,0 +1,61 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that\n    \\begin{align*}\n        \\rho \\coloneqq 1-2\\tau c + 2\\sqrt{\\eta}(1+\\sqrt{1-c\\tau}) + 2\\tau^2 L^2 +2\\eta\\left(1+\\sqrt{1-c\\tau}\\right)^2\\leq 1-2\\tau c+ 2\\tau^2L^2 + 4\\sqrt{\\eta}+8\\eta,\n    \\end{align*}\n    and, for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently small\n    so that $4\\sqrt{n}+8\\eta<\\frac{c^2}{2L^2}$, it holds that $\\rho<1$.",
+          "tag": "thm:error"
+        }
+      ],
+      "failure_explanation": "In the proof of Theorem 3.1, the contraction factor bound is $\\rho \\le 1 - 2\\tau c + 2\\tau^2 L^2 + 4\\sqrt{\\eta} + 8\\eta$. For $\\rho < 1$ to hold, one strictly needs $4\\sqrt{\\eta} + 8\\eta < 2\\tau c - 2\\tau^2 L^2$. The right-hand side $g(\\tau) = 2\\tau c - 2\\tau^2 L^2$ tends to 0 as $\\tau \\to 0^+$, achieving its maximum $c^2/(2L^2)$ only at $\\tau = c/(2L^2)$. Consequently, the condition $4\\sqrt{\\eta} + 8\\eta < c^2/(2L^2)$ does not guarantee $\\rho < 1$ for all $\\tau \\in (0, c/(2L^2))$: for any fixed $\\eta > 0$ satisfying the bound, choosing $\\tau > 0$ sufficiently small makes $2\\tau c - 2\\tau^2 L^2 < 4\\sqrt{\\eta} + 8\\eta$, which yields $\\rho > 1$ and causes the bound to diverge rather than contract.",
+      "failure_location": {
+        "quote": "Then, for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently\n    small so that $4\\sqrt{\\eta}+8\\eta<\\frac{c^2}{2L^2}$, it holds\n    \\begin{align}\\label{eq:meansquareaccuracy}\n        \\EE\\left[\\|u^\\star-u_k\\|_U^2\\right]\\leq \\rho^k\\|u^\\star-u^0\\|_U^2,\n    \\end{align}\n    for some $\\rho\\in (0,1)$.",
+        "tag": "thm:error"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Modify the condition on $\\eta$ so that it depends on the chosen $\\tau$, requiring $4\\sqrt{\\eta} + 8\\eta < 2\\tau c - 2\\tau^2 L^2$ for $\\tau \\in (0, c/L^2)$, or fix $\\tau = c/(2L^2)$.",
+      "overall_effect": "Theorem 3.1 is false as stated. For any fixed $\\eta$ satisfying the stated bound, there exist admissible step sizes $\\tau \\in (0, c/(2L^2))$ for which $\\rho > 1$, invalidating the advertised geometric convergence guarantee.",
+      "primary_affected_tag": "thm:error",
+      "target_type": "formal_result",
+      "title": "Invalid quantifier scope and step size condition for linear convergence in Theorem 3.1",
+      "why_classification": "A routine local correction coupling the tolerance $\\eta$ to the step size $\\tau$ preserves the statement, the geometric convergence rate, and all downstream claims without requiring new lemmas or global changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:complexity_gradient_estimation",
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\EE_k \\Big[ \\| \\nabla \\mathcal{J}(u)-\\nabla \\mathcal{J}^{\\text{ML}}(u) \\|_U^2 \\]\n            &=\\EE_k \\Biggl[ \\left\\| \\frac{\\EE\\left[\\exp(\\theta\\Phi(y)B^\\ast q\\right]}{\\EE\\left[\\exp(\\theta\\Phi(y)\\right]}-\\frac{\\EE^{\\mathrm{ML}} \\left[\\exp(\\theta\\Phi(y_L)B^\\ast q_L\\right]}{\\EE^{\\mathrm{ML}}\\left[\\exp(\\theta\\Phi(y_L)\\right]} \\right\\|_U^2 \\Biggr]",
+          "tag": "proposition:bound_mean_square_error"
+        }
+      ],
+      "failure_explanation": "In the proof of Proposition 3.2, the denominator term $(\\EE^{\\text{ML}}[Y_L])^2$ is bounded from below by 1 using the assertion that $\\EE^{\\text{ML}}[Y_L] > 1$. However, $\\EE^{\\text{ML}}[Y_L] = \\sum_{\\ell=1}^L \\frac{1}{M_\\ell} \\sum_{m=1}^{M_\\ell} (Y_\\ell^{(m,\\ell)} - Y_{\\ell-1}^{(m,\\ell)})$ is a multilevel Monte Carlo estimator that sums differences across independent sample realizations at different levels. Although $Y_\\ell = \\exp(\\theta \\Phi(y_\\ell)) \\ge 1$ almost surely, the multilevel estimator $\\EE^{\\text{ML}}[Y_L]$ does not preserve this lower bound: it is a real-valued random variable that can be strictly less than 1, arbitrarily close to 0, or negative. Therefore, $1/(\\EE^{\\text{ML}}[Y_L])^2 \\le 1$ does not hold almost surely, and without denominator truncation or concentration arguments, the expectation of the squared norm error of the ratio estimator cannot be bounded by the stated expression.",
+      "failure_location": {
+        "quote": "where we used that $\\EE^{\\textrm{ML}} \\left[Y_L\\right] > 1$.",
+        "tag": "proposition:bound_mean_square_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Introduce a regularized or truncated denominator in the gradient estimator (such as $\\max(\\EE^{\\text{ML}}[Y_L], \\delta)$ for some $\\delta \\in (0, 1)$), or condition the bound on the high-probability concentration event where $|\\EE^{\\text{ML}}[Y_L] - \\EE[Y]| \\le \\EE[Y]/2$ and bound the failure probability using concentration inequalities.",
+      "overall_effect": "Proposition 3.2 is unestablished as stated. Consequently, Theorem 3.4 and Corollary 3.5, which directly rely on Proposition 3.2 to bound the mean square error of the gradient estimator and establish the asymptotic complexity of the MLSGD algorithm, become unsupported.",
+      "primary_affected_tag": "proposition:bound_mean_square_error",
+      "target_type": "formal_result",
+      "title": "Unjustified lower bound on multilevel Monte Carlo denominator estimator in Proposition 3.2",
+      "why_classification": "Repairing the denominator issue requires a contained nontrivial argument (such as thresholding the estimator and using concentration bounds) to handle the singularity near 0, but it preserves the overall MLMC gradient estimation framework and computational complexity rates."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2606.09291",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f995bc2781848745f7a0e9dc1ec709b3b392f7fb87821723f10dd174128e1d3c",
+  "status": "ok"
+}

@@ -1,0 +1,108 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "This section makes that interpretation explicit by showing how $(v^\\star,g^\\star)$ decomposes expected finite-horizon returns into a persistent long-run part and a transient correction, recovers the classical long-run average reward vector $g(\\cdot)$, and exposes periodic phase structure that a scalar gain necessarily discards.",
+          "tag": "justification"
+        },
+        {
+          "quote": "(iv) estimate class gains by phase-averaging anchor residual estimates and reconstruct $\\widehat g_t$ using the learned absorption weights (details below).",
+          "tag": "sec:experiments"
+        }
+      ],
+      "failure_explanation": "The Introduction asserts that the projection of g* onto ker(I-P) equals the classical long-run average reward vector g, and the appendix section 'justification' promises to show that (v*,g*) recovers g. No formal result in the source establishes this: that section contains only the telescoping return identity (lem:app_telescoping / eq:app_return_decomp_star) and the transient-cost identity (prop:app_vstar_transient_cost). The needed nontrivial argument — that on the semisimple peripheral subspace K(P) the Cesàro averages (1/T)sum_{t<T} P^t converge to the spectral projection onto ker(I-P), giving g = Pi_{ker(I-P)} g* and the coordinate formula g(s) = sum_i bar-theta_i p_i(s) with bar-theta_i the phase-average of the anchor coordinates theta*_{i,k} — is missing. The experiments nevertheless measure Err(t) = ||g_hat_t - g||_inf and reconstruct g_hat_t by exactly this phase-averaged anchor-residual/absorption-weight formula, so both the interpretive claim and the experimental grounding rest on an unproven identity.",
+      "failure_location": {
+        "quote": "the true long-run average reward vector $g$ is invariant, meaning that time-averaging removes any peripheral components, and the projection of $g^\\star$ onto $\\ker(I-P)$ is $g$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a proposition in the justification section proving g = lim_T (1/T) sum_{t<T} P^t g* = Pi_{ker(I-P)} g* (equivalently g(s) = sum_i bar-theta_i p_i(s)), derived from eq:app_return_decomp_star together with the paper's own semisimplicity remark and cyclic Fourier decomposition of K(P), and connect it to the experimental reconstruction.",
+      "overall_effect": "The interpretation of the pipeline outputs as classical performance evaluation is unsupported: the link between the estimated objects ([v*], g*, theta*_{i,k}) and the actual evaluation target g is claimed but not established anywhere, and the experimental error metric and reconstruction lack theoretical justification.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed recovery of the classical average-reward vector g from the peripheral residual g* is asserted but never proved",
+      "why_classification": "The unsupported claim is central to the paper's stated evaluation guarantee and grounds the experiments, and repairing it requires a new, contained lemma (telescoping plus the semisimple Cesàro limit); since no content is lost and no global architecture is needed, this is more than minor but not serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "v^\\star = \\mathcal{T}(v^\\star)=\\Pi(r+Pv^\\star)",
+          "tag": "eq:proj_fixed_point"
+        },
+        {
+          "quote": "g^\\star \\coloneqq r + Pv^\\star - v^\\star",
+          "tag": "eq:gstar"
+        }
+      ],
+      "failure_explanation": "For the unprojected iteration v_{t+1} = T(v_t) = r + Pv_t, the error with respect to the paper's gauge-fixed solution v* (which satisfies v* = Pi(r + Pv*), eq:proj_fixed_point) obeys e_{t+1} = Pe_t + g*, where g* = r + Pv* - v* is the peripheral residual, generally nonzero by Theorem thm:wellposed. In the paper's own two-state period-2 example both states are anchors, so v* = 0 and e_{t+1} = Pe_t + r, which differs from the claimed Pe_t whenever r != 0. The clean recurrence holds only for fixed points of T itself (zero-residual solutions), which for this chain need not exist in any gauge (they require r = 0 under the anchor gauge). The qualitative conclusion — the component along the eigenvector of -1 alternates and never contracts — survives, but the asserted error dynamics is false as written.",
+      "failure_location": {
+        "quote": "If $v_{t+1} = T(v_t)$ and $v^\\star$ is any fixed point in a chosen gauge, then the error $e_t \\coloneqq v_t - v^\\star$ evolves as $e_{t+1} = P e_t$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the recurrence to e_{t+1} = Pe_t + g*, or analyze differences of iterates (v_{t+1} - v'_ {t+1} = P(v_t - v'_t)), noting that peripheral components do not contract.",
+      "overall_effect": "The stated mechanism for oscillation of naive fixed-point iteration on periodic chains is incorrect as written; the advertised phenomenon remains true and no labelled formal result relies on the erroneous recurrence.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Invalid error recursion e_{t+1} = P e_t in the motivating periodic-chain example",
+      "why_classification": "A one-line local correction of the recurrence preserves the claim, its conclusion, and all downstream results; no new lemma, construction, or reoptimization is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:main_end_to_end_v",
+        "cor:end_to_end_v"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume the structural learning and weight estimation steps succeed and assume $\\widehat\\gamma<1$.",
+          "tag": "thm:main_sa_rate"
+        },
+        {
+          "quote": "\\E[\\widehat T(v_t)\\mid \\cF_t]=r+Pv_t, \\qquad \\E\\!\\left[\\|\\widehat T(v_t)-(r+Pv_t)\\|_\\infty^2\\mid \\cF_t\\right]\\le \\sigma^2.",
+          "tag": "eq:oracleB"
+        },
+        {
+          "quote": "for each $s\\in \\mathcal{S}$, sample $\\tilde s\\sim P(\\cdot | s)$ and set $\\widehat T(v_t)(s)=r(s)+v_t(\\tilde s)$.",
+          "tag": null
+        },
+        {
+          "quote": "Assume the oracle noise along the iterates satisfies the uniform conditional second-moment bound",
+          "tag": "lem:optionB_stability"
+        },
+        {
+          "quote": "\\frac{2^{a+1}\\alpha\\,C_{{\\mathrm q},\\infty}\\sigma}{\\sqrt{(2a-1)(T+t_0)}} \\le \\frac{\\varepsilon}{3}",
+          "tag": "cor:end_to_end_v"
+        }
+      ],
+      "failure_explanation": "The proof chain for thm:main_sa_rate (lem:projSA_stability_template, thm:projSA_rate_template, cor:optionB_rate) requires the uniform conditional second-moment bound eq:oracleB on the oracle noise along the iterates. For Algorithm 1's oracle, T_hat(v_t)(s) = r(s) + v_t(tilde s), this second moment is of order ||v_t||_inf^2, so the bound is equivalent to a priori boundedness of the iterates — exactly what the stability lemmas derive FROM the bound (lem:optionB_stability assumes the noise bound and concludes sup_t E||v_t||_inf^2 <= B_sup^2). The premise is therefore never established for the algorithm it is used about, and the main-text theorem does not even list it as a hypothesis (it appears only in the trailing clause on hidden constants). The formal end-to-end corollary cor:end_to_end_v likewise uses the constant sigma in its choice of T without assuming or verifying eq:oracleB for the pipeline. (The main-text statement also omits the stepsize schedule alpha_t = alpha/(t+t_0) with alpha(1-gamma_hat) > 1/2 that the formal proof requires.) A standard bootstrap argument closes the gap, but it is absent from the source.",
+      "failure_location": {
+        "quote": "where the hidden constants depend on the contraction parameters and the oracle second moment bound.",
+        "tag": "thm:main_sa_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add a bootstrap stability argument: bound the oracle noise by c||v_t||_inf^2 <= c'(||v*||_inf^2 + ||e_t||_q^2) on the anchored subspace W, insert this into the second-moment recursion, and choose t_0 large enough to absorb the resulting m_t term, yielding the uniform oracle bound and hence the stated rates for Algorithm 1; also state the oracle and stepsize conditions explicitly as hypotheses of thm:main_sa_rate and cor:main_end_to_end_v.",
+      "overall_effect": "The finite-sample convergence guarantee for Algorithm 1 and the advertised end-to-end query-complexity claims ('it suffices to choose K, T, M') are not established for the actual sampling scheme; all rates remain conditional on an unverified iterate-boundedness property.",
+      "primary_affected_tag": "thm:main_sa_rate",
+      "target_type": "formal_result",
+      "title": "Oracle second-moment hypothesis for the projected SA rate is circular and never verified for Algorithm 1",
+      "why_classification": "The gap is closable by a contained, standard bootstrap argument with no loss of rate, scope, or algorithmic content, but it is a genuinely missing argument whose current hypotheses are omitted or circular, so it exceeds a routine local fix."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2602.00474",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n04-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "972379f0da0ee4de13a10747348296e76d7000e64b93e768397abb525d521a6d",
+  "status": "ok"
+}

@@ -1,0 +1,223 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&= \\frac{1}{2m^2} \\left\\||\\mathcal{F}(\\bm{Q}\\odot\\bm{z}_k)| -  \\sqrt{\\bm{d}_k}\\right\\|_2^2\\,.",
+          "tag": "app:computation_misfit_derivative"
+        },
+        {
+          "quote": "Note that this computation does not work when $\\mathcal{F}(\\bm{Q}\\odot \\bm{z}_k))_r=0$ at some index $r$.  This issue can be prevented by finding the gradient using the third statement of Proposition~\\ref{prop:mm_cond}.",
+          "tag": "app:computation_misfit_derivative"
+        },
+        {
+          "quote": "\\epsilon\\left\\langle\\nabla_{\\bm{x}}\\Phi\\left(\\bm{x}^{(j)},\\bm{y}^{(j)}\\right),\\bm{h}\\right\\rangle+o(\\epsilon)&= \\Phi\\left(\\bm{x}^{(j)}+\\epsilon \\bm{h},\\bm{y}^{(j)}\\right)-\\Phi\\left(\\bm{x}^{(j)},\\bm{y}^{(j)}\\right)\\,,",
+          "tag": "app:proof_mm_cond"
+        }
+      ],
+      "failure_explanation": "The objective contains terms (|F(Q z_k)_r| - sqrt(d_{k,r}))^2, which are not real-differentiable at points where F(Q z_k)_r = 0 while d_{k,r} > 0 (|w| is nondifferentiable at w = 0). At such an anchor z^{(j)}, nabla Phi(z^{(j)}) does not exist, so the third bullet of Proposition 3.1 is ill-defined, and the proof's first-order expansion of Phi at (x^{(j)}, y^{(j)}) is invalid there. The appendix acknowledges the failure and claims it is 'prevented' by invoking the third statement of Proposition 3.1 itself, which is circular: that statement is exactly what requires proof and its proof assumes differentiability. No nondegeneracy hypothesis is stated anywhere.",
+      "failure_location": {
+        "quote": "\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right) = \\nabla_{\\bm{z}}\\widetilde{\\Phi}\\left(\\bm{z}^{(j)} ; \\bm{z}^{(j)}\\right)",
+        "tag": "prop:mm_cond"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a standing nondegeneracy hypothesis (F(Q P_k z)_r != 0 whenever d_{k,r} > 0 at the points concerned) under which the bullet and its proof are valid, and at degenerate points define the algorithmic/stopping-criterion gradient by the surrogate formula overline(Q)(Q z - R(z)) as a convention. All advertised results survive at nondegenerate points.",
+      "overall_effect": "The gradient-agreement property is unproven (and the gradient undefined) at degenerate anchors. Consequently the optimality conclusion of Theorem 3.1, the gradient norms appearing in Theorem 3.2, and the fine/coarse stopping criteria of Proposition 4.6 (which use nabla Phi_k(z_k) = nabla tilde-Phi_k(z_k; z_k)) are ill-defined whenever an iterate has a vanishing Fourier coefficient with d_{k,r} > 0. The algorithm itself is unaffected since it only evaluates the surrogate-gradient formula.",
+      "primary_affected_tag": "prop:mm_cond",
+      "target_type": "formal_result",
+      "title": "Gradient-agreement claim is ill-defined at anchors with vanishing Fourier coefficients",
+      "why_classification": "This is a degenerate-case gap repairable by a standard local nondegeneracy condition plus a definitional convention; the method, conclusions, rate, and advertised scope all survive. No new nontrivial lemma is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\item \\textbf{Optimality:} By Proposition~\\ref{prop:convergence_iterative_surrogate}, the inequality~\\eqref{eqn:proof_thm_2} achieves equality only when $\\theta\\left(\\mathcal{F}\\left(\\bm{Q} \\bm{z}_k^{(j+1)}\\right)\\right) = \\theta\\left(\\mathcal{F}\\left(\\bm{Q} \\bm{z}_k^{(j)}\\right)\\right)$",
+          "tag": "app:proof_convergence_iterative_surrogate"
+        },
+        {
+          "quote": "\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = \\nabla_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z}^{(j+1)};\\bm{z}^{(j+1)}\\right) = 0",
+          "tag": "app:proof_convergence_iterative_surrogate"
+        }
+      ],
+      "failure_explanation": "The proof only establishes the forward direction (equality of objectives forces phase agreement, hence R(z^{(j+1)}) = R(z^{(j)}), hence z^{(j+1)} is stationary). The reverse implication nabla Phi(z^{(j+1)}) = 0 => Phi(z^{(j+1)}) = Phi(z^{(j)}) is false. Counterexample inside the paper's framework: N = 1, P_1 = I, Q = J; choose hat(w) with |hat(w)| = sqrt(d_1) entrywise and no zero entries, and set w = F^{-1} hat(w). Then R_1(w) = w, so w is stationary with Phi(w) = 0. Start the iteration at z^{(0)} = w/c with real c > 0, c != 1: since F(Q z^{(0)}) = hat(w)/c has the same phases as hat(w), R_1(z^{(0)}) = w, the surrogate is (1/2)||z - w||^2, and z^{(1)} = w. Then nabla Phi(z^{(1)}) = 0 but Phi(z^{(1)}) = 0 < Phi(z^{(0)}), contradicting the claimed equivalence.",
+      "failure_location": {
+        "quote": "\\Phi\\left(\\bm{z}^{(j+1)}\\right)=\\Phi\\left(\\bm{z}^{(j)}\\right)\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0",
+        "tag": "thm:convergence_iterative_surrogate"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Weaken the 'Additionally' claim to the forward implication that is actually proved (Phi(z^{(j+1)}) = Phi(z^{(j)}) implies nabla Phi(z^{(j+1)}) = 0), or restate the equivalence with the anchor stationarity nabla Phi(z^{(j)}) = 0, which is the standard MM fixed-point characterization.",
+      "overall_effect": "The 'convergence and optimality' characterization is overstated: a stationary next iterate does not imply zero descent in the current step. The monotone-descent inequality (the part used downstream) is unaffected, and no other labelled result uses the biconditional.",
+      "primary_affected_tag": "thm:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "Optimality biconditional in Theorem 3.1: the reverse implication is false",
+      "why_classification": "The repair is a limited weakening of one clause of the theorem (or a restatement with the correct iterate); it requires no new architecture and leaves a recognizably comparable result, but it necessarily withdraws a stated equivalence that is false in general."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&= \\left(\\frac{1}{2} \\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right)\\cdot \\left|\\bm{z}-\\bm{z}^{(j)}\\right|^2 + \\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot\\left(\\frac{1}{2} \\sum_{k=1}^N P_k^{\\top}\\nabla_{\\bm{z}_k}\\Phi_k\\left(\\bm{z}_k^{(j)}\\right)\\right)\\\\",
+          "tag": "app:proof_convergence_rate"
+        },
+        {
+          "quote": "\\nabla_{\\bm{z}}\\Phi(\\bm{z}) &= \\sum_{k=1}^N P_k^\\top \\nabla_{\\bm{z}_k}\\Phi_k(P_k\\bm{z})",
+          "tag": "eqn:misfit_derivative_full"
+        },
+        {
+          "quote": "\\Phi\\left(\\bm{z}^{(j)}\\right)-\\Phi\\left(\\bm{z}^{(j+1)}\\right)\\geq\\frac{1}{L}\\left\\|\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\right\\|_2^2",
+          "tag": "app:proof_convergence_rate"
+        }
+      ],
+      "failure_explanation": "The exact expansion ends with linear terms (1/2) overline(delta).nabla Phi + (1/2) delta.overline(nabla Phi), since (1/2) sum_k P_k^T nabla Phi_k = (1/2) nabla Phi by (2.7). In the displayed 'Hölder' step the factor 1/2 on the linear terms is dropped (Hölder only justifies the quadratic-term bound), doubling the linear part. With L = (1/2)||sum_k P_k^T |Q|^2||_infty and the step z = z^{(j)} - (1/L) nabla Phi, the correct algebra gives total decrease L t^2 ||g||^2 - t ||g||^2, whose optimum is at t = 1/(2L) yielding descent (1/(4L))||nabla Phi||^2 = (1/(2||w||_infty))||nabla Phi||^2, not the claimed (1/L)||nabla Phi||^2 (the claimed step t = 1/L gives zero guaranteed descent). Telescoping then gives min ||nabla Phi||^2 <= (2||w||_infty/(n+1)) Phi(z^{(0)}), four times the stated constant ||w||_infty/(2(n+1)).",
+      "failure_location": {
+        "quote": "&\\leq \\frac{1}{2}\\left\\|\\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right\\|_\\infty\\left\\|\\bm{z}-\\bm{z}^{(j)}\\right\\|_2^2+\\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\,\\\\",
+        "tag": "app:proof_convergence_rate"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restore the factor 1/2 on the linear terms, use the step z = z^{(j)} - (1/(2L)) nabla Phi(z^{(j)}) to obtain descent (1/(4L))||nabla Phi||^2, and restate the theorem's bound with constant 2||sum_k P_k^T |Q|^2||_infty/(n+1) instead of ||sum_k P_k^T |Q|^2||_infty/(2(n+1)).",
+      "overall_effect": "The quantitative sublinear-rate bound stated in Theorem 3.2 (and echoed in the conclusion's 'sub-linear convergence guarantees') is not established; the constant is overstated by a factor of 4. The sublinear O(1/n) rate type itself survives with the corrected constant.",
+      "primary_affected_tag": "thm:convergence_rate",
+      "target_type": "formal_result",
+      "title": "Factor-of-two algebra error in the convergence-rate proof inflates the descent constant",
+      "why_classification": "The repair is local routine calculus, but it necessarily worsens the stated quantitative guarantee by a factor of 4, so mathematical content is lost; the rate type, method, and advertised scope survive, making this a limited quantitative weakening rather than a collapse."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:coarse_grid_update"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\widehat{\\bm{z}_{H,k}}^{(j)} = \\bm{z}_{H,k}^{(j)} + \\frac{\\overline{\\bm{Q}_H}}{\\bm{u}_H + |\\bm{Q}_H|^2}\\left(\\mathcal{R}^H_k\\left(\\bm{z}_k^{(j)}\\right) - \\bm{Q}_H\\bm{z}_{H,k}^{(j)}\\right)",
+          "tag": "eqn:multigrid_coarse_rPIE"
+        },
+        {
+          "quote": "\\bm{u}_H + |\\bm{Q}_H|^2&= \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\bm{I}_h^H\\left(\\bm{u}+|\\bm{Q}|^2\\right)",
+          "tag": "app:proof_automatic_regularization_selection"
+        },
+        {
+          "quote": "The choice is made to specifically avoid singularity and to {ensure consistency} between the coarse-grid and fine-grid models.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At every recursive level the update divides elementwise by u_H + |Q_H|^2. By the (correct) identity u_H + |Q_H|^2 = (|Q_H|^2 / I_h^H|Q|^2) I_h^H(u + |Q|^2), and since u + |Q|^2 = alpha|Q|^2_max + (1-alpha)|Q|^2 > 0, this denominator vanishes exactly when |Q_H| = |I_h^H Q| = 0 while I_h^H|Q|^2 > 0 — i.e., when the four complex probe values in a 2x2 bin cancel to zero. The numerator overline(Q_H)(...) also vanishes, so the update is the undefined expression 0/0. The stated conventions ('undefined entries are set to 0/1') cover only the weight vectors, not this division. This contradicts the claim that the weights 'specifically avoid singularity'.",
+      "failure_location": {
+        "quote": "$\\bm{z}^+_k \\leftarrow \\bm{z}_k^{(j)} + \\frac{\\overline{\\bm{Q}}}{\\bm{u} + |\\bm{Q}|^2}\\left(\\mathcal{R}_k\\left(\\bm{z}_k^{(j)}\\right) - \\bm{Q}\\bm{z}_k^{(j)}\\right)$.",
+        "tag": "alg:MGPS"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the convention that the coarse update component is 0 at entries where u_H + |Q_H|^2 = 0 (equivalently |Q_H| = 0 with nonzero bin energy); this is the actual proximal-point solution there, because the coarse surrogate (1/2)||Q_H z_{H,k} - R^H||^2 is then independent of z_{H,k}.",
+      "overall_effect": "MGPS (Algorithm 4) can produce NaN/undefined coarse updates at degenerate bins at any multigrid level, and the displayed update formulas (4.4) and (4.9) in Theorem 4.3 inherit the same undefined expression. The advertised singularity-avoidance property fails in this regime.",
+      "primary_affected_tag": "alg:MGPS",
+      "target_type": "algorithm",
+      "title": "Coarse MGPS update is an unhandled 0/0 when a probe bin cancels (|Q_H| = 0)",
+      "why_classification": "A one-line degenerate-case convention fixes the algorithm and coincides with the mathematically correct prox solution; the method, the descent result (Theorem 4.3), and all advertised scope survive unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "gives a descending direction of the surrogate model on the fine grid~\\eqref{eqn:fine_grid_surrogate_model} at $\\bm{z}'_{k}$",
+          "tag": "thm:coarse_grid_update"
+        },
+        {
+          "quote": "\\STATE Update fine-grid estimate: $\\widetilde{\\bm{z}}^{(j)}_{k} \\leftarrow \\bm{z}^{(j)}_k + \\bm{I}_H^h\\,\\bm{e}^{(j)}_{H,k}$.",
+          "tag": "alg:MGPS"
+        },
+        {
+          "quote": "\\STATE Use a line search to determine $\\bm{z}_h^+ = \\bar{\\bm{z}}_h + \\alpha\\, \\bm{I}_H^h\\, \\bm{e}_H$ satisfying $f_h(\\bm{z}_h^+) \\le f_h(\\bar{\\bm{z}}_h)$.",
+          "tag": "alg:mgopt"
+        }
+      ],
+      "failure_explanation": "The prose asserts that the weight choices ensure convergence of MGrPIE. What Section 4.2 actually establishes is: boundedness of the weights (Prop. 4.1), fine-coarse consistency inequalities (Prop. 4.2), and that the lifted coarse update is a descent direction for the fine surrogate (Thm. 4.3: nabla tilde-Phi_k^* I_H^h e_{H,k} <= 0). No result shows that the unit-step coarse update used in MGPS (no line search, unlike the MG/OPT template the paper reviews, which explicitly line-searches to guarantee f_h decrease) actually decreases the surrogate value, and there is no monotone-descent or convergence statement for the shuffled multigrid iteration on Phi. A step-size/curvature argument (or a line search) is a missing nontrivial step between the proved descent direction and the claimed convergence.",
+      "failure_location": {
+        "quote": "These choices ensure the convergence of \\texttt{MGrPIE}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Either supply the missing contained argument — for the quadratic surrogate the unit coarse step decreases tilde-Phi_k because (I_h^H|Q|^2) A = |Q_H|^2/(u_H + |Q_H|^2) <= 1, and the proximal post-smoothing decreases it further — together with a monotone-descent statement for the sweep, or weaken the sentence to the proven claim that the lifted coarse update is a descent direction of the fine surrogate.",
+      "overall_effect": "The validity/convergence guarantee attributed to MGrPIE in Section 4.2 (and echoed in the abstract's and conclusion's convergence language for the method) is not established by the formal content; only a descent-direction property is. The analyzed convergence theorems (3.1, 3.2) cover the idealized exact surrogate minimization (3.4), not the stochastic multigrid algorithm actually deployed.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that the weight choices 'ensure the convergence of MGrPIE' is unsupported: only a descent direction is proved",
+      "why_classification": "Closing the gap needs a contained but nontrivial step-size/monotonicity argument, or else a limited weakening of the stated guarantee; neither is a one-line local fix, but no new global proof architecture is required and the paper's design and numerical claims survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\max_{\\|\\bm{g_1}\\|_\\infty\\leq1}\\left|\\bm{e}_{H,k}(\\bm{I}_h^H\\bm{g_1})\\right|_r= \\max_{\\|\\bm{g_2}\\|_\\infty\\leq1} \\left|\\bm{I}_h^H\\bm{e}_k(\\bm{g_2})\\right|_r",
+          "tag": "prop:automatic_regularization_selection"
+        },
+        {
+          "quote": "\\max_{\\|\\bm{g}\\|_\\infty\\leq1} \\left|\\bm{I}_h^H\\bm{e}_k(\\bm{g})\\right|_r = \\left(\\bm{I}_h^H\\frac{1}{\\bm{u}+|\\bm{Q}|^2}\\right)_r",
+          "tag": "app:proof_automatic_regularization_selection"
+        },
+        {
+          "quote": "\\bm{u}_H + |\\bm{Q}_H|^2&= \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\bm{I}_h^H\\left(\\bm{u}+|\\bm{Q}|^2\\right)",
+          "tag": "app:proof_automatic_regularization_selection"
+        }
+      ],
+      "failure_explanation": "The fine-side maximum equals (I_h^H(1/w))_r and the coarse-side maximum equals (1/(u_H+|Q_H|^2))(|Q_H|^2/I_h^H|Q|^2)_r = 1/(I_h^H w)_r with w = u + |Q|^2 (the third line of the final derivation, which is correct). The claimed equality of the two maxima therefore requires I_h^H(1/w) = 1/I_h^H(w) elementwise, i.e., that w be constant within each 2x2 bin. This is false in general — e.g., a bin with w = (2,2,2,3) gives mean-of-reciprocals 11/24 ≈ 0.458 versus reciprocal-of-mean 4/9 ≈ 0.444 — and for the paper's rPIE choice w = alpha|Q|^2_max + (1-alpha)|Q|^2 it holds only when alpha = 1 or |Q|^2 is bin-constant (numerics use alpha = 0.01–0.06). The fourth line of the derivation asserts exactly this invalid identity; Lemmas 5.1–5.3 do not justify it because u + |Q|^2 is not a prolongation of any coarse vector. By convexity of 1/x the valid relation is the one-sided inequality coarse max <= fine max.",
+      "failure_location": {
+        "quote": "\\bm{I}_h^H\\left(\\frac{1}{\\bm{u}+|\\bm{Q}|^2}\\right)&= \\frac{1}{\\bm{u}_H + |\\bm{Q}_H|^2}\\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\,,\\\\",
+        "tag": "app:proof_automatic_regularization_selection"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restate the proposition as the valid one-sided bound max_{||g||_infty<=1} |e_{H,k}(I_h^H g)|_r = 1/(I_h^H w)_r <= (I_h^H(1/w))_r = max_{||g||_infty<=1} |I_h^H e_k(g)|_r (with equality iff w is bin-constant), and adjust the surrounding prose to claim controlled rather than exactly matched coarse updates.",
+      "overall_effect": "The theoretical justification for the automatic regularization selection — exact entrywise matching of worst-case coarse and (downsampled) fine update magnitudes — fails for the parameter regimes used in the paper. What survives is one-sided control (the coarse update magnitude is no larger than the downsampled fine one), so the qualitative claim that 'the magnitude of the coarse-grid update is controlled' remains, but the claimed equality underpinning automatic parameter transfer, echoed in the introduction and conclusion ('automatically selected regularization'), is lost.",
+      "primary_affected_tag": "prop:automatic_regularization_selection",
+      "target_type": "formal_result",
+      "title": "Automatic regularization selection: the claimed entrywise equality of worst-case update magnitudes is false",
+      "why_classification": "The proof contains an invalid inference and the stated equality is false in the paper's own parameter regimes; the repair is a limited weakening to an inequality that still yields a recognizably comparable 'controlled update' statement, so no new architecture is needed but the exact-matching guarantee is withdrawn."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=-4\\left(\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right)\\right)^*\\operatorname{diag}(\\bm{A})\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right)",
+          "tag": "prop:multigrid_convergence"
+        }
+      ],
+      "failure_explanation": "The proof shows the inner product equals -4 (I_h^H g)^* diag(A) (I_h^H g) with g = nabla tilde-Phi_k(z_k'; z_k^{(j)}), so equality holds iff diag(A)^{1/2} I_h^H g = 0, i.e., iff the bin-averaged gradient I_h^H g vanishes on the support of A. This does not imply g = 0: any nonzero gradient whose 2x2 bin averages vanish (e.g., fine entries (1,-1,1,-1) within a bin) gives e_{H,k} = 0 and equality with g != 0. (Separately, the theorem applies this proposition with A = |Q_H|^2/((u_H+|Q_H|^2) I_h^H|Q|^2), which is only nonnegative, not 'positive' as the proposition assumes; the inequality conclusion is unaffected.) The false strictness characterization is not used by Theorem 4.3 or anywhere else.",
+      "failure_location": {
+        "quote": "Additionally, equality implies $\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)=0$.",
+        "tag": "prop:multigrid_convergence"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Delete the 'Additionally' sentence, or restate it correctly: equality holds iff I_h^H(nabla tilde-Phi_k) vanishes on the support of A.",
+      "overall_effect": "An isolated false sub-claim about when the descent inequality is strict; the descent inequality itself — the only part used downstream in Theorem 4.3 — remains valid.",
+      "primary_affected_tag": "prop:multigrid_convergence",
+      "target_type": "formal_result",
+      "title": "Strictness addendum in the descent-direction proposition is false",
+      "why_classification": "The repair is a local deletion or restatement of an unused strictness remark; every substantive claim and guarantee (the descent direction in Theorem 4.3) is preserved."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2504.10118",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s4",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e9a1fb619c786f644b01b96a3fc12b8566c68fb3b203771e6f1978a95647dfae",
+  "status": "ok"
+}

@@ -1,0 +1,215 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Anisotropic &  $8.09\\times 10^{-2}$&  $2.09\\times 10^{-1}$",
+          "tag": "tab:encode-decode"
+        },
+        {
+          "quote": "Anisotropic &    $6.08\\times10^{-2}$&  $5.09\\times10^{-2}$",
+          "tag": "tab:benchmark_summary"
+        },
+        {
+          "quote": "This distinction is typically benign for trace-class (anisotropic) references, but becomes critical under a white-noise reference.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims the Encode-only/Encode–Decode distinction (unweighted vs decoder-weighted conditional-mean regression) is 'benign' for prior-aligned trace-class references. The paper's own Table tab:encode-decode reports, for the anisotropic reference, epsilon_sigma^eval = 2.09e-1 (Advection), 3.15e-1 (Reaction–Diffusion) and 2.92e-1 (Navier–Stokes), versus 5.09e-2, 8.68e-2 and 5.39e-2 for the same datasets under Encode-only (tab:benchmark_summary) — a 3–6x degradation that exceeds the paper's own 10% accuracy standard on three of four benchmarks. The characterization is contradicted by the reported evidence: the distinction materially degrades posterior-uncertainty estimates even for anisotropic references.",
+      "failure_location": {
+        "quote": "This distinction is benign for prior-aligned trace-class references, but becomes critical under a white-noise reference, where Encode--Decode \\emph{fails} empirically (see Table~\\ref{tab:encode-decode}).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Reword the claim (Sec. 3.4 and the appendix restatement) to state that Encode–Decode with anisotropic references avoids catastrophic failure but substantially degrades epsilon_sigma on three of four benchmarks, citing the reported values.",
+      "overall_effect": "Readers are misled about the viability of the Encode–Decode variant under the paper's recommended prior-aligned reference; the actual contrast is between 'degraded' (anisotropic) and 'catastrophic' (white), not 'benign' and 'critical'.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Encode–Decode declared 'benign' for anisotropic references despite 3–6x degradation of uncertainty error in the paper's own table",
+      "why_classification": "A local rewording aligned with the paper's own reported numbers preserves all formal results, tables, and the design message; no inference, construction, or guarantee needs repair."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:exists_lipschitz_onestep"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{t-r}\\int_r^t v(z_\\tau,\\tau)\\mathrm{d}\\tau",
+          "tag": "eq:avg_velocity_def"
+        },
+        {
+          "quote": "\\mathcal{T}_\\theta(\\xi;y_{\\mathrm{obs}}) := \\xi - w_\\theta(\\xi,0,1;\\,y_{\\mathrm{obs}}), \\quad \\xi\\sim\\rho",
+          "tag": "eq:one_step_sampler"
+        },
+        {
+          "quote": "the Föllmer velocity field $v(t,\\cdot)$ associated with transporting $\\rho=\\mathcal N(0,C)$ to $\\pi(\\cdot\\mid y_{\\mathrm{obs}})$",
+          "tag": "thm:dimfree_lip_velocity"
+        },
+        {
+          "quote": "\\mathcal{T}(\\xi;y_{\\mathrm{obs}}):=\\xi-w(\\xi;0,1),\\quad \\xi\\in\\mathcal{H}",
+          "tag": "cor:exists_lipschitz_onestep"
+        }
+      ],
+      "failure_explanation": "The theorem's $w$ is the averaged velocity defined in Sec. 3.2 (eq:avg_velocity_def): the time-average of the interpolation velocity $v=\\xi-x$ of the coupling between posterior samples $x$ and independent reference draws $\\xi\\sim\\rho$ — the object learned by Algorithms 1–2 and used in the one-step sampler (eq:one_step_sampler). The appendix support instead concerns the averaged velocity of the Föllmer flow (thm:dimfree_lip_velocity, lem:avg_velocity_lipschitz), a velocity field associated with a different transport between $\\rho$ and $\\pi$; no identification between the Föllmer averaged velocity and the Mean-Flow averaged velocity is established anywhere (for non-Gaussian posteriors, the case of interest, they are different fields). Moreover, the cited theorem states the Föllmer velocity transports $\\rho$ to $\\pi$ forward in time; under that convention the $\\rho\\to\\pi$ one-step map adds the trajectory displacement evaluated along the forward flow, whereas the corollary and the sampler subtract an endpoint-evaluated average, so as written the construction does not even deliver a reference-to-posterior map without repairing the direction convention. Even if completed, the argument establishes Lipschitz regularity of a different object than the theorem states.",
+      "failure_location": {
+        "quote": "The averaged velocity $w(\\cdot;0,1)$ is globally Lipschitz on $\\mathcal{H}$ and the one-step map",
+        "tag": "thm:lipschitz_onestep_main"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate thm:lipschitz_onestep_main (and the Sec. 3.5.1 lead-in and abstract phrasing) as the existence claim actually targeted: under Assumption 1 there exists a globally Lipschitz one-step transport from $\\rho_A$ to the posterior, constructed from the Föllmer velocity with the transport-direction convention made consistent; explicitly flag that Lipschitz regularity of the Mean-Flow averaged velocity learned by the algorithm is not established.",
+      "overall_effect": "The headline claim — dimension-free Lipschitz regularity (Lip $\\le 1+L_0/2$) of the averaged velocity / one-step transport actually learned and used by the method, in function space — is unsupported, as are the abstract's 'establish the Lipschitz regularity of the resulting transport' and Sec. 3.5.1's 'the mean velocity is globally Lipschitz'. Only a weaker existence statement (a Lipschitz one-step transport between reference and posterior exists, via a Föllmer construction) is targeted by the appendix chain, and that chain has separate defects (finite-dimensional scope; unproven lemma).",
+      "primary_affected_tag": "thm:lipschitz_onestep_main",
+      "target_type": "formal_result",
+      "title": "Lipschitz theorem asserts regularity of the learned Mean-Flow averaged velocity, but the proof chain concerns the Föllmer-flow averaged velocity, with an inconsistent transport direction",
+      "why_classification": "A contained, source-supported repair exists (align the statement with the corollary's existence formulation and fix the direction convention), leaving a recognizable result and the design principle; but it withdraws the advertised reading that the learned transport itself is certified Lipschitz, and no source-supported repair establishes the stated claim about the Mean-Flow object (that would require new theory in function space)."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then $\\mathcal{T}_\\#\\rho_{\\mathrm{W}}=\\rho_{\\mathrm{A}}$ as probability measures on $\\mathcal{H}^{-s}$.",
+          "tag": "ex:direct_singular_map"
+        },
+        {
+          "quote": "and cannot be realized as a continuous or Lipschitz map $\\mathcal{H}\\to\\mathcal{H}$",
+          "tag": "ex:direct_singular_map"
+        },
+        {
+          "quote": "we justified the necessity of a prior-aligned trace-class base measures to ensure the well-posedness in function space while white noise is not",
+          "tag": null
+        },
+        {
+          "quote": "transports are well-posed under trace-class references but can be intrinsically ill-posed under white-noise references due to measure singularity",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "What is established: white noise is a.s. not $\\mathcal{H}$-valued and is mutually singular with trace-class Gaussians and $\\mathcal{H}$-supported posteriors on $\\mathcal{H}^{-s}$ (proposition, correct). What the prose claims: that this 'rules out any regular deterministic one-step transport realized as a map $\\mathcal{H}\\to\\mathcal{H}$', that white references are 'obstructed'/'intrinsically ill-posed due to measure singularity', and that trace-class references are necessary 'to ensure the well-posedness'. The ruling-out holds only trivially: since $\\rho_{\\mathrm{W}}(\\mathcal{H})=0$, no map with domain $\\mathcal{H}$ — regular or not — can push $\\rho_{\\mathrm{W}}$ forward; regularity is not the obstruction. Meanwhile the paper's own Example constructs a bounded linear (hence continuous and Lipschitz) one-step transport $\\mathcal{T}=C^{1/2}$ with $\\mathcal{T}_\\#\\rho_{\\mathrm{W}}=\\rho_{\\mathrm{A}}$ on $\\mathcal{H}^{-s}$, so regular deterministic one-step transports from the white reference do exist on the space where white noise lives; the example's closing claim that the pushforward 'cannot be realized as a continuous or Lipschitz map $\\mathcal{H}\\to\\mathcal{H}$' is likewise misleading, since $C^{1/2}$ is bounded on $\\mathcal{H}$ — only the domain's zero $\\rho_{\\mathrm{W}}$-measure fails. The formal content is a latent-geometry/domain mismatch, not an obstruction to regular one-step sampling.",
+      "failure_location": {
+        "quote": "and rules out any regular deterministic one-step transport realized as a map $\\mathcal{H}\\to\\mathcal{H}$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the obstruction claims to the established content: white-noise latents lie a.s. outside $\\mathcal{H}$, so any sampler must act on distribution-valued states and the transport cannot be realized on $\\mathcal{H}$ regardless of regularity; regular one-step transports from white noise exist on $\\mathcal{H}^{-s}$ (the paper's own example) but are necessarily smoothing/non-invertible; the observed instability is an empirical finding.",
+      "overall_effect": "The abstract ('incompatible with the function-space limit'), the contribution bullet ('necessity of a prior-aligned trace-class base measure to ensure the well-posedness... while white noise is not'), the subsection framing ('White reference is obstructed in the function-space regime'), and the conclusion ('intrinsically ill-posed... due to measure singularity') claim more than Proposition prop:white_colored_singular and Example ex:direct_singular_map support; the theoretical 'necessity' argument for trace-class references is weaker than advertised (the empirical instability evidence is unaffected).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "White-noise 'obstruction' prose overstates the singularity result: the paper's own example is a Lipschitz one-step transport from the white reference",
+      "why_classification": "The formal results (proposition and example) are correct and survive unchanged; the repair is a local rewording of prose characterizations that preserves the design guidance and all empirical claims."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Following the common heuristic that stable Monte Carlo estimates require $\\mathcal{O}(50\\,\\tau_{\\mathrm{int}})$ \\emph{post burn-in} steps",
+          "tag": "rem:mcmc_tau"
+        },
+        {
+          "quote": "Across all datasets considered here, we observe $\\tau_{\\mathrm{int}}\\approx 500$",
+          "tag": "rem:mcmc_tau"
+        },
+        {
+          "quote": "From the post burn-in coefficient samples $\\{h^{(i)}\\}_{i=1}^{N_{\\mathrm{MCMC}}}$ where $N_{\\mathrm{MCMC}}= 10^3$",
+          "tag": null
+        },
+        {
+          "quote": "These empirical $\\mu_{\\mathrm{true}}$ and $\\sigma_{\\mathrm{true}}$ are used as the trustworthy references",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the paper's own estimate $\\tau_{\\mathrm{int}}\\approx 500$ on all datasets, $10^3$ post-burn-in MCMC samples contain at most $\\sim10^3$ and, if selected consecutively or lightly thinned from one chain, only $O(1)$–$O(10^2)$ effectively independent samples — far below the paper's own stability criterion of $50\\,\\tau_{\\mathrm{int}}=25{,}000$ post-burn-in steps. The source never specifies how the $10^3$ samples are drawn from the 200-walker, 25,000-step post-burn-in ensemble. The Monte-Carlo error of the 'ground-truth' reference mean and standard-deviation fields may then be of the same order as the reported evaluation errors ($\\epsilon_\\mu,\\epsilon_\\sigma\\approx 4$–$9\\%$), so the claims that these are trustworthy references and ground-truth statistics, and the accuracy conclusions measured against them, are unsupported as written. The 'fair comparison' rationale matches sample counts with the model's $10^3$ i.i.d. evaluation draws, not effective sample sizes.",
+      "failure_location": {
+        "quote": "we use ground-truth posterior statistics $\\mu_\\mathrm{true}$ and $\\sigma_\\mathrm{true}$, computed from trustworthy MCMC samples $\\{x^{(i)}_{\\mathrm{ref}}\\}_{i=1}^{N_{\\mathrm{MCMC}}}$ for PDE inverse problems with $N_{\\mathrm{MCMC}}=10^3$ for fair comparison",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Specify a selection of reference samples whose effective sample size meets the paper's own criterion (e.g., thin the full 200-walker, 25,000-step post-burn-in ensemble by at least $\\tau_{\\mathrm{int}}$, or compute the reference statistics from the full ensemble), and re-evaluate the benchmark tables against the recomputed references.",
+      "overall_effect": "The reliability of all quantitative posterior-accuracy comparisons against MCMC references (Tables tab:benchmark_summary, tab:encode-decode, tab:podno, tab:unet, tab:improved_mean_flow, tab:diffusion) is in doubt as written; reported error levels may be partly reference noise rather than model error.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "'Trustworthy' MCMC reference statistics from 10^3 samples conflict with the paper's own IACT-based stability criterion (tau_int ≈ 500)",
+      "why_classification": "The fix is procedural (the chains already exist; no new proof architecture is needed), but it requires redoing the reference statistics and re-evaluating every benchmark table, and until then the paper's central quantitative accuracy claims are unreliable — beyond a local wording repair."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:avg_velocity_lipschitz",
+        "cor:exists_lipschitz_onestep",
+        "thm:lipschitz_onestep_main"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Although Theorem~\\ref{thm:dimfree_lip_velocity} is stated and proved in finite dimensions in \\cite{meng2025pathway}, its Lipschitz bound involves constants that are independent of the ambient dimension. We therefore interpret it as a function-space stability statement.",
+          "tag": null
+        },
+        {
+          "quote": "We work in a function-space regime: let $\\mathcal{H}$ be a separable Hilbert space with norm $\\|\\cdot\\|_{\\mathcal{H}}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Theorem thm:dimfree_lip_velocity is stated as a result about the Föllmer velocity on the separable Hilbert space $\\mathcal{H}$ (the section explicitly works 'in a function-space regime', and Assumption 1 is formulated on $\\mathcal{H}$ with operators $B$ and $C$), and the downstream lemma and corollary apply it on $\\mathcal{H}$. The paper's own remark concedes the result 'is stated and proved in finite dimensions' in the cited work and that the function-space reading is only an 'interpretation'. Dimension-independent finite-dimensional constants do not establish the Hilbert-space statement: no construction of the infinite-dimensional Föllmer velocity under Assumption 1 and no limiting or consistency argument is provided. The chain relies on a result invoked outside its proven scope.",
+      "failure_location": {
+        "quote": "the Föllmer velocity field $v(t,\\cdot)$ associated with transporting $\\rho=\\mathcal N(0,C)$ to $\\pi(\\cdot\\mid y_{\\mathrm{obs}})$ is globally Lipschitz and satisfies",
+        "tag": "thm:dimfree_lip_velocity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Either prove the Hilbert-space version of the cited Föllmer-velocity Lipschitz bound under Assumption 1, or restate thm:dimfree_lip_velocity and everything derived from it as finite-dimensional results with dimension-independent constants, explicitly marking the $\\mathcal{H}$-statement as an assumption rather than a theorem.",
+      "overall_effect": "The function-space validity of the entire Lipschitz-regularity chain (lem:avg_velocity_lipschitz, cor:exists_lipschitz_onestep, thm:lipschitz_onestep_main) is unestablished; only a finite-dimensional version with dimension-free constants is supported by the cited proof.",
+      "primary_affected_tag": "thm:dimfree_lip_velocity",
+      "target_type": "formal_result",
+      "title": "Föllmer-velocity Lipschitz theorem invoked on Hilbert space although, by the paper's own remark, it is proved only in finite dimensions",
+      "why_classification": "A supported resolution without new proof architecture exists — re-scoping the Lipschitz chain to finite dimensions with dimension-free constants, as the paper's own remark anticipates — which limits the function-space scope of this theorem but leaves a recognizable dimension-free stability result; the genuinely function-space singularity theory is unaffected."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:exists_lipschitz_onestep",
+        "thm:lipschitz_onestep_main"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathrm{Lip}\\big(w(\\cdot;r,t)\\big) \\le \\frac{1}{t-r}\\int_r^t \\mathrm{Lip}\\big(v(\\tau,\\cdot)\\big)\\,d\\tau \\le L_0\\,\\frac{t+r}{2}",
+          "tag": "lem:avg_velocity_lipschitz"
+        },
+        {
+          "quote": "\\frac{1}{t-r}\\int_r^t v(z_\\tau,\\tau)\\mathrm{d}\\tau",
+          "tag": "eq:avg_velocity_def"
+        },
+        {
+          "quote": "\\mathrm{Lip}\\big(v(t,\\cdot)\\big)\\le L_0\\,t,\\quad \\forall\\,t\\in[0,1],",
+          "tag": "thm:dimfree_lip_velocity"
+        }
+      ],
+      "failure_explanation": "No proof is given for the lemma. Its central inequality $\\mathrm{Lip}(w(\\cdot;r,t))\\le\\frac{1}{t-r}\\int_r^t\\mathrm{Lip}(v(\\tau,\\cdot))\\,d\\tau$ would hold for a frozen-point time average, but the paper's averaged velocity (eq:avg_velocity_def) integrates $v$ along trajectories; its Lipschitz constant in the evaluation state involves the Jacobian of the backward flow, which by Grönwall can grow like $\\exp(\\int\\mathrm{Lip}(v))$ and is not bounded by the average of $\\mathrm{Lip}(v)$. Concretely, in one dimension $v(z,\\tau)=-\\lambda\\tau z$ satisfies the hypothesis pattern $\\mathrm{Lip}(v(\\tau,\\cdot))=\\lambda\\tau\\le L_0\\tau$ (with $L_0=\\lambda$), yet its trajectory-averaged velocity on $[0,1]$ has $\\mathrm{Lip}(w(\\cdot;0,1))=e^{\\lambda/2}-1>\\lambda/2$, contradicting the asserted bound. (If $w$ were instead read as the frozen-point average, the inequality becomes trivial but $w$ is no longer the Mean-Flow averaged velocity, and $\\mathcal{T}(\\xi)=\\xi-w(\\xi;0,1)$ would no longer transport $\\rho$ to $\\pi$.) The lemma also never specifies along which flow or coupling the average is taken. The specific constants $L_0(t+r)/2$ and $L_0/2$ — hence $\\mathrm{Lip}(\\mathcal{T})\\le 1+L_0/2$ in the corollary and main theorem — are not established.",
+      "failure_location": {
+        "quote": "Then average velocity $w(\\cdot;r,t)$ for $0\\le r\\le t\\le 1$ is globally Lipschitz and",
+        "tag": "lem:avg_velocity_lipschitz"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Prove a corrected bound via Grönwall (e.g., $\\mathrm{Lip}(w(\\cdot;r,t))\\le(1+\\exp(\\int_r^t\\mathrm{Lip}(v(\\tau,\\cdot))\\,d\\tau))/(t-r)$, giving $\\mathrm{Lip}(w(\\cdot;0,1))\\le 1+e^{L_0/2}$), or add hypotheses (e.g., one-sided Lipschitz/contractivity of the velocity) under which the linear-in-$L_0$ bound holds, and restate the corollary and main theorem with corrected constants.",
+      "overall_effect": "The stated dimension-free constants in cor:exists_lipschitz_onestep and thm:lipschitz_onestep_main are unsupported; from the stated hypotheses only weaker, exponential-in-$L_0$ bounds follow by standard arguments.",
+      "primary_affected_tag": "lem:avg_velocity_lipschitz",
+      "target_type": "formal_result",
+      "title": "Averaged-velocity Lipschitz lemma is stated without proof, and its key inequality fails for trajectory-based averaged velocities",
+      "why_classification": "The asserted bound is not derivable as claimed and no proof is given, so a contained but genuinely new argument is required; the natural repair materially worsens the stated constants (exponential rather than linear in $L_0$) while preserving the qualitative dimension-free Lipschitz conclusion — a limited weakening leaving a recognizable result."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2603.14798",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n04-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0f6ec979e47d2519e2c412057c0f5825f3ea8b1152a13eeb5f936f507299fc73",
+  "status": "ok"
+}

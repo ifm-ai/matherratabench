@@ -1,0 +1,278 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "and is found as a solution to the weak form of the ODE system (\\ref{eq:ivp_ode_diff_src}) in $\\Omega_{n}$:",
+          "tag": null
+        },
+        {
+          "quote": "Evaluating the expression (\\ref{eq:ivp_ode_weak}) leads to a system of nonlinear algebraic equations:",
+          "tag": null
+        },
+        {
+          "quote": "therefore $\\mathbf{q}_{n}(0) \\neq \\mathbf{u}_{n}$ in the general case $\\mathbf{F} \\not\\equiv 0$.",
+          "tag": "lemma:p_ode_exact:remark:rado_l"
+        },
+        {
+          "quote": "The local solution $q_{n}$ (\\ref{eq:local_sol}) is the solution of the weak form (\\ref{eq:ivp_ode_weak}) of the ODE (\\ref{eq:p_ode}).",
+          "tag": "lemma:p_ode_exact"
+        }
+      ],
+      "failure_explanation": "The displayed problem (eq:ivp_ode_weak) — N+1 weak equations plus the pointwise condition q_n(0)=u_n — is not what the scheme solves. Its weak-form matrix [∫φ_p φ_q'] has null vector 1 (rows/columns sum to zero) so the weak equations are generically unsolvable in P_N together with the extra initial condition, while (eq:ivp_ode_weak_rewr_dst) is a square, nonsingular system obtained only after integrating by parts and inserting u_n in the boundary term. The solution of that system does not satisfy the displayed initial condition: the paper's own computation gives q_n(0) = u_n + Δt·Σ_q (a^Tψ)_q F_q with a^Tψ ≠ 0 (e.g. for N=1, a^Tψ = (√3/6, −√3/6)).",
+      "failure_location": {
+        "quote": "\\mathbf{q}_{n}(0) = \\mathbf{u}_{n}.",
+        "tag": "eq:ivp_ode_weak"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace (eq:ivp_ode_weak) by the problem actually solved: either the N+1 equations (eq:ivp_ode_weak_rewr_dst), or the weak form obtained after integration by parts in which u_n enters the left (upwind) boundary term together with the trace value q_n(0^+); delete the false pointwise initial condition and reword the places that invoke it.",
+      "overall_effect": "The claim that the local solution is the solution of the stated weak IVP with initial condition q_n(0)=u_n is false, and the derivation 'evaluating (eq:ivp_ode_weak) leads to (eq:ivp_ode_weak_rewr_dst)' is not an equivalence. The scheme itself and all order/stability results obtained from the RK reformulation are unaffected.",
+      "primary_affected_tag": "eq:ivp_ode_weak",
+      "target_type": "other",
+      "title": "Local DG predictor does not solve the stated weak initial-value problem",
+      "why_classification": "A correct formulation must withdraw the promised pointwise initial condition and replace the defining weak problem by a different (flux-type) statement, i.e. a limited weakening plus a re-derivation of the construction; no order, stability or rate guarantee is lost, and no new global proof architecture is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In cases $N = 1$, $2$, $3$, the Butcher tables take the form:",
+          "tag": null
+        },
+        {
+          "quote": "where $a_{pq}$ is elements of the matrix $a = \\kappa^{-1}\\mu$",
+          "tag": null
+        },
+        {
+          "quote": "The $r = 0$ in $C(N)$ corresponds to the relation: $\\sum_{q = 0}^{N} a_{pq} = \\tau_{p}$.",
+          "tag": "lemma:cn_cond"
+        }
+      ],
+      "failure_explanation": "For N=1 the tableau prints a_12 = −(1−√3)/2 and a_21 = (1−√3)/2. From the source's definitions (κ_pq = ψ_pψ_q + ∫φ_p φ_q', μ = diag(1/2,1/2)) one gets κ = [[1,(√3−1)/2],[−(1+√3)/2,1]] and a = κ^{-1}μ = [[1/3,(1−√3)/6],[(1+√3)/6,1/3]]. The printed rows sum to (3√3−1)/6 and (1−3√3)/6 instead of the abscissas τ_0=(3−√3)/6, τ_1=(3+√3)/6, contradicting the paper's own relation Σ_q a_pq = τ_p (case r=0 of C(N)); the printed matrix therefore defines an inconsistent, first-order method. The N=2 and N=3 tableaux do satisfy κa = μ.",
+      "failure_location": {
+        "quote": "\\frac{1}{2}-\\frac{\\sqrt{3}}{6} & \\frac{1}{3} & -\\frac{1-\\sqrt{3}}{2}\\\\",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Recompute the two off-diagonal entries of the N=1 tableau as a = κ^{-1}μ, i.e. a = [[1/3,(1−√3)/6],[(1+√3)/6,1/3]].",
+      "overall_effect": "The explicit N=1 coefficients of the IRK-GL-ADER-DG method are wrong: implementing from the printed tableau gives a different method that fails C(1) and the claimed order p_RK = 3. All symbolic results of the paper are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Butcher tableau for N=1 is inconsistent with a = κ^{-1}μ and with the paper's own row-sum relation",
+      "why_classification": "Two entries are fixed by a direct 2×2 recomputation from the source's own definitions; no claim, rate or guarantee of the paper has to be withdrawn or reproved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:p_ode_exact:remark:gl_classic"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The exact solution $u\\in\\mathcal{P}_{L+1}(\\mathcal{R})$ and can therefore be represented exactly as $q_{n} \\in \\mathrm{span}(\\{\\varphi_{p}\\}_{p = 0}^{N})$ (\\ref{eq:local_sol}) if and only if $L < N$.",
+          "tag": "lemma:p_ode_exact"
+        },
+        {
+          "quote": "the local solution at $q_{n}(1)$ coincides with the solution $u_{n+1}$ at the node $t_{n+1}$ obtained by the Gauss-Rado quadrature formula, similar to (\\ref{eq:gl_rule}), that is exact for $\\mathcal{P}_{2N}(\\mathcal{R})$",
+          "tag": "lemma:p_ode_exact:remark:rado_r"
+        },
+        {
+          "quote": "the Lemma~\\ref{lemma:p_ode_exact} can also be weakened to the condition $f(t)\\in\\mathcal{P}_{N}(\\mathcal{R})$, due to condition $a_{pq} = \\int_{0}^{\\tau_{p}} \\varphi_{q}(\\tau) d\\tau$.",
+          "tag": "lemma:p_ode_exact:remark:gl_classic"
+        }
+      ],
+      "failure_explanation": "Both remarks claim that Lemma lemma:p_ode_exact 'can be weakened' to L ≤ N, i.e. that the local solution equals the exact solution for f ∈ P_N. But q_n lies in span{φ_p} = P_N whereas the exact solution of u' = f with f ∈ P_N lies in P_{N+1} \\ P_N, and the proof of the very lemma they invoke states that exact representation holds 'if and only if L < N'. The arguments given establish at most exactness of the endpoint value q_n(1) = u_{n+1} (Radau quadrature exactness) or of the stage values (classical GL matrix), not exactness of the local solution on Ω_n.",
+      "failure_location": {
+        "quote": "so the local solution will be exact for an ODE (\\ref{eq:p_ode}) with $f(t)\\in\\mathcal{P}_{N}(\\mathcal{R})$, i.e. $L \\leq N$.",
+        "tag": "lemma:p_ode_exact:remark:rado_r"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Weaken both remarks to the exactness of the node value q_n(1) (right Rado) resp. of the stage values (classical GL) for f ∈ P_N, or restrict them to L < N.",
+      "overall_effect": "The advertised weakening for right Rado polynomials and for the classical GL variant (exactness of the local solution for f ∈ P_N, i.e. L ≤ N) is false; only nodal/stage-value exactness in that regime survives. The Gauss-based Lemma lemma:p_ode_exact and all results built on it are unaffected.",
+      "primary_affected_tag": "lemma:p_ode_exact:remark:rado_r",
+      "target_type": "formal_result",
+      "title": "Remarks claim the degree-N local solution is exact for f ∈ P_N, which is impossible",
+      "why_classification": "The stated conclusion cannot be kept as written (a degree argument forbids it), so a limited weakening to nodal/stage exactness is required; the resulting claim remains recognizably comparable and no other result changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "coroll:rk_is_not_coll"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that if and only if the $\\mathbf{q}_{n, p}$ are exact solutions at quadrature points and $N > L$, then the local solution $\\mathbf{q}$ is an exact solution.",
+          "tag": "lemma:cn_cond"
+        },
+        {
+          "quote": "Lemma~\\ref{lemma:p_ode_exact} shows that $\\mathbf{q}$ is exact solution only in case $L < N$, and in case $L \\geq N$ the local solution $\\mathbf{q}$ is not an exact solution.",
+          "tag": "lemma:cn_cond"
+        },
+        {
+          "quote": "since it has the convergence order $p_{\\rm RK} > s$ and the simplifying condition $C(N+1)$ is not satisfied.",
+          "tag": "coroll:rk_is_not_coll"
+        }
+      ],
+      "failure_explanation": "From the stated equivalence ('stage values exact AND N > L' ⟺ 'q exact') together with 'q is not exact for L ≥ N', the proof concludes 'for L ≥ N the stage values are not exact'. In that regime the conjunct N > L is false, so the equivalence says nothing about the stage values and the conclusion does not follow. This unsupported conclusion is the only analytic argument offered for the failure of C(N+1) (and D(N+1)), which Corollary coroll:rk_is_not_coll and the surrounding prose rely on (only numerical evidence is given elsewhere).",
+      "failure_location": {
+        "quote": "Therefore, in case $L < N$, the values $\\mathbf{q}_{n, p}$ are exact solutions at quadrature points, and in case $L \\geq N$ they are not.",
+        "tag": "lemma:cn_cond"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Delete the invalid inference and prove C(N+1) fails directly: C(N+1) is equivalent to ∫φ_p ω' = −ψ_p ω(0) for all p (ω(τ)=∏_q(τ−τ_q) the nodal polynomial), and summing over p forces ω(1)=0, contradicting that all Gauss nodes lie strictly inside (0,1).",
+      "overall_effect": "The claim that C(N+1) and D(N+1) fail, and hence the justification of Corollary coroll:rk_is_not_coll ('not a collocation method'), rest on an invalid inference. The statement of Lemma lemma:cn_cond (that C(N) holds) is still proved by the first part of the argument and by the alternative proof.",
+      "primary_affected_tag": "lemma:cn_cond",
+      "target_type": "formal_result",
+      "title": "Invalid sharpness inference in the proof of C(N), used for the failure of C(N+1)",
+      "why_classification": "A short local computation replaces the bad step and restores the sharpness statement and Corollary coroll:rk_is_not_coll; nothing else in the paper changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "coroll:order_ader_dg_nodes",
+        "cor:added-3"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The famous Butcher's theorem predicts the implication:",
+          "tag": "theorem:order_rk"
+        },
+        {
+          "quote": "B(2N+2)\\, \\wedge\\, C(N)\\, \\wedge\\, D(N)\\ \\Rightarrow\\ p_{\\rm RK} = 2N+1,",
+          "tag": "theorem:order_rk"
+        },
+        {
+          "quote": "therefore the approximation order for the solution at the nodes $\\{\\mathbf{u}_{n}\\}$ is also equal $p_{\\rm G} = 2N+1$ --- superconvergence is observed.",
+          "tag": "coroll:order_ader_dg_nodes"
+        },
+        {
+          "quote": "so the approximation order of the IRK-GL-ADER-DG method $p_{\\rm RK} = 2N+1$, which is an alternative proof of Theorem~\\ref{theorem:order_rk}.",
+          "tag": "cor:added-3"
+        }
+      ],
+      "failure_explanation": "The hypotheses B(2N+2), C(N), D(N) give only the Butcher lower bound p ≥ min(2N+2, 2N+2, 2N+1) = 2N+1; no order condition of degree 2N+2 is shown to fail, so the equality p_RK = 2N+1 (and with it the comparison 'one unit less than the GL method') is not established. The same gap is repeated in the 'alternative proof' via the residual term O(z^{2N+2}), which also yields only a lower bound.",
+      "failure_location": {
+        "quote": "The approximation order of the IRK-GL-ADER-DG method is $p_{\\rm RK} = 2N + 1$.",
+        "tag": "theorem:order_rk"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add the missing upper bound: the degree-(2N+2) elementary-weight order condition Σ_q w_q τ_q^{2N+2} = 1/(2N+3) is violated because the (N+1)-point Gauss–Legendre rule has degree of exactness 2N+1, hence the order is exactly 2N+1.",
+      "overall_effect": "The advertised exact rate p_RK = p_G = 2N+1 and the statement that it is exactly one below the GL order are unproven; superconvergence (order ≥ 2N+1 > N+1) is still established.",
+      "primary_affected_tag": "theorem:order_rk",
+      "target_type": "formal_result",
+      "title": "Order 2N+1 is proved only as a lower bound, not as the exact order",
+      "why_classification": "One short, standard quadrature-error argument supplies the missing upper bound; every stated claim and guarantee is preserved with no new lemma or re-optimization."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "and $2N+2$ in the exponent is associated with the approximation order $p_{\\rm RK} = 2N+1$ at one step $\\varepsilon = O({\\Delta t}_{n}^{p_{\\rm RK}+1})$, expressed through the local truncation error $\\varepsilon$.",
+          "tag": "lemma:local_sol_order_L_inf"
+        },
+        {
+          "quote": "where $\\mathbf{u}_{n}$ is known with the approximation order $p_{\\rm RK} = 2N+1$.",
+          "tag": "lemma:local_sol_order_L_inf"
+        }
+      ],
+      "failure_explanation": "The bound |u̟(t_n) − u_n| < C_app Δt_n^{2N+2} treats the error at grid node t_n as a one-step local truncation error from an exact start. On a multi-element grid the error at t_n is the accumulated global error, of size O(Δt^{2N+1}), which is larger than Δt_n^{2N+2} by a factor of order 1/Δt; the displayed inequality is therefore false for a uniform family of grids with fixed A_n.",
+      "failure_location": {
+        "quote": "A_{n} C_{\\rm app} {\\Delta t}_{n}^{2N+2},",
+        "tag": "lemma:local_sol_order_L_inf"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the one-step local-error bound by the global nodal-error bound |u̟(t_n) − u_n| ≤ C Δt^{2N+1} (Δt = max Δt_n) and adjust the accompanying sentence.",
+      "overall_effect": "The estimate for the inherited (initial-data) part of the local-solution error is invalid; the conclusion ||q_n − u|| = O(Δt^{N+1}) is unaffected, since the correct nodal error O(Δt^{2N+1}) is still of higher order than N+1.",
+      "primary_affected_tag": "lemma:local_sol_order_L_inf",
+      "target_type": "formal_result",
+      "title": "Nodal error in the local-solution estimate identified with a one-step local error",
+      "why_classification": "A local exponent/constant correction restores a valid estimate and leaves the lemma, its rate and every dependent claim intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:local_sol_order_L_inf",
+        "coroll:local_sol_order_qpoints",
+        "theorem:local_sol_order_L_p"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The local solution $\\mathbf{q}_{n}$ is the Lagrange interpolation polynomial of degree $N$ (\\ref{eq:local_sol}) whose coefficients $\\{\\hat{\\mathbf{q}}_{p}\\}_{p = 0}^{N}$ are the solution of the system of equations (\\ref{eq:snae_lstdg})",
+          "tag": "lemma:local_sol_order_L_inf"
+        },
+        {
+          "quote": "$C(N)$ (\\ref{eq:simp_cond}) is satisfied for the IRK-GL-ADER-DG method.",
+          "tag": "lemma:cn_cond"
+        }
+      ],
+      "failure_explanation": "The classical Lagrange bound max|f^{(N+1)}|/(N+1)!·∏|t−t_i| applies to the polynomial that interpolates the exact solution at the nodes. Here q_n interpolates the computed stage values q̂_p, which are not the exact values u̟(τ_p); the difference is not estimated anywhere. The missing ingredient — a stage-value estimate q̂_p = u̟(t_n+τ_pΔt_n) + O(Δt^{N+1}), which follows from the stage order N implied by condition C(N) — is neither stated nor invoked.",
+      "failure_location": {
+        "quote": "\\frac{{\\Delta t}_{n}^{N+1}}{(N+1)!}\\max\\limits_{t\\in\\Omega_{n}}\\left|\\frac{d^{N+1}\\tilde{\\mathbf{u}}(t)}{dt^{N+1}}\\right| \\equiv B_{n} {\\Delta t}_{n}^{N+1},",
+        "tag": "lemma:local_sol_order_L_inf"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Split |q_n − u̟| ≤ |q_n − I_h u̟| + |I_h u̟ − u̟| (I_h the Lagrange interpolant at the quadrature nodes), bound the second term by the displayed interpolation formula, and prove the stage-order estimate q̂_p − u̟(t_n+τ_pΔt_n) = O(Δt^{N+1}) from condition C(N) together with standard RK stage theory to control the first term.",
+      "overall_effect": "The key estimate of the proof of Lemma lemma:local_sol_order_L_inf is unjustified, so the O(Δt^{N+1}) order of the local solution (in L_∞ and hence in L_q and at the nodal points) is unproved as written.",
+      "primary_affected_tag": "lemma:local_sol_order_L_inf",
+      "target_type": "formal_result",
+      "title": "Interpolation error bound applied to a polynomial that does not interpolate the exact solution",
+      "why_classification": "A contained but nontrivial stage-order argument has to be added and the error decomposition rebuilt; the conclusion, the rate N+1 and the scope are all preserved, so the loss is limited."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-2",
+        "cor:added-3"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The denominator of $R(z)$ is a polynomial $R_{N, N+1}(z)$ of degree $N$.",
+          "tag": "theorem:pade_approx"
+        },
+        {
+          "quote": "Therefore the numerator of $R(z)$ is a polynomial $P_{N, N+1}(z)$ of degree $N-1$.",
+          "tag": "theorem:pade_approx"
+        },
+        {
+          "quote": "and $\\mathrm{rank}(a - \\mathbf{1}\\mathbf{w}^{T}) = N$.",
+          "tag": "theorem:pade_approx"
+        },
+        {
+          "quote": "the residual term of the $R_{N, N+1}(z)$ is $\\exp(z) - R_{N, N+1}(z) = O(z^{2N+2})$",
+          "tag": "cor:added-3"
+        }
+      ],
+      "failure_explanation": "The proof computes only degrees/ranks and then asserts the Padé identity; knowing that deg P ≤ N and deg Q = N+1 does not identify R(z) with the (N,N+1)-Padé approximant, which additionally requires that R(z) match exp(z) through order 2N+2 (never verified). The degree statements themselves are wrong: a is invertible, so det(I−za) has degree N+1 (not N), and rank(a−1w^T)=N gives numerator degree at most N (not N−1); the asserted degrees (N−1 over N) would give error O(z^{2N}), contradicting the O(z^{2N+2}) used in Corollary cor:added-3.",
+      "failure_location": {
+        "quote": "It follows that $R(z)$ is the $(N, N+1)$-Pad\\'{e} approximation $R_{N, N+1}(z)$ of $\\exp(z)$.",
+        "tag": "theorem:pade_approx"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Correct the two degree statements (denominator degree N+1, numerator degree at most N) and add the missing matching argument: with numerator degree ≤ N and denominator degree ≤ N+1, the order condition R(z)−exp(z)=O(z^{2N+2}) (from the order proved in Theorem theorem:order_rk) together with uniqueness of the (N,N+1)-Padé approximant yields the claimed identification.",
+      "overall_effect": "The claim that R(z) is the (N,N+1)-Padé approximant, the advertised alternative proof of A-stability and the 'alternative proof' of the order 2N+1 are unsupported. L-stability survives, since the (corrected) degree structure alone gives R(∞)=0.",
+      "primary_affected_tag": "theorem:pade_approx",
+      "target_type": "formal_result",
+      "title": "Padé identification of the stability function not established by the degree computation",
+      "why_classification": "A contained nontrivial argument (degree/matching count plus Padé uniqueness) and two corrected computations are needed, but the statement itself, the stability hierarchy and all rates survive without new global architecture."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2508.13824",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3e175dd2e259a3e49b58cc7560cd52a083f3c7164ec3322e77f97936ff6880de",
+  "status": "ok"
+}

@@ -1,0 +1,83 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "To ensure the injectivity of the encoder approximated by a neural network, each layer must be injective, condition which is satisfied when $n_\\ell \\geq n_{\\ell-1}$ for all hidden layers, so $n_\\ell \\geq n_\\text{in}$ for $\\ell = 1,\\ldots,L-1$.",
+          "tag": "th:reduction"
+        }
+      ],
+      "failure_explanation": "The theorem asserts that having hidden layer widths $n_\\ell \\geq n_\\text{in}$ is sufficient to guarantee injectivity of the encoder network $\\Psi': \\mathbb{R}^N \\to \\mathbb{R}^n$. The proof claims that each hidden layer is injective whenever $n_\\ell \\geq n_{\\ell-1}$, and that this ensures injectivity of the encoder. This reasoning fails for two reasons: first, standard activation functions such as ReLU map non-positive inputs to zero and are non-injective regardless of layer widths, and weight matrices with $n_\\ell \\geq n_{\\ell-1}$ need not be full-rank; second, the output layer maps from $n_{L-1} \\geq N$ to $n < N$, which cannot be injective on its domain. A condition on hidden layer widths alone cannot guarantee injectivity of a dimension-reducing neural network.",
+      "failure_location": {
+        "quote": "A sufficient condition for the width to ensure injectivity of the encoder is $n_\\ell \\geq n_\\text{in}$, for $\\ell = 1,\\ldots, L-1$.",
+        "tag": "th:reduction"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Weaken Theorem 2 to state the existence of an encoder embedding based on topological embedding theorems and universal approximation of embeddings, rather than claiming that an arbitrary or trained network with hidden widths $n_\\ell \\geq n_\\text{in}$ is automatically injective.",
+      "overall_effect": "The architectural guarantee that the representation error vanishes ($\\Varepsilon_1 = 0$) solely by enforcing $n_\\ell \\geq n_\\text{in}$ is unsupported.",
+      "primary_affected_tag": "th:reduction",
+      "target_type": "formal_result",
+      "title": "Layer width condition does not ensure injectivity of the encoder",
+      "why_classification": "The claim can be repaired by replacing the layer-by-layer injectivity assertion with an existence statement for embedding networks, preserving the overall reduction methodology without developing a new global proof framework."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:latent_dim"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "thus $B_r((t,\\mu))\\to U$ is a local homeomorphism. We conclude that $U$ is locally Euclidean, so $\\{u_N(t;\\mu)\\}_{t\\in[0,T], \\mu \\in \\mathcal{P}}$ is a $a$-manifold, that we denote by $\\mathcal{M}$.",
+          "tag": "th:manifold"
+        }
+      ],
+      "failure_explanation": "The theorem concludes that the image $\\{u_N(t; \\mu)\\}$ is an $a$-manifold assuming only local injectivity of $(t, \\mu) \\mapsto u_N(t; \\mu)$. A continuous, locally injective map from a compact domain is an immersion, not necessarily an embedding. If the map is not globally injective—such as when a periodic orbit closes or trajectories for different parameter values cross—the image contains self-intersections. In the subspace topology, neighborhoods of self-intersection points are homeomorphic to intersecting branches rather than Euclidean balls, violating the definition of a manifold. Additionally, $[0, T] \\times \\mathcal{P}$ has boundaries and corners, so the image can at best be a manifold with boundary.",
+      "failure_location": {
+        "quote": "and the map $B_r((t^*,\\mu^*)) \\ni (t, \\mu) \\to u_N$ is injective $\\forall (t^*, \\mu^*) \\in [0,T]\\times\\mathcal{P}$, with $r$ small enough. Then, the set $\\{u_N(t;\\mu)\\}_{t\\in[0,T], \\mu \\in \\mathcal{P}}$ is a $a$-manifold.",
+        "tag": "th:manifold"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that the parameter-and-time-to-solution map $(t, \\mu) \\mapsto u_N(t; \\mu)$ is globally injective (or consider the augmented solution set as noted in Observation 2) and formulate the result for an $a$-manifold with boundary.",
+      "overall_effect": "Theorem 3 and the subsequent application of the Menger-Nöbeling embedding theorem in Theorem 4 are mathematically invalid unless global injectivity and boundary behavior are properly accounted for.",
+      "primary_affected_tag": "th:manifold",
+      "target_type": "formal_result",
+      "title": "Local injectivity does not guarantee that the solution set is a topological manifold",
+      "why_classification": "Adding global injectivity is a standard local hypothesis fix that directly validates the embedding argument of Theorem 3 and preserves Theorem 4 without altering any subsequent results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Due to the specific assumptions made in the construction of the decoder, the projection sets some eigenvalues to zero while leaving the others unchanged. Therefore, the eigenvalues $\\neq 0$ are those of $\\Lambda$, so the bound on the timestep of the \\node\\ is, in the worst scenario, the same as that of the \\Node.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In Section 5.4 (Step 2, Linear encoder, linear decoder), the text asserts that the decoder can be constructed as $J_\\Psi = (J_{\\Psi'}^\\top J_{\\Psi'})^{-1}J_{\\Psi'}^\\top$. Because $J_{\\Psi'} \\in \\mathbb{R}^{n \\times N}$ with $n < N$, the matrix $J_{\\Psi'}^\\top J_{\\Psi'}$ is $N \\times N$ of rank at most $n$, making it singular and non-invertible. Furthermore, the text claims that for the projection $P = J_\\Psi J_{\\Psi'}$, the non-zero eigenvalues of $P \\Lambda$ are equal to the eigenvalues of $\\Lambda$. This is mathematically false: an orthogonal projection of a matrix onto a subspace does not preserve its eigenvalues (they become Ritz values). In fact, compressing a Hurwitz matrix $\\Lambda$ onto a subspace can produce eigenvalues with positive real parts, so the stability limit of Forward Euler for the reduced system is not generally bounded by that of the full system.",
+      "failure_location": {
+        "quote": "This property can be achieved, for example, constructing the decoder as $J_\\Psi = (J_{\\Psi'}^\\top J_{\\Psi'})^{-1}J_{\\Psi'}^\\top$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Withdraw the claim of eigenvalue preservation for generic projections, correct the pseudoinverse formulation to $(J_{\\Psi'} J_{\\Psi'}^\\top)^{-1}$ (or state that the decoder is a right inverse), and restrict the stability guarantee to invariant subspaces of $\\Lambda$ or symmetric negative definite matrices where Rayleigh quotients apply.",
+      "overall_effect": "The guarantee that the Forward Euler stability limit of the reduced linear model is bounded by that of the full-order system is false and unsupported as stated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Singular matrix inversion and false preservation of eigenvalues under projection",
+      "why_classification": "The claim is materially false and requires withdrawing or restricting the unconditional A-stability preservation guarantee for linear reductions, but the remainder of the reduction framework remains viable."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2509.21280",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "19e6e96dd9ce47adb57a09625f6049b746db9e746b768969ac4dfbdbdddf7897",
+  "status": "ok"
+}

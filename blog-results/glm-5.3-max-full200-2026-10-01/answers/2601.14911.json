@@ -1,0 +1,120 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem: main result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Define $\\sigma_0 \\coloneqq \\rho_0$ and $\\lambda_0 \\coloneqq 1$.",
+          "tag": "algo: geometric MG"
+        },
+        {
+          "quote": "$\\sigma_{\\ell} \\coloneqq \\sigma_{\\ell-1} + \\lambda_{\\ell}\\rho_{\\ell}$",
+          "tag": "algo: geometric MG"
+        },
+        {
+          "quote": "$\\edual{\\rho^{\\uparrow}_0}{v_0} = R_{\\ell}(v_0) - \\edual{\\sigma_1^{\\downarrow}}{v_0}$",
+          "tag": "algo: symmetric MG"
+        },
+        {
+          "quote": "Then, for all $\\ell=0,1,2,\\dots$, perform the following steps~\\eqref{item: AFEM 1}--\\eqref{item: AFEM 3}:",
+          "tag": "algo: AFEM"
+        }
+      ],
+      "failure_explanation": "Algorithm 2 accepts hierarchies $\\{\\TT_{\\ell'}\\}_{\\ell'=0}^{\\ell}$ including $\\ell=0$, and Algorithm 6 applies the solver at $\\ell=0$. At $\\ell=0$, step (iii) of Algorithm 2 references $\\sigma_{\\ell-1}=\\sigma_{-1}$, which is never defined (step (i) defines only $\\sigma_0$); moreover step (iii) redefines $\\rho_\\ell=\\rho_0$ and $\\sigma_\\ell=\\sigma_0$ (and $\\lambda_0$), colliding with and discarding step (i)'s coarse solve, so $\\Phi_0$ is ill-defined. Even the natural patch $\\sigma_{-1}:=0$ produces a solver (a single optimally damped additive high-order patch step that throws away the coarse solve) whose contraction is not covered by the paper's analysis. Algorithm 4 has the analogous defect at $\\ell=0$ via the undefined $\\sigma^{\\downarrow}_1$, and the matrix notation inherits the collision ($\\B_0$ is defined both by the coarse solve in item (i) and by the finest-level formula in item (iii)).",
+      "failure_location": {
+        "quote": "\\edual{\\rho_{\\ell,z}}{v_{\\ell,z}} = R_{\\ell}(v_{\\ell,z}) - \\edual{\\sigma_{\\ell-1}}{v_{\\ell,z}} \\quad \\text{for all } v_{\\ell,z} \\in \\XX_{\\ell,z}^p.",
+        "tag": "eq: local high order problem"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a standard degenerate-case treatment: restrict the V-cycles to $\\ell\\ge1$ and define the $\\ell=0$ solver separately (e.g., coarse solve followed by properly damped high-order patch corrections with a well-defined contraction), or set up the level indices so that the $\\ell=0$ case is well defined without redefining $\\rho_0,\\sigma_0,\\lambda_0$.",
+      "overall_effect": "The multigrid V-cycles and the induced preconditioners $\\B^{\\MG}_\\ell$ (and $\\vec B^{\\SMG}_\\ell$) are ill-defined on the initial level, which the adaptive algorithm explicitly uses; the contraction/optimality guarantees are ill-posed at $\\ell=0$ (e.g., Corollary 'theorem: main result' employs $\\B^{\\MG}_\\ell$, whose level-0 definition is ambiguous). All statements for $\\ell\\ge1$ are unaffected.",
+      "primary_affected_tag": "algo: geometric MG",
+      "target_type": "algorithm",
+      "title": "V-cycle algorithms (and induced preconditioner notation) are ill-defined on the initial level ℓ=0",
+      "why_classification": "Only the degenerate initial level is affected; a standard local edge-case fix preserves the method, all convergence rates, and the advertised scope for $\\ell\\ge1$."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma: symmetric multigrid",
+        "corollary: symmetric MG optimality"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\edual{\\rho^{\\downarrow}_{\\ell,z}}{v_{\\ell,z}} = R_{\\ell}(v_{\\ell,z}) \\quad \\text{for all } v_{\\ell,z} \\in \\XX_{\\ell,z}^p.$",
+          "tag": "algo: symmetric MG"
+        },
+        {
+          "quote": "$\\edual{\\rho^{\\downarrow}_{\\ell',z}}{v_{\\ell',z}} = R_{\\ell}(v_{\\ell',z}) - \\edual{\\sigma^{\\downarrow}_{\\ell'+1}}{v_{\\ell',z}} \\quad \\text{for all } v_{\\ell',z} \\in \\XX_{\\ell',z}^1.$",
+          "tag": "algo: symmetric MG"
+        },
+        {
+          "quote": "where we set $\\vec{D}_0^+ \\coloneqq \\lambda \\,\\vec{A}$",
+          "tag": null
+        },
+        {
+          "quote": "Lemma~\\ref{lemma: unnötig} yields the representation",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the down-phase of Algorithm 4, the correction at level $\\ell'$ is computed from the residual after processing only the levels $\\ell'+1,\\dots,\\ell$; hence $\\vec s^{\\downarrow}_{\\ell'}=\\vec B^{\\downarrow}_{\\ell'}\\vec r_\\ell$ requires the product over $i\\in\\{\\ell'+1,\\dots,\\ell\\}$, empty for $\\ell'=\\ell$ (since $\\rho^{\\downarrow}_{\\ell,z}$ solves the raw residual problem). Under the product convention forced by the (correct) formula for $\\vec B^{\\uparrow}_{\\ell'}$, $\\ell'\\ge1$ (non-empty reversed product $\\prod_{i=\\ell}^{0}$ with the $\\vec D^+_0=\\lambda\\vec A$ trick), the written $\\prod_{i=\\ell}^{\\ell'-1}$ spuriously contains the factors for levels $\\ell'$ and $\\ell'-1$ (even $\\vec B^{\\downarrow}_\\ell$ wrongly acquires smoothing factors); under the alternative empty-if-inverted reading, all down-phase factors are missing for $\\ell'<\\ell$. Either way the asserted identities $\\vec s^{\\downarrow}_{\\ell'}=\\vec B^{\\downarrow}_{\\ell'}\\vec r_\\ell$ are false. In addition, the uniform formula for $\\vec B^{\\uparrow}_{\\ell'}$ at $\\ell'=0$ yields $\\vec B^{\\uparrow}_0=\\lambda^{-1}\\vec I^+_0\\vec A_0^{-1}(\\vec I^+_0)^T(\\vec I-\\vec A_\\ell\\vec I^+_0\\vec A_0^{-1}(\\vec I^+_0)^T)\\cdots$, containing a spurious coarse-grid factor and scalar $\\lambda^{-1}$, whereas the coarse solve $\\rho^{\\uparrow}_0$ acts directly on the down-phase residual. Consequently the matrix defined by (eq: sMG preconditioner) is not the matrix representation of Algorithm 4's update, and the claimed derivation of (eq: symmetric multigrid preconditioned matrix) via Lemma 'lemma: unnötig' fails for it (the spurious coarse factor even annihilates the coarse contribution since $\\vec S_0(\\vec I-\\vec S_0)=0$).",
+      "failure_location": {
+        "quote": "$\\vec{B}^{\\downarrow}_{\\ell'} \\coloneqq \\vec{I}^+_{\\ell'}(\\vec{D}_{\\ell'}^+)^{-1}(\\vec{I}^+_{\\ell'})^{T}\\prod_{i=\\ell}^{\\ell'-1}(\\vec{I}-\\lambda \\, \\vec{A}_{\\ell}\\vec{I}_{i}^+(\\vec{D}_{i}^+)^{-1}(\\vec{I}_i^+)^{T})$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the component formulas: in $\\vec B^{\\downarrow}_{\\ell'}$ replace $\\prod_{i=\\ell}^{\\ell'-1}$ by $\\prod_{i=\\ell}^{\\ell'+1}$ (empty for $\\ell'=\\ell$), and define $\\vec B^{\\uparrow}_0$ separately as $\\vec I^+_0\\vec A_0^{-1}(\\vec I^+_0)^T\\prod_{i=\\ell}^{1}(\\vec I-\\lambda\\vec A_\\ell\\vec I^+_i(\\vec D^+_i)^{-1}(\\vec I^+_i)^T)$ (undamped coarse solve on the down-phase residual). All subsequent identities, the Lemma, and the Corollary then hold verbatim.",
+      "overall_effect": "The construction of the paper's symmetric multigrid preconditioner is corrupted as written; Lemma 'lemma: symmetric multigrid' and Corollary 'corollary: symmetric MG optimality', both stated for $\\vec B^{\\SMG}_\\ell$ defined in (eq: sMG preconditioner) and proved via the product identity that no longer follows from that definition, lose their derivation, and the PCG+sMG solver description in Section 7 inherits this. The intended statements (for the correct matrix representation of Algorithm 4, which does satisfy the product identity) remain true.",
+      "primary_affected_tag": "eq: sMG preconditioner",
+      "target_type": "algorithm",
+      "title": "Incorrect products in the levelwise matrices $\\vec B^{\\downarrow}_{\\ell'}$ and $\\vec B^{\\uparrow}_0$ of the symmetric multigrid preconditioner",
+      "why_classification": "The repair is local and loses no result, but it requires rederiving the correct levelwise products (a contained nontrivial argument, the details being 'left to the reader' in the source), and as written the definition of the central symmetric preconditioner and the proofs of both Section-5 results are broken."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm: optimal complexity"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Upon termination of the $k$-loop, define the index $\\underline{k}[\\ell] \\coloneqq k \\in \\N$ and $u_{\\ell}^{\\underline{k}} \\coloneqq u_{\\ell}^{k}$.",
+          "tag": "algo: AFEM"
+        },
+        {
+          "quote": "\\textbf{Mark:} Employ Dörfler marking to determine a set",
+          "tag": "algo: AFEM"
+        },
+        {
+          "quote": "For the proof, we refer to~\\cite{GHPS21,BFMPS23}.",
+          "tag": "thm: optimal complexity"
+        }
+      ],
+      "failure_explanation": "The marking set compares $\\theta\\eta_\\ell(u^{\\underline k}_\\ell)^2$ with $\\eta_\\ell(\\UU_\\ell,u^\\star_\\ell)^2$, i.e., it uses the exact (unknown) discrete solution $u^\\star_\\ell$ on the right-hand side, while the algorithm only ever computes $u^{\\underline k}_\\ell$. The Mark step is therefore not executable as stated. Moreover, since $\\eta_\\ell(\\UU_\\ell,u^\\star_\\ell)\\le\\eta_\\ell(u^\\star_\\ell)$ can be smaller than $\\sqrt{\\theta}\\,\\eta_\\ell(u^{\\underline k}_\\ell)$, the set $\\M_\\ell$ can be empty, making the subsequent minimization $\\min_{\\UU_\\ell\\in\\M_\\ell}\\#\\UU_\\ell$ undefined. The intended computable Dörfler criterion of the cited frameworks uses $u^{\\underline k}_\\ell$ on both sides, as the set's own name $\\M_\\ell[\\theta,u^{\\underline k}_\\ell]$ indicates.",
+      "failure_location": {
+        "quote": "$\\MM_{\\ell} \\in \\M_{\\ell}[\\theta, u_{\\ell}^{\\underline{k}}] \\coloneqq \\{\\UU_{\\ell} \\subset \\TT_{\\ell} : \\theta \\eta_{\\ell}(u_{\\ell}^{\\underline{k}})^2  \\leq \\eta_{\\ell}(\\UU_{\\ell}, u_{\\ell}^{\\star})^2 \\}$",
+        "tag": "algo: AFEM"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace $u_{\\ell}^{\\star}$ by $u_{\\ell}^{\\underline{k}}$ in the definition of $\\M_{\\ell}[\\theta, u_{\\ell}^{\\underline{k}}]$, restoring the computable Dörfler marking of the cited framework; all guarantees then apply verbatim.",
+      "overall_effect": "Algorithm 6's Mark step is ill-defined (it requires the unavailable $u^\\star_\\ell$ and can produce an empty marking set), so the convergence and optimal-complexity guarantee of Theorem 'thm: optimal complexity' — stated for Algorithm 6 and imported from [GHPS21, BFMPS23], where marking uses the computed iterate — is unsupported for the algorithm as written.",
+      "primary_affected_tag": "algo: AFEM",
+      "target_type": "algorithm",
+      "title": "Dörfler marking set in Algorithm 6 references the unknown discrete solution $u^\\star_\\ell$",
+      "why_classification": "A single forced correction (indicated by the set's own name and the meaning of Dörfler marking) restores the algorithm and the quoted theorem; no claim, rate, or scope is lost."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2601.14911",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n04-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "b773b4ea6f1ec011aba9dca18d3186d37198d2578bc111774b99a958d0196df7",
+  "status": "ok"
+}

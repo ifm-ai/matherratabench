@@ -1,0 +1,68 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}} \\geq \\frac{\\mathbb{E}\\|X({\\tilde{\\beta}^{i-1}} - {\\beta})\\|}{\\mathbb{E}\\|X({\\tilde{\\beta}^{i}} - {\\beta})\\|}",
+          "tag": null
+        },
+        {
+          "quote": "it holds that $a_i=\\log_3\\{[1+(1+\\omega)r(i-1,i)]/\\omega\\}$ monotonically increases with repect to $i=2,\\ldots,K$, i.e., $a_2<\\ldots<a_K$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In Theorem 4.3, $r(i-1, i)$ is defined with the numerator and denominator inverted as $\\sqrt{(m_{i-1} - d)/(m_i - d)}$. Because $m_{i-1} < m_i$, this fraction is strictly less than 1. However, the proof in Appendix E requires $r(i-1, i) \\geq \\mathbb{E}\\|X(\\tilde{\\beta}^{i-1} - \\beta)\\| / \\mathbb{E}\\|X(\\tilde{\\beta}^i - \\beta)\\|$; since the smaller sketch size $m_{i-1}$ has larger estimation error than $m_i$, this ratio is asymptotically $\\sqrt{(m_i - d)/(m_{i-1} - d)} > 1$ (approximately $\\sqrt{2}$). Using the inverted ratio $< 1$ makes inequality (26) in Appendix E false and yields a lower bound on $a_i$ that does not guarantee stopping condition (12). Furthermore, this inversion is what caused the false claim that $a_i$ is monotonically increasing with $i$, whereas the true ratio is monotonically decreasing.",
+      "failure_location": {
+        "quote": "where \\( r(i-1,i) = \\sqrt{m_{i-1} - d / m_{i} - d} \\)",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the definition in Theorem 4.3 to $r(i-1, i) = \\sqrt{(m_i - d)/(m_{i-1} - d)}$, update the monotonicity claim to state that $a_i$ decreases with $i$, and adjust the corresponding upper bound $\\alpha$ in Theorem 4.4 to $\\log_3\\{[1 + (1+\\omega)r(1, 2)]/\\omega\\}$.",
+      "overall_effect": "The lower bound on $a_i$ given in Theorem 4.3 fails to ensure the advertised accuracy condition (12). The stated monotonicity $a_2 < \\dots < a_K$ is reversed ($a_i$ is actually decreasing in $i$), and the upper bound $a_i < \\alpha$ in Theorem 4.4 is invalidated because the required $a_i$ exceeds $\\alpha$.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "Inverted dimension ratio in the lower bound for subproblem iteration count",
+      "why_classification": "moderate_issue"
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "T-T^{\\dagger} = & \\log_3(1/\\sigma) - \\sum_{i=1}^{K} a_i \\\\ < & \\log_3(1/\\sigma) - K\\log_3(1/\\omega) = \\log_3(\\omega^K/\\sigma).",
+          "tag": "cmpxtyAlgSLSEPrf"
+        },
+        {
+          "quote": "There exists a constant ${M} >0$, such that if $a_i > {M}$, $i = 1,\\ldots, K$, and $T > T^\\dagger + M$",
+          "tag": "Thf"
+        }
+      ],
+      "failure_explanation": "The proof of Theorem 4.4 derives the 2nd stage cost by choosing $T = \\log_3(1/\\sigma)$ to ensure $(1/3)^T \\leq \\sigma$, and then subtracting the lower bound $\\sum a_i > K \\log_3(1/\\omega)$ to assert that the 2nd stage takes $T - T^\\dagger < \\log_3(\\omega^K/\\sigma)$ iterations. This argument is mathematically invalid: an upper bound on remaining iterations under an arbitrary choice of $T$ does not establish that $T - T^\\dagger$ iterations suffice to reach the noise level. In Theorem 4.2, convergence to the OLS estimator requires $(1/3)^{T - T^\\dagger} \\sqrt{(N-d)/(m_K-d)} = o(1)$, which requires a lower bound $T - T^\\dagger > M$. Moreover, as $\\omega \\to \\sigma^{1/K}$, the formula yields $T - T^\\dagger \\to 0$, falsely claiming that 0 iterations of Stage 2 suffice to achieve the OLS noise level from a sketched estimator with $m_K = N/2$, directly violating the suboptimality lower bound of sketch-and-solve.",
+      "failure_location": {
+        "quote": "The 2nd stage: $4[\\log_3(\\omega^{K}/\\sigma)]Nd$ with $\\omega>\\sigma^{1/K}$.",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a rigorous lower bound on the number of Stage 2 iterations $T - T^\\dagger$ required to reduce the $O(1)$ residual error factor $\\sqrt{(N-d)/(m_K-d)}$ to $o(1)$, independent of the heuristic bound $\\log_3(\\omega^K/\\sigma)$, and bound the Stage 2 FLOPs accordingly.",
+      "overall_effect": "The complexity guarantee for the second stage of Algorithm 2 in Theorem 4.4 is unestablished and false. The claimed trade-off condition $\\omega > \\sigma^{1/K}$ and the resulting total complexity bound for achieving the noise level are unsupported.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "Fallacious derivation of the second-stage iteration count and complexity guarantee",
+      "why_classification": "The main complexity theorem of the paper provides an invalid and unsupported complexity guarantee for Stage 2, which allows degenerate regimes where 0 iterations are claimed to achieve OLS precision, and no complete resolution is supported by the source."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2509.06856",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "981b8984cdca82ea93a1c8e2f7a3a3ff16d853374c7f5e11ece8d6b29bfd4d2f",
+  "status": "ok"
+}
