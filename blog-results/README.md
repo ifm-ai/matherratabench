@@ -13,10 +13,9 @@ python3 scoring/reproduce_blog_results.py
 ```
 
 The script checks every answer, judgment and gold file against its recorded
-SHA-256, builds the same
-paper reports as `evaluation/evaluate.py`, and scores them with
-`scoring/metrics.py`. It prints the scores, and stops with an error if any of
-them differs from those recorded in `blog_results_index.json`. Combining the
+SHA-256, builds the same paper reports as `evaluation/evaluate.py`, and scores
+them with `scoring/metrics.py`. It prints the scores, and stops with an error if
+any of them differs from those recorded in `blog_results_index.json`. Combining the
 eleven runs, it reproduces the pooled recovery of 645 of 717 gold issues and
 the 85 of 200 papers in which every model missed at least one issue. The
 [results page](../scoring/results.md) lists each model's scores, defines the

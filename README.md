@@ -541,7 +541,7 @@ offer this benchmark as a scalable resource for evaluating mathematical
 review, with judgments that remain open to correction. Authors and experts in
 the relevant topics are best positioned to assess these judgments. If you
 believe an annotation is incorrect or missing important context, please
-contact us at **[email address]**. We welcome community input to improve the
+contact us at [Elizaveta.Rebrova@gmail.com](mailto:Elizaveta.Rebrova@gmail.com). We welcome community input to improve the
 gold data.
 
 ## License
