@@ -1,0 +1,242 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "R_k\\hat{e}_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}",
+          "tag": null
+        },
+        {
+          "quote": "Thus arranging the cycles of matrix $A$ into columns of $\\Tilde{A}$ and applying Fast Fourier Transform (FFT) on its columns",
+          "tag": null
+        },
+        {
+          "quote": "R_{k}(j,0) &= \\frac{1}{n} \\left( \\mathbf{1}^T (AD^{-k} \\circ C^{j}) \\mathbf{1} \\right)",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "Column k of W\\tilde A is the DFT of the single k-th cycle, indexed by frequency. By thm:added-2, R_k(j,0) = \\omega^{kj} r_{j,k}, the k-th Fourier coefficient of cycle j for each j. Hence R_k e_1 = n^{-1/2} D^k (row k of W\\tilde A)^T, not D^{-k} times column k. Counterexample: A = e_0 e_0^T has only cycle 0 nonzero, so (W\\tilde A)^{(k)} = 0 for k >= 1. But thm:added-2 gives R_k(0,0) = 1/n for every k. Step 4 therefore returns zero components and the sum does not reconstruct A.",
+      "failure_location": {
+        "quote": "R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)}",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Set R[k] = n^{-1/2} D^k (U_{(k)})^T, i.e. take the k-th row with phase D^{+k} and the correct FFT normalization, consistent with thm:added-2.",
+      "overall_effect": "Algorithm 2 does not output the circulant components. Algorithm 3, which calls it to rank and build the truncated \\tilde A and \\tilde B, inherits wrong components.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "Circulant-decomposition algorithm extracts R_k from the wrong slice of the cycle FFT",
+      "why_classification": "A local index, phase and scaling correction derivable from thm:added-2 restores the algorithm and its O(n^2 log n) cost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "L[j] \\gets \\Lambda_j",
+          "tag": "algo:circulant_decomposition_fft"
+        },
+        {
+          "quote": "W\\bm l_k \\circ C^kW\\bm b",
+          "tag": null
+        },
+        {
+          "quote": "\\text{FFT}(\\Delta A) L_B[t]",
+          "tag": "algo:cd_matrix_multiplication"
+        }
+      ],
+      "failure_explanation": "In the transformed domain, W R_t D^t B = diag(\\sqrt{n} W l_t) C^t W B, as in the text's own derivation. Equivalently, the factor is the t-th cycle of WAW^*. Step 5 instead multiplies by L_A[t] = \\Lambda_t, the t-th cycle of A itself. Counterexample: if all indices are selected, \\tilde A = A, yet Step 5 returns W^*(\\sum_t \\Lambda_t C^t) W B = W^* A W B. For A = e_0 e_0^T this equals (1/n) 1 1^T B, not AB. The \\Delta A \\tilde B line has the same error with L_B[t].",
+      "failure_location": {
+        "quote": "L_A[t] (C^t \\text{FFT}(B))",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace L_A[t] and L_B[t] in Step 5 by the diagonal matrices of the (normalized) FFT of the first columns R_A[t] and R_B[t], i.e. the cycles of the 2D FFT.",
+      "overall_effect": "Algorithm 3 does not compute the stated first-order approximation \\tilde A B + \\Delta A \\tilde B.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "CD multiplication uses cycles of A instead of the Fourier eigenvalues of the circulants",
+      "why_classification": "A local replacement that the text already derives fixes the step without changing the method or its O(n^2 log n) cost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the Lipschitz constant $L = 2 \\norm{D_1}^2_F \\norm{D_2}^2_2$",
+          "tag": "th:concentrationprob"
+        },
+        {
+          "quote": "-\\frac{(n - 2)t^2}{96 \\norm{D_1}^4_F \\norm{D_2}_2^4}",
+          "tag": "concentration"
+        }
+      ],
+      "failure_explanation": "With L = 2||D_1||_F^2||D_2||_2^2, the constant is 24L^2 = 96||D_1||_F^4||D_2||_2^4, as the proof's final display shows. The statement claims the strictly stronger exponent with 48, which the argument does not give.",
+      "failure_location": {
+        "quote": "-\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4}",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace 48 by 96 in the corollary statement.",
+      "overall_effect": "The stated tail bound is a factor of 2 too strong in the exponent.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Corollary states a tail constant 48 but the proof yields 96",
+      "why_classification": "A one-constant weakening preserves the qualitative concentration result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "is one of $\\mathbb{SO}(n_i)$, $\\mathbb{SO}^{-}(n_i)$, $\\mathbb{SU}(n_i)$, $\\mathbb{U}(n_i)$, or $\\mathbb{Sp}(2n_i)$",
+          "tag": "elizabeths"
+        }
+      ],
+      "failure_explanation": "The cited theorem covers SO(n), SO^-(n), SU(n), U(n) and Sp(2n), not the disconnected group O(n). The corollary's direct application is therefore outside the hypotheses. Lemma th:expected_norm_square is also posed for unitary matrices while f is written with Q^T.",
+      "failure_location": {
+        "quote": "with $X = \\mathbf{O}(n)$ the norm $\\norm{\\cdot}_F$",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Note that f(Q) depends only on the squared entries of Q, so f(QJ) = f(Q) for a column sign flip J. Hence f has the same law under Haar on SO(n) and on O(n); apply the theorem on SO(n), or on U(n) for the complex case.",
+      "overall_effect": "The corollary as proved is not justified by the cited theorem.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration theorem applied on O(n), outside its listed groups",
+      "why_classification": "A one-line symmetry argument restores the result with the same bound."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& \\approx \\frac{9}{16}\\text{for } n \\gg 1",
+          "tag": "eq:uniform_distributions_norms5"
+        },
+        {
+          "quote": "When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": "th:uniform_distribution_norms"
+        }
+      ],
+      "failure_explanation": "The proof computes E||AB||^2/(E||A||^2 E||B||^2) = 9/16 + 7/(16n), which differs from 9/16 for every finite n. It then passes, without argument, from this ratio of expected squares to E||AB||_F expressed through the realized random norms ||A||_F and ||B||_F. That step needs concentration of all three norms, and Jensen gives only an inequality. The stated exact equality is neither proved nor true.",
+      "failure_location": {
+        "quote": "\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restate as an asymptotic relation, e.g. E||AB||_F^2 = (9/16 + 7/(16n)) E||A||_F^2 E||B||_F^2. Add a concentration or variance argument for ||AB||_F, ||A||_F and ||B||_F to justify the first-moment approximation.",
+      "overall_effect": "The Case-2 denominator used in th:estimated_relative_error is only heuristically supported.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Exact equality for E||AB||_F claimed; proof gives only an asymptotic ratio of second moments",
+      "why_classification": "It needs a limited weakening (exact to asymptotic) plus a contained concentration argument; a comparable result survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "can be approximated by that of a normal distribution as the entries of the residue matrices are equally likely to be of either signs",
+          "tag": "th:estimated_relative_error"
+        },
+        {
+          "quote": "with very high probability when $L^2/n \\to 0$.",
+          "tag": null
+        },
+        {
+          "quote": "where $c \\approx 1$ are constants for a given type of matrices.",
+          "tag": null
+        },
+        {
+          "quote": "This relative error in the product $AB$ is shown to scale only as the square of the geometric mean",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The corollary gives only a one-sided absolute tail bound under an independent-Haar model. It does not give Var -> 0, and absolute variance is scale dependent. What is needed is relative concentration, which fails e.g. for low-rank factors, where the exponent does not grow. The residues \\Delta A and \\Delta B are deterministic outputs of truncated SVD, CD or FFT. Nothing establishes that they behave like independent mean-zero Gaussian matrices. The constant c is left as an unspecified per-type fudge factor.",
+      "failure_location": {
+        "quote": "We know that $Var[\\norm{AB}_F]$ and $Var[\\norm{\\Delta A.\\Delta B}_F]$ $\\to 0$ for large $n$ and a random distribution of the entries",
+        "tag": "th:estimated_relative_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restrict to independent Haar singular-vector models with SVD truncation and prove relative concentration under explicit spectral conditions. Otherwise present the estimate explicitly as a heuristic.",
+      "overall_effect": "The advertised O(n^2) a priori error estimates and the 'shown' product-of-relative-errors scaling are heuristic, especially for the CD and FFT truncations.",
+      "primary_affected_tag": "th:estimated_relative_error",
+      "target_type": "formal_result",
+      "title": "A priori relative-error estimate rests on unestablished variance and residue-model premises",
+      "why_classification": "A rigorous version needs a contained new argument and narrows scope; a comparable heuristic estimate remains."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Now using the fact that for Haar distributed matrices we have",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\text{Var}(S) = \\mathbf{E}[S^2] - \\mathbf{E}[S]^2",
+          "tag": "lem:added-2"
+        }
+      ],
+      "failure_explanation": "The proof uses E|Q_ij|^2|Q_kl|^2 = 1/(n(n+1)) for all (i,j) != (k,l). For Haar unitary Q this holds only when the two entries share a row or a column; for i != k and j != l it equals 1/(n^2-1). Real orthogonal moments differ again. Counterexample: D_1 = D_2 = I gives S = n deterministically, so E[S^2] = n^2 and Var = 0. The lemma gives n(n^2+1)/(n+1), e.g. 10/3 vs 4 at n = 2. lem:added-2 then gives Var = n(1-n)/(n+1) < 0.",
+      "failure_location": {
+        "quote": "We have $\\mathbf{E}[S^2] = \\frac{1}{n(n+1)} (\\beta_1 \\beta_2 + \\alpha_1^2 \\alpha_2^2).$",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Recompute E[S^2] with the correct Weingarten moments for the group actually used: same row, same column, and distinct row and column cases. Then redo Var(S) and the E[sqrt S] expansion.",
+      "overall_effect": "Both appendix lemmas and the subsequent Taylor-series formula for E||AB||_F are wrong.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Wrong Haar fourth-moment yields false E[S^2] and a possibly negative variance",
+      "why_classification": "The statements are false and must be replaced by a recomputed formula; this is a contained calculation and a comparable result survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "details generating matrices with low-rank (1)",
+          "tag": null
+        },
+        {
+          "quote": "Type-1 \\& Type-1\\footnotemark[4]& - &5 &3",
+          "tag": "tab:svd1"
+        }
+      ],
+      "failure_explanation": "With S[i] = e^{-i/n}, all singular values lie in [e^{-1}, 1], so the spectrum is nearly flat and full rank, not low rank. About 33-46 leading components (s = 5 at n = 700) capture only about 11-15% of ||A||_F^2, giving truncation relative error of about 0.92-0.94. Under the paper's Haar model the zeroth-order product error is about 0.98. A 5% error at s = 5, as reported, is impossible under the stated construction.",
+      "failure_location": {
+        "quote": "S[i]=$e^{\\frac{-i}{n}}$, and S[i]=$\\frac{n-i}{n}$ for $i=0,1,2,\\dots,(n-1)$ were used for generating Type-1 and Type-3 matrices respectively.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "State the singular-value profile actually used for Type-1 (a genuinely fast-decaying or low-rank spectrum), consistent with the reported results.",
+      "overall_effect": "The Type-1 experiments are not reproducible from the stated construction, and their description as low rank is false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Stated Type-1 generator is full rank, contradicting 'low-rank' and the reported results",
+      "why_classification": "Correcting the generator description is local and affects no formal result."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

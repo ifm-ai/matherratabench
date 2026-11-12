@@ -1,0 +1,87 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:control_suboptimality"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat{V}(x(T)) - \\hat{V}(x(0)) \\geq -\\int_0^T \\left(q(x(t)) + \\frac{1}{2}\\hat{u}^\\top D \\hat{u}\\right) dt - \\epsilon T.",
+          "tag": "thm:suboptimality"
+        },
+        {
+          "quote": "0 \\leq \\hat{V}(x) - V^*(x) \\leq \\epsilon \\cdot T(x)",
+          "tag": "thm:suboptimality"
+        }
+      ],
+      "failure_explanation": "From the residual inequality, integrating dV_hat/dt gives \\hat{V}(x(T)) - \\hat{V}(x(0)) >= -J_T - \\epsilon T. Multiplying by -1 reverses the inequality, yielding J_T >= \\hat{V}(x(0)) - \\hat{V}(x(T)) - \\epsilon T. The proof instead asserts J_T <= \\hat{V}(x(0)) - \\hat{V}(x(T)) + \\epsilon T. This sign error inverts the direction of the bound, falsely deducing an upper bound on J(x_0; \\hat{u}) and on \\hat{V} - V^* from a subsolution inequality. Furthermore, the lower bound 0 <= \\hat{V}(x) - V^*(x) is asserted without proof by confusing the approximate value function with the suboptimal policy cost; an HJB subsolution actually satisfies \\hat{V} <= V^*.",
+      "failure_location": {
+        "quote": "Rearranging:\n\\[\nJ(x(0); \\hat{u}) = \\int_0^T \\left(q + \\frac{1}{2}\\hat{u}^\\top D \\hat{u}\\right) dt \\leq \\hat{V}(x(0)) - \\hat{V}(x(T)) + \\epsilon T.\n\\]",
+        "tag": "thm:suboptimality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a supersolution condition R(x) <= \\epsilon to obtain upper bounds on policy cost and suboptimality, which is nonconvex and outside the paper's convex LMI formulation.",
+      "overall_effect": "The suboptimality guarantee for \\hat{V} (Theorem 3.6) and the performance guarantee on the feedback control J(x_0; \\hat{u}) - V^*(x_0) <= \\epsilon T(x_0) (Corollary 3.7) are invalidated.",
+      "primary_affected_tag": "thm:suboptimality",
+      "target_type": "formal_result",
+      "title": "Inequality reversal in suboptimality bound proof",
+      "why_classification": "The paper's core theoretical optimality guarantees are lost; subsolutions from the convex LMI can only certify lower bounds on cost, so establishing suboptimality upper bounds requires an essentially different, nonconvex framework."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The convergence rate $\\beta$ satisfies $\\beta \\geq \\lambda_{\\min}(P) / \\lambda_{\\max}(P)$ asymptotically near the origin.",
+          "tag": "thm:stability"
+        }
+      ],
+      "failure_explanation": "The HJB inequality (4) states \\nabla \\hat{V}^\\top f - (1/2)\\nabla \\hat{V}^\\top g D^{-1} g^\\top \\nabla \\hat{V} + q(x) >= 0, which implies d\\hat{V}/dt >= -q(x) - (1/2)\\nabla \\hat{V}^\\top g D^{-1} g^\\top \\nabla \\hat{V}. The proof reverses this inequality to '<=' in Step 2 to claim that \\hat{V} is a Lyapunov function with d\\hat{V}/dt <= -q(x). Additionally, the rate bound \\beta >= \\lambda_{\\min}(P)/\\lambda_{\\max}(P) is dimensionally inconsistent, omitting the cost Hessian Q.",
+      "failure_location": {
+        "quote": "\\begin{align*}\n\\frac{d\\hat{V}}{dt} &= \\nabla \\hat{V}^\\top (f + g\\hat{u}) \\\\\n&= \\nabla \\hat{V}^\\top f - \\nabla \\hat{V}^\\top g D^{-1} g^\\top \\nabla \\hat{V} \\\\\n&\\leq -q(x) - \\frac{1}{2}\\nabla \\hat{V}^\\top g D^{-1} g^\\top \\nabla \\hat{V} \\\\\n&\\leq -q(x).\n\\end{align*}",
+        "tag": "thm:stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace Step 2 with a local linearization argument around the origin: because P solves the ARE with Q > 0, the closed-loop matrix A - B D^{-1} B^T P is Hurwitz, ensuring local exponential stability with asymptotic decay rate \\lambda_{\\min}(Q)/(2\\lambda_{\\max}(P)) via Taylor expansion of \\hat{V}.",
+      "overall_effect": "The global/domain Lyapunov decrease argument for \\hat{V} in Step 2 is invalid, and the stated convergence rate formula is incorrect.",
+      "primary_affected_tag": "thm:stability",
+      "target_type": "formal_result",
+      "title": "Invalid Lyapunov derivative bound via reversed HJB inequality",
+      "why_classification": "Local exponential stability survives via standard linearization theory using the Riccati constraint already in the paper, but the proof must be rewritten locally and the rate formula corrected."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For $V^* \\in H^s(\\Omega) \\cap \\mathcal{H}_\\kappa$, the best approximation from $\\mathcal{H}_M = \\text{span}\\{\\kappa(\\cdot, x_i)\\}_{i=1}^M$ satisfies:\n\\[\n\\|V^* - \\hat{V}\\|_{\\mathcal{H}_\\kappa} = O(h^s)\n\\]\nwhen the centers form a quasi-uniform grid with fill distance $h$ (see \\cite{wendland_scattered}).",
+          "tag": "thm:convergence"
+        }
+      ],
+      "failure_explanation": "A Gaussian RKHS consists solely of real-analytic functions and is not norm-equivalent to any Sobolev space H^s(\\Omega). A general function V^* in H^s(\\Omega) does not belong to the Gaussian RKHS, making ||V^* - \\hat{V}||_{\\mathcal{H}_\\kappa} undefined. Furthermore, in scattered data approximation, native space norm errors do not decay algebraically as O(h^s); algebraic rates O(h^s) apply in L_2 for finitely smooth kernels (such as Matérn or Wendland kernels), whereas Gaussian kernels provide spectral convergence for functions strictly in their native space.",
+      "failure_location": {
+        "quote": "The Gaussian kernel generates an RKHS $\\mathcal{H}_\\kappa$ that is norm-equivalent to certain Sobolev spaces. Specifically, for the Gaussian kernel on bounded domains, $\\mathcal{H}_\\kappa$ embeds continuously into $H^s(\\Omega)$ for all $s \\geq 0$.",
+        "tag": "thm:convergence"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "State Theorem 3.12 for a finitely smooth kernel (e.g., Matérn or Wendland kernel) whose RKHS is norm-equivalent to H^s(\\Omega), for which standard scattered data approximation theory yields ||\\nabla V^* - \\nabla \\hat{V}||_{L^2(\\Omega)} = O(h^{s-1}).",
+      "overall_effect": "Theorem 3.12 fails as stated and proved for Gaussian kernels approximating H^s functions.",
+      "primary_affected_tag": "thm:convergence",
+      "target_type": "formal_result",
+      "title": "False Sobolev norm-equivalence and native space error bounds for Gaussian RKHS",
+      "why_classification": "The advertised algebraic convergence rate O(h^{s-1}) = O(M^{-(s-1)/n}) is preserved by replacing the Gaussian kernel with a standard Sobolev/Wendland kernel of appropriate smoothness."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2603.01084",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "ae1bd8b81e57f8cdcc0b3f2717fbddf2f6278b8b00cfe06a2537efea483c8066",
+  "status": "ok"
+}

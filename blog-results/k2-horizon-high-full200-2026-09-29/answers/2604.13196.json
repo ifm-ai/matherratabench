@@ -1,0 +1,117 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Here, $\\mathcal{M}_{\\rm root}$ collects all cyclotomic factors with even exponents (a perfect square) and $\\mathcal{M}_{\\rm rad}$ collects the square-free part ($e_d \\in \\{-1,0,1\\}$ for all $d$).",
+          "tag": null
+        },
+        {
+          "quote": "In the cyclotomic monomial representation, square roots are handled exactly at the exponent level, avoiding algebraic field extensions during compilation.",
+          "tag": null
+        },
+        {
+          "quote": "$\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})} \\cdot \\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm root}) \\cdot S_{\\rm sum}$",
+          "tag": "alg:projection"
+        }
+      ],
+      "failure_explanation": "The decomposition $\\mathcal{M}_{\\rm geom}=\\mathcal{M}_{\\rm root}\\cdot\\sqrt{\\mathcal{M}_{\\rm rad}}$ only isolates the perfect-square part; the residual $\\sqrt{\\mathcal{M}_{\\rm rad}}$ has a square-free exponent vector ($e_d\\in\\{-1,0,1\\}$), so the root cannot be expressed with integer exponents and is deferred to evaluation, not 'resolved at the exponent level'. Evaluating $\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})}$ in an exact target field $\\mathbb{T}=\\mathbb{Q}(\\zeta_{2h})$ generally requires adjoining a square root — a quadratic field extension — unless the radicand happens to be a square in $\\mathbb{T}$. Concrete counterexample: the triangle coefficient $\\Delta_{111}$ at $q=e^{i\\pi/6}$ ($h=6$) equals $\\sqrt{1/[4]_q}$ with $[4]_q=\\sin(4\\pi/6)/\\sin(\\pi/6)=\\sqrt{3}$, i.e. $3^{-1/4}\\notin\\mathbb{Q}(\\zeta_6)=\\mathbb{Q}(\\sqrt{-3})$. The paper's own first sentence correctly scopes the benefit to compilation ('during compilation'), and the algorithm's final step silently presupposes that $\\mathbb{T}$ contains the root; the blanket 'without field extension' promise is therefore false for exact evaluation in general.",
+      "failure_location": {
+        "quote": "The entire square root is resolved at the exponent level, without field extension and without any polynomial computation.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the claim to the compilation stage: state that the square root is isolated at the exponent level into a square-free residual, and that evaluation requires the target field to contain $\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})}$, adjoining a quadratic extension when it does not.",
+      "overall_effect": "The advertised exact, extension-free square-root capability is withdrawn for general amplitudes with odd cyclotomic exponents: exact projection must adjoin square roots (quadratic extensions) in general. The DCR definition, both algorithms, and all complexity and numerical claims survive, and the 6j benchmark's combined four-triangle prefactor happens to land in the cyclotomic field (consistent with the working exact benchmarks), so no labelled result is invalidated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Square-root capability claimed as fully resolved at exponent level 'without field extension', which is false at evaluation",
+      "why_classification": "A contained clarification restores accuracy: the compilation-time benefits (integer-exponent square extraction, no dense polynomial arithmetic) are untouched, both algorithms remain correct, and all reported benchmarks and complexity bounds survive unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\kappa = \\frac{ \\sum_z|T_z|}{|S|}",
+          "tag": "eq:condition_num"
+        },
+        {
+          "quote": "The intrinsic sensitivity of the problem is governed by the condition number (Eq.~\\eqref{eq:condition_num}), which is independent of representation.",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{|\\widehat{S} - S|}{|S|} = \\mathcal{O}\\!\\left(\\kappa \\,  Z \\,\\epsilon\\right) + \\mathcal{O}\\!\\left(\\kappa \\, \\gamma_{\\text{rep}} \\, \\epsilon\\right).",
+          "tag": null
+        },
+        {
+          "quote": "400 & 1600 & 58.12 & 7307.1 & 862.8  & 6444.3 \\\\",
+          "tag": "tab:dynamic_range"
+        },
+        {
+          "quote": "110 & $-9.6881 \\times 10^{-1}$ & $\\hphantom{-}1.5083 \\times 10^{-3}$ & $\\hphantom{-}2.8290 \\times 10^{-4}$ \\\\",
+          "tag": "tab:phase_flip"
+        }
+      ],
+      "failure_explanation": "The condition number $\\kappa=\\sum_z|T_z|/|S|$ measures cancellation between the summands of the alternating sum. Algebraic reduction of each summand — the DCR's exact cancellation of numerator/denominator cyclotomic factors — leaves every $|T_z|$ unchanged and therefore leaves $\\kappa$ unchanged; the between-summand cancellation is necessarily realized in the final numerical summation. The claim that the $\\kappa$-cancellations 'are no longer realized numerically, but are instead resolved exactly at the algebraic level' is thus false. What the DCR actually achieves is exact within-summand cancellation, which compresses the per-term dynamic range (the representation-induced factor $\\gamma_{\\rm rep}$) and improves per-term accuracy, while the intrinsic $\\mathcal{O}(\\kappa Z\\epsilon)$ term in the paper's own error model remains and ultimately dominates: the tables show $\\gamma_{\\rm DCR}=862.8$ still exceeding $\\log_{10}\\kappa=58.12$ by more than an order of magnitude at $j=400$, and DCR Float64 still fails at $k=500$, $j=110$ with $\\approx 433\\%$ relative error ($1.5083\\times10^{-3}$ vs truth $2.8290\\times10^{-4}$) — the same intrinsic failure mode, merely delayed.",
+      "failure_location": {
+        "quote": "In particular, the large intermediate cancellations to resolve the condition number $\\kappa$ in Section~\\ref{subsec:cancellation} are no longer realized numerically, but are instead resolved exactly at the algebraic level.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Reframe the stability claim: the DCR performs exact within-summand cancellation and compresses per-term dynamic range, reducing the representation-induced amplification $\\gamma_{\\rm rep}$, while the intrinsic condition-number error $\\mathcal{O}(\\kappa Z\\epsilon)$ — representation-independent — remains as the achievable-accuracy floor; the DCR delays, but does not remove, catastrophic cancellation.",
+      "overall_effect": "The advertised stability mechanism is weaker than stated: the DCR delays but cannot eliminate catastrophic cancellation, and the abstract's 'reducing cancellation-induced error amplification' narrative, the 'algebraic preconditioner' interpretation, and the title's 'Stable ... Evaluation' promise must be read as dynamic-range compression plus delayed (not resolved) intrinsic failure. No labelled formal result (prop:cyclo_fact, prop:deformation_as_evaluation, prop:admissibility, thm:added-1, prop:added-1) is invalidated, and the memory/complexity benchmarks remain valid.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that the DCR resolves the condition-number cancellation exactly at the algebraic level is false; only within-summand cancellation is exact",
+      "why_classification": "The repair is a conceptual reframing needing no new proof architecture: the formal results, the compilation complexity claims, and the empirical benchmarks (compressed $\\gamma$, delayed sign errors, linear memory) all survive. However, the advertised guarantee type changes materially, from 'the condition-number cancellation is resolved exactly' to 'representation-induced amplification is reduced while the intrinsic $\\kappa$-limit is intact', so it is more than a minor local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\mathbb{T}$ be the target field and $C_{\\mathbb{T}}$ the cost of one arithmetic operation in $\\mathbb{T}$. Then evaluation cost of the DCR requires",
+          "tag": "prop:added-1"
+        },
+        {
+          "quote": "\\mathcal{O}\\!\\left( D_{\\max} \\cdot C_{\\mathbb{T}} + Z \\cdot K \\cdot S_{\\max} \\cdot C_{\\mathbb{T}} \\right)",
+          "tag": "prop:added-1"
+        },
+        {
+          "quote": "Let $Z = z_{\\max} - z_{\\min}$ denote the summation length and $D_{\\max}$ the maximal cyclotomic order appearing in the factorization.",
+          "tag": null
+        },
+        {
+          "quote": "[n]_q! = q^{\\frac{n(1-n)}{2}} \\prod_{d=2}^n \\Phi_d(q^2)^{\\lfloor n/d \\rfloor}",
+          "tag": "eq:qfact_cyclo"
+        }
+      ],
+      "failure_explanation": "The loop body recomputes $\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm base})$ at every one of the $Z$ iterations. Because $\\mathcal{M}_{\\rm base}$ contains a factorial like $[z_{\\min}+1]_q!$, whose exponent vector has $\\lfloor (z_{\\min}+1)/d\\rfloor\\ge 1$ for all $d\\le z_{\\min}+1$, its support is $\\Theta(D_{\\max})$ and each evaluation costs $\\Theta(D_{\\max}\\cdot C_{\\mathbb{T}})$. As written, the procedure therefore costs $\\Theta(Z\\cdot D_{\\max}\\cdot C_{\\mathbb{T}})$ — e.g. $\\mathcal{O}(j^2)$ for the symmetric $6j$-symbol, where $Z\\sim j$ and $D_{\\max}\\sim j$ — contradicting the $\\mathcal{O}(D_{\\max}\\cdot C_{\\mathbb{T}} + Z\\cdot K\\cdot S_{\\max}\\cdot C_{\\mathbb{T}})$ evaluation bound of Proposition prop:added-1 that the algorithm is presented to realize. The returned value is correct; only the cost guarantee fails as written.",
+      "failure_location": {
+        "quote": "\\State $S_{\\rm sum} \\gets S_{\\rm sum} + \\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm base}) \\cdot R$",
+        "tag": "alg:projection"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Hoist the loop-invariant: compute $v_{\\rm base}\\gets\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm base})$ once before the loop and replace the in-loop recomputation with $S_{\\rm sum}\\gets S_{\\rm sum} + v_{\\rm base}\\cdot R$. This restores the stated bound with no other change.",
+      "overall_effect": "An implementation following the published procedure literally would be slower by a factor of $D_{\\max}$ than the near-linear (in $Z$) evaluation scaling claimed in Proposition prop:added-1 and used in the latency discussion. The proposition's bound itself remains valid for an optimal implementation, so no formal result is invalidated.",
+      "primary_affected_tag": "alg:projection",
+      "target_type": "algorithm",
+      "title": "Projection algorithm recomputes Pi_T(M_base) inside the loop, violating the stated O(D_max + Z*K*S_max) evaluation bound",
+      "why_classification": "A one-line local repair (hoisting an invariant) preserves the algorithm's correctness, the stated complexity bound, and every dependent claim, with no new construction or reoptimization required."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2604.13196",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f27f4d9edd84cc6caa93d0bb9705e7cb9c415e35fb2a71b7e9470c22f26222de",
+  "status": "ok"
+}

@@ -1,0 +1,180 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Unlike HOSVD, sequentially truncated HOSVD (ST-HOSVD) performs the truncation sequentially across modes by projecting the tensor onto lower-dimensional subspaces one mode at a time.",
+          "tag": null
+        },
+        {
+          "quote": "\\STATE Update core $\\T{G} \\leftarrow \\T{G} \\times_i \\M{Q}_i^\\top",
+          "tag": "alg:sthosvd"
+        },
+        {
+          "quote": "\\STATE\\label{line:rst:mttkrp} Compute MTTKRP $\\M{Y}_{(i)} \\leftarrow \\M{G}_{(i)}( \\M{\\Omega}^{(d)} \\odot \\dots \\odot \\M{\\Omega}^{(i+1)} \\odot \\M{\\Omega}^{(i-1)} \\odot \\dots \\odot \\M{\\Omega}^{(1)})$",
+          "tag": "alg:rst_krp"
+        }
+      ],
+      "failure_explanation": "ST-HOSVD must compute $Q_i$ from the mode-$i$ unfolding of the current partially truncated core $G^{(i-1)}$, i.e., $G_{(i)}$, since the truncation is applied sequentially to the compressed tensor. As written, the loop computes every $Q_i$ from the original unfolding $X_{(i)}$, so the sequential updates $G \\leftarrow G \\times_i Q_i^\\top$ produce exactly the HOSVD core $X \\times_1 Q_1^\\top \\times_2 \\dots \\times_d Q_d^\\top$: the block does not implement ST-HOSVD and contradicts the accompanying prose and the randomized variant alg:rst_krp, which correctly uses $G_{(i)}$.",
+      "failure_location": {
+        "quote": "\\STATE Compute $\\M{Q}_i$, $\\M{Q}_i$ =  leading $r_i$ left singular vectors of $\\M{X}_{(i)}$",
+        "tag": "alg:sthosvd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Change the SVD step in alg:sthosvd to compute the leading $r_i$ left singular vectors of $\\M{G}_{(i)}$ (the current core's mode-$i$ unfolding), matching the prose and alg:rst_krp; no other change is needed.",
+      "overall_effect": "The deterministic ST-HOSVD pseudocode is wrong: a reader implementing it obtains HOSVD-type factors rather than ST-HOSVD's sequentially truncated ones. No labelled formal result depends on this block (the later analysis targets the randomized algorithm alg:rst_krp).",
+      "primary_affected_tag": "alg:sthosvd",
+      "target_type": "algorithm",
+      "title": "ST-HOSVD pseudocode sketches the original tensor instead of the current core",
+      "why_classification": "The correction is a single forced change of one symbol ($X_{(i)} \\to G_{(i)}$) that restores the described method; no guarantee, rate, or downstream result is lost, so the defect is minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[   \\|\\M{Z}\\t \\M{\\Omega}\\|_2^2 \\| (\\M{W}\\t\\M{\\Omega})^\\dagger \\|_2^2 \\leq 2 (1 + 2\\Gamma) \\|\\M{Z}\\|_2^2 ,\\]",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "Use the result from \\cref{thm:tantheta} with $\\M{Z} =\\M\\Sigma_\\perp\\M{V}_\\perp\\t $  and $\\M{W} = \\M{V}_r$ to obtain with probability at least $1-\\delta$",
+          "tag": "thm:rrf"
+        },
+        {
+          "quote": "Use the facts that $\\strank(\\M{Z}) = \\strank(\\M\\Sigma_\\perp)$, and the 2 norm is bounded by the Frobenius norm, to obtain",
+          "tag": "thm:rrf"
+        }
+      ],
+      "failure_explanation": "The display drops the factor 2 in thm:tantheta's $1+2\\Gamma$: the invoked result gives $2r(1+2\\Gamma_{\\rm tt})\\sigma_{r+1}^2$ with $\\Gamma_{\\rm tt}=\\strank(\\Sigma_\\perp)\\\\frac{1}{\\ell}(1+C_{K,d}\\ln^d(8\\ell/\\delta))\\ln(4(N-r)/\\delta)$, not $2r(1+\\Gamma_{\\rm tt})\\sigma_{r+1}^2$, so the written intermediate inequality is stronger than anything the cited theorem provides. The theorem's final statement is nevertheless correct: $2r\\sigma_{r+1}^2 \\le 2r\\|\\Sigma_\\perp\\|_F^2$ together with the stable-rank identity $\\strank(\\Sigma_\\perp)\\\\sigma_{r+1}^2=\\|\\Sigma_\\perp\\|_F^2$ converts the correct intermediate bound into the advertised $(1+2r(1+2\\Gamma))\\|\\Sigma_\\perp\\|_F^2$, but that cancellation is not carried out in the proof as written.",
+      "failure_location": {
+        "quote": "\\[ \\|\\M\\Sigma_\\perp(\\M{V}_\\perp\\t \\M{\\Omega})(\\M{V}_r\\t \\M{\\Omega})^\\dagger \\|_F^2 \\le 2r\\left(1+\\frac{\\strank(\\M{Z}) }{\\ell } \\left(1 +  C_{K,d} \\ln^d(8\\ell/\\delta)\\right)\\ln\\frac{4(N-r)}{\\delta}\\right)\\|\\M\\Sigma_\\perp\\|_2^2.  \\]",
+        "tag": "thm:rrf"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the display by the bound $2r(1+2\\Gamma_{\\rm tt})\\|\\Sigma_\\perp\\|_2^2$ delivered by thm:tantheta and complete the proof using the stable-rank identity $\\strank(\\Sigma_\\perp)\\\\sigma_{r+1}^2=\\|\\Sigma_\\perp\\|_F^2$ to reach the stated $(1+2r(1+2\\Gamma))\\|\\Sigma_\\perp\\|_F^2$; a short, local repair with no loss.",
+      "overall_effect": "The proof of thm:rrf contains a false intermediate inequality, so the derivation as written does not establish the statement; the statement itself is correct and no downstream result is affected.",
+      "primary_affected_tag": "thm:rrf",
+      "target_type": "formal_result",
+      "title": "Proof of thm:rrf uses an overstrong intermediate bound not delivered by thm:tantheta",
+      "why_classification": "The final claim of thm:rrf is correct and the repair is a two-line fix (restore the factor 2 and apply the stable-rank identity); no substantive guarantee, rate, or dependent result is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then $$(N-r)(f(\\varepsilon))^{\\mu_{\\max}/\\Delta} \\leq (N-r)e^{-\\varepsilon^2\\mu_{\\max}/((2+\\varepsilon)\\Delta) }.$$",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "\\Gamma = \\frac{\\strank(\\M{Z}) }{\\ell } \\left(1 +  C_{K,d} \\ln^d(8\\ell/\\delta)\\right)\\ln\\left(\\frac{4(N-r)}{\\delta}\\right).",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "\\prob\\left\\{  \\|\\M{Z}\\t\\M{\\Omega}\\|_2^2 \\geq (1+2 \\Gamma)\\ell \\|\\M{Z}\\|_2^2  \\right\\} \\leq \\delta/2 .",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "\\mu_{\\max}=\\lambda_{\\max}(\\expect[\\M{Y}]) = \\ell \\|\\M{Z}\\|_2^2",
+          "tag": "thm:tantheta"
+        }
+      ],
+      "failure_explanation": "Setting the failure bound equal to $\\delta/4$ requires $\\varepsilon^2\\mu_{\\max}/((2+\\varepsilon)\\Delta)=\\ln(4(N-r)/\\delta)$, i.e. $\\varepsilon^2-\\Gamma\\varepsilon-2\\Gamma=0$ because $\\Gamma=\\Delta\\ln(4(N-r)/\\delta)/\\mu_{\\max}$. The positive root is $(\\Gamma+\\sqrt{\\Gamma^2+8\\Gamma})/2$, which equals $2\\Gamma$ only when $\\Gamma=1$. Moreover, the needed inequality is $\\varepsilon^2/(2+\\varepsilon)\\ge\\Gamma$; at $\\varepsilon=2\\Gamma$ this becomes $2\\Gamma^2/(1+\\Gamma)\\ge\\Gamma$, which holds iff $\\Gamma\\ge1$. For $\\Gamma<1$ (e.g., small $\\strank(Z)$ with $\\ell$ near its lower bound and $N\\lesssim r^2$, giving $\\Gamma\\lesssim 1/4$), the exponent is too small and the claimed failure probability $\\delta/2$ in eqn:interupper2 is not achieved, so the lemma's conclusion is unestablished in that regime.",
+      "failure_location": {
+        "quote": "Set the upper bound equal to $\\delta/4$, solve the quadratic equation for $\\varepsilon$, and choose the positive root to get $\\varepsilon = 2 \\Gamma$, where $\\Gamma$ is defined in the statement of the theorem.",
+        "tag": "thm:tantheta"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Choose $\\varepsilon$ valid for all $\\Gamma\\ge0$, e.g. $\\varepsilon=\\Gamma+2\\sqrt{\\Gamma}$, which satisfies $\\varepsilon^2/(2+\\varepsilon)\\ge\\Gamma$ and yields $\\|Z^T\\Omega\\|_2^2\\le(1+\\Gamma+2\\sqrt{\\Gamma})\\ell\\|Z\\|_2^2$, hence the product bound $2(1+\\sqrt{\\Gamma})^2\\|Z\\|_2^2$; for $\\Gamma\\ge1$ the claimed $2(1+2\\Gamma)$ is recovered. This mildly weakens the error-bound constants in thm:tantheta and propagates a mild constant degradation downstream, while the structure, rates, probabilities, and sample-size conditions of all affected theorems are preserved.",
+      "overall_effect": "thm:tantheta's conclusion is unproven whenever $\\Gamma<1$; every downstream result that invokes it directly (thm:added-1) or through thm:rrf (thm:rrf, thm:rhsovd_krp, thm:added-2) inherits the gap.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "Incorrect quadratic root epsilon = 2 Gamma in thm:tantheta; Step 2 fails for Gamma < 1",
+      "why_classification": "The invalid inference is a genuine proof gap in a central lemma in a regime that actually occurs, and no repair can keep the stated constant $2(1+2\\Gamma)$ for all $\\Gamma$; however, a contained one-line rechoice of $\\varepsilon$ yields a recognizably comparable theorem with only a mild weakening of constants, so the issue is moderate rather than serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Q\\equiv \\min\\{M,N\\} \\geq \\ell \\geq  8(r + rC_{K,d}\\ln^d(8\\ell/\\delta))\\ln(4r/\\delta),",
+          "tag": "thm:rrf"
+        },
+        {
+          "quote": "The assumptions on $\\ell_r$ ensure that, by \\cref{thm:rrf}, $\\prob\\{\\mc{E}^c\\}\\le \\delta/2$.",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "Similarly, the assumptions on $\\ell_l$ ensure that $\\M{Q}$ with orthonormal columns, $\\M{\\Psi}\\t\\M{Q} \\in \\R^{\\ell_l\\times \\ell_r}$ has a left-multiplicative inverse with high probability.",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The proof invokes thm:rrf with failure probability $\\delta/2$, which requires $\\ell_r \\ge 8(r+rC_{K,d}\\ln^d(16\\ell_r/\\delta))\\ln(8r/\\delta)$, and invokes Step 1 of thm:tantheta with $W=Q$ (so $r:=\\ell_r$, $\\ell:=\\ell_l$, failure $\\delta/2$), which requires $\\ell_l \\ge 8\\ell_r(1+C_{K,d}\\ln^d(16\\ell_l/\\delta))\\ln(8\\ell_r/\\delta)$. Both stated conditions lack the leading factor 8, so as stated the hypotheses do not imply the bounds the proof needs.",
+      "failure_location": {
+        "quote": "q \\ge \\ell_l \\ge & \\> \\ell_r (1 + C_{K,d}\\ln^d(16\\ell_l/\\delta))\\ln(8\\ell_r/\\delta),",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Insert the factor 8 into both sketch-size conditions, i.e. $\\ell_r \\ge 8r(1+C_{K,d}\\ln^d(16\\ell_r/\\delta))\\ln(8r/\\delta)$ and $\\ell_l \\ge 8\\ell_r(1+C_{K,d}\\ln^d(16\\ell_l/\\delta))\\ln(8\\ell_r/\\delta)$; this preserves the statement and all conclusions.",
+      "overall_effect": "thm:added-1 is formally unsupported as stated: its sample-size conditions are a factor 8 too small for the proof; the advertised scaling in $r$, $\\delta$, and $d$ is otherwise unchanged, and no other result depends on this theorem.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Sample-size hypotheses of thm:added-1 are missing the factor 8 required by the invoked theorems",
+      "why_classification": "The repair is the insertion of one constant in two hypotheses; it is short, local, and preserves every substantive claim and guarantee of the theorem, so the issue is minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\le &\\>  \\|\\M{M} - \\M{QQ}\\t\\M{M}\\|_F^2   +\\ell_r \\|\\M{Z}\\t\\M{\\Psi}\\|_2^2 \\| (\\M{\\Psi}\\t\\M{Q})^\\dagger\\|_2^2",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "Let $\\M{W} \\in \\R^{N \\times r}$ have orthonormal columns and $\\M{Z} \\in \\R^{N \\times (N - r)}$.",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "\\Gamma_l \\equiv   &  \\frac{1}{\\ell_l } \\left(1 +  C_{K,d} \\ln^d(16\\ell_l/\\delta)\\right)\\ln\\frac{8(m^d-\\ell_r)}{\\delta} .",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "\\|\\M{M} - \\M{Q}(\\M{\\Psi}\\t\\M{Q})^\\dagger\\M{\\Psi}\\t\\M{M}\\|_F^2 \\le (1+2r(1+2\\Gamma_r) ( 1 + 2\\ell_r(1+\\Gamma_l) ) \\|\\M\\Sigma_F\\|_2^2  ,",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The proof does not yield the stated bound. (i) The event $\\mc{E}$ is defined with the factor $1+\\Gamma_r$, but thm:rrf delivers it only with $1+2\\Gamma_r$, so the claimed probability $\\prob(\\mc{E}^c)\\\\le\\delta/2$ does not follow. (ii) In eqn:twosided the second error term satisfies $\\|(\\Psi^tQ)^\\dagger(\\Psi^tQ_\\perp)(Q_\\perp^tM)\\\\|_F^2 \\le \\ell_l\\|\\Psi^tZ\\|_2^2\\|(\\Psi^tQ)^\\dagger\\|_2^2$ because $\\Psi^tZ$ is $\\ell_l\\times n^d$; the factor $\\ell_r$ is unjustified (rank$(\\Psi^tZ)$ is not bounded by $\\ell_r$). (iii) The proof applies thm:tantheta to $Z=M-QQ^tM\\in\\R^{m^d\\times n^d}$, which does not have the required shape $\\R{N\\times(N-r)}$ (nor is the ambient $N$ with $N-r$ columns); hence the log factor $\\ln(8(m^d-\\ell_r)/\\delta)$ in $\\Gamma_l$ is not obtained — a valid argument via the $m^d\\times m^d$ Gram matrix $Z\\Psi\\Psi^tZ^T$ gives a $\\ln(4m^d/\\delta)$-type factor. (iv) The final bound is stated with the undefined quantity $\\|\\Sigma_F\\|_2$ and with factors $(1+2\\ell_r(1+\\Gamma_l))$ that match neither the corrected proof ($\\ell_l$ and $1+2\\Gamma_l$) nor the Frobenius tail norm. The corrected proof yields $(1+2r(1+2\\Gamma_r))(1+2\\ell_l(1+2\\Gamma_l))\\|\\Sigma_\\perp\\|_F^2$, which is weaker than the stated bound.",
+      "failure_location": {
+        "quote": "\\[ \\|\\M{M}-\\M{QQ}\\t\\M{M}\\|_F^2 \\le (1 + 2r(1+\\Gamma_r))\\|\\M\\Sigma_\\perp\\|_F^2.\\]",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Rework the proof: define $\\mc{E}$ with the factor $1+2\\Gamma_r$; bound the second error term with the factor $\\ell_l$; derive the $\\Psi$-side bound from the $m^d\\times m^d$ Gram matrix (or apply thm:tantheta to a correctly shaped matrix), giving a $\\ln(4m^d/\\delta)$-type log factor; and restate the conclusion as $(1+2r(1+2\\Gamma_r))(1+2\\ell_l(1+2\\Gamma_l))\\|\\Sigma_\\perp\\|_F^2$ with $\\Sigma_\\perp$ the SVD tail of $M$. The method, sketch sizes, success probability, and overall bound structure survive.",
+      "overall_effect": "The single-view/block-structured analysis theorem is unsupported and partially ill-defined as written; its advertised error bound is stronger than what the corrected proof gives, and the quantity $\\Sigma_F$ is never defined.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Proof of thm:added-1 does not establish its stated bound (wrong Gamma_r factor, wrong ell_r factor, unjustified log term, undefined Sigma_F)",
+      "why_classification": "The repair requires several coordinated corrections to the proof and a weakening of the final bound in specific factors ($\\ell_r\\to\\ell_l$, $1+\\Gamma_l\\to1+2\\Gamma_l$, 2-norm tail $\\to$ Frobenius tail); it avoids new global proof architecture and leaves a recognizably comparable result, so the issue is moderate."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2507.23207",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "35f9666b0e59513382f1e39876245c9aa4f2c7bded3e783f01beb294b5f7ba3d",
+  "status": "ok"
+}

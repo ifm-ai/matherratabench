@@ -1,0 +1,93 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:msgfem:iteration"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{\\fwpSol - \\fwpGFEM}_{a,\\domain} \\leq C_B \\bigg(\\colConst \\, \\evalMax \\sum_{\\ddindex=1}^M \\norm{\\fwpSol|_{\\osdomain_\\ddindex} - \\fwpiPart}_{a,\\osdomain_\\ddindex}^2 \\bigg)^{1/2},",
+          "tag": "th:msgfem:global"
+        },
+        {
+          "quote": "where $C_B \\sim 1 + \\diffMin^{-1}\\left(\\norm{\\divergence \\velField}_{\\Lp{\\infty}} + \\norm{\\velField}_{\\Lpd{\\infty}}\\right)$ is the operator norm of the bilinear form $\\bilWF{\\cdot}{\\cdot}{}$ up to coefficient-independent constants.",
+          "tag": "th:msgfem:global"
+        }
+      ],
+      "failure_explanation": "The proof derives the local bound with factor (1+C Pe_H). Substituting this into the global theorem, which contains the factor C_B, gives C_B (1+C Pe_H) sqrt(...), not (1+C Pe_H)^2 sqrt(...). C_B is not generally equal to 1+C Pe_H; for example, C_B scales with a_min^{-1}||b||_∞ while Pe_H scales with H^* a_min^{-1}||b||_∞. Thus the stated bound is stronger than what the argument establishes.",
+      "failure_location": {
+        "quote": "\\left(1 + C\\,\\peclet_H\\right)^2 \\sqrt{\\colConst\\colConst^* \\evalMax } \\norm{\\fwpSol}_{a,\\domain},",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Insert the missing global continuity factor C_B (or a generic constant) into the bound, yielding C_B (1+C Pe_H) sqrt(κ κ^* λmax) ||u^e||.",
+      "overall_effect": "The explicit coercive-case error bound in Corollary cor:added-1 is not supported as stated; the convergence proof of the MS-GFEM iteration relying on this bound is affected.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Corollary bound omits global continuity constant C_B",
+      "why_classification": "The repair is a local constant-factor correction; the qualitative convergence and existence of sufficiently many eigenfunctions remain intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:msgfem:iteration"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bilWF{\\fwpSol|_{\\osdomain_\\ddindex} - \\fwpiPart}{\\fwpTest}{\\osdomain_\\ddindex} = 0 \\quad \\text{ for all $\\fwpTest \\in \\fwpTestSpaceLoc$,}",
+          "tag": "eq:harmonicError"
+        },
+        {
+          "quote": "\\harmSpace := \\big\\{ \\fwp \\in \\fwpTestD{\\osdomain_\\ddindex} :  \\bilWF{\\fwp}{\\fwpTest}{\\osdomain_\\ddindex} = 0 \\quad \\forall \\fwpTest \\in \\fwpTestSpaceLoc\\big\\}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The error e = u^e|ω* - u_j^p lies in the harmonic space H_B(ω*), not in the test space V_{D,0}(ω*) where B is coercive. The bilinear form B is not coercive on H_B(ω*) when div b=0. For instance, in 1D with A=1, b=1, ω*=(0,1), e(x)=e^x satisfies B(e,v)=0 for all v∈H^1_0 and B(e,e)=0 while ||e||_a>0. Hence the inequality ||e||_a^2 ≤ |B(e,e)| is false.",
+      "failure_location": {
+        "quote": "\\norm{\\fwpSol - \\fwpiPart}_{a,\\osdomain_\\ddindex}^2 \\leq \\abs{\\bilWF{\\fwpSol - \\fwpiPart}{\\fwpSol - \\fwpiPart}{\\osdomain_\\ddindex}}",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the invalid coercivity step with a valid local stability estimate for the harmonic extension e, or prove such an estimate as a separate lemma.",
+      "overall_effect": "The local error estimate used to prove Corollary cor:added-1 is unsupported, and consequently the proof of convergence of the MS-GFEM iteration in Theorem th:msgfem:iteration has a gap.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Corollary proof assumes coercivity of B on harmonic space",
+      "why_classification": "The repair requires a nontrivial local stability argument, but the main convergence result can plausibly survive with a comparable bound; no new global architecture is necessarily needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\velField(x_1,x_2) := \\begin{pmatrix}\n  20(x_2 - 0.5)[1 - (x_1 - 0.5)^2] - 1.5(x_1 - 0.5)\\\\\n  20(x_1 - 0.5)[1 - (x_2 - 0.5)^2] - 1.5(x_2 - 0.5)\n  \\end{pmatrix},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Computing the divergence gives ∂b1/∂x1 + ∂b2/∂x2 = -80(x1-0.5)(x2-0.5) - 3. This is not everywhere negative; for example at (0,1) it equals 17. Thus the claim that the velocity field has negative divergence is false. The problem may still be indefinite, but this specific justification is incorrect.",
+      "failure_location": {
+        "quote": "which has negative divergence and yields an indefinite problem with a grid P\\'{e}clet number of approximately $3\\,000$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Remove the claim of negative divergence or replace it with a correct statement about the divergence (e.g., that it is not identically zero and the problem is indefinite).",
+      "overall_effect": "A descriptive claim about the model setup is false; the numerical experiment itself is unaffected, but the stated sign of the divergence is wrong.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Large-scale velocity field does not have negative divergence",
+      "why_classification": "A short local correction of a descriptive claim with no effect on the method or results."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2509.17531",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n01a",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "10d5e7cc895eb71bc1c68a4a297aef9c190ad8b22b3542cc47b43a3abea14ccf",
+  "status": "ok"
+}

@@ -1,0 +1,225 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "proposition:bound_mean_square_error",
+        "thm:complexity_gradient_estimation",
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\EE^{\\mathrm{ML}}\\big[Y_L\\big]\n    &=\\sum_{\\ell=1}^L \\frac{1}{M_{\\ell}}\\sum_{m=1}^{M_\\ell} Y^{(m)}_{\\ell}-Y^{(m)}_{\\ell-1}",
+          "tag": "eq:ml_estimator_denominator"
+        },
+        {
+          "quote": "\\Delta Y^{(m)}_{\\ell} \\coloneqq Y^{(m)}_{\\ell}-Y^{(m)}_{\\ell-1}",
+          "tag": "eq:delta-notation"
+        },
+        {
+          "quote": "where we used that $\\EE^{\\textrm{ML}} \\left[Y_L\\right] > 1$.",
+          "tag": "proposition:bound_mean_square_error"
+        }
+      ],
+      "failure_explanation": "Although each Y level is at least one, a coupled difference Y_l-Y_{l-1} can be negative, and independent level averages do not telescope samplewise. Thus the sum defining the MLMC denominator is not guaranteed to exceed one, remain positive, or stay away from zero. The ratio estimator can consequently be undefined or have uncontrolled inverse moments, invalidating the denominator removal in Proposition 3.1.",
+      "failure_location": {
+        "quote": "\\nabla \\mathcal{J}^{\\mathrm{ML}}(u)\n    =\n    \\frac{\\EE^{\\mathrm{ML}}\\big[\\exp(\\theta \\Phi(y_L)) \\, B^\\ast q_L \\big]}\n    {\\EE^{\\mathrm{ML}}\\big[\\exp(\\theta \\Phi(y_L))\\big]} + \\lambda u",
+        "tag": "eq:gradient_estimator"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a positive denominator construction or a uniform inverse-moment bound must be supplied, and the resulting ratio-estimator MSE and complexity analysis must be redone.",
+      "overall_effect": "The proposed entropic-risk gradient estimator and MLSGD update are not well defined on all allowed samples, and the stated MSE and complexity bounds based on that estimator are unsupported.",
+      "primary_affected_tag": "eq:gradient_estimator",
+      "target_type": "algorithm",
+      "title": "The MLMC denominator need not be positive",
+      "why_classification": "Positivity is essential to the central ratio estimator, and enforcing it by truncation, coupled sampling, or another construction changes its bias and requires new analysis rather than a local algebraic correction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\rho \\coloneqq 1-2\\tau c + 2\\sqrt{\\eta}(1+\\sqrt{1-c\\tau}) + 2\\tau^2 L^2 +2\\eta\\left(1+\\sqrt{1-c\\tau}\\right)^2\\leq 1-2\\tau c+ 2\\tau^2L^2 + 4\\sqrt{\\eta}+8\\eta",
+          "tag": "thm:error"
+        },
+        {
+          "quote": "and, for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently small\n    so that $4\\sqrt{n}+8\\eta<\\frac{c^2}{2L^2}$, it holds that $\\rho<1$.",
+          "tag": "thm:error"
+        }
+      ],
+      "failure_explanation": "The displayed upper bound is not below one under the stated eta condition for every permitted step size. For any fixed positive eta satisfying that condition, taking tau arbitrarily close to zero makes the negative term -2 tau c vanish while the positive terms 4 sqrt(eta)+8 eta remain fixed. Hence the proof's asserted contraction does not follow; a sharper estimate or a tau-dependent accuracy condition is necessary.",
+      "failure_location": {
+        "quote": "Then, for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently\n    small so that $4\\sqrt{\\eta}+8\\eta<\\frac{c^2}{2L^2}$, it holds",
+        "tag": "thm:error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Provide a sharper projected-gradient error argument that retains sufficient tau dependence, or impose an explicit joint condition relating eta and tau and propagate that restriction to the complexity result.",
+      "overall_effect": "The stated linear mean-square convergence guarantee is unproved over its full step-size and estimator-accuracy regime, and the optimization complexity corollary cannot rely on it there.",
+      "primary_affected_tag": "thm:error",
+      "target_type": "formal_result",
+      "title": "The contraction condition does not imply the claimed rho is below one",
+      "why_classification": "A comparable contraction theorem may survive after a contained but nontrivial argument or a restricted parameter condition, without changing the overall MLSGD architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that for every $\\ell\\in \\mathbb{N}$ there exists a null sequence $\\left\\{ h_{\\ell}\\right\\}_{\\ell\\in\\mathbb{N}}$",
+          "tag": "lemma:auxiliary"
+        },
+        {
+          "quote": "\\mathcal{C}(\\varepsilon)\n        \\lesssim_{\\theta}\n        \\begin{cases}\n            \\varepsilon^{-2},\\quad &\\beta > \\gamma,\\\\\n            \\varepsilon^{-2}|\\log(\\varepsilon)|^2,\\quad &\\beta= \\gamma,\\\\\n            \\varepsilon^{-2-\\frac{\\gamma-\\beta}{\\alpha}},\\quad &\\beta< \\gamma.\n        \\end{cases}",
+          "tag": "eq:cost_asymptotic"
+        }
+      ],
+      "failure_explanation": "The assumptions require only h_l tending to zero, whereas the quoted standard MLMC rates require controlled, typically geometric, level refinement. For example, h_l=1/log(l+1) requires exponentially many levels to make h_L^alpha comparable to epsilon. Since the estimator includes every level 1 through L with at least one sample, its cost can then be exponential in epsilon^{-1/alpha}, contradicting the stated polynomial rates even when beta>gamma.",
+      "failure_location": {
+        "quote": "The asymptotic complexity result \\eqref{eq:cost_asymptotic} follows\n    then from MLMC theory, see, e.g.~\\cite{giles2008multilevel,cliffe2011multilevel}.",
+        "tag": "thm:complexity_gradient_estimation"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add a quantitative hierarchy assumption such as uniform geometric refinement h_l comparable to q^l, then reapply the MLMC allocation argument under that assumption.",
+      "overall_effect": "The gradient-estimation and optimization complexity rates are not valid for the mesh hierarchies allowed by the theorem.",
+      "primary_affected_tag": "thm:complexity_gradient_estimation",
+      "target_type": "formal_result",
+      "title": "MLMC complexity is asserted for an arbitrary null mesh sequence",
+      "why_classification": "The intended finite-element hierarchy can likely be covered by a standard additional condition, but the theorem's current quantifier over arbitrary null sequences must be materially narrowed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "v_{k, \\ell}^2 \\coloneqq\n    \\sum_{m=1}^{M_{k, \\ell}}\n    \\big\\|\\Delta X_{\\ell}^{(m,k)} - \\EE^{\\text{MC}}_{k}[\\Delta X_\\ell] \\big\\|_U^2",
+          "tag": "eq:sec-order-sum"
+        },
+        {
+          "quote": "\\texttt{if } k \\neq 0 \\colon \\, L_k \\leftarrow \\eqref{eq:optimal-level} \\quad\n                    \\{M_{k,\\ell}\\}_{\\ell=1}^{L_k} \\leftarrow \\eqref {eq:optimal-batch-size}",
+          "tag": "alg:mlsgd"
+        },
+        {
+          "quote": "\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k) \\leftarrow \\texttt{GradientEstimate}(u_k, \\{M_{k,\\ell}\\}_{\\ell=1}^{L_k})",
+          "tag": "alg:mlsgd"
+        },
+        {
+          "quote": "L_k =\n    \\begin{cases}\n        L_{k-1} + 1, & \\text{ if } \\widehat{\\mathrm{err}}^{\\text{num}}_k > \\varepsilon_k^2/2",
+          "tag": "eq:optimal-level"
+        }
+      ],
+      "failure_explanation": "The algorithm chooses M_{k,l} before GradientEstimate generates iteration-k samples, but the batch formula uses v_{k,l'}, which is defined from precisely those not-yet-generated samples. The level decision similarly uses the iteration-k bias estimate before the current samples are computed. If a new level is added, the formula also requests previous-iteration variance, cost, and sample-count data for a level that did not previously exist.",
+      "failure_location": {
+        "quote": "\\sum_{\\ell'=1}^{L_{k}}\n              \\sqrt{\\frac{v_{k,\\ell'}^2 \\, \\mathcal{C}_{k-1, \\ell'}}{M_{k - 1, \\ell'} - 1}}",
+        "tag": "eq:optimal-batch-size"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Introduce and specify a pilot-sampling or lagged-statistics stage, including initialization for newly created levels, and order the bias estimate, level update, batch allocation, and final sampling consistently.",
+      "overall_effect": "The advertised on-the-fly adaptive MLSGD procedure is circular and cannot be executed as written, especially when adding a refinement level.",
+      "primary_affected_tag": "eq:optimal-batch-size",
+      "target_type": "algorithm",
+      "title": "Adaptive batch and level selection use unavailable current-iteration statistics",
+      "why_classification": "Repair requires a contained but genuine adaptive-sampling construction and initialization policy, not merely a typographical substitution."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\langle \\nabla \\mathcal{J}(u^\\star), u - u^\\star \\rangle_{U} \\ge 0 \\quad \\forall u \\in U_{\\mathrm{ad}}",
+          "tag": "eq:variational_inequality"
+        },
+        {
+          "quote": "\\mathcal{R}_{\\tau}(u) \\coloneqq \\frac{1}{\\tau}\\left(u-\\Pi_{U_{\\mathrm{ad}}}\\left(u-\\tau\\nabla \\mathcal{J}(u)\\right)\\right)",
+          "tag": null
+        },
+        {
+          "quote": "k \\leftarrow k + 1 \\quad \\varepsilon_k \\leftarrow \\eta \\tnorm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U",
+          "tag": "alg:mlsgd"
+        }
+      ],
+      "failure_explanation": "At a boundary-constrained optimum the variational inequality need not imply that the ordinary gradient vanishes. Thus its norm may remain bounded away from zero even at u-star, so the loop may never meet a small tolerance and the sampling target need not decay according to the stationarity residual used in the convergence theorem.",
+      "failure_location": {
+        "quote": "\\texttt{while } \\tnorm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U > \\varepsilon",
+        "tag": "alg:mlsgd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the raw gradient norm in stopping and accuracy selection by a computable projected-gradient residual, with the stochastic estimation error incorporated consistently.",
+      "overall_effect": "The implemented termination and adaptive-accuracy rules do not measure constrained stationarity and can fail for admissible problems with active constraints.",
+      "primary_affected_tag": "alg:mlsgd",
+      "target_type": "algorithm",
+      "title": "Raw gradient stopping is invalid for constrained optimization",
+      "why_classification": "The optimization method can remain intact, but both termination and adaptive sampling must be changed to the constrained residual analyzed by the paper."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "M_{k, \\ell}^{\\text{opt}}\n    = \\left\\lceil",
+          "tag": "eq:optimal-batch-size"
+        },
+        {
+          "quote": "M_{AB}      &\\leftarrow \\,\\,\\, M_{A} \\, +_d \\, M_{B}",
+          "tag": "alg:mlsgd"
+        }
+      ],
+      "failure_explanation": "The adaptive ceiling formula can produce arbitrary integer batch sizes, but the split formula rounds log2(M) upward. For example, M=3 gives s=2 and four communicator groups, leaving at least one group without a sample. The pairwise update presumes valid group sample counts and means and gives no rule for empty or uneven groups, so the stated distribution procedure is not defined for general generated batches.",
+      "failure_location": {
+        "quote": "s_{k,\\ell} = \\lceil \\log_2 (\\min \\set{P, M_{k,\\ell}, M_{\\ell}^{\\max}}) \\rceil",
+        "tag": "eq:optimal-parallelization"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Specify a nonuniform allocation and pairwise reduction that handles empty and unequal groups, or restrict and round all batch sizes to compatible powers of two while accounting for the changed costs.",
+      "overall_effect": "The distributed gradient estimator is only described for special power-of-two-compatible batches, despite the algorithm allowing general integer sample counts.",
+      "primary_affected_tag": "eq:optimal-parallelization",
+      "target_type": "algorithm",
+      "title": "Communication split creates more sample groups than non-power-of-two batches support",
+      "why_classification": "Handling general batches requires a contained redesign of allocation and reduction logic; restricting batches changes the claimed optimal allocation but not the overall method."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\widehat{L} =\n    \\frac{\\|{ \\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)- \\nabla \\mathcal{J}^{\\mathrm{ML}}(u_{k-1})}\\|_{U}}\n    {\\|{t_{k-1} \\nabla \\mathcal{J}^{\\mathrm{ML}}(u_{k-1})}\\|_{U}}",
+          "tag": "eq:adaptive-step-size"
+        },
+        {
+          "quote": "for every $\\tau\\in (0,\\frac{c}{2L^2})$",
+          "tag": "thm:error"
+        }
+      ],
+      "failure_explanation": "No condition guarantees that the estimated sampling error is smaller than the squared stochastic-gradient norm, so the numerator can be negative and produce an ascent step. The formula is also undefined when either gradient norm in its denominators vanishes, and the symbol t_{k-1} is not defined. No safeguard enforces the positive step-size range used by the convergence analysis.",
+      "failure_location": {
+        "quote": "\\tau_{k} =\n    \\frac{\\|{ \\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}\\|_{U}^2 - \\widehat{\\mathrm{err}}^{\\text{sam}}_k}\n    {\\widehat{L} \\|{ \\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}\\|_{U}^2}",
+        "tag": "eq:adaptive-step-size"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Define the missing quantity and add explicit positivity, zero-denominator, and upper-bound safeguards, together with an argument that the safeguarded stochastic steps preserve the required convergence conditions.",
+      "overall_effect": "The step-size procedure used in the experiments can fail to produce a valid descent step and is not covered by the paper's fixed-step convergence theorem.",
+      "primary_affected_tag": "eq:adaptive-step-size",
+      "target_type": "algorithm",
+      "title": "Adaptive step size can be negative or undefined",
+      "why_classification": "A safeguarded adaptive rule is plausible, but its validity requires more than a typographical correction because negative and unbounded stochastic steps affect convergence."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2606.09291",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f995bc2781848745f7a0e9dc1ec709b3b392f7fb87821723f10dd174128e1d3c",
+  "status": "ok"
+}

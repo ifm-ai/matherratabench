@@ -1,0 +1,154 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:infsup_lambda",
+        "thm:infsup",
+        "lem:nondegen",
+        "cor:added-1",
+        "thm:optimal_timestepping",
+        "lem:reliability",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lambda^{-1}\\norm{\\partial_t u_{\\rm F}}{L^2(\\II_i)}^2\\simeq\\sum_{T\\in\\II_i}|T|\\lambda^{-1}|\\partial_t {u_F}(t_{T+1})|^2 =\n\\sum_{T\\in\\TT}|T|\\lambda|{u_{F}}(t_{T+1})|^2\\simeq \\lambda \\norm{u_{\\rm F}}{L^2(\\II_i)}^2.",
+          "tag": "lem:infsup1_lambda"
+        },
+        {
+          "quote": "q_{T}(t_{T+1}) = 2\\,\\frac{3-|T|\\lambda}{|T|^2\\lambda^2 + 4|T|\\lambda + 6}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof treats the invisible component $u_F$ as if its $L^2$ norm were equivalent to the endpoint values $u_F(t_{T+1})$. For large $|T|\\lambda$, the invisible quadratic $q_T$ has $q_T(t_T)=1$ but $q_T(t_{T+1})\\sim 2/(|T|\\lambda)$, so the endpoint values do not control the $L^2$ norm. Taking $u=q_T e_i$ on a large time step gives an ansatz function orthogonal to $Y_T$, with $\\int (\\partial_t+\\lambda)u\\,v=0$ for all $v\\in Y_T$, while $\\|u\\|_{X_\\lambda}\\sim\\sqrt{\\lambda|T|}$ and the initial term is $O(1)$. Hence the claimed uniform inf-sup constant cannot hold.",
+      "failure_location": {
+        "quote": "there exists $v \\in \\YY_{\\II_i}(\\R)$ such that $\\norm{v}{\\YY(\\II_i)_\\lambda}\\lesssim \\norm{u}{\\XX(\\II_i)_\\lambda}$ and \n\\begin{align*}\n\\int_{\\II_i} (\\partial_t + \\lambda)u  v\\,dt \\geq c_0 \\norm{u}{\\XX(\\II_i)_\\lambda}^2+c_1(|u(\\II_i^+)|^2-|u(\\II_i^-)|^2).\n\\end{align*}",
+        "tag": "lem:infsup1_lambda"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must control the large-$|T|\\lambda$ invisible boundary-layer mode, either by changing the test space/ansatz space, adding a stronger norm, or restricting to a regime where $|T|\\lambda$ is uniformly bounded.",
+      "overall_effect": "The discrete inf-sup stability theorem and all downstream optimality, reliability, Céa, and model-order-reduction convergence results become unsupported.",
+      "primary_affected_tag": "lem:infsup1_lambda",
+      "target_type": "formal_result",
+      "title": "False large-step inf-sup lemma: invisible mode is not controlled",
+      "why_classification": "The false lemma is the core of the inf-sup proof; without it the main optimality theorem and its applications do not survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "for an elliptic operator $A\\colon V\\to V^\\star$, $u_0\\in H$, and $f\\in L^2(0,\\tend;V^\\star)$, we solve",
+          "tag": null
+        },
+        {
+          "quote": "Assume that $f\\in \\SS^2(\\TT;V^\\star)$.",
+          "tag": "lem:reliability"
+        }
+      ],
+      "failure_explanation": "The estimator uses $\\partial_t f$, but the model problem only assumes $f\\in L^2(0,\\tend;V^\\star)$. Lemma \\ref{lem:reliability} proves the needed reliability under the stronger hypothesis $f\\in\\SS^2(\\TT;V^\\star)$, but Theorem \\ref{thm:optimal_timestepping} does not include this or any other differentiability assumption on $f$. Thus the estimator may be undefined and the reliability step does not apply to the stated theorem.",
+      "failure_location": {
+        "quote": "\\eta_{\\TT}(T)^2=|T|^2 \\norm{\\partial_t f-\\partial_t^2u_{\\TT} -\\partial_t Au_{\\TT}}{L^2(T,V^\\star)}^2,",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add a sufficient regularity assumption on $f$, such as $f\\in H^1(0,\\tend;V^\\star)$ or $f\\in\\SS^2(\\TT;V^\\star)$ for all admissible meshes, and restate the main theorem under that assumption.",
+      "overall_effect": "The main optimality theorem is not proved for the general $L^2$ right-hand side stated in the model problem; the adaptive algorithm may not be computable from the stated data.",
+      "primary_affected_tag": "thm:optimal_timestepping",
+      "target_type": "formal_result",
+      "title": "Estimator and main theorem need regularity of f",
+      "why_classification": "The repair is a standard added regularity hypothesis, but it narrows the advertised $L^2$ data scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "u^{\\text{(rb)}}_R \\in \\XX^{\\text{(rb)}}_R\n\\coloneqq L^2(0,\\tend;{V}^{\\text{(rb)}}_R)\\cap H^1(0,\\tend;{V}^{\\text{(rb)}\\star}_R)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The space $X_R^{(\\mathrm{rb})}$ consists of functions taking values in the reduced space $V_R^{(\\mathrm{rb})}$. The difference $u_h-\\mathsf P_R^{(\\mathrm{rb})}u_h$ and the total error $u_h-u_{R,\\TT_\\ell}^{(\\mathrm{rb})}$ are not in general elements of $V_R^{(\\mathrm{rb})}$, so their $X_R^{(\\mathrm{rb})}$-norms are undefined. The proof also uses reduced-space norms on $u_h-\\mathsf P_Ru_h$.",
+      "failure_location": {
+        "quote": "\\norm{\n        u_h\n        -\n        u^{\\normalfont\\text{(rb)}}_{R,\\TT_\\ell}\n    }{\\mathcal{X}^{\\normalfont\\text{(rb)}}_R}\n    \\lesssim\n    \\min\\{\\eta_{\\ell}^{\\rm (rb)},(\\#\\TT_\\ell)^{-s^{\\rm (rb)}}\\}\n    +\n    \\norm{\n        u_h - \\mathsf{P}^{\\normalfont\\text{(rb)}}_R u_h\n    }{\\XX^{\\normalfont\\text{(rb)}}_R}",
+        "tag": "eq:convergence_time_approx_V_rb_R"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the reduced-space norm on the full error/projection difference by the corresponding norm on $X_h$ (or $X$), while keeping reduced norms only for quantities that actually lie in the reduced space.",
+      "overall_effect": "The main MOR convergence statements are ill-defined as written; the intended comparison must be made in a norm defined on the full space or after projecting the error.",
+      "primary_affected_tag": "eq:convergence_time_approx_V_rb_R",
+      "target_type": "formal_result",
+      "title": "Ill-defined reduced-space norms in MOR error bounds",
+      "why_classification": "The defect is a systematic norm-space mismatch affecting several MOR theorems, but it has a clear local notational repair."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "eq:exponential_convergence_RB",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $\\dual{A_hu_{0,h}}{{e}_{i,h}}={\\dual{\\nabla u_{0,h}}{\\nabla {e}_{i,h}}}$ and $u_{0,h}$ is the $H^1$-orthogonal projection onto $V_h$, there holds",
+          "tag": "lem:add_reg_derivative"
+        }
+      ],
+      "failure_explanation": "The equality $\\dual{\\nabla (u_{0,h}-u_0)}{\\nabla e_i}=-\\dual{(u_{0,h}-u_0)}{e_i}$ is false: an integration by parts would involve $\\Delta(u_{0,h}-u_0)$, not multiplication by $-1$. Moreover, since $u_{0,h}$ is the $H^1$-orthogonal projection, the term $\\dual{\\nabla (u_{0,h}-u_0)}{\\nabla e_i}$ is actually zero. The proof therefore derives a spurious term and does not justify the displayed decomposition.",
+      "failure_location": {
+        "quote": "\\dual{A_hu_{0,h}}{{e}_{i,h}} &= \\dual{\\nabla u_0}{\\nabla {e}_{i,h}}+\\dual{\\nabla (u_{0,h}-u_0)}{\\nabla {e}_{i,h}} \\\\\n    &= \n     \\dual{\\nabla u_0}{\\nabla {e}_{i,h}}-\\dual{ (u_{0,h}-u_0)}{ {e}_{i,h}}\\\\\n     &=- \\dual{\\Delta u_0}{ {e}_{i,h}}-\\dual{ (u_{0,h}-u_0)}{ {e}_{i,h}}.",
+        "tag": "lem:add_reg_derivative"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Delete the spurious term by using the $H^1$-orthogonality directly, i.e. $\\dual{\\nabla (u_{0,h}-u_0)}{\\nabla e_i}=0$, and continue with the correct expression for $\\dual{A_hu_{0,h}}{e_i}$.",
+      "overall_effect": "The proof of Lemma \\ref{lem:add_reg_derivative} is invalid as written; the later exponential-convergence estimates relying on it are not supported by the given argument.",
+      "primary_affected_tag": "lem:add_reg_derivative",
+      "target_type": "formal_result",
+      "title": "Invalid integration-by-parts step in derivative regularity lemma",
+      "why_classification": "The error is local and the stated lemma remains true after a short correction; no global argument or rate is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{f}{L^2_\\alpha\\left(\\mathbb{R}_+;V\\right)} \n\t= \n\t\\norm{\n\t\t\\widehat{f}\n\t}{\\mathscr{H}^2_\\alpha\\left(V\\right)}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Hardy-space norm equals the weighted $L^2_\\alpha$ norm on $\\mathbb R_+$. For the finite interval $[0,\\tend]$, the weight $e^{-\\alpha t}$ gives a factor $e^{2\\alpha\\tend}$ when converting squared norms, not $e^{\\alpha\\tend}$. Thus the displayed inequality undercounts the exponential factor by $e^{\\alpha\\tend}$.",
+      "failure_location": {
+        "quote": "\\norm{\n\t\tu_h\n\t\t-\n\t\t\\mathsf{P}_{V_R}\n\t\tu_h\n\t}{{L^2(0,\\tend;V_h)}}^2\n    +\n\t\\norm{\n        \\partial_t\n        \\left(\n            u_h\n            -\n            \\mathsf{P}_{V_R} \n            u_h\n        \\right)\n\t}{{L^2(0,\\tend;V^\\star_h)}}^2\n    \\leq e^{\\alpha \\tend} \\varepsilon\n    \\left(\n        V_R\n    \\right),",
+        "tag": "eq:eps_V_R_Laplace"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace $e^{\\alpha\\tend}$ by $e^{2\\alpha\\tend}$ in the Paley-Wiener conversion and in subsequent constants depending on it.",
+      "overall_effect": "The MOR error bounds contain an incorrect constant factor; the exponential rate in $R$ or $M$ is unaffected, but the displayed bounds are not literally correct.",
+      "primary_affected_tag": "eq:eps_V_R_Laplace",
+      "target_type": "other",
+      "title": "Incorrect Paley-Wiener exponential factor",
+      "why_classification": "The error is a routine exponential constant factor and does not change any convergence rate or structural claim."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2512.05676",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n02b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "70525655112dd5e6a4b9e036ce5bd3048782cdaa98dd74861d388a6c2188eeea",
+  "status": "ok"
+}

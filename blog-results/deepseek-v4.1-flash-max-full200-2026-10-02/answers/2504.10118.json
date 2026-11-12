@@ -1,0 +1,203 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{\\bm{z}} \\Phi(\\bm{z}) = \\frac{1}{2} \\sum_{k=1}^N \\left\\| |\\mathcal{F}(\\bm{Q}\\odot P_k \\bm{z})| - \\sqrt{\\bm{d}_k} \\right\\|_2^2\\,,",
+          "tag": "eqn:data_misfit"
+        },
+        {
+          "quote": "\\|\\mathcal{F}(\\bm{z}_k)\\|_2^2=m^2\\|\\bm{z}_k\\|_2^2\\quad\\text{and}\\quad\\|\\mathcal{F}^{-1}(\\bm{z}_k)\\|_2^2=\\frac{1}{m^2}\\|\\bm{z}_k\\|_2^2\\,.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "By Parseval as stated later, the Fourier-domain misfit equals m^2 times the exit-wave misfit, so eqn:exit_misfit is 1/m^2 of eqn:data_misfit, not equal to it. The gradient and rate bounds are for this scaled exit objective.",
+      "failure_location": {
+        "quote": "\\min_{\\bm{z}}\\Phi(\\bm{z}) &= \\frac{1}{2} \\sum_{k=1}^N  \\left\\|\\bm{Q}\\odot P_k \\bm{z} - \\mathcal{R}_k(P_k \\bm{z}) \\right\\|_2^2\\,,\\\\[1mm]",
+        "tag": "eqn:exit_misfit"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Insert the missing m^2 factor in eqn:exit_misfit or explicitly state that the paper uses the scaled exit-wave objective.",
+      "overall_effect": "The claimed equivalence with the original data misfit is false; constants in gradients and convergence bounds refer to the scaled objective.",
+      "primary_affected_tag": "eqn:exit_misfit",
+      "target_type": "other",
+      "title": "Missing Parseval factor in objective equivalence",
+      "why_classification": "A local constant-factor correction; the minimizer and optimization conclusions are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $\\theta(0)$ is undefined, we set $\\mathcal{R}_k(\\bm{z}_k)_r = \\mathcal{F}^{-1}\\left(\\sqrt{\\bm{d}_k}\\right)_r$ when $\\mathcal{F}(\\bm{Q}\\odot \\bm{z}_k)_r = 0$.",
+          "tag": "def:REW"
+        },
+        {
+          "quote": "Note that this computation does not work when $\\mathcal{F}(\\bm{Q}\\odot \\bm{z}_k))_r=0$ at some index $r$.  This issue can be prevented by finding the gradient using the third statement of Proposition~\\ref{prop:mm_cond}.",
+          "tag": "app:computation_misfit_derivative"
+        }
+      ],
+      "failure_explanation": "At an entry with F(Qz)_r=0 and d_r>0, the term (|F(Qz)_r|-sqrt(d_r))^2 has a modulus kink and is not differentiable in z. Defining R at the zero does not make Phi differentiable. The proof of gradient agreement assumes differentiability, so the claim is ill-defined/unsupported at such points; the appendix note referring back to this proposition is circular.",
+      "failure_location": {
+        "quote": "\\item The complex gradients of $\\Phi(\\bm{z})$ and $\\widetilde{\\Phi}\\left(\\bm{z} ; \\bm{z}^{(j)}\\right)$ agree at $\\bm{z}^{(j)}$:",
+        "tag": "prop:mm_cond"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Either assume F(Qz)_r is never zero when d_r>0 at relevant iterates, or define a valid subgradient and adapt the gradient-based results to the nonsmooth case.",
+      "overall_effect": "Gradient-based optimality and stopping criteria are unreliable at points where a Fourier coefficient of the exit wave vanishes.",
+      "primary_affected_tag": "prop:mm_cond",
+      "target_type": "formal_result",
+      "title": "Gradient agreement fails at zero Fourier entries",
+      "why_classification": "Handling zeros requires either a new subgradient framework or an added nondegeneracy assumption; the current proof is circular at those points."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "By the optimality of a quadratic objective function, we have\n\\begin{equation}\n    \\nabla_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z}^{(j+1)};\\bm{z}^{(j+1)}\\right) = \\overline{\\bm{Q}}\\left(\\bm{Q} \\bm{z}_k^{(j+1)} -\\mathcal{R}_k\\left(\\bm{z}_k^{(j+1)}\\right)\\right) = 0\\,.\n\\end{equation}\n\nTherefore, we can conclude that\n\\begin{equation}\n    \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = \\nabla_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z}^{(j+1)};\\bm{z}^{(j+1)}\\right) = 0\\,.\n\\end{equation}",
+          "tag": "app:proof_convergence_iterative_surrogate"
+        }
+      ],
+      "failure_explanation": "The proof only derives that equality of objective values forces the gradient to vanish. The reverse implication is false. For example, in scalar ptychography with N=1, Q=1, d=1 and z^0=2, the surrogate minimizer is z^1=1; then Phi(z^1)=0<Phi(z^0)=1/2 but grad Phi(z^1)=0.",
+      "failure_location": {
+        "quote": "Additionally,\n\\begin{equation}\n    \\Phi\\left(\\bm{z}^{(j+1)}\\right)=\\Phi\\left(\\bm{z}^{(j)}\\right)\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0\\,.\n\\end{equation}",
+        "tag": "thm:convergence_iterative_surrogate"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the 'iff' by the valid implication 'if Phi(z^{j+1})=Phi(z^j) then grad Phi(z^{j+1})=0' or add an additional hypothesis for the converse.",
+      "overall_effect": "The optimality equivalence stated in the theorem is false; only the forward implication is supported.",
+      "primary_affected_tag": "thm:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "False equivalence between objective equality and zero gradient",
+      "why_classification": "The reverse implication is false, but the main monotonic descent and the forward implication survive; a limited weakening repairs it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&= \\left(\\frac{1}{2} \\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right)\\cdot \\left|\\bm{z}-\\bm{z}^{(j)}\\right|^2 + \\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot\\left(\\frac{1}{2} \\sum_{k=1}^N P_k^{\\top}\\nabla_{\\bm{z}_k}\\Phi_k\\left(\\bm{z}_k^{(j)}\\right)\\right)\\\\",
+          "tag": "app:proof_convergence_rate"
+        },
+        {
+          "quote": "\\min_{0\\leq j\\leq n} \\left\\|\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\right\\|_2^2\\leq\\frac{\\left\\|\\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right\\|_\\infty}{2(n+1)}\\Phi\\left(\\bm{z}^{(0)}\\right)",
+          "tag": "thm:convergence_rate"
+        }
+      ],
+      "failure_explanation": "In the expansion of the surrogate difference, the linear term has coefficient 1/2. The next line drops this 1/2, doubling the linear term. With the correct factor, the chosen step gives only <=0, not -1/L||g||^2. The resulting bound is too strong; e.g., for m=1, Q=1, d=1, z^0=2 and n=0, the left side is 1 while the claimed right side is 0.25.",
+      "failure_location": {
+        "quote": "&\\leq \\frac{1}{2}\\left\\|\\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right\\|_\\infty\\left\\|\\bm{z}-\\bm{z}^{(j)}\\right\\|_2^2+\\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\,\\\\",
+        "tag": "app:proof_convergence_rate"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Correct the dropped 1/2 in the proof, weaken the rate constant accordingly (e.g., 2C/(n+1) Phi(z^0)), and handle n=0.",
+      "overall_effect": "The stated convergence-rate constant is not established and is false for n=0; a weaker constant is needed.",
+      "primary_affected_tag": "thm:convergence_rate",
+      "target_type": "formal_result",
+      "title": "Convergence-rate proof drops a factor of 1/2",
+      "why_classification": "A local algebra correction changes only a constant in the rate; the sublinear O(1/n) guarantee survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:coarse_grid_update"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{W}_{\\bm{u}}^H = \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\,.",
+          "tag": "eqn:def_weights"
+        },
+        {
+          "quote": "$\\bm{u}_H \\leftarrow \\bm{W}_{\\bm{u}}^H\\odot\\bm{I}_h^H\\,\\bm{u}$.",
+          "tag": "alg:MGPS"
+        }
+      ],
+      "failure_explanation": "If Q_H=0 (possible even if fine Q entries are nonzero due to phase cancellation), then W_u^H=0, so u_H=0. The MGPS update divides by u+|Q|^2=0, giving 0/0. No convention for this degenerate case is specified.",
+      "failure_location": {
+        "quote": "$\\bm{z}^+_k \\leftarrow \\bm{z}_k^{(j)} + \\frac{\\overline{\\bm{Q}}}{\\bm{u} + |\\bm{Q}|^2}\\left(\\mathcal{R}_k\\left(\\bm{z}_k^{(j)}\\right) - \\bm{Q}\\bm{z}_k^{(j)}\\right)$.",
+        "tag": "alg:MGPS"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Specify a convention for the update when Q=0 and u+|Q|^2=0, e.g., set the update to zero.",
+      "overall_effect": "The recursive multigrid solver is not well defined for coarse probes with zero entries; the coarse-update formula in thm:coarse_grid_update has the same division.",
+      "primary_affected_tag": "alg:MGPS",
+      "target_type": "algorithm",
+      "title": "MGPS update is ill-defined when coarse probe and regularization vanish",
+      "why_classification": "A local degenerate-case convention restores well-definedness without changing the method's scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Iterates $\\bm{z}^{(j)}$ delivered by the surrogate minimization (see~\\eqref{eqn:surrogate_minimization}) converge sublinearly with respect to~\\eqref{eqn:exit_misfit}:",
+          "tag": "thm:convergence_rate"
+        },
+        {
+          "quote": "Since the problem is inherently large-scale, the algorithm is run in a stochastic manner---scanning regions are shuffled per iteration and updated sequentially.",
+          "tag": null
+        },
+        {
+          "quote": "$\\bm{z}^{\\texttt{recon}}[x : x + m,\\; y : y + m] \\leftarrow \\texttt{MGPS}_k\\left(\\bm{Q},\\bm{u}, \\bm{z}^{\\texttt{recon}}_k, \\mathcal{R}_k\\left(\\bm{z}^{\\texttt{recon}}_k\\right)\\right)$.",
+          "tag": "alg:MGrPIE"
+        }
+      ],
+      "failure_explanation": "The monotonic descent and sublinear rate theorems are stated for exact full-batch surrogate minimization in eqn:surrogate_minimization. MGrPIE is stochastic, sequential, and uses proximal regularized updates; the paper only proves a coarse-grid descent direction for the fine surrogate, not global monotonic descent or sublinear convergence of MGrPIE. The conclusion therefore claims a guarantee for the proposed algorithm that is not established.",
+      "failure_location": {
+        "quote": "Our method demonstrates that the surrogate model:\n\\begin{itemize}\n    \\item majorizes the original non-convex objective, yielding monotonic descent and sub-linear convergence guarantees;",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Scope the convergence claim to the full-batch surrogate minimization, or provide a convergence proof for the stochastic proximal MGrPIE algorithm.",
+      "overall_effect": "The main algorithm's advertised convergence guarantee is unsupported; only the full-batch surrogate method has the stated convergence results.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Convergence guarantees claimed for stochastic multigrid algorithm are not established",
+      "why_classification": "The overclaim concerns the main algorithm's theoretical guarantee; a clear scope restriction or new convergence proof is needed, but the surrogate analysis remains."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "=-4\\left(\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right)\\right)^*\\operatorname{diag}(\\bm{A})\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right) \\,,\\\\ &\\leq 0\\,.",
+          "tag": "prop:multigrid_convergence"
+        }
+      ],
+      "failure_explanation": "The computation shows the inner product equals -4(I_h^H g)^* diag(A) I_h^H g. Equality with 0 gives I_h^H g=0, not g=0. For example, a fine vector g with entries +1,-1,+1,-1 in one bin has zero average but is nonzero. Thus the equality implication is false.",
+      "failure_location": {
+        "quote": "Additionally, equality implies $\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)=0$.",
+        "tag": "prop:multigrid_convergence"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the equality statement by 'equality implies I_h^H grad tilde Phi_k = 0' or remove the extra equality claim.",
+      "overall_effect": "The extra equality characterization in the descent proposition is false; the descent inequality itself remains valid.",
+      "primary_affected_tag": "prop:multigrid_convergence",
+      "target_type": "formal_result",
+      "title": "Equality in multigrid descent condition does not imply zero gradient",
+      "why_classification": "An extra equality claim not used for the descent conclusion; removing or weakening it is local."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2504.10118",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n02b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e9a1fb619c786f644b01b96a3fc12b8566c68fb3b203771e6f1978a95647dfae",
+  "status": "ok"
+}

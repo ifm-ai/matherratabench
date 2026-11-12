@@ -1,0 +1,282 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If  the line-search step satisfies $0\\le\\lambda_n< \\lambda_{\\max}:=\\sqrt{\\frac{4}{3\\delta tL} - \\frac12}-1$, then the sequence $\\{ \\|u^{n+1}-u^n\\|\\}_n$ is square summable",
+          "tag": "lem:square:summable"
+        },
+        {
+          "quote": "$\\deltat < 2/3/L$ (e.g., $\\delta t= 6-10^{-15}$), $\\bar \\lambda_{\\text{max}} = 5$",
+          "tag": null
+        },
+        {
+          "quote": "can be enhanced by replacing the setting $\\lambda_n:=\\bar \\lambda_{\\max}$ in Step 6 with $\\lambda_n:=\\max\\{\\bar \\lambda_{\\max},\\lambda^*_n\\}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "All convergence results are conditional on every accepted line-search step satisfying $0\\le\\lambda_n<\\lambda_{\\max}$ with an explicit $\\lambda_{\\max}$ ($=\\sqrt{4/(3\\delta tL)-1/2}-1$ for the $\\hat u^n=u^n$ case, and the analogous bound in Theorem \\ref{thm:square:sum:til}); for the reported SCAD parameters ($\\delta t\\approx6$, $L=1/9$) this bound is $\\sqrt{1.5}-1\\approx0.22$. The algorithm imposes no such constraint: Step 1 admits any $\\lambda_{\\max}>0$ (in contrast to the explicitly constrained $\\delta t$) and Step 6 initializes backtracking at the free $\\bar\\lambda_{\\max}$ (or even at $\\max\\{\\bar\\lambda_{\\max},\\lambda_n^*\\}\\ge5$ in the experiments). The Armijo test alone does not force accepted steps below the theoretical bound, so the advertised guarantee of global convergence of the algorithm is unsupported as specified, and the reported runs are uncovered whenever an accepted step exceeds the bound.",
+      "failure_location": {
+        "quote": "\\State Set $\\lambda_n := \\bar \\lambda_{\\max}$. WHILE $E^n(y_n + \\lambda_nd^n)>E^n(y^n) - \\alpha\\lambda_n\\|d^n\\|^2$ DO $\\lambda_n:=\\beta\\lambda_n$",
+        "tag": "alg:cap"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Constrain the algorithm's input/initialization so every accepted step satisfies the theoretical bound (cap $\\bar\\lambda_{\\max}$ and the interpolated initial guess at $\\sqrt{4/(3\\delta tL)-1/2}-1$, and at the analogous bound for the $\\tilde u^n$ branch); the convergence theorems then apply verbatim.",
+      "overall_effect": "The headline guarantee 'global convergence of the algorithm' (abstract, introduction, conclusion) is unsupported for the algorithm as written; the numerical evidence for the line-search variants is formally uncovered whenever accepted steps leave the theoretical range.",
+      "primary_affected_tag": "alg:cap",
+      "target_type": "algorithm",
+      "title": "Algorithm's line search does not enforce the step-size bound required by the convergence theory",
+      "why_classification": "A one-line parameter restriction makes the stated theorems applicable to the algorithm; no proof, conclusion, rate, or advertised regime changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:globalconverg",
+        "them:local:rate",
+        "rem:un:mul"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the coefficient $c(\\lambda_n, \\delta t, L) := \\frac{4}{3\\delta t} - \\frac{L}{2} - L(1+\\lambda_n)^2$ satisfies $c(\\lambda_n, \\delta t, L) > 0$",
+          "tag": "lem:square:summable"
+        },
+        {
+          "quote": "$0\\le\\lambda_n< \\lambda_{\\max}:=\\sqrt{\\frac{4}{3\\delta tL} - \\frac12}-1$",
+          "tag": "lem:square:summable"
+        },
+        {
+          "quote": "$0 \\leq \\lambda_{\\min} : =\\min\\{ \\lambda_n, \\ n \\geq 1\\}$",
+          "tag": "lem:square:summable"
+        },
+        {
+          "quote": "\\sum_{n=1}^{\\infty}\\|u^{n+1} - u^n\\|^2\\leq  \\frac{(1+\\lambda_{\\max})^2}{\\alpha\\lambda_{\\min} + c(\\lambda_{\\max},\\delta t, L)}(A(u^1,u^0) - \\liminf_{n\\to \\infty}A(u^{n+1},u^n))<\\infty",
+          "tag": "lem:square:summable"
+        },
+        {
+          "quote": "By setting $\\lambda_n = 0$ and the proximal weight $M = 0$ as specified in Proposition \\ref{prop:descent}, Lemmas \\ref{lem:LSbase} and \\ref{lem:square:summable}, and Theorem \\ref{thm:globalconverg}, we can still obtain the global convergence",
+          "tag": "rem:un:mul"
+        }
+      ],
+      "failure_explanation": "The proof bounds the per-step coefficient of $\\|u^{n+1}-u^n\\|^2$ below by $(\\alpha\\lambda_{\\min}+c(\\lambda_{\\max},\\delta t,L))/(1+\\lambda_{\\max})^2$. But $c(\\lambda_{\\max},\\delta t,L)=\\frac{4}{3\\delta t}-\\frac{L}{2}-L(1+\\lambda_{\\max})^2=0$ identically by the definition of $\\lambda_{\\max}$, so the constant reduces to $\\alpha\\lambda_{\\min}/(1+\\lambda_{\\max})^2$, which is $0$ whenever $\\inf_n\\lambda_n=0$ — in particular in the case $\\lambda_n\\equiv0$ (no line search) that Remark \\ref{rem:un:mul} invokes for the original scheme. The concluding summed estimate then has a zero denominator and establishes nothing. The statement is nevertheless true: $g(\\lambda)=(\\alpha\\lambda+\\frac{4}{3\\delta t}-\\frac{L}{2}-L(1+\\lambda)^2)/(1+\\lambda)^2$ is unimodal on $[0,\\lambda_{\\max}]$, so $g(\\lambda_n)\\ge\\min\\{g(0),g(\\lambda_{\\max})\\}=\\min\\{\\frac{4}{3\\delta t}-\\frac{3L}{2},\\alpha\\lambda_{\\max}/(1+\\lambda_{\\max})^2\\}>0$ (using $\\delta t<2/(3L)$), which makes the telescoping sum finite.",
+      "failure_location": {
+        "quote": "\\frac{\\alpha\\lambda_{\\min} + c(\\lambda_{\\max},\\delta t, L)}{(1+\\lambda_{\\max})^2} \\|u^{n+1} - u^n\\|^2\\leq A(u^n,u^{n-1}) - A(u^{n+1},u^n)",
+        "tag": "lem:square:summable"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the lower bound by the uniform endpoint minimum $\\min\\{\\frac{4}{3\\delta t}-\\frac{3L}{2},\\frac{\\alpha\\lambda_{\\max}}{(1+\\lambda_{\\max})^2}\\}>0$ (or establish a uniform positive lower bound on the line-search steps); the lemma and all dependent results then follow with a positive constant.",
+      "overall_effect": "As written, the square-summability proof yields no estimate when $\\inf_n\\lambda_n=0$; the KL/finite-length argument in Theorem \\ref{thm:globalconverg} and the rate analysis in Theorem \\ref{them:local:rate} inherit the same degenerate constant, and the flagship application (first global convergence of the original BDF2–AB2 splitting with $\\lambda_n\\equiv0$, Remark \\ref{rem:un:mul}) falls exactly in the uncovered case.",
+      "primary_affected_tag": "lem:square:summable",
+      "target_type": "formal_result",
+      "title": "Uniform constant in Lemma \\ref{lem:square:summable} degenerates to zero, invalidating the final estimate as written",
+      "why_classification": "The statement is true and the repair is a short, local re-evaluation of a scalar constant; every conclusion, rate, and the advertised coverage of the original scheme survive with no new lemma or new architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{2}{3\\delta t}(3y^n - 4u^n + u^{n-1}) + M(y^n - \\hat{u}^n) + h(y^n) + (2f(u^n) - f(u^{n-1}))=0.",
+          "tag": "eq:solve:y:pre:general"
+        },
+        {
+          "quote": "y^{n} = \\argmin_u \\left\\{H^n(u) - \\langle \\nabla F^n(u^{n}),u\\rangle + \\frac12\\|u-\\hat{u}\\|^2_M\\right\\}",
+          "tag": "eq:algorithmic:update"
+        },
+        {
+          "quote": "Let $\\{u^n\\}_n$ be a sequence generated by Algorithm \\ref{alg:cap} with the updated of $y^n$ replaced by \\eqref{eq:til:yn}.",
+          "tag": "thm:globalconverg:M"
+        },
+        {
+          "quote": "This algorithm is represented by Algorithm \\ref{alg:cap} with $\\hat u^n= u^n$ (BapDCA$_{\\text{ls-n}}$) or $\\hat u^n=\\tilde u^n$ (BapDCA$_{\\text{ls-t}}$)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims \\eqref{eq:til:yn} is the $\\hat u^n=\\tilde u^n$ specialization of the algorithm's update \\eqref{eq:solve:y:pre:general} (equivalently of the subproblem \\eqref{eq:algorithmic:update}, whose proximal term is $\\frac12\\|u-\\hat u\\|_M^2$). In fact \\eqref{eq:til:yn} uses proximal weight $\\frac{2}{\\delta t}M$ instead of $M$, so the whole Section 2.3 analysis (Propositions \\ref{prop:til:1}, \\ref{prop:til2}, Theorems \\ref{thm:square:sum:til} and \\ref{thm:globalconverg:M}) covers a reweighted scheme, not the algorithm's $\\tilde u^n$ branch as specified and used in the experiments (where $M=\\lambda_{A^TA}I-A^TA$); Theorem \\ref{thm:globalconverg:M} itself concedes the update is 'replaced by \\eqref{eq:til:yn}'. Moreover, with SGS preconditioners $\\|M\\|=O(\\delta t)$ (Proposition \\ref{prop:second_order:pre}), so a weight $\\frac{2}{\\delta t}M=O(1)$ would destroy the advertised second-order property of the preconditioned scheme.",
+      "failure_location": {
+        "quote": "The equation \\eqref{eq:solve:y:pre:general} for $\\hat u^n = \\tilde u^n$ becomes\n\\begin{equation}\\label{eq:til:yn}\n    \\frac{2}{3\\delta t}(3y^{n} - 4u^n + u^{n-1}) + \\frac{2M}{\\delta t}(y^{n} - \\Tilde u^n) + h( y^{n}) + (2f(u^n) - f(u^{n-1})) = 0.\n\\end{equation}",
+        "tag": "eq:til:yn"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Make the algorithm statement and the analysis consistent, simplest by keeping Algorithm \\ref{alg:cap}'s weight $M$ and rescaling the Section 2.3 $M$-coefficients: the same estimates hold with $\\frac56,\\frac16$ in place of $\\frac{5}{3\\delta t},\\frac{1}{3\\delta t}$, giving the identical admissible range $\\lambda_{\\max}\\le\\sqrt5-1$ and the same conclusions.",
+      "overall_effect": "The convergence coverage of the BapDCA$_{\\text{ls-t}}$/BapDCA$_{\\text{t}}$ variants as specified in Algorithm \\ref{alg:cap} is formally unsupported, and the second-order preconditioning narrative conflicts with the reweighted update.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Section 2.3 analyzes a reweighted update: \\eqref{eq:til:yn} uses proximal weight $2M/\\delta t$, not the weight $M$ of Algorithm \\ref{alg:cap}",
+      "why_classification": "The analyzed and stated schemes differ only by a rescaling of the free positive semidefinite weight; the analysis carries over with rescaled coefficients and unchanged conditions and conclusions, so a short local consistency repair preserves every claim."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\nabla E^n(z) - \\nabla E^n(y^n)\\| \\leq (\\rho - \\alpha)\\|d^n\\|,\\quad \\text{where $|z - y^n| < \\delta$}.",
+          "tag": "coro:til1"
+        },
+        {
+          "quote": "E^n(y^n + \\lambda_n d^n)  \\leq   E^n(y^n) -\\alpha\\lambda_n\\|d^n\\|^2, \\ \\lambda_n=  \n     \\begin{cases}\n              \\lambda_n, \\ \\ \\text{if there exists a positive $\\lambda_n>0$} \\\\\n             0, \\ \\ \\ \\ \\text{otherwise}\n     \\end{cases}",
+          "tag": "eq:line:search:til"
+        }
+      ],
+      "failure_explanation": "The mean-value argument bounds the remainder via the continuity estimate $\\|\\nabla E^n(z)-\\nabla E^n(y^n)\\|\\le(\\rho-\\alpha)\\|d^n\\|$, which is only available for $|z-y^n|<\\delta$; hence the displayed bound is proved only for $\\lambda_n<\\delta/\\|d^n\\|$. The corollary asserts it for the step $\\lambda_n$ produced by the line search \\eqref{eq:line:search:til}, which accepts the first (possibly large) step satisfying only the weaker plain Armijo condition. When $\\|u^n-u^{n-1}\\|_M^2\\ge5\\|d^n\\|_M^2$ the bound follows from the plain Armijo decrease, but otherwise it is strictly stronger than Armijo and is not established; the argument thus proves a materially weaker statement than claimed.",
+      "failure_location": {
+        "quote": "E^n(y^n + \\lambda_n d^n)- E^n(y^n)\\leq  -\\frac{5\\lambda_n}{3\\delta t}\\|d^n\\|^2_M + \\frac{\\lambda_n}{3\\delta t}\\|u^n - u^{n-1}\\|^2_M  - \\alpha\\lambda_n\\|d^n\\|^2.",
+        "tag": "coro:til1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate the corollary as a local/feasibility statement (the bound holds for all sufficiently small steps), matching what the proof shows, or delete it; no other text needs to change.",
+      "overall_effect": "Only the corollary's own statement is unsupported; nothing downstream is damaged, since the key estimate in Theorem \\ref{thm:square:sum:til} follows directly from Proposition \\ref{prop:til:1} plus the plain Armijo condition \\eqref{eq:line:search:til} without the corollary.",
+      "primary_affected_tag": "coro:til1",
+      "target_type": "formal_result",
+      "title": "Corollary \\ref{coro:til1}'s line-search decrease bound is established only for sufficiently small steps",
+      "why_classification": "The proof is valid but proves a weaker (local) statement than claimed; weakening the statement to match is a short local repair with no loss anywhere else."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:globalconverg:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&(\\frac{4}{3\\delta t} - \\frac{L}{2} + \\alpha\\lambda_n)||d_n||^2 + \\frac{5}{3\\delta t}||d_n||_M^2 - \\frac{1}{3\\delta t}||u^n - u^{n-1}||^2_M \\\\",
+          "tag": "thm:square:sum:til"
+        },
+        {
+          "quote": "making use of the fact $d^n = y^n-u^n = \\frac{1}{1+\\lambda_n}(u^{n+1} - u^n)$",
+          "tag": "lem:square:summable"
+        }
+      ],
+      "failure_explanation": "Substituting $\\|d_n\\|_M^2=\\|u^{n+1}-u^n\\|_M^2/(1+\\lambda_n)^2$ into the preceding display gives $\\frac{5}{3\\delta t(1+\\lambda_n)^2}\\|u^{n+1}-u^n\\|_M^2$ and leaves $-\\frac{1}{3\\delta t}\\|u^n-u^{n-1}\\|_M^2$ unchanged. The printed \\eqref{eq:minmax:control} instead has $\\frac{5}{3\\delta t(1+\\lambda_n)}$ (missing square, enlarging the term) and $-\\frac{1+\\lambda_n}{3\\delta t}$ (spurious factor, diminishing it), so the display is neither a valid weakening nor strengthening of the correct one. The quantities built on it — $C_{2,\\max}=\\frac{5}{3\\delta t(1+\\lambda_{\\max})}-\\frac{1+\\lambda_{\\max}}{3\\delta t}$ and $\\tilde A(x,y)=A_0(x,y)+\\frac{1+\\lambda_{\\max}}{3\\delta t}\\|x-y\\|_M^2$ — inherit the wrong exponents. With the corrected display one obtains $C_{2,\\max}=\\frac{5}{3\\delta t(1+\\lambda_{\\max})^2}-\\frac{1}{3\\delta t}$, i.e., the same condition $\\lambda_{\\max}\\le\\sqrt5-1$, and $\\tilde A$ with weight $\\frac{1}{3\\delta t}$.",
+      "failure_location": {
+        "quote": "(\\frac{8 - 3\\delta tL + 6\\delta t\\alpha\\lambda_n}{6\\delta t(1 + \\lambda_n)^2} - L)&||u^{n+1} - u^n||^2 + \\frac{5}{3\\delta t(1+\\lambda_n)}||u^{n+1} - u^n||^2_M \\notag \\\\\n     &-\\frac{1 + \\lambda_n}{3\\delta t}||u^n - u^{n-1}||^2_M\\leq A_0(u^n,u^{n-1}) - A_0(u^{n+1},u^{n})",
+        "tag": "thm:square:sum:til"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the two exponents in \\eqref{eq:minmax:control} and propagate: $C_{2,\\max}=\\frac{5}{3\\delta t(1+\\lambda_{\\max})^2}-\\frac{1}{3\\delta t}\\ge0$ (the same $\\sqrt5-1$ bound) and $\\tilde A(x,y)=A_0(x,y)+\\frac{1}{3\\delta t}\\|x-y\\|_M^2$; all theorem statements and conclusions are preserved.",
+      "overall_effect": "The derivation of the key telescoping estimate contains an unjustified display; the stated admissible range and the square-summability conclusion survive after correction, but the auxiliary function $\\tilde A$ that Theorem \\ref{thm:globalconverg:M} assumes to be KL must carry weight $\\frac{1}{3\\delta t}$ rather than $\\frac{1+\\lambda_{\\max}}{3\\delta t}$.",
+      "primary_affected_tag": "thm:square:sum:til",
+      "target_type": "formal_result",
+      "title": "\\eqref{eq:minmax:control} does not follow from the preceding estimate: wrong $(1+\\lambda_n)$ exponents in the $M$-norm terms",
+      "why_classification": "A routine algebraic correction of the substitution; the admissible step-size range, the square summability, and the global convergence conclusions are all unchanged, with only the auxiliary function's weight adjusted."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\psi'(h(x)-h(\\bar x)) \\|\\nabla h(x)\\|\\geq 1",
+          "tag": "def:KL"
+        },
+        {
+          "quote": "C_{1,\\max}\\|u^{n+1}-u^n\\|^2 \\leq  C(\\|u^{n+2}-u^{n+1}\\|\n    +\\|u^{n+1} - u^n\\|)\\Psi(u^{n-1}, u^n, u^{n+1}, \\zeta).",
+          "tag": "thm:globalconverg:M"
+        },
+        {
+          "quote": "\\psi'(A(u^{n+1}, u^{n}) - \\zeta)\\left[A(u^{n+1}, u^{n}) - A(u^{n+2}, u^{n+1})\\right]\\|\\nabla A(u^{n+1},u^{n})\\|",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "The second '$\\ge$' requires $\\psi'(\\tilde A(u^n,u^{n-1})-\\zeta)\\|\\nabla\\tilde A(u^{n+1},u^n)\\|\\ge1$. The KL property at the point $(u^{n+1},u^n)$ only gives $\\psi'(\\tilde A(u^{n+1},u^n)-\\zeta)\\|\\nabla\\tilde A(u^{n+1},u^n)\\|\\ge1$; since $\\{\\tilde A(u^{n+1},u^n)\\}$ is decreasing and $\\psi'$ is nonincreasing by concavity, $\\psi'(\\tilde A(u^n,u^{n-1})-\\zeta)\\le\\psi'(\\tilde A(u^{n+1},u^n)-\\zeta)$, so the required inequality does not follow and the chain is invalid as written. Consequently the printed final relation mixes the past difference $\\Psi(u^{n-1},u^n,u^{n+1},\\zeta)$ with the future differences $\\|u^{n+2}-u^{n+1}\\|+\\|u^{n+1}-u^n\\|$. (The analogous chain in Theorem \\ref{thm:globalconverg} pairs $\\psi'$ and the gradient at the same point and is correct.)",
+      "failure_location": {
+        "quote": "\\geq & \\psi'( \\tilde A(u^{n}, u^{n-1}) - \\zeta)\\cdot\\|\\nabla \\tilde A(u^{n+1},u^{n})\\|\\left[\\tilde A(u^n, u^{n-1}) - \\tilde A(u^{n+1}, u^{n})\\right]\\\\\n    \\geq &\\tilde A(u^{n}, u^{n-1}) - \\tilde A(u^{n+1}, u^{n})\\geq C_{1,\\max}\\|u^{n+1}-u^n\\|^2,",
+        "tag": "thm:globalconverg:M"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Evaluate the gradient at the matching point $(u^n,u^{n-1})$ (as in Theorem \\ref{thm:globalconverg} and in the appendix), yielding the consistent relation $C_{1,\\max}\\|u^{n+1}-u^n\\|^2\\le C(\\|u^{n+1}-u^n\\|+\\|u^n-u^{n-1}\\|)\\Psi(u^{n-1},u^n,u^{n+1},\\zeta)$; the remainder of the proof then goes through verbatim.",
+      "overall_effect": "The key recurrence for the finite-length argument of Theorem \\ref{thm:globalconverg:M}(iii) is unsupported as written.",
+      "primary_affected_tag": "thm:globalconverg:M",
+      "target_type": "formal_result",
+      "title": "KL inequality applied at a mismatched point in the proof of Theorem \\ref{thm:globalconverg:M}",
+      "why_classification": "A local reindexing of one inference repairs the proof with no change to the theorem's hypotheses or conclusions."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "rem:KL:conver:two:models"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $H(u)$ is a convex function, $\\nabla F(u)$ is a Lipschitz continuous function with constant $L$",
+          "tag": "eq:basefunctional"
+        },
+        {
+          "quote": "$H(u) =  \\sum_{ij}\\frac{\\epsilon}{2}w_{ij}(u(i)-u(j))^2 + \\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2$",
+          "tag": null
+        },
+        {
+          "quote": "the white pixels label the positive prior and the black pixels label the negative prior",
+          "tag": "fig:stonelable"
+        },
+        {
+          "quote": "we confirm that $A(x,y)$ (or $\\tilde A(x,y)$) is also a KL function and the global convergence of these two models thus follows.",
+          "tag": "rem:KL:conver:two:models"
+        }
+      ],
+      "failure_explanation": "The framework assumes the $H$ part of the splitting is convex. With the depicted two-class prior (white/positive and black/negative labels, i.e., $y(i)\\in\\{0,1\\}$), $\\Lambda(i)=2y(i)-1\\in\\{-1,1\\}$ is negative at every negative-prior pixel, so $\\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2$ is a concave quadratic there; the graph term $\\frac{\\epsilon}{2}\\sum_{ij}w_{ij}(u_i-u_j)^2$ is only positive semidefinite and cannot restore convexity. Hence the experiment's $H$ is nonconvex as written, contradicting the standing hypothesis used in the strong-convexity/descent estimates (and, behaviorally, a negative weight repels $u(i)$ from the negative-prior label rather than pinning it). The standard semi-supervised Ginzburg–Landau fidelity in the cited model uses a $0/1$ indicator of the labeled set.",
+      "failure_location": {
+        "quote": "The prior vector, $y$, is based on the index of the prior pixels and data, and $\\Lambda$ is a diagonal matrix derived from $y$. Specifically, $\\Lambda(i) = 2y(i) - 1$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Redefine $\\Lambda$ as the $0/1$ indicator of the prior (labeled) pixels (the standard fidelity in the cited model), restoring convexity of $H$; the experiment and the theory then fit the framework.",
+      "overall_effect": "The graphic Ginzburg–Landau experiment, as specified, falls outside the paper's convex-$H$ framework; the claim that the global convergence theory covers this model (Remark \\ref{rem:KL:conver:two:models}) is unsupported as written.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The Ginzburg–Landau experiment's $\\Lambda(i)=2y(i)-1$ gives negative fidelity weights, making $H$ nonconvex",
+      "why_classification": "A local definition repair (nonnegative indicator weights) restores the model's fit to the framework with no change to the method or the claimed coverage."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "rem:KL:conver:two:models"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\mathbb{W}(u) = \\frac14\\sum_{i=1}^{n}(u(i)^2 - 1)^2$",
+          "tag": null
+        },
+        {
+          "quote": "$F(u) = \\frac{1}{\\epsilon}\\mathbb{W}(u)$",
+          "tag": null
+        },
+        {
+          "quote": "For the strong convexity of $F^n(u)$, supposing that the Lipschitz constant of $f(u)$ is $L>0$, we need $\\deltat < \\frac{2}{3L}$.",
+          "tag": "lem:con:L"
+        },
+        {
+          "quote": "we confirm that $A(x,y)$ (or $\\tilde A(x,y)$) is also a KL function and the global convergence of these two models thus follows.",
+          "tag": "rem:KL:conver:two:models"
+        }
+      ],
+      "failure_explanation": "For this model $F(u)=\\frac{1}{4\\epsilon}\\sum_i(u(i)^2-1)^2$, so $\\nabla F$ is a cubic map and is not globally Lipschitz: no global constant $L$ exists as the sentence presupposes. The invoked theory uses the Lipschitz constant globally (strong convexity of $F^n$ for all $u_1,u_2\\in X$ in Lemma \\ref{lem:con:L}, the bounds $\\langle f(y^n)-f(u^n),d^n\\rangle\\le L\\|d^n\\|^2$, and the step-size rule $\\delta t<2/(3L)$), so the experiment is not covered as written. A standard localization repairs it: the energy is coercive (quartic), hence level-bounded, the iterates remain in a bounded sublevel set, and every estimate is applied only along consecutive iterates, so a local Lipschitz constant suffices.",
+      "failure_location": {
+        "quote": "Moreover, the parameter $\\delta t$ must satisfy $\\delta t<\\frac{2}{3L}$, where $L$ is the Lipschitz constant of $F(u)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Qualify $L$ as the Lipschitz constant of $\\nabla F$ on the bounded sublevel set containing the iterates (existence and boundedness follow from coercivity of $E$ and the descent properties of the scheme), and read the condition $\\delta t<2/(3L)$ with that constant; all conclusions survive.",
+      "overall_effect": "The graphic Ginzburg–Landau experiment does not satisfy the standing global-Lipschitz hypothesis underlying the step-size constraint and the descent/KL analysis; the claimed theoretical coverage of this model is unsupported until the assumption is localized.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The Ginzburg–Landau double-well $F$ has no globally Lipschitz gradient, contrary to the hypothesis invoked for the experiment",
+      "why_classification": "Adding the standard local-Lipschitz qualification — justified by the boundedness the theory itself provides — preserves the method, the conclusions, and the advertised coverage of the experiment."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2411.07661",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "82023cb4a713f803031fb66ea375960c872e0ef9830eb307112b4b7b18610917",
+  "status": "ok"
+}

@@ -1,0 +1,258 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the unique entries of $R_k$ in its first column, are evaluated using this corresponding column of $W\\Tilde{A}$ i.e. $R_k\\hat e_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}$",
+          "tag": null
+        },
+        {
+          "quote": "Let $W(p,q) = \\frac{1}{\\sqrt{n}}e^{-i \\frac{2\\pi pq}{n}}$, with $p,q=0,1,2\\cdots n-1$.",
+          "tag": null
+        },
+        {
+          "quote": "Thus arranging the cycles of matrix $A$ into columns of $\\Tilde{A}$ and applying Fast Fourier Transform (FFT) on its columns i.e. $W\\Tilde{A}$ provides us all the circulant components of the matrix in only $\\mathcal{O}(n^2 \\log n)$ arithmetic operations.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Under the paper's own conventions (cycles as columns of $\\tilde A$, i.e. $\\tilde A(p,j)=A(p,(p-j)\\bmod n)$ per the appendix example, and $W(p,q)=n^{-1/2}e^{-2\\pi ipq/n}$), one computes $(W\\tilde A)_{ij}=\\sqrt{n}\\,r_{j,i}\\omega^{-ij}$, where $(r_{p,k})_p$ is the first column of $R_k$. Hence the first column of $R_k$ equals $\\frac{1}{\\sqrt{n}}D^k(\\text{row }k\\text{ of }W\\tilde A)^T$. Step 4 instead returns $(D^k)^{-1}(\\text{column }k\\text{ of }W\\tilde A)$, the wrong slice with wrong phases and missing normalization. Concrete 2x2 counterexample: for $A=[[a_{00},a_{01}],[a_{10},a_{11}]]$ the true first column of $R_1$ is $((a_{00}-a_{11})/2,(a_{10}-a_{01})/2)^T$, while Step 4 gives $(D^1)^{-1}(W\\tilde A)^{(1)}=\\frac{1}{\\sqrt{2}}(a_{01}+a_{10},a_{10}-a_{01})^T$ (e.g. $a_{00}=1$, others $0$: $(1/2,0)$ vs $(0,0)$). The prose formula repeats the same error; '$\\hat e_1$' should be $\\hat e_0$ under the paper's 0-indexing, and Step 3 assigns $L[j]\\gets\\Lambda_j$ although the cycles $\\Lambda_j$ are never computed from the input $A$.",
+      "failure_location": {
+        "quote": "R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)}",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct Step 4 (and the identical prose formula) to: first column of $R_k$ = $\\frac{1}{\\sqrt{n}}D^k(\\text{row }k\\text{ of }W\\tilde A)^T$ under the stated conventions (or the equivalent conjugate-FFT form), including normalization, and make the construction of $\\tilde A$ and $\\Lambda_j$ explicit steps.",
+      "overall_effect": "The circulant components produced by the algorithm as literally specified are incorrect, so the block's output contract fails for any verbatim implementation. The decomposition method, its $O(n^2\\log n)$ cost, and the downstream CD multiplication remain valid once the formula is corrected.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "Circulant decomposition FFT step returns wrong components (wrong slice and phase of W tilde-A)",
+      "why_classification": "A one-line local formula correction (slice, phase direction, normalization) restores the algorithm; the method, complexity claims, and all downstream results survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "L[j] \\gets \\Lambda_j",
+          "tag": "algo:circulant_decomposition_fft"
+        },
+        {
+          "quote": "\\Delta A {\\tilde{B}} \\gets \\text{IFFT}\\left( \\sum_{t \\in In_B} ((\\text{FFT}(\\Delta A) L_B[t])  C^t )\\right)",
+          "tag": "algo:cd_matrix_multiplication"
+        },
+        {
+          "quote": "W\\bm l_k \\circ W(D^k\\bm b) = W \\bm l_k \\circ WD^kW^{*}W\\bm b =  W \\bm l_k \\circ C^kW\\bm b",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The correct Fourier identity is $W(R_tD^tB)=(WR_tW^*)(WD^tW^*)WB=\\mathrm{diag}(\\hat\\lambda_t)C^tWB$, where $\\hat\\lambda_t$ is the eigenvalue vector of the circulant $R_t$ (the DFT of its first column $R_A[t]$). Step 5 uses $L_A[t]$ as this diagonal, but per the decomposition algorithm's output '$L[j]\\gets\\Lambda_j$' stores the cycles, and cycle entries differ from circulant eigenvalues (2x2 example: $\\Lambda_0=(a_{00},a_{11})$ while the eigenvalues of $R_0$ are $((a_{00}+a_{11}+a_{01}+a_{10})/2,(a_{00}+a_{11}-a_{01}-a_{10})/2)$; with $B=I$ the algorithm returns $W^*\\Lambda_0W\\ne R_0$). The second line is also not a valid transform of $\\Delta A R_{B_t}D^t=W^*[(W\\Delta AW^*)\\mathrm{diag}(\\hat\\lambda_{B_t})C^tW]$: as written, $(\\mathrm{FFT}(\\Delta A)L_B[t])C^t$ omits the conjugating $W^*$ on $\\Delta A$ and the trailing $W$, besides using $\\Lambda$ instead of $\\hat\\lambda$. As specified, Step 5 computes neither $\\tilde AB$ nor $\\Delta A\\tilde B$.",
+      "failure_location": {
+        "quote": "{\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right))",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Rewrite Step 5 with the correct identities: $\\tilde AB = W^*(\\sum_t \\mathrm{diag}(\\hat\\lambda_t)C^tWB)$ with $\\hat\\lambda_t$ the DFT of the stored first column $R_A[t]$ (not the cycle $\\Lambda_t$), and $\\Delta A\\tilde B = W^*(\\sum_t (W\\Delta AW^*)\\mathrm{diag}(\\hat\\lambda_{B_t})C^tW)$.",
+      "overall_effect": "The algorithm's core computation (Step 5) does not produce the first-order approximation of eq:first_order_expansion that the algorithm promises; the returned output is wrong as written. The method, its $O(n^2\\log n)$ complexity claim, and the accuracy claims are recoverable by local corrections.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "CD multiplication Step 5 uses cycles instead of circulant eigenvalues and omits required conjugations",
+      "why_classification": "A local rewrite of Step 5's two formula lines (correct diagonals and conjugations) restores the algorithm; no claim, guarantee, or complexity bound is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\tilde{A} \\gets AW^*$ \\Comment{Row FFT of A}",
+          "tag": "alg:mul_topk"
+        },
+        {
+          "quote": "M = \\Tilde{F}^*(A) \\cdot F(B) + [F^*(A) - \\Tilde{F}^*(A)] \\cdot \\Tilde{F}(B)",
+          "tag": null
+        },
+        {
+          "quote": "We can rewrite the product \\( AB \\) as \\( A W^* W B \\).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Steps 1-2 define $\\tilde A=AW^*$ and $\\tilde B=WB$ with the paper's unitary $W$, so $\\tilde A\\tilde B=A(W^*W)B=AB$ exactly, and the paper's own displayed first-order formula (and the identity $AB=F^*(A)\\cdot F(B)$) carries no scaling factor. Step 7 nevertheless returns $M=\\frac{1}{n}(\\tilde A_{approx}\\tilde B+\\Delta A\\tilde B_{approx})$, which under the stated unitary convention equals $(AB-\\Delta A\\,\\Delta\\tilde B)/n$, i.e. approximately $AB/n$ — a factor-$n$ error. The $1/n$ would only be correct for unnormalized DFT conventions, which contradict the $W$ used in Steps 1-2 and the displayed identities.",
+      "failure_location": {
+        "quote": "Return: $M \\gets \\frac{1}{n}(\\tilde{A}_{approx}\\tilde{B}+\\Delta A\\tilde{B}_{\\text{approx}})$",
+        "tag": "alg:mul_topk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Delete the $1/n$ factor in Step 7 (or, if unnormalized FFTs are intended, redefine Steps 1-2 to use the unnormalized transforms and adjust the displayed identity $AB=F^*(A)\\cdot F(B)$ accordingly).",
+      "overall_effect": "Under the paper's stated (unitary) conventions the algorithm's output is scaled by $1/n$, so its stated contract (approximation of $AB$) fails, and the algorithm is mutually inconsistent with the paper's displayed formula. The sparsification method itself is unaffected once the normalization is fixed.",
+      "primary_affected_tag": "alg:mul_topk",
+      "target_type": "algorithm",
+      "title": "FFT-sparsification multiplication scales its output by 1/n under the paper's unitary W",
+      "why_classification": "Removing (or consistently redefining) the single $1/n$ factor restores the algorithm's output contract; nothing else in the method or its guarantees changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\exp\\left(-\\frac{(n - 2)t^2}{96 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right) \\label{concentration}",
+          "tag": "th:concentrationprob"
+        },
+        {
+          "quote": "the Lipschitz constant $L = 2 \\norm{D_1}^2_F \\norm{D_2}^2_2$",
+          "tag": "th:concentrationprob"
+        },
+        {
+          "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{24L^2} \\right),",
+          "tag": "elizabeths"
+        }
+      ],
+      "failure_explanation": "The proof applies Theorem elizabeths to $F=-f$ with the Lipschitz constant $L=2\\|D_1\\|_F^2\\|D_2\\|_2^2$, which yields $P[f\\le Ef-t]\\le\\exp(-(n-2)t^2/(24L^2))=\\exp(-(n-2)t^2/(96\\|D_1\\|_F^4\\|D_2\\|_2^4))$ — exactly the bound derived and labeled in the proof. The corollary's statement claims the same bound with 48 in the denominator, a factor of 2 stronger than anything established; no sharper Lipschitz constant is derived anywhere (the symmetric minimum only enters $L$, not the $24L^2$ structure).",
+      "failure_location": {
+        "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace 48 by 96 in the corollary's statement to match the proof, or derive and use a Lipschitz constant smaller by $\\sqrt{2}$ to justify 48.",
+      "overall_effect": "The constant in the corollary's stated bound is unsupported; the qualitative concentration conclusion (relevant when $L^2/n\\to 0$) and its downstream qualitative uses are unaffected.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration corollary claims constant 48; its proof derives 96",
+      "why_classification": "Changing one constant to match the derivation is a routine local fix; the concentration statement and all its uses survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where for each $n_i$, $\\mathbb{G}_{n_i}$ is one of $\\mathbb{SO}(n_i)$, $\\mathbb{SO}^{-}(n_i)$, $\\mathbb{SU}(n_i)$, $\\mathbb{U}(n_i)$, or $\\mathbb{Sp}(2n_i)$.",
+          "tag": "elizabeths"
+        },
+        {
+          "quote": "Let $A = Q_1 D_1 Q_2$ and $B = Q_3 D_2 Q_4$ be singular value decompositions of $A$ and $B$, and $Q_1,Q_2,Q_3,Q_4$ be Haar distributed unitary matrices.",
+          "tag": "th:expected_norm_square"
+        }
+      ],
+      "failure_explanation": "The corollary's proof invokes the quoted concentration theorem with $X=\\mathbf{O}(n)$, but the theorem as stated in the source admits only $\\mathbb{SO}(n)$, $\\mathbb{SO}^{-}(n)$, $\\mathbb{SU}(n)$, $\\mathbb{U}(n)$, or $\\mathbb{Sp}(2n)$ as factors — $O(n)$ is not among them. The exclusion is substantive: $O(n)$ has two connected components at Hilbert-Schmidt distance 2, and an $L$-Lipschitz function that is 0 on $SO(n)$ and $2L$ on $SO^{-}(n)$ has $P[F\\ge EF+t]=1/2$ for $t\\le L$, violating the stated $\\exp(-(n-2)t^2/24L^2)$ bound, so the theorem does not extend verbatim to $O(n)$. The corollary's conclusion does hold for this particular $f$ (since $f(RQ)=f(Q)$ for a signature-flip $R$), but that reduction is absent from the source. The setting is also inconsistent with Lemma th:expected_norm_square, which assumes Haar unitary (complex) matrices while the Lipschitz computation uses the real transpose $Q^T$.",
+      "failure_location": {
+        "quote": "Let us apply the Theorem \\ref{elizabeths}, with $X = \\mathbf{O}(n)$ the norm $\\norm{\\cdot}_F$",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Apply the theorem on $SO(n)$ (or $U(n)$ in the complex setting) and add the observation that $f(RQ)=f(Q)$ for a signature-flip $R$, so the law of $f$ on $O(n)$ coincides with its law on $SO(n)$; or cite a version of the concentration theorem that covers $O(n)$.",
+      "overall_effect": "The corollary's derivation is formally invalid as written (theorem used outside its stated hypotheses); its conclusion requires an additional short argument not present in the source. Downstream qualitative uses are unaffected in substance.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration theorem invoked on O(n), outside its quoted hypotheses",
+      "why_classification": "A short standard argument (restrict to one component and use the sign-flip symmetry of $f$) repairs the invocation; the corollary's conclusion and its uses survive unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": "th:uniform_distribution_norms"
+        },
+        {
+          "quote": "& \\approx \\frac{9}{16}\\text{for } n \\gg 1 \\label{eq:uniform_distributions_norms5}",
+          "tag": "th:uniform_distribution_norms"
+        },
+        {
+          "quote": "Thus, $\\eqref{eq:uniform_distributions_norms5}$ results in $\\mathbf{E}[\\|AB\\|_F^2]\\approx\\frac{9}{16}\\mathbf{E}[\\|A\\|_F^2].\\mathbf{E}[\\|B\\|_F^2]$.",
+          "tag": "th:uniform_distribution_norms"
+        }
+      ],
+      "failure_explanation": "The statement asserts the exact identity $\\mathbf{E}[\\|AB\\|_F]=\\frac34\\|A\\|_F\\|B\\|_F$, whose right-hand side is random unless the norms are conditioned on. The proof computes only unconditional second moments, $\\mathbf{E}[\\|AB\\|_F^2]=mpn\\frac{a^4}{9}+mpn(n-1)\\frac{a^4}{16}$, and shows the ratio $\\mathbf{E}[\\|AB\\|^2]/(\\mathbf{E}[\\|A\\|^2]\\mathbf{E}[\\|B\\|^2])=(9n+7)/(16n)\\approx 9/16$ only for $n\\gg 1$. The final step — 'When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx\\frac34\\|A\\|_F\\|B\\|_F$' — is a non sequitur: the conditioning on the norms is never handled, $\\mathbf{E}[\\|AB\\|_F]$ is silently replaced by $\\sqrt{\\mathbf{E}[\\|AB\\|_F^2]}$ without a concentration argument, and an asymptotic approximate second-moment relation is converted into an exact first-moment identity. The exact claim is false in small dimensions: for $n=1$ the second-moment ratio is $1$, not $9/16$, and $\\mathbf{E}[AB]=a^2/4\\ne(3/4)AB$.",
+      "failure_location": {
+        "quote": "For two random matrices $A$ and $B$ with entries $\\sim$ $U(0,a)$, $\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$.",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Weaken the statement to an asymptotic approximation — for $n\\to\\infty$, $\\|AB\\|_F/(\\|A\\|_F\\|B\\|_F)\\to 3/4$ in expectation and probability for i.i.d. $U(0,a)$ entries — proved via a concentration argument for $\\|AB\\|_F$ plus norm concentration to handle the conditioning, dropping the exact identity and the 'known quantities' formulation.",
+      "overall_effect": "The theorem's exact first-moment identity is unsupported and ill-posed as stated (random right-hand side, unjustified conditioning); the $3/4$ factor used as the Case-2 denominator in Proposition th:estimated_relative_error rests on this unsupported derivation.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Uniform-entry norm theorem asserts an exact identity its proof does not establish",
+      "why_classification": "The exact identity must be weakened to an asymptotic, concentration-based statement and the conditioning step justified — a contained nontrivial argument with a limited weakening; a recognizably comparable result (the $3/4$ factor for large $n$) survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "While the expectation $\\mathbf{E}[\\norm{\\Delta A .\\Delta B}_F]$ in the numerator can be approximated by that of a normal distribution as the entries of the residue matrices are equally likely to be of either signs",
+          "tag": "th:estimated_relative_error"
+        },
+        {
+          "quote": "where $c \\approx 1$ are constants for a given type of matrices.",
+          "tag": null
+        },
+        {
+          "quote": "It is significant that the expected errors can be evaluated a priori using $\\norm{\\Delta A}_F$, $\\norm{\\Delta B}$, $\\norm{A}_F$, and $\\norm{B}$ in $\\mathcal{O}(n^2)$ arithmetic operations before the approximate multiplication (see \\cref{th:estimated_relative_error}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Neither case estimate is actually established. (i) The claimed variance decay of $\\|AB\\|_F$ and $\\|\\Delta A.\\Delta B\\|_F$ is asserted, citing th:concentrationprob 'for example' — but that corollary concerns Haar conjugations of fixed diagonal matrices and says nothing about residues of truncated decompositions or their product. (ii) The replacement $\\mathbf{E}[X/Y]\\approx\\mathbf{E}[X]/\\mathbf{E}[Y]$ requires control of the denominator's fluctuations and lower tail, not merely variance decay. (iii) The numerator's normal approximation assumes residue entries are 'equally likely to be of either signs' — unproved, and false as an i.i.d. model since CD/SVD residues are deterministic functions of $A$ and $B$. (iv) The constants $c$ are unspecified. The two-case conclusion is thus a chain of heuristics presented as a proved proposition, and the results section leans on it for the a priori error-evaluation capability.",
+      "failure_location": {
+        "quote": "We know that $Var[\\norm{AB}_F]$ and $Var[\\norm{\\Delta A.\\Delta B}_F]$ $\\to 0$ for large $n$ and a random distribution of the entries (as in \\cref{th:concentrationprob}, for example).",
+        "tag": "th:estimated_relative_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Either demote the proposition to an explicitly labeled heuristic estimate, or prove it under explicit hypotheses (e.g., i.i.d. entry models for $A$, $B$ and their residues) via second-moment computations plus concentration bounds controlling the variance of both norms and the lower tail of $\\|AB\\|_F$, with explicit constants $c$.",
+      "overall_effect": "The paper's central a priori error estimates (both cases of the proposition) are unestablished by the given proof; the prose claims that expected errors 'can be evaluated a priori' and scale as the product of the relative errors inherit this gap.",
+      "primary_affected_tag": "th:estimated_relative_error",
+      "target_type": "formal_result",
+      "title": "A priori relative-error proposition proved only by unestablished heuristic steps",
+      "why_classification": "Making the proposition honest requires either a contained but genuinely nontrivial analysis (moment computations plus concentration under explicit hypotheses) or demotion to a heuristic; the claim's support changes, but no global proof architecture, advertised regime, or empirical result is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Now using the fact that for Haar distributed matrices we have $\\mathbf{E}[|Q_{i,j}|^4]  = \\frac{2}{n(n+1)}$ and $\\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2]  = \\frac{1}{n(n+1)}$.",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "$\\text{Var}(S) = \\mathbf{E}[S^2] - \\mathbf{E}[S]^2 = \\frac{1}{n(n+1)} \\left( \\beta_1 \\beta_2 - \\frac{\\alpha_1^2 \\alpha_2^2}{n} \\right)$",
+          "tag": "lem:added-2"
+        },
+        {
+          "quote": "Let $S = \\norm{AB}_F^2$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof of $\\mathbf{E}[S^2]$ relies on the premise $\\mathbf{E}[|Q_{i,j}|^2|Q_{k,l}|^2]=\\frac{1}{n(n+1)}$ for all $(i,j)\\ne(k,l)$. For Haar unitary matrices this holds only when $i=k$ or $j=l$; when both indices differ the correct value is $\\frac{1}{n^2-1}$ (and for Haar orthogonal matrices the values differ again), so the necessary case split is missing and the stated formula is false. Counterexample: $D_1=D_2=I$ gives $S=\\|Q\\|_F^2=n$ deterministically, so $\\mathbf{E}[S^2]=n^2$, whereas the lemma gives $n(n^2+1)/(n+1)$ ($n=2$: $10/3$ versus $4$). Lemma lem:added-2 inherits the error and yields a negative 'variance' in the same case, $\\text{Var}(S)=n(1-n)/(n+1)<0$, and the subsequent displayed formulas for $\\mathbf{E}[\\sqrt{S}]$ are built on this false $\\text{Var}(S)$.",
+      "failure_location": {
+        "quote": "We have $\\mathbf{E}[S^2] = \\frac{1}{n(n+1)} (\\beta_1 \\beta_2 + \\alpha_1^2 \\alpha_2^2).$",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Redo the fourth-moment computation with the correct Haar moments, splitting the cases $(i,j)=(k,l)$, exactly one index equal, and both indices different, and restate the formulas for $\\mathbf{E}[S^2]$, $\\text{Var}(S)$, and $\\mathbf{E}[\\sqrt{S}]$ accordingly.",
+      "overall_effect": "Lemmas lem:added-1 and lem:added-2 are false as stated (the latter can even return a negative variance), and the appendix's displayed estimates of $\\mathbf{E}[\\sqrt{S}]$ built on them are unreliable. No main-text result cites these lemmas, so the damage is confined to the appendix.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "False Haar fourth-moment premise makes the variance lemmas wrong",
+      "why_classification": "Both stated lemmas are false and must be replaced by corrected formulas via a contained but nontrivial recomputation of Haar fourth moments (Weingarten-type case split); no global architecture or main-text result is affected."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n04-reserve",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

@@ -1,0 +1,93 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $d \\divs k$, we have $\\tilde{y}_{k} = \\tilde{x}_{k/d}$.",
+          "tag": null
+        },
+        {
+          "quote": "$\\tilde y_{dk} = d\\tilde x_{k}$",
+          "tag": "lem:rep_in_time"
+        }
+      ],
+      "failure_explanation": "The paragraph claims to prove a generalized version of lem:amb1D but misstates the gcd condition. By lem:rep_in_time the DFT satisfies y_tilde at index dk' equals d times x_tilde at k', and by lem:amb1D applied to the length-N/d signal x, x_tilde at k' is nonzero iff gcd(k', N/d) = 1. Thus y_tilde_k is nonzero iff d divides k and gcd(k/d, N/d) = 1, equivalently gcd(k, N) = d. The text incorrectly writes gcd(k/d, d) = 1 (wrong modulus and wrong zero/nonzero polarity) and falsely claims this is equivalent to gcd(k, d) = d. For example, k=4, d=2 gives gcd(2,2)=2 not 1 while gcd(4,2)=2=d, contradicting the claimed equivalence.",
+      "failure_location": {
+        "quote": "Therefore, \\Cref{lem:amb1D} implies that $\\tilde{y}_k = 0$ if and only if $\\gcd(k/d, d) = 1$ which is equivalent to $\\gcd(k, d) = d$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the proof sketch: state that y_tilde_k is nonzero iff gcd(k, N) = d (equivalently d divides k and gcd(k/d, N/d) = 1), fix the claimed equivalence accordingly, and add the missing factor d in y_tilde_k = d times x_tilde_{k/d}.",
+      "overall_effect": "The informal proof sketch of the generalized lem:amb1D is mathematically wrong as written. No formal result depends on this claim; all subsequent formal results use lem:amb1D directly on subsignals.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False gcd characterization in generalization of DFT-zero lemma",
+      "why_classification": "The errors are confined to an informal prose remark with no formal result depending on it. Fixing the prose preserves every formal claim and guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$D_1 = N_1/\\gcd(k, N_1)$",
+          "tag": null
+        },
+        {
+          "quote": "If $p \\ndivs N_1$, then $\\gcd(pk, N_1) = \\gcd(k, N_1)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The claim gcd(pk, N_1) = p*gcd(k, N_1) when p divides N_1 is false in general. The correct formula is gcd(pk, N_1) = gcd(k, N_1) * gcd(p, D_1) where D_1 = N_1/gcd(k, N_1). When p divides N_1 but p does not divide D_1 (e.g., p divides gcd(k, N_1)), the formula gives gcd(pk, N_1) = gcd(k, N_1), not p*gcd(k, N_1). For instance with N_1=12, k=3, p=3: gcd(9,12)=3 not 9. The case split should be based on p dividing D_1 versus not (or equivalently p dividing D_2), not on p dividing N_1 versus not. Consequently the claim D_1/p < D_1 is wrong in such cases since the decimated subsignal retains the same D_1 and instead has smaller D_2.",
+      "failure_location": {
+        "quote": "If $p \\divs N_1$, then $\\gcd(pk, N_1) = p\\gcd(k, N_1) = N_1/(D_1/p)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Change the case split from p dividing N_1 to p dividing D_1 (and correspondingly the complementary case to p not dividing D_1, which forces p dividing D_2). When p divides D_1: gcd(pk, N_1) = p*gcd(k, N_1) and D_1' = D_1/p (previous outer iteration). When p does not divide D_1: gcd(pk, N_1) = gcd(k, N_1), D_2' = D_2/p (previous inner iteration).",
+      "overall_effect": "The correctness argument for alg:memo_2D's iteration order reaches wrong intermediate conclusions about which loop iteration recovers each decimated subsignal. The algorithm itself is correct; the conclusion that all required subsignals are available holds with the corrected case split.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Wrong case split in correctness argument for Memoized 2D Inversion",
+      "why_classification": "The repair is a local change in the case split condition and its justification. All formulas and conclusions remain valid under the corrected split. No new lemma or construction is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\beta_1 \\idmat{N/p_1} & \\cdots & \\beta_1 \\idmat{N/p_1} & -\\beta_1 {\\bf x}^{N/p_1}",
+          "tag": null
+        },
+        {
+          "quote": "\\beta_1 \\idmat{N/p_\\omega} & \\cdots & \\beta_1 \\idmat{N/p_\\omega} & -\\beta_1 {\\bf x}^{N/p_\\omega}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The lattice basis matrix B from eq:lattice_basis has N rows (A block) + 1 row (B_0) + sum over prime factors p_j of N/p_j rows (B_1 sub-blocks) + 2M real rows (B_2 after real/imaginary split). The total ambient dimension is N + 1 + sum_j N/p_j + 2M, not N + phi(N) + 2M. For example with N=6 (primes 2 and 3), B_1 has 3+2=5 rows giving total 12+2M versus the claimed 8+2M. Since sum_j N/p_j = O(N times omega(N)) = O(N log N), the corrected FPLLL runtime bound is O(N^7 log^3 MNL) rather than O(N^7 log^2 MNL).",
+      "failure_location": {
+        "quote": "Since ${\\tt B}$ is an $(N+1)$-dimensional lattice in $\\R^{N + \\phi(N) + 2M}$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the ambient dimension to N + 1 + sum_j N/p_j + 2M and note that sum_j N/p_j = O(N times omega(N)) = O(N log N), yielding the corrected runtime bound O(N^7 log^3 MNL), which is still pseudo-polynomial.",
+      "overall_effect": "The stated runtime bound O(N^7 log^2 MNL) is underestimated by a logarithmic factor. The qualitative pseudo-polynomial conclusion is preserved. No formal theorem or algorithm guarantee is affected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Wrong ambient dimension of lattice leads to incorrect runtime bound",
+      "why_classification": "The correction is a local recount of basis rows and a routine asymptotic adjustment. The qualitative pseudo-polynomial conclusion and all algorithmic guarantees survive unchanged."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2510.11949",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "029d5f1f6eba9f20a58493649f3903cdd4294653c70bc63ac2e6f7768fdc7ef5",
+  "status": "ok"
+}

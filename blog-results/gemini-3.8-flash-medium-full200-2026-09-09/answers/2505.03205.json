@@ -1,0 +1,46 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemadd",
+        "lemcmulti",
+        "lemsq",
+        "lempp",
+        "lemrpower",
+        "lemdiv",
+        "repetatildei",
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[ \\text{\\rm FFN}(h_t) = \n   \\begin{cases} \n    h_t & \\text{if}\\text{  } t\\in\\{1,\\cdots,k\\} \\\\\n      \\begin{bmatrix}\n          \\mathbf{0} \\\\\n          \\mathcal{I}_t^1 \\\\\n          \\mathcal{I}_t^2 \\\\\n          1\n      \\end{bmatrix} & \\text{otherwise}\\text{ }  \\\\\n   \\end{cases}\n\\]",
+          "tag": "Gatinglemma"
+        }
+      ],
+      "failure_explanation": "The proof of Lemma 2 (and repeatedly in Lemmas 3, 4, 5, and 6) invokes Lemma 10 (Gating Lemma) to construct an FFN that subtracts the constant $DM$ (or $M$) from specific token columns. However, Lemma 10 does not perform constant subtraction: it outputs $h_t$ for tokens $t \\le k$ and zero in the data rows for $t > k$. Furthermore, since a transformer block is defined with a residual connection ${\\rm B}(H) = \\text{FFN}(Z) + Z$, adding the output of Lemma 10's FFN would double the data tokens for $t \\le k$ and would not cancel the additive $DM$ or $M$ offset on the target columns.",
+      "failure_location": {
+        "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $DM$ in the $D+1$-th column.",
+        "tag": "lemsumD"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the invocation of Lemma 10 in the proofs of Lemmas 2–6 with a direct construction of a 2-layer FFN acting on the positional encoding coordinates $\\mathcal{I}_t = (\\cos(t\\pi/(2\\ell)), \\sin(t\\pi/(2\\ell)))^\\top$. Because each token's positional encoding corresponds to a unique point on the unit circle, a simple ReLU subnetwork can isolate the target token index/range and output the required $-DM e_1$ or $-M e_1$ while outputting zero on all other tokens, so that the residual addition ${\\rm FFN}(Z) + Z$ cancels the constant offset exactly.",
+      "overall_effect": "The constructive proofs of the basic arithmetic blocks in Lemmas 2, 3, 4, 5, and 6 are invalidated as written, which formally undermines all downstream results relying on these operations, including the partition of unity implementation (Propositions 1 and 2) and the main approximation and generalization theorems (Theorems 1 and 2).",
+      "primary_affected_tag": "lemsumD",
+      "target_type": "formal_result",
+      "title": "Misapplication of Gating Lemma to subtract additive constants in transformer arithmetic operations",
+      "why_classification": "Constructing an FFN that outputs a constant vector on selected positional encodings is a routine, local repair that preserves the depth $L_{\\rm FFN} = O(1)$, width $w_{\\rm FFN} = O(1)$, and parameter bounds without changing any statement, rate, or guarantee of the paper."
+    }
+  ],
+  "issues_found": 1,
+  "paper_id": "2505.03205",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e251cd718a4c2fe4d9791d1e58d8251eec6a75089c28852e7c9426637e3b810a",
+  "status": "ok"
+}

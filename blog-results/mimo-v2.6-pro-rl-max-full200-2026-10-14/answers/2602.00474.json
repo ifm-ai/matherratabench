@@ -1,0 +1,81 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:optionB_stability",
+        "lem:contract_noise_bounded_iterates",
+        "lem:projSA_stability_template",
+        "thm:projSA_rate_template",
+        "cor:optionB_rate",
+        "cor:end_to_end_v",
+        "cor:main_end_to_end_v"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\E\\!\\left[\\|\\widehat T(v_t)-(r+Pv_t)\\|_\\infty^2\\mid \\cF_t\\right]\\le \\sigma^2.",
+          "tag": "lem:projSA_stability_template"
+        },
+        {
+          "quote": "Set $\\widehat T(v_t)(s)\\leftarrow r(s)+v_t(\\tilde s)$",
+          "tag": "alg:main_psa"
+        },
+        {
+          "quote": "Assume the oracle noise along the iterates satisfies the uniform conditional second-moment bound",
+          "tag": "lem:optionB_stability"
+        }
+      ],
+      "failure_explanation": "The proofs of Lemma lem:optionB_stability, Lemma lem:contract_noise_bounded_iterates, Lemma lem:projSA_stability_template and all downstream rate/complexity results require a uniform conditional second-moment bound E[||T̂(v_t)-(r+Pv_t)||^2_∞ | F_t] ≤ σ^2 with a single deterministic constant σ^2. For the single-sample generative oracle T̂(v)(s)=r(s)+v(s̃_s) used in Algorithm alg:main_psa, the noise satisfies E[||ξ||^2_∞|F_t] ≤ C||v_t||^2_∞ (the noise is linear in v_t with random coefficients 1{s̃=s'}-P(s'|s)). The iterates are not shown to be almost-surely bounded: the deterministic recursion only gives ||v_{t+1}||_∞ ≤ (1+α_t)||v_t||_∞ + 2α_t R, i.e., worst-case polynomial growth, and the stability argument establishes only L^2 boundedness of e_t. Hence σ^2 is not a finite deterministic constant, so the hidden constants in the O(1/√T) bound are not well-defined for the algorithm as stated.",
+      "failure_location": {
+        "quote": "where the hidden constants depend on the contraction parameters and the oracle second moment bound.",
+        "tag": "thm:main_sa_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Either (a) prove the iterates are a.s. bounded (e.g., via a bootstrap closing E[||ξ||^2|F_t] ≤ C(1+||e_t||^2_q) and redoing the second-moment recursion), (b) weaken the oracle hypothesis to a state-dependent bound and re-derive the rate, or (c) modify alg:main_psa (e.g., project iterates onto a bounded set) so that uniform bounded noise holds. Each requires a contained but nontrivial argument beyond a routine edit.",
+      "overall_effect": "The claimed O(1/√T) convergence rate for Algorithm alg:main_psa and the end-to-end query-complexity corollaries are not established for the stated oracle; the entire stability/rate chain in Section 5.2 and its appendix is unsupported as applied to the given algorithm.",
+      "primary_affected_tag": "thm:main_sa_rate",
+      "target_type": "formal_result",
+      "title": "Uniform oracle second-moment bound not verified for the stated single-sample generative oracle",
+      "why_classification": "The fix needs a contained nontrivial argument (bootstrap closing, weakened-hypothesis reanalysis, or an algorithm modification) but avoids new global proof architecture and preserves the advertised O(1/√T) rate and scope once done."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:main_end_end_to_end_v",
+        "cor:main_end_to_end_v"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Define $a := \\alpha(1-\\widehat\\gamma)$. Assume \\(a>1/2\\).",
+          "tag": "thm:projSA_rate_template"
+        },
+        {
+          "quote": "When \\(a>1/2\\), we have \\(2a-2>-1\\), so",
+          "tag": "thm:projSA_rate_template"
+        }
+      ],
+      "failure_explanation": "Theorem thm:main_sa_rate claims E||[v_T]-[v*]||_q ≤ O(1/√T)+O(Nε_b) under only 'structural learning succeeds, weight estimation succeeds, γ̂<1'. The proof (and the formal version thm:projSA_rate_template) requires the additional hypothesis a=α(1-γ̂)>1/2 to bound Σ(t+t_0)^{2a-2} by O((T+t_0)^{2a-1}). For a≤1/2 the recursion yields m_T=Θ(T^{-2a}) and E||e_T||_q=Θ(T^{-a}) which grows strictly slower than T^{-1/2} (e.g., a=0.4 gives T^{-0.4}); the displayed constant 2^{a+1}αC_{q,∞}σ/√(2a-1) is not finite at a=1/2. So the claim of O(1/√T) without this hypothesis is false.",
+      "failure_location": {
+        "quote": "O\\!\\left(\\frac{1}{\\sqrt T}\\right)",
+        "tag": "thm:main_sa_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis 'α(1-γ̂) > 1/2' to the statement of thm:main_sa_rate (and its informal corollary), matching the formal appendix; alternatively state the rate as O(T^{-min(α(1-γ̂),1/2)}) with the corresponding log correction at the boundary.",
+      "overall_effect": "The advertised O(1/√T) rate and the corresponding query budget T=Õ(1/ε^2) in the informal end-to-end corollary do not hold for parameter values with α(1-γ̂)≤1/2; for such parameters the rate degrades to O(T^{-α(1-γ̂)}).",
+      "primary_affected_tag": "thm:main_sa_rate",
+      "target_type": "formal_result",
+      "title": "Rate theorem omits the required hypothesis α(1-γ̂) > 1/2 for the O(1/√T) rate",
+      "why_classification": "Adding a standard local step-size/contraction condition preserves the algorithm, the conclusion, the O(1/√T) rate (for allowed parameters), and the advertised multichain/periodic scope; no new lemma or construction is required since the formal appendix already carries the hypothesis."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2602.00474",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n01",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "972379f0da0ee4de13a10747348296e76d7000e64b93e768397abb525d521a6d",
+  "status": "ok"
+}

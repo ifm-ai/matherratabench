@@ -1,0 +1,136 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "reduce the calculation of the solution of \\eqref{e:evolND} at any given $t$ to a matrix equation of the form of \\eqref{e:sylvesterND}",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, \\eqref{e:sylvesterND} and \\eqref{e:TjYC} have a solution if and only if, when taking an eigenvalue of each matrix $\\A_j$, their sum is always different from zero",
+          "tag": null
+        },
+        {
+          "quote": "$y_{i_1i_2\\ldots i_N}  \\gets num / den$",
+          "tag": "alg:sylvesterND"
+        }
+      ],
+      "failure_explanation": "The claim quantifies over all linear N-dimensional ODE systems with constant coefficients, but the reduction of Theorem theo:evolND yields the equation sum_j A_j square_j X = F, which determines X(t) only when sum_j A_j square_j is nonsingular, i.e. when no sum of eigenvalues (one from each A_j) vanishes — exactly the solvability condition the paper itself states for (e:sylvesterND). Counterexample: N = 2, A_1 = A_2 = (0), B = (1), X(0) = (0) gives X(t) = (t), while F = exp(0)[A_1X(0)+X(0)A_2^T+B]exp(0) - B = 0, so the reduced equation is 0 = 0 and cannot single out X(t); Algorithm alg:sylvesterND evaluates num/den with den = 0.",
+      "failure_location": {
+        "quote": "the method allows to compute the solution of linear $N$-dimensional systems of ODEs of constant coefficients at any time $t$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the standing hypothesis that no sum of eigenvalues (one from each A_j) vanishes — equivalently that sum_j A_j square_j is nonsingular and (e:sylvesterNDC) is uniquely solvable — to the ODE/PDE application claims in the abstract, the introduction and Section s:ODEs.",
+      "overall_effect": "The advertised guarantee that ODE (and hence discretized evolutionary PDE) solutions can be computed at any time t, and the claim that solving (e:evolND) is reduced to (e:sylvesterND), hold only for systems with nonsingular Kronecker-sum operator; for the excluded systems the reduced equation is not uniquely solvable and the algorithm breaks down. Theorem theo:evolND (X(t) satisfies the equation) itself remains valid.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "ODE/PDE application omits the solvability hypothesis of the reduced Sylvester equation",
+      "why_classification": "The repair is a one-clause hypothesis identical to the solvability condition the paper already states for (e:sylvesterND); the reduction, the theorem, the cost and the numerical applications all survive unchanged in the regime where the solver is defined at all."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "in order to compute one entry $y_{i_1i_2\\ldots i_N}$ in \\eqref{e:yi1i2iN}, we need one division",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, in order to fully determine $\\Y$, we need $n_1n_2\\ldots n_NN$ divisions",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{n_1n_2\\ldots n_N}{2}\\Bigg[5\\sum_{j = 1}^{N}n_j - N\\Bigg] + \\frac{n_1n_2\\ldots n_N}{2}\\Bigg[5\\sum_{j = 1}^{N}n_j - 3N - 2\\Bigg] + n_1n_2\\ldots n_NN",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Two independent count errors make the stated total false. (i) The text itself says each entry of Y needs exactly one division and there are n_1...n_N entries, so the number of divisions is n_1...n_N, not N*n_1...n_N. (ii) The displayed equality is arithmetically false on its own terms: with P = n_1...n_N and S = sum_j n_j, (P/2)(5S-N) + (P/2)(5S-3N-2) + PN = P(5S-N-1), not P(5S-N+1). With the correct division count the total is P(5S-2N).",
+      "failure_location": {
+        "quote": "= n_1n_2\\ldots n_N\\Bigg[5\\sum_{j = 1}^{N}n_j - N + 1\\Bigg]",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Set the number of divisions to n_1n_2...n_N and recompute the total, which becomes n_1n_2...n_N[5 sum_j n_j - 2N].",
+      "overall_effect": "The exact operation count advertised in the abstract (\"we calculate accurately the computational cost required\") is wrong by Theta(n_1...n_N*N) operations; the leading-order cost O(n^{N+1}) and the leading term 5Nn^{N+1} for n_1=...=n_N=n are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Total flop count in the cost analysis is wrong (division count and final sum)",
+      "why_classification": "Both defects are local arithmetic slips inside one short derivation; fixing them changes only lower-order terms of the flop count and leaves the method, the rate and the O(n^{N+1}) complexity guarantee intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ (i_3-1)n_1n_2+\\ldots+(i_N-1)n_1n_2\\ldots n_{N-1} + 1.",
+          "tag": "e:index"
+        },
+        {
+          "quote": "so we can access it by typing \\verb|Y(index+((k-ii(j))*cumprodN(j)))|",
+          "tag": null
+        },
+        {
+          "quote": "\\verb|cumprodN| stores the quantities $\\{1, n_1, n_1n_2, \\ldots, n_1n_2 \\ldots n_{N-1}\\}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "By (e:index) the j-th subscript advances the linear index with stride n_1n_2...n_{j-1}, so y_{i_1...k...i_N} is at index + (k-i_j)n_1...n_{j-1}, not at index + (k-i_j)n_1...n_{N-1}; the printed product moreover ends in the index variable i_{N-1} rather than a size. The printed formula is correct only for j = N. The code quoted immediately afterwards (cumprodN(j) = n_1...n_{j-1}) contradicts the claimed position, so the stated inference from (e:index) to the access pattern is invalid as written.",
+      "failure_location": {
+        "quote": "the entry $y_{i_1i_2\\ldots i_{j-1}k i_{j+1}\\ldots i_N}$ occupies the position $index + (k - i_j)n_1n_2\\ldots i_{N-1}$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the stride by n_1n_2...n_{j-1} (i.e. cumprodN(j)), consistent with (e:index) and with the code that follows.",
+      "overall_effect": "The stated rule for locating y_{i_1...k...i_N} in memory is wrong for every j < N: an implementation that follows the prose reads wrong entries of Y during the back-substitution. The pseudocode (symbolic indexing) and the accompanying Matlab code, which use cumprodN(j), are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Wrong stride in the linear-index formula used to locate entries of Y",
+      "why_classification": "The repair is a one-factor correction of an index expression; it needs no new argument and no result changes, since the supplied code already implements the correct stride."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& u(\\xx, 0) = \\exp(-\\xx\\cdot\\xx),",
+          "tag": "e:uxt"
+        },
+        {
+          "quote": "& u_t(\\xx, t) = \\Delta u(\\xx, t) + 2\\xx\\cdot\\nabla u(\\xx, t) + (2N+1)u(\\xx, t) - \\exp(-\\xx\\cdot\\xx), & & \\xx\\in\\mathbb R^N, t > 0,",
+          "tag": "e:uxt"
+        },
+        {
+          "quote": "the error was $9.6811\\times10^{-14}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The function u = (1+e^t)exp(-x.x) does satisfy the PDE (for u = f(t)exp(-x.x) one gets Delta u + 2x.grad u + (2N+1)u - exp(-x.x) = f'(t)exp(-x.x) with f' = f-1), but at t = 0 it equals 2exp(-x.x), not the datum exp(-x.x) stated in (e:uxt). With the stated datum the IVP has the time-independent solution u(x,t) = exp(-x.x) (f' = f-1 with f(0) = 1 gives f = 1), so the claimed exact solution and the reported validation error are inconsistent with the problem as stated.",
+      "failure_location": {
+        "quote": "Moreover, the solution of \\eqref{e:uxt} is $u(\\xx, t) = (1+\\exp(t))\\exp(-\\xx\\cdot\\xx)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Change the initial datum in (e:uxt) to u(x,0) = 2exp(-x.x), which makes the claimed exact solution (1+exp(t))exp(-x.x) correct and preserves the PDE, the time-dependent test and the claimed accuracy.",
+      "overall_effect": "The reference solution used to validate the method on the R^N advection-diffusion problem is not the solution of the stated initial value problem, so the advertised accuracy (error 9.6811e-14 at t = 1, N = 6) cannot validate (e:uxt) as written; either the datum or the reference solution is wrong.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed exact solution of the advection-diffusion problem violates the stated initial condition",
+      "why_classification": "A one-token change of the datum restores full consistency among the initial value problem, the exact solution and the numerical validation, with no loss of claim or guarantee and no new argument or construction."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2412.15840",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d355df1c8786c244bfb34e8cdaf2d27ff412465fb86eaa3ee0e5c7a234cfa7a2",
+  "status": "ok"
+}

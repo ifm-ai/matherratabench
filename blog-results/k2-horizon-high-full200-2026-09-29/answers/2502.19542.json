@@ -1,0 +1,269 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[\n\t\tI_k \\coloneqq \n\t\t\\begin{cases*}\n\t\t\t(\\knot_{t_k,\\ell+1,k}, \\knot_{t_k+p_{(\\ell+1, k)},\\ell+1,k})\\;,\n\t\t\t& \\( k\\neq k_0\\)\\;, \\\\\n\t\t\t\\left\\{\\knot_{t_k,\\ell+1,k}\\right\\}\\;,& \\( k = k_0\\)\\;.\n        \\end{cases*}\n    \\]",
+          "tag": "def:nlintersec"
+        },
+        {
+          "quote": "\\State \\var{length\\_flag[k]} \\gets\n\t\t\t\t\\var{length(\\(I_k\\))\\;>\\;\\(p_{(\\level+1,k)}\\)",
+          "tag": "alg:nlintersec"
+        }
+      ],
+      "failure_explanation": "For the stated knot vector with endpoints repeated p times, a degree-p B-spline has support [t_i, t_{i+p+1}], not [t_i, t_{i+p}], and a degree-(p-1) B-spline has support [t_i, t_{i+p}], not [t_i, t_{i+p-1}]. The displayed formula is therefore off by one in the upper index for both j=1 and j=2. This propagates to the minimal-intersection interval I_k, which should have length p+1 in knot indices, and to the length check in alg:nlintersec.",
+      "failure_location": {
+        "quote": "\\supp(\\bsp^j_{i}) = (\\knot_{i}, \\knot_{i+p+1-j}),\\; j\\in \\{1, 2\\}\\;.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the support formula to (\\knot_i, \\knot_{i+p+2-j}), adjust I_k to (\\knot_{t_k}, \\knot_{t_k+p+1}), and update the length threshold in alg:nlintersec accordingly.",
+      "overall_effect": "The definition of minimal intersection (def:nlintersec), the exactness criterion as applied by thm:added-1, and the support computations in alg:nlintersec and alg:shortest-chain are unreliable.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Support formula for B-splines is off by one knot index",
+      "why_classification": "The correction is local and mechanical, and the overall exact-mesh framework can be preserved after consistently shifting the support length; no global proof architecture is lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[\n\t\\trunc^{\\level+1}(\\bsp^{\\boldvec{j}}_{\\boldvec{i}, \\level}) \\coloneqq \n\t\\sum_{\\substack{\\bsp \\in \\bspbasis^{\\boldvec{j}}_{\\level+1}:\n\t\\\\ \\supp(\\bsp)\\not \\subseteq \\domain_{\\level+1}}}\n\tc^{\\level, \\level+1}_{\\bsp}(\\bsp^{\\boldvec{j}}_{\\boldvec{i}, \\level})\\bsp.\n\\]",
+          "tag": "prop:thb-supp"
+        },
+        {
+          "quote": "Next, let \\(\\mathcal{R}^{\\boldvec{j}'}_{\\meshel, \\tilde{\\level}}\\) be the smallest subset of \\(\\bspbasis^{\\boldvec{j}'}_{\\tilde{\\level}}\\) that can be linearly combined to represent \\(\\bsp^{\\boldvec{j}'}_{\\boldvec{i}', \\level}\\) on \\(\\meshel\\).",
+          "tag": "prop:thm-supp"
+        }
+      ],
+      "failure_explanation": "The truncation operator keeps only B-splines whose support is not contained in the refinement domain. Vanishing of the truncated function on Q means the kept B-splines sum to zero on Q; it does not mean the mother B-spline's representation on Q is supported inside the domain. The proof's central inference is therefore false.",
+      "failure_location": {
+        "quote": "Since \\(\\thb^{\\boldvec{j}}_{\\boldvec{i}, \\level}\\) vanishes on \\(\\meshel\\), we know that the support of B-splines in \\(\\mathcal{R}^{\\boldvec{j}}_{Q, \\tilde{\\level}}\\) is contained in \\(\\Omega_{\\tilde{\\level}}\\).",
+        "tag": "prop:thb-supp"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Provide a correct argument, e.g. by induction on truncation levels showing the support of the truncated derivation is contained in the support of the truncated mother.",
+      "overall_effect": "prop:thm-supp is unproven, and lem:thm-admissibility, which invokes it, is unsupported.",
+      "primary_affected_tag": "prop:thb-supp",
+      "target_type": "formal_result",
+      "title": "Proof of support containment for truncated B-splines confuses truncated function with its mother",
+      "why_classification": "The proposition is a key ingredient for the THB-admissibility result; the supplied proof is invalid and a replacement requires a new nontrivial argument."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "It is true that \\(\\thm^{\\boldvec{0}}_{\\boldvec{i}_{\\level},\\level}\\) can't be active, since this would violate the assumption on \\(\\hbspace^{0}_{L}\\) due to \\eqref{eq:thm-element-overlap} and \\Cref{assum:refinement-domains}.",
+          "tag": "lem:thm-admissibility"
+        },
+        {
+          "quote": "Then, because \\(\\supp(\\thm^{\\boldvec{0}}_{\\boldvec{i}_{\\level},\\level}) \\not \\subseteq \\domain_{\\level}\\), we know that \\(\\thm^{\\boldvec{0}}_{\\boldvec{i}_{\\level},\\level}\\) contributes to the representation of \\(\\thm^{\\boldvec{0}}_{\\boldvec{i}_{\\level-1},\\level-1}\\) in \\eqref{eq:truncated-rep}.",
+          "tag": "lem:thm-admissibility"
+        }
+      ],
+      "failure_explanation": "If a level-\\ell truncated function is not active, its support is contained in \\Omega_{\\ell+1}, hence in \\Omega_\\ell. The proof asserts the opposite, so the recursive propagation of inactivity is logically backwards.",
+      "failure_location": {
+        "quote": "Therefore, because the support of \\(\\thb^{\\boldvec{0}}_{\\boldvec{i}_{\\level},\\level}\\) contains \\(\\meshel_{\\level}\\) we know that \\(\\supp(\\thm^{\\boldvec{0}}_{\\boldvec{i}_{\\level},\\level}) \\not\\subseteq \\domain_{\\level}\\).",
+        "tag": "lem:thm-admissibility"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Rewrite the proof with the correct direction of support containment and a valid recursive argument.",
+      "overall_effect": "lem:thm-admissibility is unsupported; the claim that THB-admissibility of the zero-form space implies admissibility of the whole complex is unproven.",
+      "primary_affected_tag": "lem:thm-admissibility",
+      "target_type": "formal_result",
+      "title": "THB-admissibility proof uses reversed support-containment direction",
+      "why_classification": "This is a main theoretical result; the proof as written contains a fundamental sign error and no correct version is supplied."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[\n\t\t\\sideconfig_{\\boldvec{i}, k} \\coloneqq \\left\\{\n\t\t\t\\xbsp_{\\boldvec{t}} \\in \\bspbasis^{\\boldvec{0}}_{\\level} :\n\t\t\t\\, \\boldvec{t} - \\boldvec{i} = \\pm \\boldvec{\\delta}_k,\n\t\t\\right\\}\\;.\n    \\]",
+          "tag": "def:resolved"
+        },
+        {
+          "quote": "Moreover, we say that \\(\\xbsp_{\\boldvec{i}} \\in \\Bll\\) is resolved in direction \\(k\\) if \\(\\sideconfig_{\\boldvec{i}, k} \\subseteq \\Bll\\).",
+          "tag": "def:resolved"
+        }
+      ],
+      "failure_explanation": "If i_k = j_k, no neighbor in direction k is closer to j_k, so the lemma's first inference is false. A problematic pair can have i_k = j_k for a resolved direction, making the lemma false as stated.",
+      "failure_location": {
+        "quote": "Since \\(\\xbsp_{\\boldvec{i}}\\) is resolved in direction \\(k\\), by definition there exists \\(\\xbsp_{\\boldvec{t}}\\in \\sideconfig_{\\boldvec{i},k}\\) such that \\(\\abs{t_k - j_k} < \\abs{i_k - j_k|\\).",
+        "tag": "lem:problematic-sides"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the missing hypothesis i_k != j_k to the lemma and adjust the algorithm's pruning to only skip a function when the relevant direction satisfies this condition, or provide a different justification.",
+      "overall_effect": "The pruning step in alg:initiate-unchecked is unsound; lem:problematic-chain and lem:added-1 are affected.",
+      "primary_affected_tag": "lem:problematic-sides",
+      "target_type": "formal_result",
+      "title": "Problematic-sides lemma is false without a non-equality hypothesis on the resolved index",
+      "why_classification": "The lemma underpins the algorithm's ability to discard candidate functions; as stated it is false and can make the algorithm miss problematic pairs."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let \\(\\xbsp_{\\boldvec{i}},\\xbsp_{\\boldvec{j}}, \\xbsp_{\\boldvec{l}}  \\in \\Bll\\) be such that there exists an \\lchain \\( \\chain{\\boldvec{i}}{\\boldvec{j}} \\) between \\( \\xbsp_{\\boldvec{i}} \\) and \\(\\xbsp_{\\boldvec{j}}\\), with corner element \\( \\xbsp_{\\boldvec{c}}\\).",
+          "tag": "lem:problematic-chain"
+        },
+        {
+          "quote": "We say that there exists an \\lchain between them if for some \\(\\xbsp_{\\boldvec{c}} \\in \\Bll\\) there exists a direction-\\(k_1\\) chain, \\(\\chain{\\boldvec{i}}{\\boldvec{c}}\\), between \\(\\xbsp_{\\boldvec{i}}\\) and \\(\\xbsp_{\\boldvec{c}}\\) and a direction-\\(k_2\\) chain, \\(\\chain{\\boldvec{c}}{\\boldvec{j}}\\), between \\(\\xbsp_{\\boldvec{c}}\\) and \\(\\xbsp_{\\boldvec{j}}\\), such that \\(k_1 \\neq k_2\\).",
+          "tag": "def:L-chain"
+        }
+      ],
+      "failure_explanation": "The proof assumes every intermediate B-spline in the L-chain is resolved in some direction, which is not guaranteed by the definitions. The recursive application of lem:problematic-sides is therefore unjustified.",
+      "failure_location": {
+        "quote": "Then, since \\(\\xbsp_{\\boldvec{t}}\\) will be resolved in some direction \\(k\\), we can recursively apply \\Cref{lem:problematic-sides} to prove that there exists \\(\\xbsp_{\\boldvec{v}} \\in \\{\\xbsp_{\\boldvec{i}}, \\xbsp_{\\boldvec{j}}, \\xbsp_{\\boldvec{c}}\\} \\) that is problematic with \\(\\xbsp_{\\boldvec{l}}\\).",
+        "tag": "lem:problematic-chain"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Supply a proof that the required resolution property holds for L-chains in \\Bll, or modify the lemma and its use in the algorithm.",
+      "overall_effect": "lem:problematic-chain is unproven; lem:added-1's guarantee is affected.",
+      "primary_affected_tag": "lem:problematic-chain",
+      "target_type": "formal_result",
+      "title": "Problematic-chain lemma assumes an unjustified resolution property",
+      "why_classification": "A contained additional argument may repair the lemma; the overall exact-mesh framework is not necessarily abandoned."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Ensure Boolean indicating if there is a shortest chain between the pair of B-splines.",
+          "tag": "alg:shortest-chain"
+        },
+        {
+          "quote": "The \\Cref{alg:shortest-chain} used in the third step assumes that the given pair of basis functions shares a \\nlintersec, since this is the appropriate case for \\Cref{alg:exact-mesh}, and it makes the check of a direction-\\(k\\) chain between the pair trivial.",
+          "tag": "sec:algorithms"
+        }
+      ],
+      "failure_explanation": "A direction-k chain exists only if all intermediate B-splines are in \\Bll. The algorithm returns true without checking this, so it can classify a problematic pair as non-problematic.",
+      "failure_location": {
+        "quote": "\\If{\\var{any}(\\(\\boldvec{i}-\\boldvec{j}\\))==0}\n\t\t\t\\State \\Return \\var{true}\n\t\t\t\\Comment{There is a direction-\\(k\\) chain.}",
+        "tag": "alg:shortest-chain"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Add a check that all intermediate B-splines in the direction-k chain belong to \\Bll before returning true.",
+      "overall_effect": "alg:exact-mesh may terminate with an inexact mesh; lem:added-1 is invalidated.",
+      "primary_affected_tag": "alg:shortest-chain",
+      "target_type": "algorithm",
+      "title": "has_shortest_chain shortcut does not verify intermediate B-splines are in Bll",
+      "why_classification": "The fix is a small, contained algorithmic check; the advertised exact-mesh guarantee can be restored without changing the proof architecture."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\(\\Cref{alg:exact-mesh}\\) always produces an exact mesh.",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\Ensure Updated truncated hierarchical basis \\(\\thbbasis^{\\boldvec{0}}_{L}\\) with no problematic intersections",
+          "tag": "alg:exact-mesh"
+        }
+      ],
+      "failure_explanation": "The proof is a bare citation to three lemmas without showing how the algorithm's operations (adding L-chains, checking only corners, iterating) establish exactness or termination. This is a missing nontrivial argument.",
+      "failure_location": {
+        "quote": "The result follows as a consequence of \\cref{lem:L-chain-shortest,lem:problematic-sides,lem:problematic-chain}.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Provide a complete proof connecting the algorithm's loop and L-chain additions to the exactness criterion of thm:added-1.",
+      "overall_effect": "The main guarantee of the paper, that the algorithm produces an exact mesh, is unsupported.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Proof that alg:exact-mesh produces an exact mesh is a bare citation",
+      "why_classification": "The central advertised result is a lemma whose proof is essentially absent; a complete repair requires a full new proof."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\var{checked\\_pairs} \\(\\gets \\emptyset\\)\n\t\t\t\\State \\var{problematic\\_mesh} \\(\\gets \\var{true}\\)",
+          "tag": "alg:exact-mesh"
+        }
+      ],
+      "failure_explanation": "unchecked_funcs is only assigned when a problematic pair is found; if no problematic pair is found in the first pass, it is undefined, making the algorithm ill-defined.",
+      "failure_location": {
+        "quote": "\\State \\var{checked\\_pairs} \\(\\gets\\) \\var{checked\\_pairs} \\(\\cup\\)\n\t\t\t\t\t\\var{unchecked\\_pairs}\n\t\t\t\t\\State \\var{unchecked\\_pairs} \\(\\gets\\)\n\t\t\t\t\t\\var{combinations}(\\var{unchecked\\_funcs},\n\t\t\t\t\t2)",
+        "tag": "alg:exact-mesh"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Initialize unchecked_funcs \\gets \\emptyset before the ForAll loop.",
+      "overall_effect": "alg:exact-mesh may fail or behave unpredictably in the first iteration if no problematic pair is found.",
+      "primary_affected_tag": "alg:exact-mesh",
+      "target_type": "algorithm",
+      "title": "alg:exact-mesh uses unchecked_funcs without initialization",
+      "why_classification": "A one-line initialization fixes the issue without affecting any mathematical claim or guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let \\(\\xbsp_{\\boldvec{i}},\\xbsp_{\\boldvec{j}} \\in \\Bll\\) share a \\nlintersec and have an \\lchain in \\(\\chain{\\boldvec{i}}{\\boldvec{j}}\\) between them.",
+          "tag": "lem:containment"
+        },
+        {
+          "quote": "We say that \\(\\xbsp_{\\boldvec{i}}\\) and \\(\\xbsp_{\\boldvec{j}}\\) share a \\nlintersec if there exists some \\(k_0 \\in\\{1, 2\\}\\) and \\((\\knot_{t_1,\\ell+1,1},\\knot_{t_2,\\ell+1,2}) \\in \\knotvec_{\\ell+1,1} \\times \\knotvec_{\\ell+1,2}\\) such that",
+          "tag": "def:nlintersec"
+        }
+      ],
+      "failure_explanation": "The claim that every pair of B-splines in an L-chain shares a minimal intersection with each other is not established and is generally false; the proof relies on it to place \\xbsp_t in the interaction box.",
+      "failure_location": {
+        "quote": "Since \\(\\xbsp_{\\boldvec{i}}\\) and \\(\\xbsp_{\\boldvec{j}}\\) share a \\nlintersec, the same is true for any other pair of B-splines in \\(\\chain{\\boldvec{i}}{\\boldvec{j}}\\), and in particular for \\(\\xbsp_{\\boldvec{p}}\\) and \\(\\xbsp_{\\boldvec{t}}\\).",
+        "tag": "lem:containment"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Prove the needed intersection property for pairs in an L-chain, or weaken the lemma to only what is needed.",
+      "overall_effect": "lem:containment is unproven; it is a standalone result about L-chains.",
+      "primary_affected_tag": "lem:containment",
+      "target_type": "formal_result",
+      "title": "Proof of containment lemma assumes pairwise minimal intersections inside an L-chain",
+      "why_classification": "The lemma is auxiliary; a contained repair or weakening preserves the rest of the framework."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2502.19542",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "81e37e10ee64f40cc52a69649dc065e818a9a61c8e6ba1ac5ab6e6f1c2d7a80f",
+  "status": "ok"
+}

@@ -1,0 +1,233 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{R}_\\theta (Z) \\coloneqq \\tfrac{1}{\\theta} \\log{\\left( \\mathbb{E} \\left[ \\mathrm \\exp(\\theta Z)\\right]\\right)}",
+          "tag": "eq:entropic-risk"
+        }
+      ],
+      "failure_explanation": "From the definition, R_theta(Z+t)=R_theta(Z)+t for constants t. Thus R_theta is affine along constant directions and cannot be strictly convex. It is convex but not strictly convex.",
+      "failure_location": {
+        "quote": "Furthermore, for each fixed parameter, it is strictly convex and smooth.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace 'strictly convex' with 'convex', or restrict strict convexity to directions that are not constant.",
+      "overall_effect": "A false structural statement about the risk measure. The paper's uniqueness argument rests on the penalty term, so no formal result depends on it.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Entropic risk measure claimed strictly convex",
+      "why_classification": "Local wording correction with no downstream mathematical loss."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq 1-2\\tau c+ 2\\tau^2L^2 + 4\\sqrt{\\eta}+8\\eta,",
+          "tag": "thm:error"
+        },
+        {
+          "quote": "Then, for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently",
+          "tag": "thm:error"
+        }
+      ],
+      "failure_explanation": "rho<1 needs 4 sqrt(eta)+8 eta < 2 tau(c - tau L^2). On (0, c/(2L^2)) this quantity is at most c^2/(2L^2), attained only at tau=c/(2L^2), and it tends to 0 as tau->0. As tau->0 the stated rho tends to 1+4 sqrt(eta)+8 eta > 1. So the tau-independent eta threshold does not ensure contraction for every tau in the interval.",
+      "failure_location": {
+        "quote": "so that $4\\sqrt{n}+8\\eta<\\frac{c^2}{2L^2}$, it holds that $\\rho<1$.",
+        "tag": "thm:error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State the condition as 4 sqrt(eta)+8 eta < 2 tau c - 2 tau^2 L^2, i.e. eta depending on tau. The same proof then gives rho<1.",
+      "overall_effect": "The theorem's explicit (tau, eta) regime is not established. Linear convergence is proved only when eta is small relative to tau. The remark that any fixed step size in (0,c/(2L^2)) works inherits this gap.",
+      "primary_affected_tag": "thm:error",
+      "target_type": "formal_result",
+      "title": "Contraction condition on eta does not give rho<1 for all admissible tau",
+      "why_classification": "The rate and method survive, but the theorem's quantifier must change from a uniform eta threshold to a tau-dependent one."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:complexity_gradient_estimation",
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "= \\sum_{\\ell=1}^L \\frac{1}{M_{\\ell}}\\sum_{m=1}^{M_\\ell} \\Delta Y^{(m)}_{\\ell}.",
+          "tag": "eq:ml_estimator_denominator"
+        },
+        {
+          "quote": "and these sequences are mutually independent and identically distributed across $\\ell$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Each Y_ell^{(m)} is at least 1, but the MLMC estimator adds level corrections Y_ell - Y_{ell-1} computed on independent samples, and these can be negative. For example, with L=2 and M_1=M_2=1, the estimate is Y_1(xi^1)+Y_2(xi^2)-Y_1(xi^2), which can lie below 1 or even be <=0, especially for large theta. Dividing by E^ML[Y_L] then loses the bound, and the ratio can be undefined or unbounded.",
+      "failure_location": {
+        "quote": "where we used that $\\EE^{\\textrm{ML}} \\left[Y_L\\right] > 1$.",
+        "tag": "proposition:bound_mean_square_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the denominator by max(E^ML[Y_L],1), which is valid since E[Y]>=1 and only reduces |E^ML - E[Y]|. Then propagate this change to the estimator and the algorithm, or add an argument controlling small denominators.",
+      "overall_effect": "The MSE bound for the ratio estimator is unsupported. The complexity theorem and corollary that rely on it are unproven for the estimator as defined.",
+      "primary_affected_tag": "proposition:bound_mean_square_error",
+      "target_type": "formal_result",
+      "title": "False premise that the MLMC denominator estimate exceeds 1",
+      "why_classification": "A contained modification of the estimator (truncation) restores the bound and all rates, but it changes the construction used throughout."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that for every $\\ell\\in \\mathbb{N}$ there exists a null sequence $\\left\\{ h_{\\ell}\\right\\}_{\\ell\\in\\mathbb{N}}$ such that",
+          "tag": "lemma:auxiliary"
+        }
+      ],
+      "failure_explanation": "The cited MLMC theorems require geometric refinement, h_ell = s^{-1} h_{ell-1}. Only a null sequence is assumed here. Take h_ell = 1/ell with V_ell ~ h_ell^beta and C_ell ~ h_ell^{-gamma}. Then the optimal cost is about eps^{-2}(sum_{ell<=L} ell^{-(beta-gamma)/2})^2 with L ~ eps^{-1/alpha}, which exceeds eps^{-2} when beta>gamma and beta-gamma<2. The stated rates therefore fail without the missing hypothesis.",
+      "failure_location": {
+        "quote": "then from MLMC theory, see, e.g.~\\cite{giles2008multilevel,cliffe2011multilevel}.",
+        "tag": "thm:complexity_gradient_estimation"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the standard assumption of geometric mesh refinement (and alpha >= min(beta,gamma)/2, which then follows from the strong rate). Experiments using uniform refinement satisfy it.",
+      "overall_effect": "The cost bound eq:cost_asymptotic, and the corollary built on it, are not established as stated.",
+      "primary_affected_tag": "thm:complexity_gradient_estimation",
+      "target_type": "formal_result",
+      "title": "MLMC complexity theory invoked for an arbitrary null sequence h_ell",
+      "why_classification": "Adding a standard local hypothesis restores the result with unchanged rates and scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\eta \\mathbb{E}\\LQ \\|\\mathcal{R}_{\\tau}(u_k)\\|_U^2\\RQ.",
+          "tag": "eq:conditionmeansquareerror_idealized"
+        },
+        {
+          "quote": "Then using Theorem~\\ref{thm:complexity_gradient_estimation},",
+          "tag": "cor:complexity-result"
+        }
+      ],
+      "failure_explanation": "Per-step cost scales like the inverse of the tolerance eta E||R_tau(u_k)||^2. Bounding cost from above needs a lower bound on that tolerance, but the proof only gives the upper bound <~ rho^k. If E||R_tau(u_k)||^2 decays faster than rho^k, cost is underestimated. If u_0 = u^star, the tolerance is 0, so the cost is infinite while the claimed bound is finite.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[ \\eta \\|\\mathcal{R}_{\\tau}(u_k)\\|_U^2\\right]\\lesssim_{\\eta,\\tau} \\mathbb{E}\\left[\\|u-u_k\\|_U^2\\right]",
+        "tag": "cor:complexity-result"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Define the idealized algorithm with a deterministic geometric tolerance, e.g. eps_k^2 = c0 rho^k. Prove linear convergence of the perturbed iteration under it (a short recursion argument), then sum the geometric costs.",
+      "overall_effect": "The overall complexity bound for the idealized algorithm is not established.",
+      "primary_affected_tag": "cor:complexity-result",
+      "target_type": "formal_result",
+      "title": "Cost bound uses an upper bound on the tolerance where a lower bound is needed",
+      "why_classification": "It needs a modified tolerance schedule and a new short convergence argument, but the stated rates survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the target sampling error $\\mathrm{err}_k^{\\mathrm{sam}} = \\varepsilon_k^2/2$",
+          "tag": null
+        },
+        {
+          "quote": "\\sqrt{\\frac{v_{k,\\ell'}^2 \\, \\mathcal{C}_{k-1, \\ell'}}{M_{k - 1, \\ell'} - 1}} \\,\\,",
+          "tag": "eq:optimal-batch-size"
+        },
+        {
+          "quote": "The optimal level $L_k$ is chosen as either $L_{k-1}$ or $L_{k-1} + 1$,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Lagrange optimisation for sampling error eps_k^2/2 gives the prefactor 2 eps_k^{-2}. The prefactor (sqrt2 eps_k)^{-2} = eps_k^{-2}/2 instead yields sampling error 2 eps_k^2, four times the target. The sum also uses v_{k,ell'}, which comes from the batch being sized, so the rule is circular. When L_k = L_{k-1}+1, the quantities v_{k-1,L_k}, M_{k-1,L_k} and C_{k-1,L_k} do not exist.",
+      "failure_location": {
+        "quote": "\\left(\\sqrt{2} \\varepsilon_{k}\\right)^{-2}\\!\\!",
+        "tag": "eq:optimal-batch-size"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Use 2 eps_k^{-2} and previous-iteration estimates v_{k-1,ell'}. Specify an extrapolation, via the rates beta and gamma, for newly added levels.",
+      "overall_effect": "As written, the adaptive batch selection neither meets its stated sampling-error target nor is computable at level additions.",
+      "primary_affected_tag": "eq:optimal-batch-size",
+      "target_type": "algorithm",
+      "title": "Optimal batch-size rule miscalibrated and not well defined",
+      "why_classification": "These are standard local corrections that preserve the method and its intended guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\leq \\widetilde{C}_Y(\\theta) h_{\\ell}^\\alpha,",
+          "tag": "eq:weakerror"
+        }
+      ],
+      "failure_explanation": "Under the weak-error model, |E Delta_L| is about |E Delta_ell| (h_L/h_ell)^alpha. The squared bias is then about |E Delta_ell|^2 (h_L/h_ell)^{2 alpha}/(s^alpha-1)^2. Here (h_L/h_ell)^alpha, which is less than 1, sits in the denominator, so level ell<L terms are inflated by (h_ell/h_L)^{2 alpha} relative to the bias. The max over ell is then dominated by coarse levels and does not estimate the bias.",
+      "failure_location": {
+        "quote": "{(((h_{\\ell-1} / h_\\ell)^{\\widehat{\\alpha}} - 1) (h_L/h_\\ell)^{\\widehat{\\alpha}})^2}",
+        "tag": "eq:squared-bias-estimate-mlmc"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace (h_L/h_ell)^alpha by (h_ell/h_L)^alpha in the denominator, i.e. multiply the term by (h_L/h_ell)^{2 alpha}.",
+      "overall_effect": "The level-refinement rule eq:optimal-level triggers on a misestimated bias, so control of the numerical error is not as intended.",
+      "primary_affected_tag": "eq:squared-bias-estimate-mlmc",
+      "target_type": "algorithm",
+      "title": "Bias estimator extrapolates in the wrong direction",
+      "why_classification": "A local formula correction that restores the intended estimator."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\texttt{while } \\tnorm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U > \\varepsilon \\colon",
+          "tag": "alg:mlsgd"
+        },
+        {
+          "quote": "we denote by $U_{\\mathrm{ad}}$ a nonempty, closed, convex and bounded subset of $U$.",
+          "tag": null
+        },
+        {
+          "quote": "We choose $\\varepsilon_k=\\eta \\norm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U$ with $\\eta=0.9$ for the optimal batch size",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Theorem thm:error needs the MSE to be at most eta ||R_tau(u_k)||^2 with eta tiny (4 sqrt(eta)+8 eta < c^2/(2L^2) <= 1/2 forces eta < 1/64). The algorithm instead uses the unprojected estimated gradient, with eta=0.9 in the experiments. On a bounded U_ad with an active constraint, grad J(u^star) is nonzero, so eps_k does not tend to 0 and the while-test can fail to terminate.",
+      "failure_location": {
+        "quote": "k \\leftarrow k + 1 \\quad \\varepsilon_k \\leftarrow \\eta \\tnorm{\\nabla \\mathcal{J}^{\\mathrm{ML}}(u_k)}_U",
+        "tag": "alg:mlsgd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Base the tolerance and stopping test on an estimated reduced projected gradient R_tau and choose eta within the theorem's regime. Then justify that the estimated test implies eq:conditionmeansquareerror, or restrict the claims to the idealized method.",
+      "overall_effect": "The linear-convergence guarantee does not apply to the implemented algorithm or to the reported experiments. The claim that the experiments validate the convergence analysis is unsupported.",
+      "primary_affected_tag": "alg:mlsgd",
+      "target_type": "algorithm",
+      "title": "Algorithm's tolerance and stopping rule do not match the analysed condition",
+      "why_classification": "It requires changing the algorithm's test and adding a contained argument linking the computable test to the theorem's hypothesis. The method survives."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2606.09291",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f995bc2781848745f7a0e9dc1ec709b3b392f7fb87821723f10dd174128e1d3c",
+  "status": "ok"
+}

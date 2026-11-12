@@ -1,0 +1,238 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "u(x) =  \\int_{\\partial \\Omega} \\beta(y) \\frac{\\partial \\Phi}{\\partial n_{y}}(x, y) d \\sigma_{y} + \\int_{\\Omega} \\Phi(x,y) \\psi(y) d y , \\,\\, x \\in \\Omega,",
+          "tag": "potential-integral"
+        },
+        {
+          "quote": "\\beta({x}^{\\star}) = 2 \\Big(f(x^{\\star}) - \\int_{\\Omega } \\Phi(x^*,y) \\psi(y) dy \\Big) - 2 \\int_{\\partial \\Omega} \\beta(y) \\frac{\\partial \\Phi}{\\partial n_{y}}(x^{\\star}, y) d \\sigma_{y}",
+          "tag": "BIE"
+        }
+      ],
+      "failure_explanation": "From the representation equation (potential-integral), taking x→x* gives lim DL[β](x) = u(x*) − ∫_Ω Φ(x*,y)ψ(y)dy = f(x*) − N[ψ](x*). Equation (BIE-limit) instead asserts lim DL[β](x) = u(x*) − (1/2)β(x*), which would require N[ψ](x*) = (1/2)β(x*) — false in general. Using (BIE-limit) to derive (BIE) yields β(x*) = 2N[ψ](x*), not the stated BIE. The BIE itself is correct (derivable from the correct interior-limit jump relation lim DL = PV DL + (1/2)β and the boundary condition), but it does not follow from (BIE-limit) as stated.",
+      "failure_location": {
+        "quote": "\\lim _{\\substack{x \\rightarrow x^{\\star} \\\\ x \\in \\Omega}}   \\int_{\\partial \\Omega} \\beta(y) \\frac{\\partial \\Phi}{\\partial n_y}(x, y) d \\sigma_{y} =u\\left({x}^{\\star}\\right) - \\frac{1}{2} \\beta(x^{\\star}), \\quad x^{\\star} \\in \\partial \\Omega.",
+        "tag": "BIE-limit"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace (BIE-limit) with the correct relation lim_{x→x*} DL[β](x) = u(x*) − ∫_Ω Φ(x*,y)ψ(y)dy (or equivalently state the interior-limit jump relation PV DL[β](x*) + (1/2)β(x*) directly) and re-derive (BIE) from it; the BIE itself is unchanged.",
+      "overall_effect": "The derivation of the boundary integral equation from (BIE-limit) inside Theorem BIM is invalid. The BIE itself is correct and downstream results relying on (BIE) are unaffected, but the theorem's presentation of the jump condition is false and its stated derivation is unsound.",
+      "primary_affected_tag": "BIM",
+      "target_type": "formal_result",
+      "title": "Jump-relation equation (BIE-limit) is mathematically incorrect",
+      "why_classification": "A single formula and its short derivation can be corrected locally; the correct BIE and every downstream construction and bound remain intact with no new lemma or argument needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:added-1",
+        "error-bounds-thrm",
+        "lem:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "{K}\\left(z_1, z_2\\right)\\Delta z  & K_D\\left(z_2\\right) & \\cdots & {K}\\left(z_2, z_{N}\\right)\\Delta z",
+          "tag": "inner-weight"
+        },
+        {
+          "quote": "b_m=\\left(\\begin{array}{ccc}\\kappa g(z_1), \\dots, \\kappa g(z_{N})\\end{array}\\right)^{\\top}",
+          "tag": null
+        },
+        {
+          "quote": "v_0=0, v_M=\\sum_{\\nu=0}^{M-1} \\kappa \\text{ (since in the Fredholm NN we consider constant values for the parameter in the Krasnoselskii-Mann iteration, } \\kappa_{\\nu} = \\kappa",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Krasnoselskii–Mann iteration f_{k+1} = (1−κ)f_k + κ(g + Kf_k) discretises to weights (1−κ)δ_{ij} + κK(z_i,z_j)Δz with bias κg(z_i). The definition gives off-diagonal entries K(z_i,z_j)Δz and diagonal K(z_i,z_i)Δz + (1−κ), i.e. the kernel terms carry no κ factor. The resulting layer implements f_{k+1} = (1−κ)f_k + K̃f_k + κg instead of the KM step; for e.g. q = 0.8, κ = 0.3 the spectral radius of the true iteration matrix (1−κ)+K̃ can exceed 1, so the scheme can diverge where KM converges. The error bound of Proposition prop:added-1 assumes the KM rate e^{−(1−q)Mκ} and is therefore invalid for the weights as stated.",
+      "failure_location": {
+        "quote": "K_D\\left(z\\right) := {K}\\left(z, z\\right)\\Delta z + (1-\\kappa)",
+        "tag": "inner-weight"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Multiply every kernel entry K(z_i,z_j)Δz in W_m (including inside K_D) by κ, yielding the correct KM matrix (1−κ)I + κK̃; this makes the network implement the claimed KM iteration and restores the validity of Proposition prop:added-1 and its downstream uses.",
+      "overall_effect": "The Fredholm NN as defined may not converge to the solution of the Fredholm equation for general κ ≤ 1. The recalled error bound in Proposition prop:added-1 and every result that substitutes ||β−β_M|| from that bound (Theorem error-bounds-thrm, Lemma lem:added-1) become unreliable.",
+      "primary_affected_tag": "inner-weight",
+      "target_type": "algorithm",
+      "title": "Fredholm NN hidden-layer weights omit Krasnoselskii–Mann relaxation factor κ on kernel terms",
+      "why_classification": "The fix is a uniform scalar multiplication of weight-matrix entries; it restores the claimed KM iteration, the stated convergence rate, and every dependent bound with no new argument, construction, or loss of scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:added-1",
+        "error-bounds-thrm",
+        "lem:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the M-layer Fredholm NN is a Deep Neural Network with a one-dimensional input x, M hidden layers each with N nodes, a linear activation function",
+          "tag": null
+        },
+        {
+          "quote": "The output of the Fredholm NN approximates the solution to the Fredholm Integral Equation $f(x) = \\mathcal{T}f(x).$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With scalar input x, linear activation, weight W_1 = (κg(z_1),…,κg(z_N))^⊤ and zero bias, the first hidden layer outputs h^{(1)}_j = x·κg(z_j), not κg(z_j). The intended fixed-point initialisation at the grid points (the constant vector κg(z_i)) is thus multiplied by the input x, so every subsequent layer inherits an unwanted x-dependence. The claimed approximation property (output ≈ f(x)) fails because the intermediate iterates no longer represent the KM/Picard iterates at the grid points.",
+      "failure_location": {
+        "quote": "W_1 = \\left(\\begin{array}{ccc}\\kappa g(z_1), \\dots, \\kappa g(z_{N})\\end{array}\\right)^{\\top}, \\,\\,\\,\\,\\,\\    b_1 = \\left(\\begin{array}{ccc}0, 0, \\dots, 0\\end{array}\\right)^{\\top}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Swap the roles of the first-layer weight and bias: set W_1 = 0 and b_1 = (κg(z_1),…,κg(z_N))^⊤, so that h^{(1)}_j = κg(z_j) independently of x; x enters only through the final-layer weights as designed.",
+      "overall_effect": "The hidden-layer values of the Fredholm NN do not represent fixed-point iterates at the grid points, so the output does not approximate the Fredholm-equation solution. Proposition prop:added-1 and all results that rely on ||β−β_M|| from it become unreliable.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Fredholm NN first-layer output depends on input x instead of initialising the fixed-point iteration",
+      "why_classification": "Swapping two vectors in one layer is a short, local correction that restores the intended x-independent initialisation and preserves every claim and guarantee without any new argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where we define $\\delta\\Phi(x,y) := \\Phi(x,y) - \\Phi(x^*,y)$.",
+          "tag": "semi-linear-pot"
+        },
+        {
+          "quote": "\\beta(x^*)\\Big(\\frac{1}{2} + \\int_{\\Omega} \\lambda \\delta \\Phi(x, y) dy \\Big)",
+          "tag": "potential-limit-expression"
+        }
+      ],
+      "failure_explanation": "The proposition defines δΦ(x,y) = Φ(x,y) − Φ(x*,y) but then writes ΔΦ(x,y) (the Laplacian of Φ in y) in b_O. Since Δ_yΦ(x,y) = δ(x−y), the stated integral ∫_Ω λΔΦ dy equals the constant λ, whereas the proof's formula (potential-limit-expression) requires ∫_Ω λδΦ(x,y)dy, a non-trivial function of x. The proof derives the correct δΦ expression but the statement claims the wrong ΔΦ expression, so the stated bias does not produce the claimed solution of the Helmholtz PDE.",
+      "failure_location": {
+        "quote": "b_O= \\Big(\\frac{1}{2} + \\int_{\\Omega} \\lambda \\Delta \\Phi(x, y) dy \\Big) \\beta({x}^{\\star})",
+        "tag": "semi-linear-pot"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace ΔΦ(x,y) by δΦ(x,y) in the b_O formula so it matches the proof's (potential-limit-expression) and the definition of δΦ given immediately afterwards.",
+      "overall_effect": "The stated PFNN construction for the Helmholtz PDE (Proposition semi-linear-pot) produces incorrect output because the bias b_O substitutes a constant for a non-trivial integral. The correct formula in (potential-limit-expression) and all downstream error analysis remain valid once the statement is corrected.",
+      "primary_affected_tag": "semi-linear-pot",
+      "target_type": "formal_result",
+      "title": "Helmholtz PFNN output bias b_O uses Laplacian ΔΦ instead of difference δΦ",
+      "why_classification": "A single symbol change aligns the statement with the correct proof formula and the definition of δΦ; every claim and guarantee survives with no further repair."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ \\int_{\\Omega} \\Phi(x, y) \\psi(y) dy",
+          "tag": "potential-limit-expression"
+        },
+        {
+          "quote": "\\Delta u(x) - \\lambda u(x) = \\psi(x), \\quad x \\in \\Omega",
+          "tag": "helmholtz-pde"
+        }
+      ],
+      "failure_explanation": "The Newtonian-potential term in the PFNN bias must integrate the source ψ(y) over Ω (as in formula (potential-limit-expression) and in the Poisson case's b_O). The stated formula instead integrates f(y) — the boundary Dirichlet datum defined on ∂Ω — over Ω (or an undefined domain D). This is not the Newtonian potential of the PDE's right-hand side and does not solve the Helmholtz equation. The proof's formula (potential-limit-expression) correctly uses ψ(y).",
+      "failure_location": {
+        "quote": "+ \\int_{\\mathcal{D}} \\Phi({x},{y}) f({y}) d {y}",
+        "tag": "semi-linear-pot"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace f(y) by ψ(y) (and the integration domain 𝒟 by Ω) in the last term of b_O, matching (potential-limit-expression) and the Poisson-case analogue.",
+      "overall_effect": "The stated PFNN construction for the Helmholtz PDE uses the wrong function in the volume-potential term, so the network output does not solve Δu − λu = ψ. Correcting f to ψ restores the construction.",
+      "primary_affected_tag": "semi-linear-pot",
+      "target_type": "formal_result",
+      "title": "Helmholtz PFNN output bias b_O integrates boundary function f instead of source ψ",
+      "why_classification": "Substituting one symbol for the source term is a forced local correction that restores the construction with no loss of any claim, rate, or scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\int_{\\partial \\Omega} \\frac{\\partial \\Phi(x^*, y)}{\\partial n_y} d\\sigma_y = \\frac{1}{2}, \\quad \\text{for } x^* \\in \\partial \\Omega.",
+          "tag": "prop-poisson"
+        },
+        {
+          "quote": "Let us now consider the second term, where the outer unit normal to $\\Omega - B(x,\\epsilon)$ is $n_y = \\frac{x - y}{|x - y|}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The half-sphere integral ∫_{Ξ̃_ε} ∂Φ/∂n_y dσ_y with n_y = (x*−y)/|x*−y| evaluates to −1/2 as ε→0 (the paper computes this correctly). Substituting into the divergence-theorem identity λ∫_{Ω_ε}Φ dy = PV∫_{∂Ω}∂Φ/∂n_y dσ_y + ∫_{Ξ̃_ε}∂Φ/∂n_y dσ_y gives PV∫_{∂Ω}∂Φ/∂n_y dσ_y = +1/2 + λ∫_Ω Φ(x*,y)dy, not −1/2 + λ∫_Ω Φ dy. Consistency check: as λ→0 this integral must approach the Poisson value +1/2 (as stated in the proof of Proposition prop-poisson), but the formula gives −1/2. The wrong sign invalidates the derivation of (potential-limit-expression) from Steps 1 and 2 as written.",
+      "failure_location": {
+        "quote": "\\int_{\\partial \\Omega} \\frac{\\partial \\Phi(x^*,y)}{\\partial n_y} d\\sigma_y = -\\frac{1}{2} + \\int_{\\Omega} \\lambda \\Phi(x^*,y) dy.",
+        "tag": "semi-linear-pot"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Change −1/2 to +1/2 in the conclusion of Step 2 and adjust the subsequent derivation of (potential-limit-expression) accordingly; the stated formula and all downstream bounds are unchanged.",
+      "overall_effect": "The derivation of the Helmholtz double-layer representation (potential-limit-expression) from the two integral identities is invalid as written. The formula (potential-limit-expression) itself is correct when derived with the corrected +1/2, so downstream error analysis is unaffected once the sign is fixed.",
+      "primary_affected_tag": "semi-linear-pot",
+      "target_type": "formal_result",
+      "title": "Sign error in boundary integral identity for Helmholtz case (Step 2)",
+      "why_classification": "A single sign correction in one displayed identity restores the derivation; the correct formula and every dependent guarantee survive without any new argument or loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ \\int_{\\partial \\Omega} \\beta(y) \\frac{\\partial \\Phi(x^*, y(s))}{\\partial n_y} d\\sigma_y",
+          "tag": "potential-limit-expression"
+        }
+      ],
+      "failure_explanation": "The potential representation (potential-limit-expression) has a fourth boundary term ∫_{∂Ω} β(y) ∂Φ(x*,y)/∂n_y dσ_y evaluated at the boundary projection x* of x. The discretisation error of this term should be measured with kernel ∂Φ(x*,y)/∂n_y. D_4 instead uses ∂Φ(x,y)/∂n_y (evaluated at x itself). For x ∈ ∂Ω (where x = x*) these coincide and D_4(∂Ω) is correct, but for x ∈ Ω with x ≠ x* the two kernels differ and D_4(Ω) measures a different (and generally incomparable) discretisation error. The proof's fourth error term likewise decomposes using ∂Φ(x,y)/∂n_y rather than ∂Φ(x*,y)/∂n_y, so the decomposition does not sum to ‖u − ũ‖_Ω.",
+      "failure_location": {
+        "quote": "D_4(\\mathcal{A}) := \\left\\| \\int_{\\partial \\Omega} \\beta_{M}(y)  \\frac{\\partial \\Phi(x, y)}{\\partial n_y}  d\\sigma_y - \\tilde{\\int_{\\partial \\Omega}} \\beta_M(y) \\, \\frac{\\partial \\Phi(x, y)}{\\partial n_y} d\\sigma_y \\right\\|_{\\mathcal{A}}",
+        "tag": "error-bounds-thrm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Redefine D_4 with kernel ∂Φ(x*,y)/∂n_y and correct the fourth term in the proof's decomposition to use ∂Φ(x*,y)/∂n_y; the triangle-inequality structure of the bound is unchanged.",
+      "overall_effect": "The interior error bound (error-domain) uses the wrong discretisation-error quantity D_4(Ω) and is therefore not established. The boundary bound (error-boundary) is unaffected since D_4(∂Ω) is correct there. Lemma lem:added-1, which invokes (error-domain) for its interior error term, is transitively affected.",
+      "primary_affected_tag": "error-bounds-thrm",
+      "target_type": "formal_result",
+      "title": "Error-bound term D_4 uses kernel ∂Φ(x,y)/∂n_y instead of ∂Φ(x*,y)/∂n_y",
+      "why_classification": "Changing one kernel symbol in D_4's definition and the matching proof step is a short, local repair that restores the interior bound and all dependent claims without new lemmas or loss of scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\epsilon_{\\Omega}^{RPFNN}, \\epsilon_{\\partial \\Omega}^{RPFNN}$ denote the errors associated with the PFNN construction in the domain and on the boundary, as given by (\\ref{error-domain}) and (\\ref{error-boundary}) respectively.",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\State {Step 1. Construct the PDE (\\ref{iteration}) with source term $\\psi_n(x) := -\\lambda u_n(x) + F(x,u_n(x))$.}",
+          "tag": "alg:nl-algo"
+        }
+      ],
+      "failure_explanation": "The proof decomposes ‖ũ_n − u‖ ≤ ‖ũ_n − u_n‖ + ‖u_n − u‖ where u_n is the exact n-th fixed-point iterate. But ũ_n is produced by the PFNN using the approximate source ψ̃_n = −λũ_{n−1} + F(x,ũ_{n−1}), not the exact source ψ_n = −λu_{n−1} + F(x,u_{n−1}). Hence ‖ũ_n − u_n‖ includes both the PFNN approximation error and the source-term mismatch (Δ−λ)^{-1}(ψ̃_n − ψ_n), which is proportional to ‖ũ_{n−1} − u_{n−1}‖. Iterating the recursion yields ‖ũ_n − u‖ ≤ Σ_{k=0}^{n−1} q^{n−1−k}ε_k + q^n‖u_0 − u‖, whose first sum is bounded by ε/(1−q) for uniform ε, not by the single-step PFNN error ε as claimed. The proof simply 'substitutes' the single-iteration bound (error-domain) without tracking this accumulation.",
+      "failure_location": {
+        "quote": "Notice that we can decompose the error into a component arising from the fixed point iterations and another due to the neural network approximation by writing $\\left\\|\\tilde{u}_n - u \\right\\|_{\\Omega} \\leq \\left\\|\\tilde{u}_n - u_n \\right\\|_{\\Omega} + \\left\\|u_n - u \\right\\|_{\\Omega}$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Weaken the bound by replacing ε^RPFNN with ε^RPFNN/(1−q) (or Σ_{k=0}^{n−1} q^{n−1−k}ε_k exactly), or supply an error-propagation argument tracking the source mismatch through the recursion; the convergence-rate structure and the overall form of the bound are preserved.",
+      "overall_effect": "The stated interior and boundary error bounds for the Recurrent PFNN (equation (error-recurrent)) are too optimistic by roughly a factor 1/(1−q): the accumulated PFNN errors across iterations are treated as a single-iteration error. The contraction-rate term q^n‖u_0 − u‖ is correct.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Recurrent PFNN error bound ignores accumulation of per-iteration PFNN errors",
+      "why_classification": "A correct resolution requires either a contained but non-trivial error-propagation argument or a uniform weakening of the constant in the bound; the latter changes the guaranteed error level while keeping the rate and scope recognisably comparable, which exceeds a purely local fix."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2507.06038",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "389a8005f089222555182f5ffa9fb86b596d9286bdad6356894f4744eb7d14b7",
+  "status": "ok"
+}

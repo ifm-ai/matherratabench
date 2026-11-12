@@ -1,0 +1,170 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\log q_{\\theta}(u_0 | a) &= \\mathbb{E}_{p(u_0|a)}[\\log q_{\\theta}(u_0 | a)]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For nondegenerate noisy data, the right-hand side averages over the random variable u_0, while the left-hand side is a pointwise function of u_0. The appendix's asserted equality between a pointwise log-density and its expectation is likewise false. Jensen's inequality instead bounds the expected conditional negative log-likelihood.",
+      "failure_location": {
+        "quote": "Similar to the unconditional DDPM, we perform the training by maximizing the VLB of the conditional log likelihood\n\\begin{equation*}\n-\\log q_{\\theta}(u_0 | a) \\leq -\\text{VLB}(\\theta; a) \\triangleq \\mathbb{E}_{p(u_{0:T}|a)}\\left[\\log \\frac{p(u_{1:T} | u_0)}{q_{\\theta}(u_{0:T}|a)}    \\right].\n\\end{equation*}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Put an expectation over p(u_0|a) on the left throughout the VLB derivation and consistently describe the objective as expected conditional negative log-likelihood.",
+      "overall_effect": "The claimed interpretation of the decomposed objective as a pointwise conditional-likelihood VLB is invalid in the noisy-data regime, although the averaged training objective remains meaningful.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Conditional VLB confuses pointwise and expected log-likelihood",
+      "why_classification": "This is a local correction of the likelihood quantifier that preserves the decomposition and training objective."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a (nonzero mean) Gaussian distribution with the identity covariance, i.e., $u_0 \\sim \\mathcal{N}(m, \\mathbf{I})$",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "we assume a noisy data set $\\mathcal{D}_{\\eta}$\nobtained from corrupting the output $u$ by an additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The justification for covariance β_t I assumes that u_0|a has identity covariance. The advertised noisy-data model permits arbitrary, unknown Σ(a), including the experiments with variance σ²I. For σ²≠1, the reverse conditional covariance depends on σ² and time and is not generally β_t I.",
+      "failure_location": {
+        "quote": "\\begin{equation}\\label{eqn:cov}\n\\Sigma_{\\theta}(t, u_t, a) \n= \\begin{cases}\n\\dfrac{1 - \\bar{\\alpha}_{t-1}}{1 - \\bar{\\alpha}_t}\\beta_t \\mathbf{I} & \n       \\mbox{Noise free observation,}\\\\[8pt]\n\\beta_t \\mathbf{I} & \\mbox{Observations with additive Gaussian noise.}\n         \\end{cases}\n\\end{equation}",
+        "tag": "eqn:cov"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Either restrict the covariance claim to identity-covariance conditional data after an explicitly justified normalization, or derive and implement a reverse covariance that accounts for or learns Σ(a).",
+      "overall_effect": "The asserted optimality of the noisy-data reverse kernel and the claim that this covariance prescription directly handles arbitrary unknown Gaussian covariance are unsupported.",
+      "primary_affected_tag": "eqn:cov",
+      "target_type": "algorithm",
+      "title": "Reverse covariance rule does not cover general Gaussian observation noise",
+      "why_classification": "Preserving the advertised unknown-covariance regime requires a nontrivial covariance model and revised derivation; the alternative materially narrows the noisy-data justification."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dfrac{1 - \\bar{\\alpha}_{t-1}}{1 - \\bar{\\alpha}_t}\\beta_t \\mathbf{I} & \n       \\mbox{Noise free observation,}",
+          "tag": "eqn:cov"
+        },
+        {
+          "quote": "Similarly, we can calculate $L_0$ and ignore the pre-factor which gives",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At t=1, bar-alpha_0=1, so the stipulated noise-free covariance is zero. Thus q_θ(u_0|u_1,a) is degenerate rather than an ordinary Gaussian density; its negative log-likelihood is infinite unless its mean is exactly u_0 and cannot be converted to the displayed finite MSE merely by ignoring a prefactor.",
+      "failure_location": {
+        "quote": "\\begin{equation}\\label{eqn:L_0}\nL_0(\\theta) = \\mathbb{E}_{p(\\epsilon_1)p(u_0|a)}\\left[\\|\\epsilon_1 - \\epsilon_{\\theta}(1, \\sqrt{\\bar{\\alpha}_1}u_0 + \\sqrt{1 - \\bar{\\alpha}_1} \\epsilon_1, a)\\|^2\\right].\n\\end{equation}",
+        "tag": "eqn:L_0"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Specify a separate nondegenerate decoder variance or likelihood at t=1 and rederive L_0 and the unified objective accordingly.",
+      "overall_effect": "Equation eqn:L_0 is not the stated reconstruction likelihood term, so the unified MSE is not derived from the claimed VLB under the paper's noise-free covariance prescription.",
+      "primary_affected_tag": "eqn:L_0",
+      "target_type": "other",
+      "title": "Noise-free final reverse kernel has zero variance, invalidating the L0 likelihood derivation",
+      "why_classification": "A local endpoint convention with positive decoder variance can preserve the algorithm and MSE-style training without changing its architecture or scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\# of samples $N_s$   &  $1$ if noise-free; $100$ if noisy",
+          "tag": "tab:params-test2"
+        },
+        {
+          "quote": "PDNO &  35, 707, 841 & 0.0046 & $5.08$e$-07$ & 0.0022 & $3.52$e$-07$ & 0.0037 & $1.21$e$-05$",
+          "tag": "tab:darcy_error"
+        }
+      ],
+      "failure_explanation": "A sample standard deviation already includes its sample-count normalization and must not be divided by N_s. The stated MSTD therefore changes inversely with the arbitrary number of generated samples rather than estimating predictive spread. Moreover, with N_s=1 the sample standard deviation is zero or undefined, contradicting the nonzero noise-free MSTD values reported in the tables.",
+      "failure_location": {
+        "quote": "We evaluate \nthe prediction accuracy and uncertainty of the model $\\SOPA$ \nby the mean relative $L_2$-error (MRLE) and the mean standard deviation (MSTD) that are defined by\n\\begin{equation*}\n\\frac{1}{|\\mathcal{\\widetilde{D}}|} \\sum_{(a, u) \\in \\mathcal{\\widetilde{D}}} \\frac{\\|\\mbox{mean}(\\{\\SOPA^{(n)}(a)\\}_{n=1}^{N_s}) - u \\|_2}{\\|u\\|_2}\\, \\quad\\mbox{and}\\quad \n\\frac{1}{|\\mathcal{\\widetilde{D}}|} \\sum_{(a, u) \\in \\mathcal{\\widetilde{D}}}\n\\frac{\\|\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s}) \\|_2}{N_s}\\,,\n\\end{equation*}\nrespectively.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Remove the division by N_s, use at least two samples whenever standard deviation is reported, and recompute all MSTD values and uncertainty comparisons.",
+      "overall_effect": "The tabulated MSTD values and their interpretation as quantified uncertainty are not reproducible from the stated metric and sampling settings.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "MSTD is incorrectly divided by the number of samples",
+      "why_classification": "The uncertainty results require rerunning or recomputing the reported metric; no local textual correction can reconcile the existing nonzero values with N_s=1."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We denote $H_p(X)=-\\int_\\mathcal{X} p_X(x)\\log p_X(x)\\,dx$ the entropy of $X\\sim p_X(x)$.",
+          "tag": null
+        },
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a Dirac distribution at a point $u_0$, i.e., $u_0 \\sim \\delta_{u_0}$",
+          "tag": "prop:added-1"
+        }
+      ],
+      "failure_explanation": "At t=1, u_{t-1}=u_0 is Dirac. It has no Lebesgue density of the kind used in the paper's entropy definition, and its differential entropy and the relevant conditional entropy are not finite quantities. Consequently, the proposition is not well-defined over its stated range t=1,...,T.",
+      "failure_location": {
+        "quote": "then\n\\[\nH_p(u_{t-1}|u_t) = H_p(u_t|u_{t-1}) + H_p(u_{t-1} | u_0) - H_p(u_t | u_0) \\,,\\; \\qquad t = 1, \\ldots, T\\,.\n\\]",
+        "tag": "prop:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the proposition to t=2,...,T and treat the degenerate final step separately, or introduce a rigorous generalized-entropy formulation for singular measures.",
+      "overall_effect": "The proposition and its entropy-based covariance justification do not cover the final reverse step t=1 as claimed.",
+      "primary_affected_tag": "prop:added-1",
+      "target_type": "formal_result",
+      "title": "Entropy proposition includes a degenerate case outside its density-based definitions",
+      "why_classification": "Restricting the time range is a short local repair and leaves the nondegenerate transitions intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}_{q_{\\theta}}\\left[-\\log q_{\\theta}(u_{0:T}) \\right]\n=\nH_{q_{\\theta}}(u_T) + \\sum_{t=1}^T H_{q_{\\theta}}(u_{t-1} | u_t) \n=\nH_p(u_T) + \\sum_{t=1}^T H_p(u_{t-1} | u_t) \n=\n\\mathbb{E}_{p}\\left[-\\log p(u_{0:T}) \\right].",
+          "tag": null
+        },
+        {
+          "quote": "where $\\beta_t$ is the variance schedule such that the final state $u_T$ is approximately standard normal for $T$ sufficiently large.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Equality of the separate entropies of p and q does not imply q=p or that q attains the true data likelihood; Gaussian conditional entropy depends only on covariance and is unchanged by an incorrect learned mean. In the noise-free case even the displayed entropy equality generally fails because p(u_T|u_0) has covariance (1-bar-alpha_T)I, whereas q(u_T) is standard normal, with equality only in the unattained exact limit bar-alpha_T=0.",
+      "failure_location": {
+        "quote": "In both cases, the noise-free and Gaussian noise, the learned parametric model $q_{\\theta}$ achieves the exact likelihood under the true model $p$, i.e., ",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Withdraw the exact-likelihood claim or supply a new argument proving equality of the full transition distributions, including learned means and the terminal marginal, under explicit hypotheses.",
+      "overall_effect": "The appendix provides no exact-likelihood guarantee for the learned reverse model in either the general noisy setting or the finite-T noise-free setting.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Matching entropy values is incorrectly claimed to give exact likelihood",
+      "why_classification": "The displayed entropy calculation cannot support the stated guarantee; removing it preserves the empirical method but abandons a substantive theoretical conclusion, while preserving it requires a new proof."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2305.14703",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e417f6e97606e57c1bddcad5ccc77b48f42186a7406fb76629c7aa30c1d3514b",
+  "status": "ok"
+}

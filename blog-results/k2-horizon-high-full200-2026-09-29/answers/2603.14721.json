@@ -1,0 +1,228 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\item[(iv)] $g$ is a linear growth function.",
+          "tag": null
+        },
+        {
+          "quote": "\\le C\\mathbb{E}\\left[\\left| g(X_T)-g(X_N^{\\pi,m})\\right|^2\\right] + Ch",
+          "tag": "ae-DMCE"
+        },
+        {
+          "quote": "\\le C\\mathbb{E}\\left[\\left| \\Phi(X_T)-\\Phi(X_N^{\\pi,m})\\right|^2\\right]",
+          "tag": "Deep-NN-E-8"
+        }
+      ],
+      "failure_explanation": "The fully discrete scheme is initialized with an undefined object $\\Phi$ and with $\\sigma^\\top(t_N,X_N^{\\pi,m})D_x u(t_N,X_N^{\\pi,m})$, i.e. the gradient of the unknown solution; since $u(T,\\cdot)=g$ this can only mean $D_x g$, which need not exist under assumption (iv) (linear growth only). The proof of Theorem ae-DMCE bounds the terminal error by $C\\mathbb{E}|\\Phi(X_T)-\\Phi(X_N^{\\pi,m})|^2$ while the theorem statement uses $g$, so the identification $\\Phi=g$ (or a Lipschitz terminal network with controlled error) is an unstated premise. The same terminal condition is repeated verbatim in the RDBR section.",
+      "failure_location": {
+        "quote": "the terminal condition is $(\\mathcal{Y}_N,\\mathcal{Z}_N) = (\\Phi(X_N^{\\pi,m}), \\sigma^\\top(t_N,X^{\\pi,m}_{N}) D_x u(t_N,X^{\\pi,m}_{N}))$,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Set $\\Phi=g$ (or define $\\Phi$ as an $L_g$-Lipschitz terminal network and bound its approximation error separately) and replace $\\sigma^\\top(t_N,X_N^{\\pi,m})D_x u(t_N,X_N^{\\pi,m})$ by $\\sigma^\\top(t_N,X_N^{\\pi,m})D_x g(X_N^{\\pi,m})$, adding $g\\in C^1$ to the assumptions (or set $\\mathcal{Z}_N=0$ and absorb the terminal error).",
+      "overall_effect": "The DBR (and RDBR) scheme's terminal condition is not well-defined under the paper's own assumptions (i)-(iv), and the error bounds' terminal term silently switches between $\\Phi$ and $g$. No rate or dependent theorem changes once the identification and a $C^1$ terminal condition are imposed.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Terminal condition references the unknown $D_x u$ and an undefined network $\\Phi$",
+      "why_classification": "A one-line definitional fix (the forced identifications $\\Phi=g$ and $D_x u(t_N,\\cdot)=D_x g$) plus a mild $g\\in C^1$ assumption restores well-definedness; the terminal error enters the bounds as a separate term and Algorithm 1 already uses $g$, so no substantive claim, rate, or dependent result is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$Loss_{Y,i} \\gets \\frac{1}{M} \\sum\\limits_{m=1}^{M} \\Bigg[ \\bigg| \\frac{1}{K} \\sum\\limits_{k=1}^{K} \\mathcal{Y}_{i+1}^{m,k} + f(t_i, X_i^{\\pi,m,k}, \\mathcal{NN}_{y,i}(t_i, X_i^{\\pi,m}, \\theta_{y,i}^{r}), \\mathcal{Z}_i^{m,k}) \\cdot h $ \\ $ - \\mathcal{NN}_{y,i}(t_i, X_i^{\\pi,m}, \\theta_{y,i}) \\bigg|^2 \\Bigg]$\\;",
+          "tag": "alg:dynamic-batching-final"
+        },
+        {
+          "quote": "Compute next states: $X_{i+1}^{\\pi,m,k} \\gets X^{\\pi,m}_i + b(t_i, X^{\\pi,m}_i)h + \\sigma(t_i, X^{\\pi,m}_i)\\Delta W_{i}^{m,k}$\\;",
+          "tag": "alg:dynamic-batching-final"
+        }
+      ],
+      "failure_explanation": "The algorithm only generates the $k$-indexed forward states at time $i+1$ ($X_{i+1}^{\\pi,m,k}$); the time-$i$ state is shared by all paths, $X_i^{\\pi,m}$. Nevertheless the computation of $\\mathcal{Z}_i^{m,k}$ and the $Y$-loss evaluate networks at the never-defined point $X_i^{\\pi,m,k}$, so the pseudocode is not executable as written. The single forced correction $X_i^{\\pi,m,k}\\to X_i^{\\pi,m}$ matches the formal losses (NS-MC-3, where $S_{y,i}$ and $S_{z,i}$ are built from $X_i^{\\pi,m}$) and the error analysis, so no inference needs repair. (The pseudocode also writes $b$ where the rest of the paper uses $\\mu$.)",
+      "failure_location": {
+        "quote": "$\\mathcal{Z}_i^{m,k} \\gets \\mathcal{NN}_{z,i}(t_i, X_i^{\\pi,m,k}, \\theta_{z,i}^{*})$\\;",
+        "tag": "alg:dynamic-batching-final"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace $X_i^{\\pi,m,k}$ by $X_i^{\\pi,m}$ in the two occurrences (and optionally unify the notation $b$ with $\\mu$).",
+      "overall_effect": "Only the literal executability of Algorithm 1; with the forced correction it coincides with the formal losses (NS-MC-3) and with the scheme analyzed in Theorems ae-DMCE and ae-DMCE-R.",
+      "primary_affected_tag": "alg:dynamic-batching-final",
+      "target_type": "algorithm",
+      "title": "Algorithm 1 evaluates networks at the undefined variable $X_i^{\\pi,m,k}$",
+      "why_classification": "A single forced correction restores executability and every substantive claim and guarantee survives unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "ae-DMCE-R"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Z}_{i}-\\mathcal{V}^m_{t_i}\\right|^2\\right]\\le& CN+CN\\mathbb{E}\\left[\\left|R_{i+1,2}^{y} \\right|^2\n\n+h\\left| R_{i,2}^{z}\\right|^2\n\n+\\left|R_{i+1,1}^{y}\\right|^2\\right].",
+          "tag": "Deep-NN-E-9-z-1"
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\int_{t_{i}}^{t_{i+1}} |Z_{s}-\\mathcal{Z}_{i}|^2ds \\right]\n\\le 2\\mathbb{E}\\left[\\int_{t_{i}}^{t_{i+1}} |Z_{s}-\\mathcal{V}^m_{t_i}|^2ds \\right]+2h\\mathbb{E}\\left[\\left| \\mathcal{V}^m_{t_i}-\\mathcal{Z}_{i}\\right|^2\\right].",
+          "tag": "Deep-NN-E-16"
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Z}_{i}-S_{z,i}\\left(p_{i}^{m},\\Delta W_i^{m}, X_{i+1}^{\\pi,m} \\right)\\right|^2\\right]\n=\\mathbb{E}\\left[\\left|R_{i,2}^{z}\\right|^2\\right].",
+          "tag": "Deep-NN-E-9-1-z"
+        }
+      ],
+      "failure_explanation": "In Step 4, $\\mathbb{E}|S_{z,i}-\\mathcal{V}^m_{t_i}|^2$ is bounded via the single-sample estimate $Nd\\mathbb{E}|\\mathcal{NN}_{y,i+1}|^2\\le CN$, discarding the $1/K_i$ variance-reduction factor of the Monte Carlo average; the correct bound is $\\frac{1}{K_i}\\mathbb{E}|\\mathcal{NN}_{y,i+1}\\Delta W^{m\\top}/h-\\mathcal{V}|^2\\le CN/K_i$. Substituting the displayed $CN$ bound into (Deep-NN-E-16) produces a bare $2h\\cdot CN=O(1)$ term per time step, which is dropped in the displayed (Deep-NN-E-16-1); summed over $i$ this is $O(N)=O(1/h)$, so the proof as written yields a non-vanishing extra term in the summed $Z$-error bound and the stated theorem does not follow. The same step asserts the false equality $\\mathbb{E}|\\mathcal{Z}_i-S_{z,i}|^2=\\mathbb{E}|R_{i,2}^z|^2$: the training target $S_{z,i}$ is built from the network $\\mathcal{NN}_{y,i+1}$ while $R_{i,2}^z$ is built from $Y_{i+1}^{\\pi,m,k}$; they differ by $\\frac{1}{K_i}\\sum_k(R_{i+1,2}^y+R_{i+1,1}^y)\\\\Delta W^{m,k\\top}/h$, again an $O(N/K_i)$-scale quantity.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\int_{t_{i}}^{t_{i+1}} |Z_{s}-\\mathcal{Z}_{i}|^2ds \\right]\n\\le 2\\mathbb{E}\\left[\\int_{t_{i}}^{t_{i+1}} |Z_{s}-\\mathcal{V}^m_{t_i}|^2ds \\right]\n+C\\mathbb{E}\\left[\\left|R_{i+1,2}^{y} \\right|^2\n\n+h\\left| R_{i,2}^{z}\\right|^2\n\n+\\left|R_{i+1,1}^{y}\\right|^2\\right].",
+        "tag": "Deep-NN-E-16-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Bound $\\mathbb{E}|S_{z,i}-\\mathcal{V}|^2\\le \\frac{1}{K_i}\\mathbb{E}|\\mathcal{NN}_{y,i+1}\\Delta W^{m\\top}/h-\\mathcal{V}|^2\\le CN/K_i$ and carry the resulting $O(N/K_i)$ terms through (they total $O(N/K)=O(N^{-2})$ for the stated $K=O(N^3)$); bound the label mismatch between $\\mathcal{Z}_i-S_{z,i}$ and $R_{i,2}^z$ by the same $R$-terms. Then (Deep-NN-E-16-1) and the final $Z$ bound follow without changing the theorem's statement.",
+      "overall_effect": "The $Z$-component of Theorem ae-DMCE is unproven as written (the proof's own output contains a spurious $O(1/h)$ term); the convergence theorem thm:added-1, whose conclusion includes the same $Z$-bound, and the RDBR $Z$-bound in ae-DMCE-R (claimed via the same arguments) inherit the gap.",
+      "primary_affected_tag": "ae-DMCE",
+      "target_type": "formal_result",
+      "title": "Proof of the Z-error bound drops a bare $O(N)$ term (Monte Carlo factor $1/K_i$ not tracked)",
+      "why_classification": "The proof is incorrect as written and the stated $Z$ bound does not follow (the proof produces a spurious $O(1/h)$ term), so a repair is mandatory; but the repair is a contained re-estimate (restore the $1/K_i$ factor and the label mismatch, both standard variance computations already implicit in the source) and it preserves the theorem's conclusion with the stated $K=O(N^3)$, so no new proof architecture or loss of result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tilde{\\mathcal{U}}^m_{t_i} & :=\\mathbb{E}_i\\left[\\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(\\tilde{p}^m_{i+1},\\theta^{*}_{y+1,i})+hf\\left(t_i, \\tilde{X}_{i}^{\\pi,m}, \\tilde{\\mathcal{U}}^m_{t_i},\\tilde{ \\mathcal{V}}^m_{t_i} \\right)\\\\right],\\\\",
+          "tag": "Deep-NN-E-r"
+        },
+        {
+          "quote": "(\\ref{Deep-NN-E-r-4}) shows that $y(t_{N-1}, X_{N-1}^{\\pi,m})$ is $(1+Ch)L_{g}^2$-Lipschitz with respect to $x$.",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "Step 1 introduces a second forward process $\\tilde X_i^{\\pi,m}$ (with $\\tilde p_i^m=(t_i,\\tilde X_i^{\\pi,m})$) that is never defined, nor is its relation to $X_i^{\\pi,m}$ (independence, initial value) stated. The Lipschitz-continuity conclusions for $y(t_i,\\cdot)$ and $z(t_i,\\cdot)$, which license the application of Lemma gropusort-est in Steps 2-3, are obtained by comparing the scheme run from $X_i^{\\pi,m}$ and from $\\tilde X_i^{\\pi,m}$; as written the argument relies on an undefined object. The displayed estimates (Deep-NN-E-r-1 to Deep-NN-E-r-4) are correct under the standard interpretation ($\\tilde X$ an independent Euler copy started from an arbitrary point), so this is a missing definition rather than a false inequality.",
+      "failure_location": {
+        "quote": "where $\\tilde p_i^m = (t_i,\\tilde{X}_{i}^{\\pi,m})$.",
+        "tag": "Deep-NN-E-r"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Define $\\tilde X^{\\pi,m}$ as an independent Euler discretization of the forward SDE started from an arbitrary $\\tilde x$, so that $|y(t_i,x)-y(t_i,x')|\\le\\mathcal{K}|x-x'|$ follows by running the recursion from $x$ and $x'$; no other change.",
+      "overall_effect": "The existence of the bounded Lipschitz constants $\\mathcal{K}_i$ used in the Lemma gropusort-est applications is not established as written; the rate conclusion of thm:added-1 is unaffected once $\\tilde X$ is defined in the standard way.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Lipschitz-propagation step compares against an undefined process $\\tilde X_i^{\\pi,m}$",
+      "why_classification": "A one-line definition repairs the gap; the estimates are already valid under that interpretation and no claim, rate, or network-size conclusion changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Furthermore, assume that $X_0 \\in L^{2+\\delta}\\left(\\mathcal{F}_0, \\mathbb{R}^d\\right)$, for some $\\delta>0$,",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "\\inf_{\\mathcal{NN}_{y,i}\\in \\mathcal{G}_{\\mathcal{K}_i, 1+d, n}}\\mathbb{E}\\left[\\left|y(p^m_{i}) - \\mathcal{NN}_{y,i}(p^{m}_{i},\\theta_{y,i})\\right|^2\\right]\n\\le C\\left(R^2\\varepsilon^2 +\\frac{1+R^2\\varepsilon^2}{R^2 }\\right).",
+          "tag": "Deep-NN-E-r-7"
+        },
+        {
+          "quote": "which is verified with $R = O(N^{\\frac{3}{2}}), \\varepsilon = O(N^{-3}), K= O(N^{3})$.",
+          "tag": "dmce-cr-1"
+        }
+      ],
+      "failure_explanation": "The tail estimate applies Hölder with the wrong exponents: $\\mathbb{E}[|A|^2\\mathbf{1}_{\\|X\\|>R}]\\le(\\mathbb{E}|A|^{2q})^{1/q}\\,\\mathbb{P}(\\|X\\|>R)^{\\frac{q-1}{q}}$ requires the conjugate pair $q,\\frac{q}{q-1}$, but the display uses $\\mathbb{P}(\\|X\\|>R)^{\\frac{2q-1}{q}}$, a stronger bound that does not follow since $\\frac{2q-1}{q}>\\frac{q-1}{q}$. With the correct exponents and Markov's inequality the tail is $\\frac{C\\|X\\|_{\\frac{2q}{q-1}}^2}{R^2}$, which is finite under the stated hypothesis only when $\\frac{2q}{q-1}\\le 2q$, i.e. $\\delta\\ge2$; in general the tail is only $C/R^{\\delta}$ (equivalently $\\mathbb{E}[(1+\\|X\\|^2)\\\\mathbf{1}_{\\|X\\|>R}]\\le C/R^{\\delta}$ from $\\|X\\|_{2+\\delta}<\\infty$). Consequently the bound $\\frac{1+R^2\\varepsilon^2}{R^2}$ in (Deep-NN-E-r-7) and the parameter choice $R=N^{3/2}$, $\\varepsilon=N^{-3}$, $\\kappa=O(N^3)$ in the theorem statement are justified only for $\\delta\\ge2$, not for the stated $\\delta>0$.",
+      "failure_location": {
+        "quote": "&\\le 4\\mathcal{K}^2R^2\\varepsilon^2\n+\\left(\\mathbb{E}\\left[\\left|y(p^m_{i}) - \\mathcal{NN}_{y,i}(p^m_{i},\\theta_{y,i})\\right|^{2q}\\right]\\right)^\\frac{1}{q}\\left(\\mathbb{E}\\left[ \\textbf{1}^\\frac{2q}{2q-1}_{||X_i^{\\pi,m}||_2>R}\\right]\\right)^\\frac{2q-1}{q}\\nonumber\\\\\n&\\le 4\\mathcal{K}^2R^2\\varepsilon^2 \n+\\frac{C||X_i^{\\pi,m}||^2_{\\frac{2q}{2q-1}}}{R^2}\\left(\\left||y(p^m_{i}) - y(t_i,0)\\\\right||^2_{2q}+\\left||\\mathcal{NN}_{y,i}(p^m_{i},\\theta_{y,i}) - y(t_i,0)\\\\right||^2_{2q}\\right),",
+        "tag": "Deep-NN-E-r-5"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the Hölder/Markov exponents to obtain the tail $C/R^{\\delta}$, then either strengthen the hypothesis to $\\delta\\ge2$ (keeping the stated sizes) or choose $R=O(N^{3/\\delta})$, $\\varepsilon=O(N^{-3/2-3/\\delta})$, $\\kappa=O(N^{3/2+3/\\delta})$; the rate $Ch$ with polynomial-size networks is preserved either way.",
+      "overall_effect": "The half-order rate $\\le Ch$ survives (with $R=N^{3/\\delta}$, $\\varepsilon=N^{-3/2-3/\\delta}$, $\\kappa=O(N^{3/2+3/\\delta})$, still polynomial for fixed $d$), but the theorem's advertised grouping size, depth, width and $K$ are not established for $X_0\\in L^{2+\\delta}$ with $\\delta<2$; the abstract's 'half-order convergence' claim rests on this theorem.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Truncation estimate misapplies Hölder, so the advertised network sizes are unjustified for $\\delta<2$",
+      "why_classification": "An invalid estimate in the proof makes the stated network sizes unsupported on part of the advertised hypothesis range ($0<\\delta<2$); repairing it is a contained re-estimate that either slightly strengthens a hypothesis or enlarges the networks (still polynomial), so the headline rate and qualitative conclusion survive — more than a typo, but no loss of the main result."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $\\varepsilon(h) = O(h^{1/2})$ under Assumption \\ref{ass-1}, and $\\varepsilon(h) = O(h)$ under Assumption \\ref{ass-2};",
+          "tag": "ae-DMCE-R"
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\sum\\limits_{i=0}^{N-1}\\int_{t_{i}}^{t_{i+1}} |Z_{t}-Z^{\\pi,m}_{i}|^2dt \\right]&=O(h^{\\frac{1}{2}}),",
+          "tag": "RFBSDE-err-Y-5"
+        },
+        {
+          "quote": "\\max\\limits_{0\\le i\\le N-1}\\mathbb{E}\\left[\\left|Y_{t_i}-\\widehat{\\mathcal{Y}}_{i}\\right|^2\\right]\n\\le C\\sum\\limits_{i=0}^{N-1}\\mathbb{E}\\left[N\\left|\\widehat{R}_{i+1,2}^{y} \\right|^2+\\left| \\widehat{R}_{i,2}^{z}\\right|^2\n+N\\left|\\widehat{R}_{i+1,1}^{y}\\right|^2+\\left|\\widehat{R}_{i,1}^{z}\\right|^2\\right].",
+          "tag": "Deep-NN-E-8-R-11"
+        }
+      ],
+      "failure_explanation": "The $Z$-component of the RDBR error bound is not proved: the proof defers it to 'the same arguments as in Steps 3 and 4' of Theorem ae-DMCE, but those steps contain the gap of ISSUE-003 (a dropped $O(N)$ term), so the omitted derivation would not close even if written out. Moreover, the claimed rate $O(h)$ under Assumption ass-2 cannot follow from the displayed discretization estimate (RFBSDE-err-Y-5), which states the reflected-scheme $Z$ error as $O(h^{1/2})$ unconditionally; an improved rate under the stronger regularity of ass-2 is needed but neither cited nor derived. The intermediate display (Deep-NN-E-8-R-11) also drops the $\\varepsilon(\\pi)$ discretization term when combining with (RFBSDE-err-Y-5) (it reappears in the final statement).",
+      "failure_location": {
+        "quote": "The error estimate for the $Z$-component can be derived using the same arguments as in Steps 3 and 4 of the proof of Theorem \\ref{ae-DMCE}; thus, the details are omitted here.",
+        "tag": "ae-DMCE-R"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Supply the omitted $Z$ derivation using the corrected Step-4 estimates (restore the $1/K_i$ factor) and invoke or derive the improved reflected-scheme $Z$ rate $O(h)$ under Assumption ass-2 (e.g. from Bouchard-Chassagneux under stronger regularity); alternatively weaken the ass-2 conclusion for the $Z$ component to $O(h^{1/2})$.",
+      "overall_effect": "The RDBR $Z$-error bound and the $O(h)$ convergence claim under Assumption ass-2 are unsupported; the $Y$-bound and the $O(h^{1/2})$ claim under ass-1 are unaffected.",
+      "primary_affected_tag": "ae-DMCE-R",
+      "target_type": "formal_result",
+      "title": "RDBR Z-component error bound is omitted and the $O(h)$ claim under Assumption 2 is unsupported",
+      "why_classification": "A whole component of the theorem is asserted without proof and one advertised rate is not supported by the displayed citation; filling the gap requires a contained new argument (the reflected-scheme $Z$ estimate with corrected constants) or a limited weakening of the ass-2 claim, without changing the method or the $Y$-results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\partial_t u + \\frac{1}{2} \\operatorname{Tr}\\left(\\frac{I_d}{\\sqrt{d}} (\\frac{I_d}{\\sqrt{d}})^{\\top} D_x^2 u\\right)=f\\left(\\cdot, \\cdot, u, \\sigma^{\\top} D_x u\\right)",
+          "tag": null
+        },
+        {
+          "quote": "f(t, x, y, z)=\\hat{k}(t, x)-\\frac{y}{\\sqrt{d}}\\left(1_d \\cdot z\\right)-\\frac{y^2}{2},",
+          "tag": null
+        },
+        {
+          "quote": "$u(t, x)=\\frac{T-t}{d} \\sum_{i=1}^d\\left(\\sin \\left(x_i\\right) 1_{x_i<0}+x_i 1_{x_i \\geq 0}\\right)+\\cos \\left(\\sum_{i=1}^d i x_i\\right).$",
+          "tag": null
+        },
+        {
+          "quote": "$f$ is $\\frac{1}{2}-$H\\\"{o}lder continuous with respect to the time variable $t$ and\nuniformly Lipschitz continuous in all other variables",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed $\\hat k$ contains a free index $i$ in $D_{x_i}u$ and a coefficient $\\frac{u}{\\sqrt d}$ inconsistent with the rest of the example: substituting the stated solution into the PDE (with $\\sigma=I_d/\\sqrt d$, so the fourth argument of $f$ is $\\frac{1}{\\sqrt d}D_xu$) forces $\\hat k=\\partial_t u+\\frac{1}{2d}\\Delta u+\\frac{u}{d}(1_d\\cdot D_xu)+\\frac{u^2}{2}$. As written, the generator is not a well-defined function of $(t,x,y,z)$ and the stated $u$ does not solve the displayed PDE. (The reported exact values $u(0,0.5\\mathbf 1_d)$ are all consistent with the stated $u$, so the implementation evidently used the corrected generator.) Separately, $f$ is quadratic in $y$ ($-y^2/2$), so Example 2 falls outside the theory's assumption (iii) (uniformly Lipschitz $f$); the paper does not remark on this scope mismatch.",
+      "failure_location": {
+        "quote": "with $\\hat{k}(t, x)=\\partial_t u+\\frac{1}{2 d} \\operatorname{Tr}\\left(D_x^2 u\\right)+\\frac{u}{\\sqrt{d}} D_{x_i} u+\\frac{u^2}{2}$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the displayed $\\hat k$ by $\\hat k=\\partial_t u+\\frac{1}{2d}\\Delta u+\\frac{u}{d}(1_d\\cdot D_xu)+\\frac{u^2}{2}$ (the unique choice making the stated $u$ solve the PDE) and note that Example 2 lies outside assumptions (i)-(iv).",
+      "overall_effect": "The example's PDE is formally ill-posed as displayed; the numerical results stand only under the corrected generator. The theoretical guarantees (Theorems ae-DMCE, thm:added-1) do not cover Example 2 because $f$ is not Lipschitz in $y$.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Example 2's generator $\\hat k$ is ill-defined (free index, inconsistent coefficient)",
+      "why_classification": "The correction is forced by the PDE and the stated solution (and is confirmed by the reported exact values), so the example and its numerical conclusions survive; the residual scope remark (non-Lipschitz $f$) costs no result since the paper only claims empirical, not theoretical, coverage of Example 2."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2603.14721",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "dd6bd1deacab2c05cf174a3acad690d6a89f2de12aae5840afd20a33b4928009",
+  "status": "ok"
+}

@@ -1,0 +1,156 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "convRBSK",
+        "convRBSK_relaxed",
+        "convRBSK_relaxed_pave",
+        "convRBSK_sharper"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "is well defined, since $S$ is a nonsingular diagonal real matrix, $B_{S;i}$ is diagonally positive definite",
+          "tag": "convRBSK"
+        },
+        {
+          "quote": "&\\geq& \\frac{1}{\\|S_{\\tau}A_{\\tau}\\|_2^2}\\|S_{\\tau}r_{\\tau}\\|_2^2.",
+          "tag": "lem6"
+        },
+        {
+          "quote": "\\sum_{i=1}^{q} P_i &\\succ& 0.",
+          "tag": "def:batchSampling"
+        }
+      ],
+      "failure_explanation": "Nothing in Lemma lem6's hypotheses excludes zero rows of A or batches consisting only of zero rows. If q=1 and row j of A is zero, condition (marDistribMatrixProperty) forces p_{1j}>0, and the unique tuple with tau_1=j gives beta^S_{1,j}=|s_j|^2||A^{(j)}||_2^2=0 (similarly for q>=2 whenever all positive-probability draws with tau_i=j consist of zero rows). Then B_{S;i} has a zero diagonal entry, so B_{S;i}^{-1/2} in lem6's conclusion, D^2=S^T(sum_i B_{S;i}^{-1}P_i)S and hence eta, xi in Theorem convRBSK are undefined; the proof of lem6 divides by ||S_tau A_tau||_2^2=0 on a positive-probability event (with S_tau r_tau=0 simultaneously, i.e. 0/0); and the assertion in the proof of Theorem convRBSK that B_{S;i} is diagonally positive definite is false under the stated hypotheses.",
+      "failure_location": {
+        "quote": "\\beta^S_{i,j} &=& \\left\\{\\begin{array}{lr} \\max_{\\tau=(\\tau_1,\\ldots,\\tau_{i-1},\\tau_i=j, \\tau_{i+1},\\ldots,\\tau_q)} \\|S_{\\tau} A_{\\tau}\\|_2^2, & \\mbox{if $p_{ij}>0$}",
+        "tag": "lem6"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a standard local exclusion of the degenerate case: assume beta^S_{i,j}>0 whenever p_{ij}>0 (e.g. A has no zero rows), or observe that beta^S_{i,j}=0 forces r_j=0 (since r in range(A)) and define the vanishing diagonal contributions to be zero; the proofs then go through unchanged.",
+      "overall_effect": "For admissible inputs of the advertised scope (nonzero A with zero rows, e.g. any q=1 batch-sampling, whose full support is forced by sum_i P_i succ 0), the conclusion of Lemma lem6 and the rate-bound constants of Theorems convRBSK, convRBSK_relaxed, convRBSK_relaxed_pave, convRBSK_sharper are not well-defined statements.",
+      "primary_affected_tag": "lem6",
+      "target_type": "formal_result",
+      "title": "Vanishing beta^S_{i,j} (zero rows) makes B_{S;i} singular: Lemma lem6 and the constants of Theorem convRBSK are ill-defined in admissible degenerate cases",
+      "why_classification": "The failure is confined to degenerate inputs; a one-line hypothesis or convention repairs it with no loss of method, rate, or scope in the non-degenerate regime."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "remark:relaxOne",
+        "remark:relaxTwo"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\pr(\\{1\\}) &=& \\pr(\\tau=(1,1)) = \\bbb{p}_{11} = \\frac{1}{2}",
+          "tag": "exampRowPaving"
+        },
+        {
+          "quote": "\\max_{\\tau=(\\tau_1,\\ldots,\\tau_{i-1},\\tau_i=j, \\tau_{i+1},\\ldots,\\tau_q)} \\|S_{\\tau} A_{\\tau}\\|_2^2, & \\mbox{if $p_{ij}>0$}",
+          "tag": "lem6"
+        },
+        {
+          "quote": "with $\\beta^S=\\max_{\\tau\\sim\\bbb{P}} \\|S_{\\tau}A_{\\tau}\\|_2^2$",
+          "tag": "convRBSK_relaxed"
+        },
+        {
+          "quote": "\\max_{\\tau_{\\txttiny{E}}\\in\\mathcal{T}}\\|S_{\\tau_\\txttiny{E}}A_{\\tau_\\txttiny{E}}\\|_2^2, & \\txt{Example \\ref{exampRowPaving}}",
+          "tag": "remark:relaxOne"
+        },
+        {
+          "quote": "D^2 &=& S^{\\T}\\left(\\sum_{i=1}^{q} B_{S;i}^{-1} P_i\\right)S \\\\ &=& S^{\\T}\\left(B_S^{-1} \\sum_{i=1}^{q} P_i\\right)S \\\\ &\\succeq& S^{\\T}B_S^{-1} \\widehat{P}S",
+          "tag": "convRBSK_relaxed_pave"
+        },
+        {
+          "quote": "\\beta^S &=& \\max_{\\tau\\sim\\bbb{P}} \\|S_{\\tau} A_{\\tau}\\|_2^2 \\\\ &=& \\max_{1\\le j\\le m} \\|S_{T_{\\mathcal{I}(j)}}A_{T_{\\mathcal{I}(j)}}\\|_2^2",
+          "tag": "remark:relaxTwo"
+        }
+      ],
+      "failure_explanation": "Definition def:batchSampling forces fixed batch-size-q tuples, so a paving block with |T_t|<q must be represented by draws with repeated indices; the paper's own Example exampRowPaving represents the singleton block T_1={1} (q=2) by the draw (1,1). For such padded draws A_tau repeats rows, so ||S_tau A_tau||_2^2 >= ||S_{T_t}A_{T_t}||_2^2 with strict inequality in general (e.g. ||A_{(1,1)}||_2^2 = 2||A^{(1)}||_2^2 for A^{(1)} != 0). Since Lemma lem6 defines beta^S_{i,j} as a maximum over draws with tau_i=j, it equals the padded maximum, not ||S_{T_{I(j)}}A_{T_{I(j)}}||_2^2, whenever |T_{I(j)}|<q. Hence B_{S;i} != B_S (rather B_{S;i} >= B_S, so B_{S;i}^{-1} <= B_S^{-1}), the identity D^2 = S^T(B_S^{-1} sum_i P_i)S is false, and the relaxation D^2 >= S^T B_S^{-1} Phat S needed for (thm3Eq1)-(thm3Eq2) is not established (the true D^2 involves the larger padded constants, so the claimed bound can be too optimistic). The same conflation makes the identifications of Corollary convRBSK_relaxed's beta^S with effective-set/block maxima in Remark remark:relaxOne (betaS_value, hence the derivations of (rlx_upperBound_1), (rlx_upperBound_2) and of recovering/sharpening the Needell-Tropp bound) and in Remark remark:relaxTwo false as statements about the defined constants.",
+      "failure_location": {
+        "quote": "the quantities $\\beta^S_{i,j}$ introduced in Lemma \\ref{lem6} are of the form $\\beta^S_{i,j} = \\|S_{T_{\\mathcal{I}(j)}}A_{T_{\\mathcal{I}(j)}}\\|_2^2,\\ \\forall j=1,\\ldots,m$",
+        "tag": "convRBSK_relaxed_pave"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the tuple-based application of Lemma lem6 for pavings by an effective-set argument: A_tau^dag r_tau depends only on the effective set, so E||A_tau^dag r_tau||^2 = sum_{tau_E} Pr(tau_E)||A_{tau_E}^dag r_{tau_E}||^2 >= sum_{tau_E} Pr(tau_E)||S_{tau_E}r_{tau_E}||^2/||S_{tau_E}A_{tau_E}||^2 = ||B_S^{-1/2} Phat^{1/2} S r||^2, which yields exactly the stated bounds of Theorem convRBSK_relaxed_pave and justifies the (betaS_value)-type specializations; alternatively restate B_S and beta^S with padded draw norms, weakening the stated bounds.",
+      "overall_effect": "The bounds (thm3Result), (thm3Eq3), (thm3Eq4) of Theorem convRBSK_relaxed_pave are unproven by the given argument; the specialized values (betaS_value), the bounds (rlx_upperBound_1)/(rlx_upperBound_2), the claims of recovering Needell-Tropp's bound and of validity for all data matrices in Remark remark:relaxOne, the beta^S identification and sharpness comparisons in Remark remark:relaxTwo, and the prose claim that the new bound lies between those of Theorems convRBSK and convRBSK_relaxed are unreliable. The experiments are unaffected because they use equal-size blocks (no padding).",
+      "primary_affected_tag": "convRBSK_relaxed_pave",
+      "target_type": "formal_result",
+      "title": "Row-paving specialization conflates padded batch-sampling draws with unpaved blocks: B_{S;i}=B_S is false, invalidating the proof of Theorem convRBSK_relaxed_pave and the beta^S identifications in Remarks remark:relaxOne and remark:relaxTwo",
+      "why_classification": "The stated bounds are in fact correct and recoverable, but only via a new (contained) effective-set lemma replacing the tuple-based reasoning, or by weakening the constants; this is more than a local edit yet causes no major loss of results or scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If the sample covariance satisfies $\\cov\\left(\\xi_{\\tau^{(k-1)}},\\|x^{(k)}-x_{\\star}\\|_2\\right)\\geq 0$",
+          "tag": "convRBSK_sharper"
+        },
+        {
+          "quote": "\\cov\\left(x, y\\right)=\\frac{1}{n-1} \\sum_{i=1}^n\\left(x_i-\\bar{x}\\right)\\left(y_i-\\bar{y}\\right) \\geq 0",
+          "tag": "lem5"
+        },
+        {
+          "quote": "as the corresponding sample sequence of the error norms $\\left\\|x^{(k)}-x_{\\star}\\right\\|_2$",
+          "tag": "convRBSK_sharper"
+        }
+      ],
+      "failure_explanation": "(thm4Eq5) is Lemma lem5 applied to the sample sequences {xi_{tau^{(k-1,j)}}} and {||x^{(k,j)}-x_star||_2^2}; the lemma requires the sample covariance of exactly these pairs, i.e. between xi and the squared error norms, to be nonnegative. The theorem's hypothesis (and the definition of the sample sequence) uses the unsquared norms, and nonnegative covariance of xi with the norms does not imply nonnegative covariance of xi with the squared norms. The inference is therefore unsupported, and (thm4Eq6), (thm4Eq8) and the final bound (thm4Eq2) inherit the gap.",
+      "failure_location": {
+        "quote": "\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\xi_{\\tau^{(k-1,j)}}\\|x^{(k,j)}-x_{\\star}\\|_2^2 \\geq \\left(\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\xi_{\\tau^{(k-1,j)}}\\right)\\left(\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\|x^{(k,j)}-x_{\\star}\\|_2^2\\right)",
+        "tag": "convRBSK_sharper"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the hypothesis with squared norms, cov(xi_{tau^{(k-1)}}, ||x^{(k)}-x_star||_2^2) >= 0 (defining the sample sequence with squared norms), which makes the application of Lemma lem5 valid.",
+      "overall_effect": "The chain (thm4Eq5)-(thm4Eq8) in the proof of Theorem convRBSK_sharper is unsupported as written.",
+      "primary_affected_tag": "convRBSK_sharper",
+      "target_type": "formal_result",
+      "title": "Lemma lem5 invoked with squared error norms while the hypothesis assumes nonnegative sample covariance only for unsquared norms",
+      "why_classification": "A short, local, routine restatement of the hypothesis repairs this step without changing the theorem's form; the theorem's separate, more fundamental defect is reported as ISSUE-004."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "which holds with probability at least $1-\\delta$",
+          "tag": "convRBSK_sharper"
+        },
+        {
+          "quote": "Taking expectation on both sides of (\\ref{thm4Eq8}) leads to the sharper estimate (\\ref{thm4Eq2}).",
+          "tag": "convRBSK_sharper"
+        },
+        {
+          "quote": "\\E\\left(\\|x^{(k+1)}-x_{\\star}\\|_2^2\\right)\n\t\t&\\leq& \\left[\\min_{S\\in\\mathbb{DR}^{m\\times m}}\\left(1+\\epsilon-\\E\\left(\\xi_{\\tau} \\right)\\right)   \\right]\\E\\left(\\|x^{(k)}-x_{\\star}\\|_2^2\\right)",
+          "tag": "convRBSK_sharper"
+        }
+      ],
+      "failure_explanation": "Inequality (thm4Eq8) is established only on the event, of probability at least 1-delta over the ell independent realizations, on which the Hoeffding bound (thm4Eq7) holds. The final proof step takes expectations of both sides of (thm4Eq8) as if it held almost surely; expectation does not preserve inequalities valid only with probability 1-delta, since the violation on the complementary delta-event is uncontrolled. Moreover, the conclusion (thm4Eq2) is a deterministic inequality (E||x^{(k+1)}-x_star||^2, E||x^{(k)}-x_star||^2 and E(xi_tau) are constants), so the qualifier 'with probability at least 1-delta' attached to it is ill-posed. The advertised concentration-based sharpening of the expected convergence rate is therefore not established.",
+      "failure_location": {
+        "quote": "then, with probability at least $1-\\delta$, the mean squared error satisfies",
+        "tag": "convRBSK_sharper"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No repair preserves the theorem as stated. Least adequate resolutions: restate the result as a high-probability bound on the sample-averaged quantities (essentially (thm4Eq8)), changing the guarantee type; or replace the sample-covariance/concentration argument by a direct population-covariance argument (from (thm1Eq3), if E[xi_{tau^{(k-1)}}||x^{(k)}-x_star||^2] >= E[xi_tau] E[||x^{(k)}-x_star||^2] then the (thm4Eq2)-type bound with epsilon=0 follows in two lines), which discards the ell-sample/delta structure and the concentration machinery.",
+      "overall_effect": "Theorem convRBSK_sharper's stated guarantee, a sharper expected-error contraction derived via Hoeffding's inequality with sample size ell and confidence delta, is unproven and its statement is ill-posed; the abstract/introduction/conclusion claims of deriving new expected rate bounds 'with concentration inequalities' and the experimental comparisons against the 'Thm convRBSK_sharper bound' rest on it.",
+      "primary_affected_tag": "convRBSK_sharper",
+      "target_type": "formal_result",
+      "title": "Invalid passage from a high-probability inequality to a deterministic expectation bound; 'with probability at least 1-delta' attached to a deterministic inequality",
+      "why_classification": "Every supported resolution changes a central quantifier or the guarantee type (high-probability sample bound, or a different hypothesis with the concentration-inequality derivation abandoned), and the stated conclusion is ill-posed as written (a probability qualifier on a deterministic inequality); the paper's advertised concentration-based technique does not survive."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2511.09872",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n04-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "73f96c8b1573f56b57360efd52a5ed58fb02d8b49792678ac619b2bc2b98cb01",
+  "status": "ok"
+}

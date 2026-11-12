@@ -1,0 +1,99 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:rank_properties"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\Kernel{c}{\\Batrix{A} \\Matrix{BC}} = \\Kernel{}{\\Matrix{BC}} \\oplus \\mathbb{M}, \\quad \\Kernel{c}{\\Batrix{A} \\Matrix{B}} = \\Kernel{}{\\Matrix{B}} \\oplus \\mathbb{L}.$",
+          "tag": "lemma:rank_nullity"
+        },
+        {
+          "quote": "dim \\Image{}{\\Linop{C}} \\leq \\dim \\mathbb{L} = \\dim \\Kernel{c}{\\Batrix{A} \\Matrix{B}} - \\dim \\Kernel{}{\\Matrix{B}}.",
+          "tag": "lemma:rank_nullity"
+        }
+      ],
+      "failure_explanation": "In the proof of the Frobenius inequality (part 2), the proof decomposes ker_c(ABC) = ker(BC) ⊕ M and ker_c(AB) = ker(B) ⊕ L and then treats x ↦ Cx as an injective operator M → L in order to conclude dim M = dim im(C) ≤ dim L. For x ∈ M one only gets (AB)(Cx) = ABCx = 0, i.e. Cx ∈ ker_c(AB); Cx need not be orthogonal to ker(B). Counterexample with H = F = R: A = [0 1] (1×2), B = [[1,0],[0,0]], C = [[0,1],[0,1]]. Then BC = 0, ker(BC) = span{e2}, ker_c(ABC) = F^2, so M = span{e2}; L = ker(B)^⊥ ∩ ker_c(AB) = span{e1}; and Ce2 = (1,1)^⊤ ∉ L. The dimension count dim M ≤ dim L is therefore unjustified as written.",
+      "failure_location": {
+        "quote": "Consider $\\Matrix{x} \\mapsto \\Matrix{Cx}$ as an injective linear operator $\\Linop{C} : \\mathbb{M} \\to \\mathbb{L}$.",
+        "tag": "lemma:rank_nullity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the map M → L by the injective map M → ker_c(AB) (Cx ∈ ker_c(AB) since ABCx = 0) and observe C(M) ∩ ker(B) = {0}: if Cx ∈ ker B then BCx = 0, so x ∈ ker(BC) ∩ ker(BC)^⊥ = 0. Counting against the decomposition ker_c(AB) = ker(B) ⊕ L gives dim M ≤ dim ker_c(AB) − dim ker(B) = dim L, completing the proof.",
+      "overall_effect": "The proof of the Frobenius inequality (and, through it, Sylvester's inequality in part 3 of the same lemma and the rank equalities in part 3 of Lemma lemma:rank_properties) is unsupported; the inequalities themselves remain true, and the results that only use the inequality parts are unaffected.",
+      "primary_affected_tag": "lemma:rank_nullity",
+      "target_type": "formal_result",
+      "title": "Proof of Frobenius inequality uses a map M -> L whose image need not lie in L",
+      "why_classification": "The standard two-line quotient argument repairs the single step; the Frobenius and Sylvester inequalities and all downstream claims (Lemma lemma:rank_properties, Lemma lemma:factorization_ranks, Corollary cor:added-1, Lemma lemma:cross_exists) survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "alg:rook_bochner",
+        "alg:abcd",
+        "alg:abcdx"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$s = 1, \\ldots, n_{\\mathrm{rook}}$}{",
+          "tag": "alg:rook_usual"
+        },
+        {
+          "quote": "When $n_{\\mathrm{rook}} = 0$, the rows are selected at random and the choice of columns is adaptive.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In Algorithm alg:rook_usual (and identically in alg:rook_bochner), j_* is initialized but i_* is assigned only inside the loop 'for s = 1, …, n_rook'. For n_rook = 0 the loop body never executes, so the declared output 'pivot indices (i_*, j_*)' contains an unassigned variable: the procedure has no defined input–output contract for this parameter value. The paper nevertheless runs its Stokes experiments with n_rook = 0 and asserts a specific behavior ('the rows are selected at random and the choice of columns is adaptive'), which neither rook block produces as specified; consequently the ABCD/ABCDX guarantees invoked in that configuration are not delivered by the specified procedures.",
+      "failure_location": {
+        "quote": "\\KwOut{pivot indices $(i_*, j_*)$}",
+        "tag": "alg:rook_usual"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Make the boundary case well defined by a one-line fix: pass the starting row to rook and return the incoming pivot when n_rook = 0 (equivalently, initialize i_* before the loop), in both alg:rook_usual and alg:rook_bochner; all stated properties of ACA/ABCD/ABCDX then hold for every allowed input.",
+      "overall_effect": "The pivot-selection step is undefined for n_rook = 0, a value used in the numerical experiments; the output contract of the rook subroutine and, for that parameter value, the stated outputs of ABCD/ABCDX are not established.",
+      "primary_affected_tag": "alg:rook_usual",
+      "target_type": "algorithm",
+      "title": "Rook-pivoting subroutine leaves the pivot row undefined for n_rook = 0",
+      "why_classification": "A single local boundary-case definition restores the input–output contract; the algorithms' guarantees on their stated domain and all reported conclusions are preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-u'' - \\alpha^2 u = \\cos(\\beta x), \\quad x \\in (0,\\pi), \\quad u(0) = u(\\pi) = 0,",
+          "tag": "eq:ode_bvp"
+        },
+        {
+          "quote": "In our experiment, we choose $\\alpha_{\\max} = \\beta_{\\max} = 2$, $m = n = 100$, and $K = 75$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose asserts that the solution of eq:ode_bvp is the displayed sine series. Substituting u = (2/π)Σ u_k sin(kx) into −u'' − α²u produces Fourier coefficients (2/π)(k² − α²)u_k = (2/π)k(k²−α²)[1 − (−1)^k cos(βπ)]/[(k²+α²)(k²+β²)], whereas the sine coefficients of cos(βx) on (0,π) are (2/π)k[1 − (−1)^k cos(βπ)]/(k² − β²); these agree only at α = β = 0 (where the displayed formula is correct). The paper establishes no argument linking the displayed coefficients to the stated boundary-value problem, and with the equation as stated the operator −d²/dx² − α² has nontrivial kernel span{sin(αx)} at α ∈ ℕ, so for β ∉ 2ℤ the problem has no solution at the grid point α = 2 (α_max = 2 is used). The experiment therefore approximates a map that is not the solution map of eq:ode_bvp.",
+      "failure_location": {
+        "quote": "u_k(\\alpha, \\beta) = \\frac{k}{(k^2 + \\alpha^2) (k^2 + \\beta^2)} \\Big[ 1 - (-1)^k \\cos(\\beta \\pi) \\Big].",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must make the equation and the coefficients consistent — e.g. flip the sign of the α² term in eq:ode_bvp (to −u'' + α²u) and replace (k²+β²) by (k²−β²) in u_k, or keep the equation, replace (k²+α²)(k²+β²) by (k²−α²)(k²−β²), and exclude the resonant parameter values from the grid; either fix preserves the qualitative experimental conclusions.",
+      "overall_effect": "The closed-form representation of the solution map of eq:ode_bvp is false, and for the stated equation the solution map does not exist on part of the sampled parameter grid; the reported comparison of ABCD, post-processed ABCD, random cross components, and HOSVD for this example is attached to a map that is not the solution map of the displayed problem.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Closed-form coefficients of the model BVP do not solve the stated equation",
+      "why_classification": "The defect is repaired by a forced two-sign local correction (or by excluding resonant grid points); the algorithms, the comparison methodology, and every qualitative conclusion about the method survive unchanged, with no new lemma or construction."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2505.05134",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "58fba09ba42d777c7a617924766f7fe3f40b148ebdffaa26d734dfa886f3d9a9",
+  "status": "ok"
+}

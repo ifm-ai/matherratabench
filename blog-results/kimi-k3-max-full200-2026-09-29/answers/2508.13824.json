@@ -1,0 +1,250 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where vector $\\tilde{\\boldsymbol{w}} = ||\\tilde{w}_{q}|| \\neq 0$ due to $\\boldsymbol{\\psi} = ||\\psi_{p}|| \\neq 0$ and non-degeneracy of matrix $\\kappa^{-1}$, therefore $\\mathbf{q}_{n}(0) \\neq \\mathbf{u}_{n}$ in the general case $\\mathbf{F} \\not\\equiv 0$.",
+          "tag": "lemma:p_ode_exact:remark:rado_l"
+        },
+        {
+          "quote": "= \\psi_{p}\\psi_{q} + \\int\\limits_{0}^{1} \\varphi_{p}(\\tau)\\frac{d\\varphi_{q}(\\tau)}{d\\tau}d\\tau,",
+          "tag": "eq:kappa_mu_defs"
+        },
+        {
+          "quote": "- {\\Delta t}_{n} \\mu_{pq}\\mathbf{F}(\\hat{\\mathbf{q}}_{n, q}, t(\\tau_{q}))\\Big] = \n\\psi_{p}\\mathbf{u}_{n},",
+          "tag": "eq:ivp_ode_weak_rewr_dst"
+        }
+      ],
+      "failure_explanation": "As written, (eq:ivp_ode_weak) imposes the initial condition strongly while testing the residual against all N+1 basis functions. The stiffness matrix K_{pq} = \\int \\varphi_p \\varphi_q' is singular (K 1 = 0 since \\sum_q \\varphi_q \\equiv 1), so for a general F the N+1 Galerkin equations are inconsistent (\\mu F is generically outside the range of K) even before the extra constraint q_n(0) = u_n: the stated problem has no solution and does not define the local solution. The algebraic system the paper actually uses, (eq:ivp_ode_weak_rewr_dst) with \\kappa_{pq} = \\psi_p\\psi_q + \\int\\varphi_p\\varphi_q' and right-hand side \\psi_p u_n, is the discretization of the standard weak (jump) imposition \\varphi_p(0)(q_n(0) - u_n) + \\int \\varphi_p (q_n' - \\Delta t_n F) = 0, which is missing from (eq:ivp_ode_weak). The paper itself later proves that the computed local solution satisfies q_n(0) != u_n for general F (Remark lemma:p_ode_exact:remark:rado_l), directly contradicting the stated strong equality.",
+      "failure_location": {
+        "quote": "\\int\\limits_{0}^{1}\\varphi_{p}(\\tau)\\left[\\frac{d\\mathbf{q}_{n}(\\tau)}{d\\tau} - {\\Delta t}_{n}\\mathbf{F}(\\mathbf{q}_{n}(\\tau), t(\\tau))\\right] = 0,\\quad\n\\mathbf{q}_{n}(0) = \\mathbf{u}_{n}.",
+        "tag": "eq:ivp_ode_weak"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "State the weak form with the standard weak imposition of the initial condition, \\varphi_p(0)(q_n(0) - u_n) + \\int_0^1 \\varphi_p(\\tau)[dq_n/d\\tau - \\Delta t_n F(q_n(\\tau), t(\\tau))]d\\tau = 0, dropping the strong equality q_n(0) = u_n; this is exactly the form whose discretization is (eq:ivp_ode_weak_rewr_dst).",
+      "overall_effect": "The defining weak problem of the local DG predictor is ill-posed as written (overdetermined, generically unsolvable) and internally inconsistent with a later remark. The algebraic scheme (eq:ivp_ode_weak_rewr_dst), (eq:snae_lstdg) on which every theorem rests is correct, so no formal result is invalidated.",
+      "primary_affected_tag": "eq:ivp_ode_weak",
+      "target_type": "other",
+      "title": "Weak form of the local DG predictor omits the initial-condition jump term; as stated the problem is generically unsolvable and contradicts the later result q_n(0) != u_n",
+      "why_classification": "The fix is the standard one-line jump term of DG/ADER-DG local predictors, already implicit in the matrix \\kappa and in the paper's own Remark rado_l; every downstream claim uses the correct algebraic system, so all results survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum\\limits_{q = 0}^{N} a_{pq} &\\psi_{q} = \\sum\\limits_{q = 0}^{N} [\\kappa^{-1}\\cdot\\mu]_{pq} \\psi_{q}\n= \\sum\\limits_{q = 0}^{N}\\sum\\limits_{r = 0}^{N} \\left[\\kappa^{-1}\\right]_{pr} w_{r} \\delta_{rq} \\psi_{q} = w_{p},\\\\",
+          "tag": "lemma:ader_int_prop"
+        },
+        {
+          "quote": "\\sum\\limits_{q = 0}^{N}a_{pq} &\\psi_{q} = w_{p}\\quad \\Leftrightarrow \\quad \n\\sum\\limits_{q = 0}^{N}\\left[\\kappa^{-1}\\right]_{pq} \\psi_{q} = 1\\quad \\Leftrightarrow\\quad \\psi_{p} = \\sum\\limits_{q = 0}^{N}\\kappa_{pq},\\\\",
+          "tag": "lemma:ader_int_prop"
+        }
+      ],
+      "failure_explanation": "With a = \\kappa^{-1}\\mu, the identity a\\psi = w is equivalent to \\mu\\psi = \\kappa w, i.e. w_p\\psi_p = \\sum_q \\kappa_{pq} w_q, which does not follow from and is not equivalent to the (correct) relations \\kappa^{-1}\\psi = 1 \\Leftrightarrow \\psi = \\kappa 1 stated next to it; the asserted chain of equivalences holds only when all weights are equal (N = 1). Direct evaluation from the paper's definitions for N = 2 (\\tau = {1/2-\\sqrt{15}/10, 1/2, 1/2+\\sqrt{15}/10}, w = {5/18, 4/9, 5/18}) gives [a\\psi] \\approx (0.2979, 0.2083, 0.1688), whereas w \\approx (0.2778, 0.4444, 0.2778): the relation already fails for N = 2. Hence the terminal '= w_p' in the first line of the proof is an invalid inference. The remaining relations (2)-(7) of (eq:ader_int_prop) are correct (verified by the same direct computation).",
+      "failure_location": {
+        "quote": "&\\sum\\limits_{q = 0}^{N}a_{pq} \\psi_{q} = w_{p},\\quad\n\\sum\\limits_{q = 0}^{N}\\left[\\kappa^{-1}\\right]_{pq}\\psi_{q} = 1,\\quad \n\\psi_{p} = \\sum\\limits_{q = 0}^{N}\\kappa_{pq},\\\\",
+        "tag": "eq:ader_int_prop"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Delete the relation \\sum_q a_{pq}\\psi_q = w_p from (eq:ader_int_prop) and restrict the equivalence chain to the valid pair \\sum_q[\\kappa^{-1}]_{pq}\\psi_q = 1 \\Leftrightarrow \\psi_p = \\sum_q\\kappa_{pq}.",
+      "overall_effect": "One of the seven parameter identities collected in Lemma ader_int_prop is false and its proof contains an unjustified final equality. The false identity is never used later (applications of the lemma use only the correct relations \\sum_q[\\kappa^{-1}]_{pq}\\psi_q = 1 in (eq:snae_lstdg) and \\sum_p a_{pq}\\tilde\\psi_p = w_q in (eq:ader_dg_node_sol_by_q)), so nothing else is affected.",
+      "primary_affected_tag": "lemma:ader_int_prop",
+      "target_type": "formal_result",
+      "title": "The relation \\sum_q a_{pq}\\psi_q = w_p in Lemma ader_int_prop is false for N >= 2, and the claimed equivalence with the correct relations fails",
+      "why_classification": "A false but unused identity: removing it and correcting the equivalence chain is a local edit that preserves every downstream claim, since all applications of the lemma rely on its other, correct relations."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The $r = 0$ in $C(N)$ corresponds to the relation: $\\sum_{q = 0}^{N} a_{pq} = \\tau_{p}$.",
+          "tag": null
+        },
+        {
+          "quote": "where $a_{pq}$ is elements of the matrix $a = \\kappa^{-1}\\mu$, and Lemma~\\ref{lemma:ader_int_prop} is taken into account.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "From the paper's own definition a = \\kappa^{-1}\\mu with \\kappa from (eq:kappa_mu_defs), for N = 1 (\\psi = ((1+\\sqrt3)/2, (1-\\sqrt3)/2), \\mu = (1/2)I) one obtains a = [[1/3, (1-\\sqrt3)/6], [(1+\\sqrt3)/6, 1/3]]. The printed table has a_{12} = -(1-\\sqrt3)/2 = (\\sqrt3-1)/2 \\approx 0.366 and a_{21} = (1-\\sqrt3)/2 \\approx -0.366 instead of (1-\\sqrt3)/6 \\approx -0.122 and (1+\\sqrt3)/6 \\approx 0.455. The printed row sums, 1/3 \\pm (\\sqrt3-1)/2, do not equal the abscissae 1/2 \\mp \\sqrt3/6, so the table violates the condition \\sum_q a_{pq} = \\tau_p (the r = 0 case of C(N), explicitly highlighted in the paper) and cannot be the two-stage method of order 3 established in Theorem order_rk. The N = 2 table in the same display checks out correctly against a = \\kappa^{-1}\\mu, so the error is isolated to the N = 1 off-diagonal entries.",
+      "failure_location": {
+        "quote": "\\begin{array}{c|cc}\n\\frac{1}{2}-\\frac{\\sqrt{3}}{6} & \\frac{1}{3} & -\\frac{1-\\sqrt{3}}{2}\\\\\n\\frac{1}{2}+\\frac{\\sqrt{3}}{6} & \\frac{1-\\sqrt{3}}{2} & \\frac{1}{3}\\\\\n\\hline\n& \\frac{1}{2} & \\frac{1}{2}\n\\end{array}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the two off-diagonal entries by a_{12} = (1-\\sqrt3)/6 and a_{21} = (1+\\sqrt3)/6, as dictated by a = \\kappa^{-1}\\mu.",
+      "overall_effect": "The displayed N = 1 Butcher table does not represent the IRK-GL-ADER-DG method and contradicts the paper's own simplifying-condition and order results; the table is illustrative and no result depends on it.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "The printed N = 1 Butcher table has wrong off-diagonal entries and violates the row-sum condition C(1) proved in the paper",
+      "why_classification": "An isolated, concrete numerical error in an illustrative display with no dependents; the correction is forced by the paper's definitions and changes no claim or guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "coroll:order_ader_dg_nodes",
+        "coroll:rk_is_not_coll"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Numerical investigation of cases $N = 1, \\ldots, 75$ showed that conditions $C(N)$, $D(N)$ are satisfied with precision $10^{-978}$--$10^{-1006}$. However, conditions $C(N+1)$, $D(N+1)$, which are inherent in the classical GL method are not satisfied, but the deviations decrease with $N$, reaching $10^{-48}$--$10^{-49}$ for $C(N+1)$ and $10^{-50}$--$10^{-52}$ for $D(N+1)$ in case $N = 75$.",
+          "tag": null
+        },
+        {
+          "quote": "B(2N+2)\\, \\wedge\\, C(N)\\, \\wedge\\, D(N)\\ \\Rightarrow\\ p_{\\rm RK} = 2N+1,",
+          "tag": null
+        },
+        {
+          "quote": "The IRK-GL-ADER-DG method is not a collocation method according to Theorem 7.7 in~\\cite{Hairer_book_1}, since it has the convergence order $p_{\\rm RK} > s$ and the simplifying condition $C(N+1)$ is not satisfied.",
+          "tag": "coroll:rk_is_not_coll"
+        }
+      ],
+      "failure_explanation": "Butcher's theorem applied to B(2N+2), C(N), D(N) with s = N+1 stages yields order at least min(2N+2, N+N+1, 2N+2) = 2N+1, i.e. a lower bound. The statement asserts the order equals 2N+1 (stressed in the text as 'one unit less' than the 2s = 2N+2 of the Gauss method), which requires excluding order 2N+2. The standard argument — an s-stage method of order 2s is necessarily the Gauss collocation method, which satisfies C(N+1) = C(s), whereas here C(N+1) fails — is never made; the failure of C(N+1) and D(N+1) is documented only by high-precision floating-point checks for N = 1,...,75. Corollary rk_is_not_coll likewise asserts non-collocation for arbitrary N from this unproven premise. Hence, as written, for general N the proof establishes materially less (order >= 2N+1) than the statement (order = 2N+1).",
+      "failure_location": {
+        "quote": "The approximation order of the IRK-GL-ADER-DG method is $p_{\\rm RK} = 2N + 1$.",
+        "tag": "theorem:order_rk"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Prove analytically that C(N+1) (and D(N+1)) fails for every N: extending the alternative proof of Lemma cn_cond to r = N gives the residual -w_p\\prod_{q\\neq p}(\\tau_p-\\tau_q)/(N+1) \\neq 0, because \\tau^{N+1} is not reproduced by interpolation in span{\\varphi_q}; then invoke the classical uniqueness of the s-stage Gauss method among methods of order 2s to cap the order at 2N+1.",
+      "overall_effect": "The exact approximation/superconvergence order p_RK = p_G = 2N+1 at grid nodes (repeated in the abstract, Corollary order_ader_dg_nodes, and the conclusion) and the non-collocation Corollary rk_is_not_coll are rigorously supported only as 'order at least 2N+1' for arbitrary N; for N > 75 there is no evidence at all.",
+      "primary_affected_tag": "theorem:order_rk",
+      "target_type": "formal_result",
+      "title": "Theorem order_rk asserts the exact order 2N+1, but the argument proves only order >= 2N+1; the needed failure of C(N+1)/D(N+1) is supported only numerically for N <= 75",
+      "why_classification": "The statement is true and the missing piece is contained (one extra case of the paper's own alternative-proof computation plus a classical uniqueness theorem), but it is a genuinely new analytic ingredient: as written, the central exact-order claim for arbitrary N and the non-collocation corollary rest on numerical evidence for N <= 75, so more than a local or routine repair is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $C_{\\rm app}$ is the approximation constant of the IRK-GL-ADER-DG method, and $2N+2$ in the exponent is associated with the approximation order $p_{\\rm RK} = 2N+1$ at one step $\\varepsilon = O({\\Delta t}_{n}^{p_{\\rm RK}+1})$, expressed through the local truncation error $\\varepsilon$.",
+          "tag": "lemma:local_sol_order_L_inf"
+        },
+        {
+          "quote": "therefore the approximation order for the solution at the nodes $\\{\\mathbf{u}_{n}\\}$ is also equal $p_{\\rm G} = 2N+1$ --- superconvergence is observed.",
+          "tag": "coroll:order_ader_dg_nodes"
+        }
+      ],
+      "failure_explanation": "Since \\tilde u is the exact solution on \\Omega_n started from the numerical value \\tilde u(t_n) = u_n, the quantity |\\tilde u(t_n) - u(t_n)| = |u_n - u(t_n)| is the accumulated global error of the nodal solution at t_n, which for a method of order p_RK = 2N+1 is O(\\Delta t^{2N+1}) — exactly the nodal superconvergence order the paper proves (Corollary order_ader_dg_nodes) and measures empirically. The proof instead bounds it by C_app \\Delta t_n^{2N+2}, the one-step local truncation error, which equals the nodal error only on the first element; for n >= 1 the displayed inequality is false. The accompanying sentence ('2N+2 in the exponent ... at one step \\varepsilon = O(\\Delta t_n^{p_RK+1})') shows the local and global errors are being conflated.",
+      "failure_location": {
+        "quote": "A_{n} \\left|\\tilde{\\mathbf{u}}(t_{n}) - \\mathbf{u}(t_{n})\\right| <\nA_{n} C_{\\rm app} {\\Delta t}_{n}^{2N+2},",
+        "tag": "lemma:local_sol_order_L_inf"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the bound by |u_n - u(t_n)| <= C_app \\Delta t^{2N+1} (the global error of a method of order 2N+1, \\Delta t = max_n \\Delta t_n); the rest of the estimate is unchanged.",
+      "overall_effect": "An intermediate inequality in the proof of Lemma local_sol_order_L_inf is false as written. The lemma's conclusion is unaffected, because the corrected global-error term O(\\Delta t^{2N+1}) is still absorbed by the O(\\Delta t_n^{N+1}) interpolation term.",
+      "primary_affected_tag": "lemma:local_sol_order_L_inf",
+      "target_type": "formal_result",
+      "title": "In Lemma local_sol_order_L_inf the global nodal error |u_n - u(t_n)| is bounded by the one-step local truncation error O(\\Delta t_n^{2N+2})",
+      "why_classification": "A one-inequality correction whose correct exponent still exceeds N+1, so the statement, the method, and all downstream conclusions survive verbatim with no new argument."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:local_sol_order_L_inf",
+        "theorem:local_sol_order_L_p",
+        "coroll:local_sol_order_qpoints"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The local solution $\\mathbf{q}_{n}$ is the Lagrange interpolation polynomial of degree $N$ (\\ref{eq:local_sol}) whose coefficients $\\{\\hat{\\mathbf{q}}_{p}\\}_{p = 0}^{N}$ are the solution of the system of equations (\\ref{eq:snae_lstdg}), where $\\mathbf{u}_{n}$ is known with the approximation order $p_{\\rm RK} = 2N+1$.",
+          "tag": "lemma:local_sol_order_L_inf"
+        },
+        {
+          "quote": "\\hat{\\mathbf{q}}_{n, p} = \\mathbf{u}_{n} + {\\Delta t}_{n}\\sum\\limits_{q = 0}^{N} a_{pq}\\mathbf{F}(\\hat{\\mathbf{q}}_{n, q}, t(\\tau_{q})),",
+          "tag": "eq:snae_lstdg"
+        }
+      ],
+      "failure_explanation": "The classical remainder formula bounds ||I_N \\tilde u - \\tilde u||_\\infty, where I_N \\tilde u is the interpolant on the exact nodal values \\tilde u(t_n + \\tau_p \\Delta t_n). But q_n = \\sum_p \\hat q_{n,p} \\varphi_p is built from the solution of the nonlinear stage system (eq:snae_lstdg), and \\hat q_{n,p} \\neq \\tilde u(t_n + \\tau_p \\Delta t_n) for a general smooth F (equality holds only in the polynomial situation of Lemma p_ode_exact, which therefore cannot justify the bound 'for sufficiently smooth F'). The displayed estimate is thus applied to a polynomial that is not the interpolant of \\tilde u. The missing ingredient is a stage-error estimate |\\hat q_{n,p} - \\tilde u(t_n + \\tau_p\\Delta t_n)| = O(\\Delta t_n^{N+1}) — which follows from the proven condition C(N) (Lemma cn_cond) together with Lipschitz stability of the stage system — combined with the decomposition q_n - \\tilde u = \\sum_p(\\hat q_{n,p} - \\tilde u(t_{n,p}))\\varphi_p + (I_N\\tilde u - \\tilde u) and the Lebesgue constant of the fixed Gauss-Legendre nodes. The conclusion (order N+1) is correct, but the proof given does not establish it.",
+      "failure_location": {
+        "quote": "\\left|\\mathbf{q}_{n}(t) - \\tilde{\\mathbf{u}}(t)\\right| \\leq \n\\frac{{\\Delta t}_{n}^{N+1}}{(N+1)!}\\max\\limits_{t\\in\\Omega_{n}}\\left|\\frac{d^{N+1}\\tilde{\\mathbf{u}}(t)}{dt^{N+1}}\\right| \\equiv B_{n} {\\Delta t}_{n}^{N+1},\n\\end{equation}\nwhich is also applicable for sufficiently smooth functions $\\mathbf{F}(\\mathbf{u}, t)$ due to the Lemma~\\ref{lemma:p_ode_exact}.",
+        "tag": "lemma:local_sol_order_L_inf"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Insert the standard stage-order argument: C(N) makes the stage defect O(\\Delta t_n^{N+1}) and contractivity of the stage map for small \\Delta t_n (cf. Remark remark:snae_lstdg_sol_exist_uniq) transfers this to the stage errors; then bound |q_n - \\tilde u| <= \\Lambda_N max_p|\\hat q_{n,p} - \\tilde u(t_{n,p})| + ||I_N\\tilde u - \\tilde u||_\\infty = O(\\Delta t_n^{N+1}).",
+      "overall_effect": "The paper's second headline result — the local solution u_L has order p_L = N+1 in the L_infinity norm (Theorem local_sol_order_L_inf), in L_q norms (Theorem local_sol_order_L_p), and at the quadrature points (Corollary local_sol_order_qpoints), repeated in the abstract and conclusion and used as reference slopes in the figures and tables — is left without a valid proof.",
+      "primary_affected_tag": "lemma:local_sol_order_L_inf",
+      "target_type": "formal_result",
+      "title": "Lemma local_sol_order_L_inf applies the Lagrange interpolation error formula to q_n although its nodal values are RK stage approximations, not exact values of the exact solution; the stage-error estimate is missing",
+      "why_classification": "The claim survives and the additional argument is standard and contained (no new global proof architecture and no weakening of the statement), but a real, nontrivial step — the stage-error analysis — must be supplied, since the proof's key estimate is simply not applicable to q_n."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "coroll:ader_dg_stabs"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The matrix $\\mathrm{M}$ (\\ref{eq:q_m_matrices_def}) is non-negative definite by Lemma~\\ref{lemma:q_m_matrices_posdef}, and matrix $\\mu$ (\\ref{eq:kappa_mu_defs}) is positive definite, so the IRK-GL-ADER-DG method is algebraically stable, by Definition~4.2.1 in~\\cite{Dekker_Verwer_1984}.",
+          "tag": "theorem:alg_stab_rk"
+        }
+      ],
+      "failure_explanation": "The implication 'algebraically stable => BN-stable' cited from Dekker-Verwer (Theorem 4.2.2, the Burrage-Butcher theorem) is stated for irreducible Runge-Kutta methods; reducible algebraically stable methods need not be BN-stable. The paper establishes algebraic stability (M non-negative definite, w_p > 0) but never states or verifies irreducibility (DJ- and HS-irreducibility), so the cited theorem is applied with an unestablished hypothesis. The hypothesis is in fact satisfied here — a = \\kappa^{-1}\\mu is invertible, so a has no zero column, which with w_p > 0 gives DJ-irreducibility, and distinct rows of a give HS-irreducibility — but no such observation appears in the paper.",
+      "failure_location": {
+        "quote": "The IRK-GL-ADER-DG method is $BN$-stable by the Theorem~4.2.2 in~\\cite{Dekker_Verwer_1984}, and $B$-stable as a special case.",
+        "tag": "coroll:b_bn_stab_rk"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Insert the observation that a is invertible with positive weights and distinct abscissae, hence the method is DJ- and HS-irreducible, after which Theorem 4.2.2 applies as cited.",
+      "overall_effect": "The BN-stability of the method — and with it the aggregate stability statement for the ADER-DG method (Corollary coroll:ader_dg_stabs) and the corresponding abstract/conclusion claims — rests on a theorem applied outside its verified hypotheses.",
+      "primary_affected_tag": "coroll:b_bn_stab_rk",
+      "target_type": "formal_result",
+      "title": "Corollary b_bn_stab_rk derives BN-stability from algebraic stability without verifying the irreducibility hypothesis of the cited Dekker-Verwer theorem",
+      "why_classification": "The omitted hypothesis is true and follows from a routine one-line check based on properties already established in the paper (invertibility of a, w_p > 0, distinct Gauss nodes); no claim, regime, or rate changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-2",
+        "cor:added-3",
+        "theorem:l2_stab_rk",
+        "coroll:ader_dg_stabs"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore $\\mathrm{rank}(\\mathrm{I} - \\boldsymbol{\\psi}\\mathbf{1}^{T}) = N$, and $\\mathrm{rank}(a - \\mathbf{1}\\mathbf{w}^{T}) = N$. Therefore the numerator of $R(z)$ is a polynomial $P_{N, N+1}(z)$ of degree $N-1$. It follows that $R(z)$ is the $(N, N+1)$-Pad\\'{e} approximation $R_{N, N+1}(z)$ of $\\exp(z)$.",
+          "tag": "theorem:pade_approx"
+        },
+        {
+          "quote": "R(z) = 1 + \\mathbf{w}^{T} z \\left[\\mathrm{I} - za\\right]^{-1} \\mathbf{1} = \n\\frac{\\mathrm{I} - za + z \\mathbf{1}\\mathbf{w}^{T}}{\\mathrm{I} - za} = \\frac{P_{N, N+1}(z)}{R_{N, N+1}(z)}.",
+          "tag": "theorem:pade_approx"
+        },
+        {
+          "quote": "By Theorem~3.11 in~\\cite{Hairer_book_2}, the residual term of the $R_{N, N+1}(z)$ is $\\exp(z) - R_{N, N+1}(z) = O(z^{2N+2})$, so the approximation order of the IRK-GL-ADER-DG method $p_{\\rm RK} = 2N+1$, which is an alternative proof of Theorem~\\ref{theorem:order_rk}.",
+          "tag": "cor:added-3"
+        }
+      ],
+      "failure_explanation": "(i) The denominator det(I - za) has degree N+1, not N: a is an invertible (N+1)x(N+1) matrix, so all N+1 eigenvalues are nonzero. (ii) From rank(a - 1 w^T) = N one obtains only that the numerator det(I - z(a - 1w^T)) has degree at most N; the asserted 'degree N-1' neither follows nor is correct (already for N = 1 the actual numerator is the degree-1 polynomial 1 + z/3). The two stated degrees are also inconsistent with the claimed (N, N+1) Padé type, whose degrees are N and N+1. (iii) Degree bounds alone do not imply that a rational function is the (N, N+1)-Padé approximant of exp(z): one must additionally show R(z) - e^z = O(z^{2N+2}), which for a Runge-Kutta stability function is exactly the statement that the method has order 2N+1; this approximation argument is absent, so the proof's central inference is a non-sequitur. (iv) Consequently the only available completion uses Theorem order_rk, under which Corollary cor:added-3 — the Padé residual O(z^{2N+2}) as 'an alternative proof of Theorem order_rk' — is circular, unless an order-independent identification of R with the Padé fraction is supplied (the reported symbolic/numeric checks cover only N <= 6 and N <= 75). The scalar R(z) is also written as a quotient of matrices; the standard determinant ratio det(I - za + z 1 w^T)/det(I - za) is evidently intended. The conclusion of the theorem is nevertheless correct.",
+      "failure_location": {
+        "quote": "The matrix $a = \\kappa^{-1}\\cdot\\mu$ in the denominator is invertible and $\\mathrm{rank}(a) = N+1$. The denominator of $R(z)$ is a polynomial $R_{N, N+1}(z)$ of degree $N$.",
+        "tag": "theorem:pade_approx"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Correct the degree statements (denominator of degree N+1 since a is invertible; numerator of degree at most, and in fact exactly, N), write R(z) as the determinant ratio, and add the missing approximation step: a method of order 2N+1 has R(z) = e^z + O(z^{2N+2}), so uniqueness of the (N, N+1)-Padé approximant identifies R with R_{N,N+1}. Then downgrade cor:added-3 to a consistency remark, or else establish the Padé identification independently of the order (e.g., by deriving R(z) - e^z = O(z^{2N+2}) directly from B(2N+2), C(N), D(N)).",
+      "overall_effect": "The identification of the stability function with the (N, N+1)-Padé approximant is unproven as written. The alternative A-stability proof (cor:added-2), the alternative order proof (cor:added-3), the L-stability theorem (whose |z|^{-1} asymptotics is read off the Padé degrees), and the aggregate stability claims for the ADER-DG method (coroll:ader_dg_stabs, abstract, conclusion) all lose their stated support. A-stability survives independently via AN-stability, and L-stability is independently repairable via R(infty) = 1 - w^T a^{-1} 1 = 0.",
+      "primary_affected_tag": "theorem:pade_approx",
+      "target_type": "formal_result",
+      "title": "Proof of Theorem pade_approx misstates numerator/denominator degrees and never proves the Padé approximation property; the 'alternative proof of order' in cor:added-3 becomes circular",
+      "why_classification": "The theorem's conclusion is true and is restored by standard ingredients, but the published proof contains two false degree statements and a non-sequitur as its central inference, and the least repair either withdraws the advertised 'alternative proof of order' in cor:added-3 or requires a new contained argument — more than a local fix, but without loss of the main stability conclusions."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2508.13824",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s3",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3e175dd2e259a3e49b58cc7560cd52a083f3c7164ec3322e77f97936ff6880de",
+  "status": "ok"
+}

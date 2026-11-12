@@ -1,0 +1,654 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\domain \\subset \\mathbb R^d$, $d=2,3$, be an open, bounded, simply\nconnected Lipschitz domain with unit outward normal $\\vec n$.",
+          "tag": null
+        },
+        {
+          "quote": "$-\\rho\\nabla\\varphi + \\vec m \\times \\vec\\Omega = \\vec 0$. We solve this\nalgebraic side condition by introducing a \\emph{drift velocity}",
+          "tag": null
+        },
+        {
+          "quote": "\\vec v_{\\text{dr}}\\,:=\\,-\\frac{\\nabla\\varphi\\times\\vec\\Omega}\n  {|\\vec\\Omega|^2_{\\ell^2}}.",
+          "tag": "eq:magnetic_drift_velocity"
+        }
+      ],
+      "failure_explanation": "In three dimensions, force balance requires the electric gradient to be perpendicular to the magnetic field but determines only the perpendicular velocity. Its general solution is v = v_dr + w Ω, with an undetermined scalar w. The continuity equation then contains the additional term div(ρwΩ), which need not vanish. No assumption eliminating this parallel flow is made in the reduction.",
+      "failure_location": {
+        "quote": "\\partial_t \\rho + \\nabla \\cdot (\\rho\\,\\vec v_{\\text{dr}}) &= 0,",
+        "tag": "eq:magnetic_drift_limit"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the reduction explicitly to the transverse two-dimensional configuration, or add the perpendicular-field and zero-parallel-flow hypotheses needed for this particular three-dimensional reduction.",
+      "overall_effect": "The displayed density-potential system is not the claimed general three-dimensional magnetic-drift reduction. The transverse two-dimensional case is unaffected.",
+      "primary_affected_tag": "eq:magnetic_drift_limit",
+      "target_type": "other",
+      "title": "The three-dimensional drift reduction discards undetermined parallel flow",
+      "why_classification": "A comparable drift model survives under a limited but substantive restriction of the claimed three-dimensional scope; the numerical architecture need not change."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "resulting in a time-step size\n      $\\tau_n/2$ and an updated state $\\big\\{\\hat{\\vec u}, \\hat\\varphi\\big\\}$.",
+          "tag": "def:strang_splitting"
+        },
+        {
+          "quote": "\\dt_n = \\text{CFL} \\cdot \\min_{i \\in \\vertices}\n  \\Big(-\\frac{m_i}{2 d_{ii}^{\\low,n}}\\Big)",
+          "tag": "CflFormula"
+        },
+        {
+          "quote": "d_{ij}^{\\low,n}\n&:= |\\bc_{ij}|_{\\ell^2} \\lambda_{\\text{max}}(\\state_i^{n},\n\\state_j^{n}, \\normal_{ij}),",
+          "tag": "eq:dij_low_order"
+        }
+      ],
+      "failure_explanation": "The first hyperbolic solve selects the step from its input state, but the source solve changes velocity and hence the wave speeds entering the CFL bound. The final explicit solve is assigned the old half-step without checking the bound for its new input. Electrostatic acceleration can therefore make the convex-combination coefficient negative, invalidating the advertised invariant-domain guarantee.",
+      "failure_location": {
+        "quote": "and fixed time-step size $\\tau_n/2$ resulting\n      in a final update $\\big\\{\\vec u^{n+1}, \\varphi^{n+1}\\big\\}$ for\n      time $t_{n+1}=t_{n}+\\tau_n$.",
+        "tag": "def:strang_splitting"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Check the CFL condition after the source update and subcycle the final hyperbolic interval, or reject and recompute the split step with a step size satisfying both hyperbolic restrictions.",
+      "overall_effect": "The fully split explicit implementation is not guaranteed to preserve admissibility merely because the first hyperbolic substep satisfies its CFL condition.",
+      "primary_affected_tag": "def:strang_splitting",
+      "target_type": "algorithm",
+      "title": "The final explicit Strang substep has no verified CFL condition",
+      "why_classification": "A standard local step-control safeguard preserves the method, accuracy, and restriction to hyperbolic rather than plasma or cyclotron CFL scales."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:fully_discrete_parabolic_energy_balance"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{\\theta}\\big(\\theta a+(1-\\theta)b\\,,\\,\\theta\n    a+(1-\\theta)b-b\\big)\\,=\\,\\frac{1}{2}\\big(|a|^2-|b|^2\\big)\n    +\\big(\\theta-\\frac{1}{2}\\big)|a-b|^2.",
+          "tag": null
+        },
+        {
+          "quote": "+\\;\\big(\\theta-\\frac12\\big) \\bigg\\{\n    \\sum_{j=1}^{\\mathcal{N}}\\sum_{K\\in\\mathcal{T}_h}\\frac{1}{2}m_{j,K}\n    \\rho_{j,K}^{n}\\big|\\vec v_{j,K}^{n+1}-\\vec v_{j,K}^{n}\\big|_{\\ell^2}^2",
+          "tag": "eq:fully_discrete_parabolic_energy_balance"
+        }
+      ],
+      "failure_explanation": "The stated polarization identity gives the increment-square term with coefficient θ−1/2 multiplying the full weighted squared norm, not half that norm. Thus the displayed dissipation must be doubled. For backward Euler applied to spatially uniform cyclotron motion, the exact identity is |v_new|² + |v_new−v_old|² = |v_old|²; the paper's formula instead assigns coefficient 1/2 to the increment term.",
+      "failure_location": {
+        "quote": "+\\big(\\theta-\\frac12\\big)\\,\n    \\frac1{2\\alpha}\\int_\\domain\\alpha\\rho_n|\\vec v^{n+1} - \\vec v^{n}|_{\\ell^2}^2\n    +|\\nabla\\varphi^{n+1} - \\nabla\\varphi^{n}|_{\\ell^2}^2\\,\\text{d}x",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Reapply the displayed polarization identity and multiply the increment-energy term by two in both balances.",
+      "overall_effect": "The exact semidiscrete and fully discrete dissipative balances are false for nonstationary steps with θ different from 1/2. Their conservation and dissipation-sign conclusions remain recoverable.",
+      "primary_affected_tag": "lem:semi_discrete_parabolic_energy_balance",
+      "target_type": "formal_result",
+      "title": "Both theta-scheme energy balances undercount dissipation by a factor of two",
+      "why_classification": "The correction is local algebra and preserves the numerical construction, conservation at θ=1/2, and the intended energy-stability range."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:semi_discrete_parabolic_coercive",
+        "cor:added-1",
+        "cor:added-3"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "a_{n,\\theta}(\\varphi,\\psi)\\,:=\\,\n    \\big(\\nabla\\varphi,\\nabla\\psi)_{L^2(\\domain)^d}+ \\theta^2\\tau_n^2\\alpha\n    \\big(\\rho^n\\mathcal{B}_{n,\\theta}^{-1}\\nabla\\varphi,\n    \\nabla\\psi)_{L^2(\\domain)^d}",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbb H_h &:= \\{ \\psi_h \\in \\mathcal C^0(\\domain) \\;:\\; \\psi_h \\circ\n  \\vec T_K \\in \\mathbb Q_1 \\text{ for all } K \\in \\mathcal T_h \\}.",
+          "tag": "HypSpace"
+        },
+        {
+          "quote": "(\\nabla\\widetilde\\varphi_h^{n+1},\\nabla\\omega_h)\n    =\n    \\alpha\\left\\langle\\rho_h^{n+1},\\omega_h\\right\\rangle_h\n    \\quad \\text{for all}\\; \\omega_h \\in \\mathbb H_h,",
+          "tag": "eq:discrete_gauss_law"
+        }
+      ],
+      "failure_explanation": "Constants belong to both stated potential spaces, and a(1,1)=0, so the form is not coercive in the H1 norm and the source potential is not unique. More seriously, testing the restart equation with 1 gives 0 = α〈ρ,1〉_h, impossible for the positive densities being evolved. A gauge alone fixes neither this positive-mass compatibility failure nor the missing boundary formulation.",
+      "failure_location": {
+        "quote": "is coercive and bounded on $H^1(\\domain)$;",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Specify boundary conditions and their trial/test spaces consistently. Homogeneous Dirichlet potential conditions, already used in the numerical setup, give H1_0 and the corresponding zero-boundary finite-element space. Other boundary conditions require compatible flux terms and an appropriate gauge.",
+      "overall_effect": "The well-posedness claims, equality of equilibrium potentials, and existence of the stated full Gauss restart are unsupported on the spaces actually defined.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Unconstrained potential spaces invalidate coercivity, uniqueness, and the Gauss restart",
+      "why_classification": "Explicitly imposing the intended standard boundary-space convention resolves the obstruction without changing the interior method or its rates."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nabla\\varphi^n\\perp\\vec\\Omega,\\qquad\n    \\vec v^n =\\,-\\frac{\\nabla\\varphi^n\\times\\vec\\Omega}{|\\vec\\Omega|^2_{\\ell^2}},\n    \\qquad\n    \\nabla\\cdot\\big(\\rho^n\\vec v^n\\big) = 0.",
+          "tag": null
+        },
+        {
+          "quote": "Given a rescaled, static, divergence free magnetic flux density\n  $\\vec\\Omega(\\vec x)\\in\\mathbb{R}^{d_\\ast}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Radial density alone does not imply radial potential or div(ρv_dr)=0 on the allowed domains and boundary data. For example, on a disk with constant axial field, take ρ=1+r² and add the harmonic function x1 to its radial Poisson potential. This preserves the radial Poisson right-hand side but adds a constant transverse drift, giving div(ρv_dr)=2x2 after unit scaling. The density is then not stationary even in the drift model.",
+      "failure_location": {
+        "quote": "with a rotationally symmetric density profile (that only depends on the\n  radius $r$ in cylindrical coordinates) is a (almost) stationary solution to\n  the Euler-Poisson system",
+        "tag": "rem:stationary_solution"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Require a radial potential and a constant axial magnetic field, with domain and boundary data that actually produce this symmetry, or directly impose all algebraic hypotheses of the equilibrium lemma.",
+      "overall_effect": "The remark cannot invoke the preceding equilibrium lemma for every radial density profile.",
+      "primary_affected_tag": "rem:stationary_solution",
+      "target_type": "formal_result",
+      "title": "Radial density does not supply the symmetry hypotheses of the equilibrium lemma",
+      "why_classification": "The missing global symmetry hypotheses materially narrow the equilibrium claim, although the intended cylindrical configuration remains covered."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\partial_t \\vec m + \\nabla \\cdot (\\rho^{-1}\\vec\n        m\\vec m^{\\transp} + \\mathbb I p)\n        &= -\\rho\\nabla\\varphi + \\vec m \\times \\vec\\Omega,",
+          "tag": "eq:magnetic_euler_poisson"
+        },
+        {
+          "quote": "Then, the solution to \\eqref{eq:semi_discrete_theta_scheme} satisfies\n  $\\vec v^{n+\\theta}=\\vec v^n$ and $\\varphi^{n+\\theta}=\\varphi^{n}$,",
+          "tag": "lem:semi_discrete_parabolic_coercive"
+        }
+      ],
+      "failure_explanation": "Even with radial potential, constant axial field, and all preceding lemma hypotheses satisfied, drift balance cancels only the source force. For an azimuthal velocity vθ(r), the momentum-advection term is −ρvθ²/r in the radial direction. It is generally nonzero when p=0 and can be arbitrarily large. Negligible pressure supplies no estimate making this inertial residual small.",
+      "failure_location": {
+        "quote": "is a (almost) stationary solution to\n  the Euler-Poisson system (on the continuous and semidiscrete level):",
+        "tag": "rem:stationary_solution"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restrict the conclusion to the source subsystem or the inertia-free drift model. Retaining a full-PDE near-stationarity claim requires a specified small-inertia scaling and a quantitative argument.",
+      "overall_effect": "The full continuous and split-system near-stationarity assertion does not follow from the proved source equilibrium property.",
+      "primary_affected_tag": "rem:stationary_solution",
+      "target_type": "formal_result",
+      "title": "Stationarity of the source subsystem is incorrectly promoted to stationarity of the full PDE",
+      "why_classification": "A recognizable equilibrium statement survives, but the full-PDE conclusion must be materially weakened or supported by an additional asymptotic argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, it is \\emph{not} necessarily true that $\\nabla \\mathbb H_h\n\\subset \\mathbb V_h^3$",
+          "tag": null
+        },
+        {
+          "quote": "C\\,h^s\\,\\|\\vec v_h\\|_{\\vec L^2(\\domain)}\n    \\quad\\text{for all }\\vec v_h\\in\\mathbb V_h^d.",
+          "tag": null
+        },
+        {
+          "quote": "\\|\\nabla\\varphi_h\\|_h\n      \\|\\nabla\\psi_h\\|_h,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The final estimate needs lumped-to-L2 control of physical gradients. The assumption covers only functions in V_h^d, whereas the paper explicitly allows mappings for which these gradients do not belong to that space. Inserting the nodal interpolant does not by itself provide the missing L2 stability bound for the interpolated gradient.",
+      "failure_location": {
+        "quote": "which combined with Assumption~\\ref{ass:regular_mesh} establishes the\n  result.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Use reference-element scaling and uniform mapping bounds to establish the required inequality ||I_h∇φ_h||_L2 ≤ C||∇φ_h||_L2, and then use ordinary uniform quadrature norm equivalence.",
+      "overall_effect": "The stated mesh-uniform boundedness estimate is not established by the supplied proof on non-affine cells.",
+      "primary_affected_tag": "prop:boundedness",
+      "target_type": "formal_result",
+      "title": "The boundedness proof applies the lumping assumption outside its function space",
+      "why_classification": "A standard local finite-element scaling argument supplies the missing bound without changing the method, non-affine mesh scope, or parameter dependence."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal E_{i,K}^{n+1} := \\inte_{i,K}^n \\,+\\,\n         \\tfrac12\\rho_{i,K}^n\\big|\\vec v_{i,K}^{n+1} \\big|_{\\ell^2}^2.",
+          "tag": null
+        },
+        {
+          "quote": "with equality holding for the case of $\\theta=1/2$.",
+          "tag": "cor:added-2"
+        }
+      ],
+      "failure_explanation": "At θ=1/2 the source update conserves K+F, and unchanged internal energy gives ΔΣmE=ΔK=−ΔF. The printed quantity is instead (ΣmE)/2+F, whose change is ΔF/2 and can have either sign. Thus neither its asserted conservation nor its general inequality follows from the kinetic-field balance.",
+      "failure_location": {
+        "quote": "\\sum_{j=1}^{\\mathcal{N}}\\sum_{K\\in\\mathcal{T}_h}\\frac{1}{2}m_{j,K}\n    \\mathcal E_{i,K}^{n+1}\n    \\,+\\,\n    \\frac1{2\\alpha}\\int_\\domain\\big|\\nabla\\varphi_h^{n+1}",
+        "tag": "eq:fully_discrete_total_energy_balance"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Remove the factors 1/2 multiplying both sums of total mechanical energy.",
+      "overall_effect": "The displayed conserved-state energy inequality is false even for Crank–Nicolson energy exchange between kinetic and electric energy.",
+      "primary_affected_tag": "cor:added-2",
+      "target_type": "formal_result",
+      "title": "The total-energy corollary uses the wrong relative weighting of fluid and field energy",
+      "why_classification": "Correcting the relative normalization recovers the intended physical total-energy guarantee directly from the existing construction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "we now discretize\n\\eqref{eq:source_update_subsystem} in time with a $\\theta$-scheme, where\n$\\theta=1$ recovers a backward Euler step and $\\theta=1/2$ is the\nCrank-Nicolson scheme.",
+          "tag": null
+        },
+        {
+          "quote": "+\\;\\big(\\theta-\\frac12\\big) \\bigg\\{",
+          "tag": "eq:fully_discrete_parabolic_energy_balance"
+        }
+      ],
+      "failure_explanation": "No restriction θ≥1/2 accompanies the inequality. For uniform cyclotron motion, the squared amplification factor is [1+(1−θ)²r²]/[1+θ²r²], with r=τ|Ω|. It exceeds one for 0<θ<1/2, so the source step increases energy. This failure remains after correcting the energy normalization.",
+      "failure_location": {
+        "quote": "The update procedure outlined in Definition~\\ref{defi:source_update}\n  maintains an energy inequality",
+        "tag": "cor:added-2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "State the energy inequality for θ≥1/2, and specify the admissible theta range of the algorithm.",
+      "overall_effect": "The unconditional energy-stability statement is false over the unstated general theta range.",
+      "primary_affected_tag": "cor:added-2",
+      "target_type": "formal_result",
+      "title": "The energy inequality omits the necessary theta stability restriction",
+      "why_classification": "The two implemented choices, θ=1/2 and θ=1, remain covered, so this standard local hypothesis loses no advertised computational regime."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-3"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\big|\\|\\vec v_h\\|_h - \\|\\vec v_h\\|_{\\vec L^2(\\domain)}\\big| \\;\\le\\;\n    C\\,h^s\\,\\|\\vec v_h\\|_{\\vec L^2(\\domain)}\n    \\quad\\text{for all }\\vec v_h\\in\\mathbb V_h^d.",
+          "tag": null
+        },
+        {
+          "quote": "where $m_{j,K}:=\\int_K \\phi_{j,K}(\\vec x)\\,\\text d x$ is an element of\n  the lumped mass matrix.",
+          "tag": null
+        },
+        {
+          "quote": "\\big\\|\\mathcal{R}_h^{n+1}[\\,.\\,] -\n    \\mathcal{R}_h^{n}[\\,.\\,]\\big\\|_{\\text{op}}\\;=\\; \\alpha\\, \\mathcal\n    O\\big(h^2+h^{1+s}\\big),",
+          "tag": "eq:gauss_law_residual"
+        }
+      ],
+      "failure_explanation": "The asserted positive s is unavailable for the stated Q1 space. On an affine cube, take a vector-valued corner basis function supported on one cell. Its lumped squared norm is |K|/2^d and its exact squared norm is |K|/3^d, so the norm ratio is (3/2)^(d/2), independently of h. Uniformly regular mappings retain a nonvanishing discrepancy. Thus mesh refinement cannot give the assumed relative O(h^s) error for all discrete functions, and the resulting restart rates have no demonstrated applicability to the method.",
+      "failure_location": {
+        "quote": "where $s$ is the constant introduced in\n  Assumption~\\ref{ass:regular_mesh}.",
+        "tag": "prop:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, replace the impossible all-function asymptotic isometry by ordinary norm equivalence for stability and reprove the restart rates using a valid, solution-dependent mixed quadrature estimate.",
+      "overall_effect": "The positive-s quadrature contribution and the corresponding Gauss-law and restart convergence guarantees are unsupported even on uniform affine meshes.",
+      "primary_affected_tag": "prop:added-1",
+      "target_type": "formal_result",
+      "title": "The Gauss-law rates rely on an impossible uniform lumping-consistency assumption",
+      "why_classification": "The hypothesis underlying the advertised rates cannot hold for the supplied finite elements, and no source-supported replacement establishes comparable rates for the stated inputs."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-3"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\partial_t \\rho + \\nabla \\cdot \\vec m\n      &= 0,",
+          "tag": "eq:hyperbolic_operator"
+        },
+        {
+          "quote": "\\langle\\rho_h^{n+\\theta}-\\rho_h^{n},\\omega_h\\rangle_h\n    - \\theta\\tau_n\\alpha\\, \\big\\langle\\hat\\rho_h^n \\breve{\\vec\n    v}_h^{n+\\theta}, \\nabla \\omega_h \\big\\rangle_h,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With boundary terms suppressed, the weak continuity update has a minus sign on the left-hand flux term and no coupling constant α. The written comparison instead approximates ρ_t=+α div(ρv). For a nonzero mass flux its first-order increment has the opposite sign and an extra factor α, so its difference from the actual continuity update is generally O(τ), not O(τ²).",
+      "failure_location": {
+        "quote": "\\langle\\tilde\\rho_h^{n+\\theta},\\omega_h\\rangle_h + \\theta\\tau_n\\alpha\\,\n    \\big(\\tilde\\rho_h^{n+\\theta} \\breve{\\vec v}_h^{n+\\theta}, \\nabla\n    \\omega_h \\big) = \\langle\\rho_h^{n},\\omega_h\\rangle_h,",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Replace the comparison equation by the correctly signed weak continuity scheme without α, before carrying out its consistency comparison.",
+      "overall_effect": "The auxiliary comparison used to justify cancellation in the Gauss residual is inconsistent with the mass equation.",
+      "primary_affected_tag": "prop:added-1",
+      "target_type": "formal_result",
+      "title": "The comparison density update discretizes the wrong continuity equation",
+      "why_classification": "This obstruction is removed by a local correction of an auxiliary equation; it does not require changing the implemented splitting scheme."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-3"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that the hyperbolic update is at least first-order accurate in\n  time and space and subject to a hyperbolic CFL condition $\\tau_n =\n  \\mathcal O(h)$.",
+          "tag": "prop:added-1"
+        },
+        {
+          "quote": "A more careful\n  analysis for the case $\\theta=1/2$ establishes the improved result\n  $\\mathcal O(h^3+h^{1+s})$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Even after correcting the comparison equation and replacing the invalid lumping hypothesis, first-order accuracy alone does not give the required mesh-uniform estimate between a frozen-velocity comparison update and the two hyperbolic Strang substeps. No solution regularity, norm for this comparison, uniform flux consistency estimate, or argument for the second-order cancellation is supplied. Accuracy for smooth data also does not control grid-scale or discontinuous computed states covered by the statement.",
+      "failure_location": {
+        "quote": "From our assumptions on the hyperbolic solver we now make\n  the claim that $\\|\\tilde\\rho_h^{n+\\theta} - \\rho_h^{n+\\theta}\\|=\\mathcal\n  O(\\tau_n^2)=\\mathcal O(h^2),$ which would need to be verified in detail\n  for the concrete chosen method.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, prove method-specific local consistency bounds in the dual norm used for the residual, with explicit regularity and step-size dependence, and separately justify the claimed higher-order cancellation.",
+      "overall_effect": "Neither the basic local residual order nor the improved Strang order, and hence neither corresponding global restart-error estimate, is established.",
+      "primary_affected_tag": "prop:added-1",
+      "target_type": "formal_result",
+      "title": "The essential local Gauss-residual consistency estimates are asserted rather than proved",
+      "why_classification": "The missing estimate is the essential quantitative argument, not routine algebra; the source supplies no complete proof or comparable replacement guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\nabla \\tilde \\varphi_h^{n} - \\nabla\\varphi_h^{n}\\|_{L^2(\\Omega)^d}\n    &=\\,(t_n-t_0)\\,\\alpha\\,\\mathcal{O}\\big(h+h^s\\big),",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathcal{R}_h^{n+1}[\\omega_h] \\,=\\, \\alpha\\,\n  \\langle\\rho_h^{n+1},\\omega_h\\rangle_h\n  -(\\nabla\\Epot_h^{n+1},\\nabla\\omega_h)$",
+          "tag": "prop:added-1"
+        }
+      ],
+      "failure_explanation": "Telescoping gives R^n=R^0+Σ(R^{k+1}−R^k), not merely the sum of increments. The corollary never assumes R^0=0. Its first estimate even forces the initial projected and supplied potentials to have identical gradients at n=0, which is not implied by the generic discrete initialization.",
+      "failure_location": {
+        "quote": "and using\n  \\eqref{eq:gauss_law_residual} in a telescopic sum establishes",
+        "tag": "cor:added-3"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Require exact discrete Gauss initialization, as done in the diocotron setup, or retain the initial residual term in the bounds.",
+      "overall_effect": "The claimed restart-error bounds omit a potentially nonvanishing initial error, independently of the defects in the local residual proposition.",
+      "primary_affected_tag": "cor:added-3",
+      "target_type": "formal_result",
+      "title": "The telescoping restart estimate drops the initial Gauss residual",
+      "why_classification": "A standard initialization condition or an explicit initial-error term repairs this omission without changing the scheme or its conditional convergence orders."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\delta\\mathcal{E}^{n+1} \\;&:=\\; \\frac{1}{2\\,\\alpha}\n    \\Big(\\|\\nabla\\tilde\\varphi_h^{n+1}\\|^2 - \\|\\nabla\\varphi_h^{n+1}\\|^2\\Big)",
+          "tag": null
+        },
+        {
+          "quote": "\\mathcal{E}_{\\text{kin}}^{n+1} \\;&:=\\; \\sum_{i} \\frac{m_i}{2}\\rho_i^n\\big|\\vec\n    v^{n+1}\\big|^2,",
+          "tag": null
+        },
+        {
+          "quote": "This can be achieved via an artificial relaxation approach by lowering the\nkinetic energy appropriately",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The construction needs positive kinetic energy and δE≤E_kin whenever δE>0, but neither condition is assumed or proved. At E_kin=0 the quotient is undefined, including the 0/0 case; when δE>E_kin the square root is not real. An absolute smallness estimate for the Gauss defect does not supply a relative kinetic-energy budget. Moreover, removing all kinetic energy cannot compensate a larger field-energy increase.",
+      "failure_location": {
+        "quote": "\\Big\\{1-\\max\\Big(0,\\frac{\\delta\\mathcal{E}^{n+1}}\n    {\\mathcal{E}^{n+1}_{\\text{kin}}}\\Big)\\Big\\}^{1/2}\\,\\vec m_i^{n+1}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, handle zero kinetic energy and prove the required energy-budget inequality, or provide a justified fallback and explicitly identify which restart or energy guarantee it relaxes.",
+      "overall_effect": "The advertised unconditional combination of a full Gauss restart and restored energy stability is not a well-defined guaranteed procedure.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Kinetic relaxation can have a negative radicand or a zero denominator",
+      "why_classification": "The obstruction is feasibility, not merely a missing numerical guard. Without a budget bound, a central simultaneous guarantee must be weakened or a substantially different restart strategy supplied."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\mathrm d}{\\mathrm dt}\\int_\\domain \\mathcal E +\n    \\frac{1}{2\\alpha}|\\nabla\\varphi|_{\\ell^2}^2\\,\\mathrm dx",
+          "tag": "eq:energy_balance"
+        },
+        {
+          "quote": "\\mathcal E_{i,K}^{n+1} := \\inte_{i,K}^n \\,+\\,\n         \\tfrac12\\rho_{i,K}^n\\big|\\vec v_{i,K}^{n+1} \\big|_{\\ell^2}^2.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Even when the relaxation factor is real and sufficient kinetic energy is available, the procedure changes only momentum and potential. In the full Euler formulation, E is an independent conserved variable. Reducing momentum while leaving E fixed increases internal energy rather than lowering total mechanical energy. Consequently a positive field-energy increment is not offset.",
+      "failure_location": {
+        "quote": "\\varphi_h^{n+1} \\;\\leftarrow\\; \\widetilde \\varphi_h^{n+1},\n    \\qquad\n    \\vec m_i^{n+1} \\;\\leftarrow\\;",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-015",
+      "least_adequate_overall_repair": "After scaling momentum, reconstruct each total mechanical energy from its pre-relaxation internal energy and the new kinetic energy, using the actual final density and kinetic-energy budget.",
+      "overall_effect": "The relaxation does not restore the claimed total-energy inequality for the full Euler system; the barotropic formulation without an independent energy variable is different.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Momentum relaxation does not lower the full Euler conserved energy",
+      "why_classification": "The necessary local reconstruction is already used in the source update and preserves internal-energy positivity and entropy without new analysis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "differing perturbation modes, $\\ell\\in\\{3,4,5\\}$.",
+          "tag": null
+        },
+        {
+          "quote": "Plots of the numerical amplitudes, normalized by their initial value, over\ntime for modes 3, 4, and 5 are shown in\nFigure~\\ref{fig:diocotron-growth-rates}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The single-valued arctangent of x2/x1 is unchanged under x↦−x. Thus the written density perturbation is π-periodic and all its odd angular Fourier coefficients vanish, including the intended modes 3 and 5. On the stated disk with homogeneous Dirichlet potential data, the continuous Poisson solution has the same symmetry. The intended initial odd-mode amplitude is therefore zero, so its normalization and interpretation as an imposed odd-mode instability are invalid.",
+      "failure_location": {
+        "quote": "\\delta_{\\text{per}}(\\vec x)\\,:=\\,\n  1 - \\delta + \\delta\\,\\sin\\big(\\ell \\arctan(x_2/x_1)\\big),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-016",
+      "least_adequate_overall_repair": "Use a full polar angle, for example atan2(x2,x1), consistently in the initialization and modal formulas, and verify or recompute the odd-mode data from that corrected construction.",
+      "overall_effect": "The written initialization does not define the third- and fifth-mode validation experiments being reported.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The stated angular perturbation has no odd Fourier modes",
+      "why_classification": "The correction changes the prescribed data on half the domain and requires confirmation of the numerical validation, although the solver itself need not change."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\eta(\\state) := \\tfrac{1}{2 \\rho}\n|\\mom|^2 + \\rho e(\\rho) \\ \\ \\ \\text{and} \\ \\ \\\n\\mathbb{q}(\\state) :=\n\\big( \\tfrac{1}{2 \\rho} |\\mom|^2 + \\rho e(\\rho) + p(\\rho) \\big)\\vel,",
+          "tag": "IsothermalEfluxPair"
+        }
+      ],
+      "failure_explanation": "For the displayed entropy-flux pair, spatial integration yields E'(t)+F(t)≤0, where F is the instantaneous boundary flux. The paper instead combines E'(t) with the time integral of F. For a smooth pressureless translating density with net energy inflow, E'(0)>0 and F(0)<0; the written inequality fails at t=0 because its integrated boundary term is zero.",
+      "failure_location": {
+        "quote": "\\frac{\\mathrm d}{\\mathrm dt}\n  \\int_{\\domain}\n  \\frac{1}{2 \\rho} |\\mom|^2 + \\rho e(\\rho)\n\\mathrm{d}\\xcoord\n+ \\int_{0}^t \\Big\\{ \\int_{\\bdry} \\Big( \\frac{1}{2 \\rho} |\\mom|^2 + \\rho\ne(\\rho) + p(\\rho) \\Big) \\vel\\cdot\\normal \\, \\text{d}o_x \\Big\\} \\mathrm{d} t \\leq\n0.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-017",
+      "least_adequate_overall_repair": "Use the instantaneous boundary flux with the time derivative, or consistently integrate both terms and include E(t)−E(0).",
+      "overall_effect": "The stated barotropic entropy-dissipation balance is false for nonzero boundary energy exchange, although the subsequent entropy-flux pair is correct.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The barotropic entropy balance mixes differential and integrated time forms",
+      "why_classification": "A local correction of the balance's time form preserves the intended entropy statement and the numerical entropy-flux definition."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "ConvexRef"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\mathcal{A} = \\{\\mathbb{R}^{d+2} \\, | \\, \\rho > 0 \\text{ and }\ne(\\state) > 0\\}$ for the case of the full Euler equations with covolume\nequation of state.",
+          "tag": null
+        },
+        {
+          "quote": "For the case of the co-volume equation of state, the pressure is given by\n$p(1-b\\rho)=(\\gamma-1) e \\rho$ with $b \\ge 0$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For b>0, the declared admissible set allows ρ=1/b with e>0, where the pressure needed by the flux is undefined. It also allows bρ>1, giving negative pressure and invalid fractional-pressure expressions in the supplied wave-speed estimator. Positivity of density and internal energy is therefore not the full input contract for this EOS.",
+      "failure_location": {
+        "quote": "&+ \\sum_{j \\in \\mathcal{I}(i)} \\flux({\\state}_j^n) \\mathbf{c}_{ij}\n- d_{ij}^\\low ({\\state}_j^n - {\\state}_i^n)",
+        "tag": "eq:FO"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-018",
+      "least_adequate_overall_repair": "Include 1−bρ>0 in the co-volume admissible set and initialization, and use that physical invariant domain in the hyperbolic guarantees.",
+      "overall_effect": "The co-volume hyperbolic update and its admissibility assertions do not apply to every state in the set explicitly declared admissible.",
+      "primary_affected_tag": "eq:FO",
+      "target_type": "algorithm",
+      "title": "The co-volume solver's admissible input set includes states where its EOS is undefined",
+      "why_classification": "This standard EOS-domain condition excludes undefined physical states rather than an intended valid regime, and the source step already leaves density unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "ConvexRef"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The vector $\\bc_{i}^{\\bdry}$ is zero, unless the\ncorresponding collocation point $\\xcoord_i$ lies on the boundary $\\bdry$",
+          "tag": null
+        },
+        {
+          "quote": "- \\frac{|\\bc_i^{\\bdry}|}{2 d_{i}^\\low}\n\\left(\\flux(\\state_i^{\\bdry,n}) -\n\\flux(\\state_i^{n})\\right)\n\\normal_{i}.",
+          "tag": "BoundaryBarState"
+        }
+      ],
+      "failure_explanation": "At every interior node the prescribed boundary normal is 0/0. Consequently the boundary wave-speed call and associated bar-state are undefined, despite these being included in the formulas for all nodes. Multiplication by a subsequently zero coefficient does not define these intermediate quantities.",
+      "failure_location": {
+        "quote": "\\normal_{i}=\n\\frac{\\bc_{i}^{\\bdry}}{|\\bc_{i}^{\\bdry}|_{\\ell^2}}.",
+        "tag": "eq:dij_low_order"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-019",
+      "least_adequate_overall_repair": "Set the boundary viscosity to zero when the boundary vector is zero and omit the corresponding normal, boundary state evaluation, and bar-state contribution.",
+      "overall_effect": "The graph-viscosity construction and convex reformulation are not defined at ordinary interior nodes as written.",
+      "primary_affected_tag": "eq:dij_low_order",
+      "target_type": "algorithm",
+      "title": "Boundary graph viscosities normalize vectors that are explicitly zero",
+      "why_classification": "A routine zero-contribution branch repairs the formulas without changing any actual update or guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "ConvexRef"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "It is\npossible to show that $\\lambda^{\\#}({\\state}_L,\n{\\state}_R, \\normal) \\geq \\lambda_{\\max}({\\state}_L,\n{\\state}_R, \\normal)$ for $1 < \\gamma \\le \\frac53$",
+          "tag": null
+        },
+        {
+          "quote": "$v_L = \\vel_L \\cdot \\normal$,\n$v_R = \\vel_R \\cdot \\normal$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Admissible positive-pressure states can have sufficiently large separating velocities to make the numerator negative. For example, take b=0, c_L=c_R=1, v_L=−M, v_R=M, and M>2/(γ−1). For an allowed irrational γ, the displayed irrational power of a negative number is not real. The vacuum-producing expansion case is not excluded or handled.",
+      "failure_location": {
+        "quote": "&p^{\\#} := \\left(\n\\frac{c_L(1-b\\rho_L)+c_R(1-b\\rho_R)-\\frac{\\gamma-1}{2}(v_R-v_L)}\n{ c_L(1-b\\rho_L)\\ p_L^{-\\frac{\\gamma-1}{2\\gamma}}\n+ c_R(1-b\\rho_R)\\ p_R^{-\\frac{\\gamma-1}{2\\gamma}} } }\n\\right)^{\\frac{2\\gamma}{\\gamma-1}},",
+        "tag": "PSharp"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-020",
+      "least_adequate_overall_repair": "Add the vacuum case, using a nonnegative pressure estimate such as the positive-part numerator and the corresponding p#=0 outer wave-speed formulas.",
+      "overall_effect": "The proposed wave-speed estimate, hence graph viscosities and CFL step, can be undefined for legitimate Euler Riemann data.",
+      "primary_affected_tag": "PSharp",
+      "target_type": "algorithm",
+      "title": "The two-rarefaction estimator has no vacuum branch",
+      "why_classification": "A standard local vacuum branch retains the intended admissible-state scope and wave-speed guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\overline{\\state}_{ij}^{n} &= \\frac{1}{2}(\\state_j^{n} +\n  \\state_i^{n})\n  - \\frac{|\\bc_{ij}|}{2 d_{ij}^\\low} \\left(\\flux(\\state_j^{n}) -\n  \\flux(\\state_i^{n})\\right) \\normal_{ij},",
+          "tag": "UsualBarState"
+        },
+        {
+          "quote": "\\lambda^{\\#}({\\state}_L, {\\state}_R, \\normal)\n=\n\\max\\{|\\vel_L\\cdot\\normal|, |\\vel_R\\cdot\\normal|\\} + \\max\\{c_L, c_R\\},",
+          "tag": null
+        },
+        {
+          "quote": "admissibility reduces to\npositivity of the density, $\\mathcal{A} = \\{\\mathbb{R}^{d+1} \\, | \\, \\rho >\n0 \\}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The allowed zero-temperature closure has p=c=0. Take equal positive densities 1 and normal velocities −1 and +1. The chosen estimate is λ#=1, and the bar-state density is 1−(1−(−1))/2=0. Thus the bar-state lies on the boundary, not in the declared open admissible set. The velocity-only bound proves nonnegativity, not strict positivity of every bar-state.",
+      "failure_location": {
+        "quote": "are admissible, provided that ${\\state}_i^{n}$ and ${\\vec\nu}_j^{n}$ are admissible",
+        "tag": "ConvexRef"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-021",
+      "least_adequate_overall_repair": "State nonnegativity for cold bar-states and use the strictly positive coefficient of the old positive-density state under CFL<1 to prove strict positivity of the final update.",
+      "overall_effect": "The supporting bar-state admissibility assertion fails in the explicitly allowed cold limit, although a strict CFL factor can still make the final density positive.",
+      "primary_affected_tag": "ConvexRef",
+      "target_type": "formal_result",
+      "title": "Cold barotropic bar-states need not have strictly positive density",
+      "why_classification": "The correction changes only the supporting argument; the final positivity guarantee survives with the CFL range already selected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "ConvexRef"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the isothermal equation of state $p = \\theta \\rho$, where $\\theta \\geq 0$\nis the temperature of the plasma.",
+          "tag": null
+        },
+        {
+          "quote": "\\lambda^{\\#}({\\state}_L, {\\state}_R, \\normal)\n=\n\\max\\{|\\vel_L\\cdot\\normal|, |\\vel_R\\cdot\\normal|\\} + \\max\\{c_L, c_R\\},",
+          "tag": null
+        },
+        {
+          "quote": "d_{ii}^{\\low,n} &:=\n  -\\sum_{j \\in \\mathcal{I}(i),j\\not=i}\n  d_{ij}^{\\low,n} \\;-\\; d_{i}^{\\low,n} .",
+          "tag": "eq:dij_low_order"
+        }
+      ],
+      "failure_explanation": "For the allowed zero-temperature fluid at rest, every estimated wave speed and every graph viscosity is zero. Hence all CFL denominators vanish, and the formula supplies no finite executable time step. The associated bar-state formulas also divide by zero viscosity. This is a physical zero-speed case even on nonzero interior graph edges, distinct from zero boundary vectors.",
+      "failure_location": {
+        "quote": "\\dt_n = \\text{CFL} \\cdot \\min_{i \\in \\vertices}\n  \\Big(-\\frac{m_i}{2 d_{ii}^{\\low,n}}\\Big)",
+        "tag": "CflFormula"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-022",
+      "least_adequate_overall_repair": "Treat zero-viscosity rows as imposing no CFL restriction, omit zero-weight bar-state constructions, and provide a finite step cap or remaining-time rule when every row has zero speed.",
+      "overall_effect": "The hyperbolic step selection is undefined for a legitimate pressureless state included in the paper's scope.",
+      "primary_affected_tag": "CflFormula",
+      "target_type": "algorithm",
+      "title": "The CFL construction does not handle zero wave speeds in the pressureless limit",
+      "why_classification": "A standard degenerate-case convention preserves the pressureless regime and requires no change to the nondegenerate scheme."
+    }
+  ],
+  "issues_found": 22,
+  "paper_id": "2510.11808",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4e4fe4d98a60e324e57344a0d5c1e6456a198a87e5914ab3ba13a6003c5d0493",
+  "status": "ok"
+}

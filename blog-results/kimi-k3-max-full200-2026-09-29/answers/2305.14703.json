@@ -1,0 +1,82 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\# of samples $N_s$   &  $1$ if noise-free; $100$ if noisy",
+          "tag": "tab:params-test2"
+        },
+        {
+          "quote": "PDNO &  35, 707, 841 & 0.0046 & $5.08$e$-07$ & 0.0022 & $3.52$e$-07$ & 0.0037 & $1.21$e$-05$",
+          "tag": "tab:darcy_error"
+        },
+        {
+          "quote": "PDNO & $3, 980, 129$ & $0.0047$ & $5.47$e$-04$ & $0.0053$ & $7.93$e$-04$ & $0.0152$ & $1.51$e$-03$",
+          "tag": "tab:burgers"
+        },
+        {
+          "quote": "\\# of samples $N_s$   &  $1$",
+          "tag": "tab:params-test3"
+        }
+      ],
+      "failure_explanation": "MSTD is defined as the average over test pairs of the norm of the empirical standard deviation across the N_s generated samples, divided by N_s. The stated testing protocol uses a single sample for all noise-free evaluations ('$N_s$: $1$ if noise-free' in Table tab:params-test2; '$N_s$: $1$ in tab:params-test3/tab:params-test4). With N_s = 1 the empirical std over one sample is identically 0 (or undefined under Bessel's correction), so the defined MSTD is 0/undefined for every noise-free test case -- yet Tables tab:darcy_error, tab:burgers, tab:adv_error report nonzero MSTDs (e.g., 5.08e-07, 5.47e-04, 7.91e-04). Additionally, dividing the pointwise std by N_s makes the metric shrink with the number of samples even for a fixed learned distribution, so as defined it does not measure a 'mean standard deviation'. The reported MSTD values are therefore irreproducible from the stated definition and protocol.",
+      "failure_location": {
+        "quote": "\\frac{\\|\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s}) \\|_2}{N_s}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "State the actual protocol used to estimate the standard deviation (a number of samples N_s > 1 for the noise-free runs, consistent with the 'diagnostic run' described in the text), remove or justify the division by N_s in the MSTD definition, and re-verify the tabulated MSTD values.",
+      "overall_effect": "The MSTD columns of Tables tab:darcy_error, tab:burgers, and tab:adv_error, and the diagnostic claim that the learned noise-free conditional distribution has 'approximately zero' standard deviation, are unsupported as written. The MRLE values and all accuracy comparisons are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "MSTD definition and stated sample counts cannot produce the reported values",
+      "why_classification": "The defect is a local inconsistency between a metric definition, the reported sample counts, and the tabulated numbers; correcting the evaluation description is a short local fix with no change to the method, the MRLE results, or the advertised scope, so every substantive claim survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a (nonzero mean) Gaussian distribution with the identity covariance, i.e., $u_0 \\sim \\mathcal{N}(m, \\mathbf{I})$",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "after integrating out $u_0$ in~\\eqref{eqn:true-reverse}, the true reverse distribution $p(u_{t-1} | u_t)$ has a covariance $\\beta_t \\mathbf{I}$",
+          "tag": null
+        },
+        {
+          "quote": "Note that we do not assume the covariance $\\Sigma(a)$ is known",
+          "tag": null
+        },
+        {
+          "quote": "The model is trained on the noisy data set with $\\sigma=0.0005$.",
+          "tag": "fig:DF_noisy"
+        }
+      ],
+      "failure_explanation": "The optimality claim for the 'additive Gaussian noise' branch of eqn:cov rests on Proposition prop:added-2, whose hypothesis is that the data conditional on a have identity covariance, u_0 ~ N(m, I); only under that hypothesis does integrating out u_0 yield the true reverse covariance beta_t I and the entropy equality H_p(u_{t-1}|u_t) = H_{q_theta}(u_{t-1}|u_t) for Sigma_theta = beta_t I. The paper's noisy-data model is u_eta = u + eta with eta ~ N(0, Sigma(a)), Sigma(a) unknown, and the noisy experiments use noise levels far from unit variance (sigma = 1%, 5% in Test 1 on unnormalized data; sigma = 0.0005, 0.001 in Test 2). For conditional covariance sigma^2 I the forward chain gives Var(u_{t-1}|u_t) = beta_t (1 - bar_alpha_{t-1}(1-sigma^2))/(1 - bar_alpha_t(1-sigma^2)) I, which equals beta_t I only when sigma^2 = 1 and tends to the noise-free branch ((1-bar_alpha_{t-1})/(1-bar_alpha_t)) beta_t I as sigma^2 -> 0. Hence in the regime where the paper applies it, the asserted optimality is false -- by the paper's own entropy criterion the noise-free branch would be near-optimal instead -- and the bridging sentence 'A similar result holds in the case of data perturbed by an additive Gaussian noise' overgeneralizes prop:added-2 beyond its hypothesis.",
+      "failure_location": {
+        "quote": "Hence, the parameterization~\\eqref{eqn:cov} for $\\Sigma_{\\theta}$ in the Gaussian noise setting is optimal in the sense that $H_p(u_{t-1}|u_t) = H_{q_{\\theta}}(u_{t-1}|u_t)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict the optimality statement to the unit-noise-variance case (stating the hypothesis explicitly) and present Sigma_theta = beta_t I as a heuristic choice for general Sigma(a); alternatively, generalize Proposition prop:added-2 to u_0 ~ N(m, sigma^2 I) and adopt the resulting sigma^2-dependent optimal covariance in eqn:cov.",
+      "overall_effect": "The stated information-theoretic justification of the noisy-data branch of eqn:cov -- the reverse covariance used in all noisy-data experiments -- is invalid for the paper's noise model and experimental regime; the optimality claim and the closing 'exact likelihood' entropy equality for the Gaussian-noise case are unsupported there. The PDNO algorithm itself and all reported empirical results are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Optimality justification for the noisy-data reverse covariance applies only to unit-variance noise",
+      "why_classification": "The covariance choice is an auxiliary heuristic component: a one-sentence qualification (unit-variance assumption) or a contained re-derivation makes the statements correct while the method, the experimental conclusions, and the advertised scope all survive unchanged, requiring no new nontrivial argument and causing no substantive loss."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2305.14703",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e417f6e97606e57c1bddcad5ccc77b48f42186a7406fb76629c7aa30c1d3514b",
+  "status": "ok"
+}

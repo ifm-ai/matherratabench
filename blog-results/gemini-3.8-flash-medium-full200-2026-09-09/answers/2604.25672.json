@@ -1,0 +1,62 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\kappa^{n+1} = z_1^{n+1} z_2^{n+1} \\frac{\\nu_1^{n+1}-\\nu_2^{n+1}}{\\nu^{n+1}},",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "\\nu_k^{n+1} = (\\frac{1}{\\rho_k c_k^2})^{n+1}= \\frac{1}{\\gamma_k (p^{n+1}+p_{w,k})},",
+          "tag": "imkappa"
+        }
+      ],
+      "failure_explanation": "Theorem 3.1 claims unconditional existence of a root $z_1^{n+1} \\in [0, 1]$ assuming only $z_1^n \\in [0, 1]$ and $\\Delta t_{\\mathrm{im}} > 0$, deducing it by applying the intermediate value theorem to $F(z_1)$. However, $F(z_1)$ is not continuous on $[0, 1]$ in general: the mixture compressibility $\\nu(z_1) = z_1 \\nu_1 + (1-z_1) \\nu_2$ and phase compressibilities $\\nu_k(z_1) = 1/(\\gamma_k (p(z_1) + p_{w,k}))$ can have vanishing denominators, introducing poles in $(0, 1)$. For example, in liquid-gas mixtures where pressure can become negative with $p(z_1) + p_{w,2} > 0$ and $p(z_1) + p_{w,1} < 0$, $\\nu_1$ and $\\nu_2$ have opposite signs, causing $\\nu(z_1)$ to cross zero in $(0, 1)$. Thus, $F(z_1)$ can diverge to $\\pm\\infty$ and fail to have a root in $[0, 1]$ despite $F(0) \\le 0$ and $F(1) \\ge 0$.",
+      "failure_location": {
+        "quote": "The continuity of $F(z_1)$ guarantees the \nexistence of root $z_1^{n+1} \\in [0, 1]$.",
+        "tag": "thm:implicit_solver"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add explicit conditions on the conserved variables (such as mixture internal energy bounds guaranteeing $p(z_1) + p_{w,k} > 0$ for all $z_1 \\in [0, 1]$) so that $\\nu(z_1) > 0$ and $F(z_1)$ is legitimately continuous on $[0, 1]$.",
+      "overall_effect": "The unconditional bound-preserving guarantee for the implicit backward Euler step (and the adaptive SDIRK2 step (3.5)) is unproven without restrictions ensuring $p(z_1) + p_{w,k} > 0$ for all $z_1 \\in [0, 1]$.",
+      "primary_affected_tag": "thm:implicit_solver",
+      "target_type": "formal_result",
+      "title": "Unfounded continuity and unconditional existence of root in implicit solver",
+      "why_classification": "The failure requires adding nontrivial physical state conditions to ensure well-definedness and continuity of the rational ODE right-hand side, but the implicit solver formulation survives in the relevant physical regime without global restructuring."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The linear scaling formula for $\\theta_p$ in (4.7) assumes that $p(\\mathbf{U})$ is linear or concave in $\\mathbf{U}$, so that $(1-\\theta) p(\\overline{\\mathbf{U}}) + \\theta p(\\widetilde{\\mathbf{U}}) \\le p((1-\\theta)\\overline{\\mathbf{U}} + \\theta \\widetilde{\\mathbf{U}})$. However, for the Tammann EOS, the mixture pressure $p(\\mathbf{U}) = N(\\mathbf{U}) / D(\\mathbf{U})$ is a rational function with a spatially varying denominator $D(\\mathbf{U}) = \\frac{z_1}{\\gamma_1-1} + \\frac{z_2}{\\gamma_2-1}$. When $D(\\widetilde{\\mathbf{U}}) > D(\\overline{\\mathbf{U}})$, $p(\\theta) = p((1-\\theta)\\overline{\\mathbf{U}} + \\theta\\widetilde{\\mathbf{U}})$ is strictly convex with respect to $\\theta$, so the chord lies strictly above $p(\\theta)$. Consequently, choosing $\\theta_p$ such that the linear chord equals $\\varepsilon_p$ can leave $p(\\mathbf{U}(\\theta_p))$ significantly negative, directly violating the stated guarantee that $\\mathbf{U}_{i,j}(x,y) \\in \\mathcal{G}^p$.",
+      "failure_location": {
+        "quote": "\\theta_{p} = \\begin{cases}\n    \\frac{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\varepsilon_p}{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y))}, & \\text{if } \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y)) < \\varepsilon_p, \\\\\n    1, & \\text{otherwise}.\n    \\end{cases}",
+        "tag": "BP_P"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the definition of $\\theta_p$ with a limiter based on the concave numerator function $g(\\mathbf{U}) = N(\\mathbf{U}) - \\varepsilon_p D(\\mathbf{U}) \\ge 0$ (or compute the root of $p((1-\\theta)\\overline{\\mathbf{U}} + \\theta\\widetilde{\\mathbf{U}}) = \\varepsilon_p$), which rigorously guarantees $p(\\mathbf{U}) \\ge \\varepsilon_p$.",
+      "overall_effect": "The BP limiter does not guarantee that the reconstructed numerical solution satisfies $p \\ge \\varepsilon_p > 0$ at the quadrature points, undermining the bound-preserving property of pressure.",
+      "primary_affected_tag": "BP_P",
+      "target_type": "algorithm",
+      "title": "Pressure BP limiter fails to enforce positive pressure due to non-concavity of Tammann mixture pressure",
+      "why_classification": "Fixing the pressure limiter requires replacing the standard linear secant formula with a concave-surrogate or quadratic root-finding limiting step, but does not alter the broader DG/OEDG architecture."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2604.25672",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6e33d4743ac4690d4731311b541c59b0314910ae99b86bef3e25e9c3e4e7b64a",
+  "status": "ok"
+}

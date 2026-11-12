@@ -1,0 +1,70 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "${x_j = \\Re({x_j}) + i \\;\\Im({x_j})}$,\n\t${b_j = \\Re({b_j}) + i \\;\\Im({b_j})}$. ",
+          "tag": "eq:saddlesystem"
+        },
+        {
+          "quote": "The corresponding saddle point problem for \\eqref{eq:blockproblem} is then given by",
+          "tag": "eq:saddlesystem"
+        }
+      ],
+      "failure_explanation": "Expanding (A - λ_j I)x_j = b_j with λ_j = Re(λ_j) + i·Im(λ_j) and matching real and imaginary parts gives (A - Re(λ_j))Re(x_j) + Im(λ_j)·Im(x_j) = Re(b_j) and (A - Re(λ_j))Im(x_j) - Im(λ_j)·Re(x_j) = Im(b_j). Applied to the unknown vector (Re(x_j), -Im(x_j)), the printed matrix therefore produces (-Im(b_j), Re(b_j)) on the left-hand side, so the right-hand side must be (-Im(b_j), Re(b_j))^T; the printed (-Re(b_j), Im(b_j))^T is wrong in both entries (e.g. for A=2, λ_j=1+i, b_j=3+4i the true solution is x_j=-0.5+3.5i, the left-hand side equals (-4, 3), but the printed right-hand side is (-3, 4)). As written, the 'corresponding saddle point problem' is not equivalent to the complex block problem it is claimed to reformulate.",
+      "failure_location": {
+        "quote": "\\underbrace{\\begin{pmatrix}\n\t\t\t\t\\Im(\\lambda_j)I_\\sizeA & {A}-\\Re(\\lambda_j)I_\\sizeA \\\\\n\t\t\t\t{A}-\\Re(\\lambda_j)I_\\sizeA & -\\Im(\\lambda_j)I_\\sizeA\n\t\t\\end{pmatrix}}_{\\mathcal{S}}\\begin{pmatrix}\n\t\t\\t\\Re({x_j}) \\\\ -\\Im({x_j})\n\t\\t\\end{pmatrix} = \\begin{pmatrix}\n\t\\t\\t-\\Re({b_j})\\\\ \\Im({b_j})\n\t\\t\\end{pmatrix},",
+        "tag": "eq:saddlesystem"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the right-hand side (-Re(b_j), Im(b_j))^T by (-Im(b_j), Re(b_j))^T. This one-line correction is forced by the real/imaginary decomposition given in the source and restores the stated equivalence; no other change is needed.",
+      "overall_effect": "The reformulation in eq:saddlesystem does not solve eq:blockproblem as printed; anyone implementing the equation verbatim obtains the wrong solution. The matrix part of the system is correct, so Theorem thm:added-2 (eigenvalue clustering of P_D^{-1}S), the preconditioner P_D, and all downstream eigenvalue analysis remain valid; only the right-hand side of the equation must be corrected.",
+      "primary_affected_tag": "eq:saddlesystem",
+      "target_type": "other",
+      "title": "Incorrect right-hand side in the saddle point reformulation of the complex block problem",
+      "why_classification": "The defect is confined to one displayed equation's right-hand side; the matrix, the inner preconditioner, the eigenvalue theorem, and the advertised guarantees all survive, and the unique one-line repair restores the construction with no loss of content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "6. Normalize $r = \\frac{r}{\\sum_{{j}}r{(j)}}$. \n\t\t7. Allocation is $\\texttt{all} = \\lfloor r  \\ell n_x \\resource\\rfloor$ where the floor operation is applied entrywise.",
+          "tag": "alg:AssignIterations"
+        },
+        {
+          "quote": "For $\\mathcal{P}_{NC1}$ each sub-problem is allocated $20$ inner iterations, resulting in \\eqref{eq:blockproblem} being solved to very different tolerances: e.g. $0.04$ for $\\lambda_j=-1$ and $0.72$ for $\\lambda_j=1$ when $\\alpha=1$.",
+          "tag": null
+        },
+        {
+          "quote": "The total permitted number of matrix--vector products with $A$ used to apply any of our new preconditioners is given by $\\ell n_x  \\resource$, where $\\resource$ is a user-defined parameter.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The sentence sits in the resource setting η=0.2 with ℓ=10, n_x=100, α=1, where the total budget is ℓ n_x η = 200 inner iterations (as confirmed by the 20 iterations per sub-problem for P_NC1 in the same paragraph). Algorithm 1 computes σ_j = (√κ(Re B_j)-1)/(√κ(Re B_j)+1); with the paper's own spectrum (μ_min≈1.049, μ_max≈205 for n_x=100, ℓ=10) this gives σ_1≈0.9694 for λ_j=1 and σ≈0.8186 for λ_j=-1, values consistent with the paper's own Table tab:Cheb conv tol (463 and 72 CI iterations to reach 1e-6). The normalized weights are then r(1)≈0.304 and r(λ=-1)≈0.047, i.e. an allocation of ≈60 and ≈9 iterations, not 30 and 4. The reported (30, 4) are exactly the η=0.1 allocation (budget 100), so the parenthetical numbers do not describe the stated η=0.2 experiment, and the quoted common tolerance 0.6 belongs to the same misreported allocation.",
+      "failure_location": {
+        "quote": "In contrast, for $\\mathcal{P}_{NC2}$ Algorithm 1 assigns more iterations to the subproblem corresponding to $\\lambda_j=1$ and fewer to the case for $\\lambda_j=-1$ ($30$ and $4$ respectively when $\\alpha=1$). This means that all sub-problems are solved to approximately the same tolerance ($0.6$ for $\\alpha=1)$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the parenthetical allocation to the values Algorithm 1 actually produces at η=0.2 (≈60 iterations for λ_j=1 and ≈9 for λ_j=-1), or explicitly state that the reported (30, 4) split corresponds to η=0.1; adjust the quoted common tolerance accordingly.",
+      "overall_effect": "Only the descriptive prose in Section sec:NumericsCI is affected; Algorithm alg:AssignIterations, Theorem thm:convergence, and all outer-iteration and matrix--vector product results stand. The qualitative claim that P_NC2 allocates more iterations to λ_j=1 and fewer to λ_j=-1 remains correct.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Reported P_NC2 inner-iteration allocation (30 and 4) is inconsistent with Algorithm 1 at the stated resource level",
+      "why_classification": "A local numerical-reporting inconsistency in the numerics discussion; the algorithm and all theoretical claims are correct, and the repair is a small correction to the reported numbers with no loss of any result, rate, or guarantee."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2506.03947",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3524514ec032ec87b79cf3f5eba88988a0a08a64f20bf981e36596fab8eae76d",
+  "status": "ok"
+}

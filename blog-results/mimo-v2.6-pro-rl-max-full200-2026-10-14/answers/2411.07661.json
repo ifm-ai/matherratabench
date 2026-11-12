@@ -1,0 +1,314 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "It is well-known that \\eqref{eq:bdf2:adam:orig} is based on the second-order backward differentiation formulas (BDF) for the implicit and possible linear part $h(u)$ and Adams-Bashforth scheme for the explicit and possible nonlinear part $f(u)$",
+          "tag": null
+        },
+        {
+          "quote": "the preconditioned equation \\eqref{eq:solve:y:pre:general} is of order $O(\\delta t^2)$, which is the same as the original second-order BDF  and Adams-Bashforth scheme \\eqref{eq:bdf2:adam:orig}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The standard second-order BDF2 formula is (3u^{n+1}-4u^n+u^{n-1})/(2δt), giving coefficient 1/(2δt). The paper uses 2/(3δt) = (4/3)·(1/(2δt)), so the scheme approximates (4/3)u' + g(u) = 0 rather than u' + g(u) = 0. Taylor expansion shows 2/(3δt)·(3u^{n+1}-4u^n+u^{n-1}) = (4/3)u'(t_{n+1}) + O(δt²), not u'(t_{n+1}).",
+      "failure_location": {
+        "quote": "\\frac{2}{3\\delta t}(3u^{n+1} - 4u^n + u^{n-1}) + h(u^{n+1}) + 2f(u^n) - f(u^{n-1}) = 0,",
+        "tag": "eq:bdf2:adam:orig"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Change 2/(3δt) to 1/(2δt) in (eq:bdf2:adam:orig) and adjust proximal coefficients in H^n and F^n from (1/δt, 1/(3δt)) to (3/(4δt), 1/(4δt)); update dependent constants throughout.",
+      "overall_effect": "The scheme is not the claimed second-order BDF2/AB2 method. The proximal coefficients in H^n and F^n and all derived constants (step-size restrictions, strong-convexity parameters) are scaled by 4/3. Proposition prop:second_order:pre's claim of matching 'the original second-order BDF' is false.",
+      "primary_affected_tag": "eq:bdf2:adam:orig",
+      "target_type": "other",
+      "title": "IMEX scheme uses non-BDF2 coefficient 2/(3δt) instead of 1/(2δt)",
+      "why_classification": "Requires systematic change of proximal coefficients and constants throughout but preserves the algorithm structure and all convergence guarantees; no new proof architecture needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:globalconverg",
+        "them:local:rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the coefficient $c(\\lambda_n, \\delta t, L) := \\frac{4}{3\\delta t} - \\frac{L}{2} - L(1+\\lambda_n)^2$ satisfies $c(\\lambda_n, \\delta t, L) > 0$",
+          "tag": "lem:square:summable"
+        },
+        {
+          "quote": "where $0 \\leq \\lambda_{\\min} : =\\min\\{ \\lambda_n, \\ n \\geq 1\\}$",
+          "tag": "lem:square:summable"
+        }
+      ],
+      "failure_explanation": "By definition of λ_max = √(4/(3δtL) − 1/2) − 1, one has (1+λ_max)² = 4/(3δtL) − 1/2, so c(λ_max) = 4/(3δt) − L/2 − L(4/(3δtL) − 1/2) = 0 exactly. The resulting coefficient αλ_min/(1+λ_max)² is zero whenever λ_min = 0 (permitted since 0 ≤ λ_n). The proof also defines λ_min = min{λ_n} which may not exist if inf λ_n = 0 is not attained.",
+      "failure_location": {
+        "quote": "\\frac{\\alpha\\lambda_{\\min} + c(\\lambda_{\\max},\\delta t, L)}{(1+\\lambda_{\\max})^2} \\|u^{n+1} - u^n\\|^2\\leq A(u^n,u^{n-1}) - A(u^{n+1},u^n)",
+        "tag": "lem:square:summable"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace c(λ_max) with c(sup_n λ_n) > 0 requiring sup_n λ_n < λ_max, or choose λ_max strictly below √(4/(3δtL)−1/2)−1 so c(λ_max)>0, or impose λ_min > 0 as an additional hypothesis.",
+      "overall_effect": "Lemma lem:square:summable's square-summability conclusion is unproved when λ_min=0. Theorems thm:globalconverg and them:local:rate rely on this lemma and become unreliable.",
+      "primary_affected_tag": "lem:square:summable",
+      "target_type": "formal_result",
+      "title": "Proof bound degenerates: c(λ_max)=0 makes square-summability estimate trivial",
+      "why_classification": "A contained change to the bound in the proof (or to the choice of λ_max) restores square-summability without new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "them:local:rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nabla A(x,y)|_{(x,y)=(u^{n+1}, u^n)} = \\left(\n    \\begin{array}{c}\n        h(u^{n+1}) + f(u^{n+1}) + C_0(u^{n+1} - u^n)\\\\\n    -C_0(u^{n+1} - u^n)\n    \\end{array}\\right).",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "A(x,y) = E(x) + (L/2 + 1/(3δt))‖x−y‖², so ∇_x A = ∇E(x) + 2(L/2+1/(3δt))(x−y) = h(x)+f(x)+(L+2/(3δt))(x−y). The paper writes C₀ = L_f/2 + 1/(3δt) and uses C₀(x−y) in the gradient, which is half the correct coefficient 2C₀ = L + 2/(3δt).",
+      "failure_location": {
+        "quote": "notation $C_0 = \\frac{L_f}{2} + \\frac{1}{3\\delta t}$, we have",
+        "tag": "thm:globalconverg"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace C₀ with 2C₀ = L + 2/(3δt) in the gradient formula and redo the subsequent estimates with corrected constants.",
+      "overall_effect": "All estimates in the proof of thm:globalconverg(i) use incorrect gradient coefficients. The conclusion ‖∇A‖→0 is correct but the proof is invalid.",
+      "primary_affected_tag": "thm:globalconverg",
+      "target_type": "formal_result",
+      "title": "Gradient of A(x,y) computed with half the correct coefficient (C₀ vs 2C₀)",
+      "why_classification": "Requires redoing the gradient computation and associated estimates but no new proof architecture or loss of results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "them:local:rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Taking $\\hat u^n = u^n$ in \\eqref{eq:solve:y:pre:general}, we can obtain",
+          "tag": "thm:globalconverg"
+        },
+        {
+          "quote": "-\\frac{1}{2\\delta t}(3y^{n+1} - 4u^{n+1}+ u^{n}) - M(y^n - u^n))\\|",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "From (eq:solve:y:pre:general) at step n+1 with û=u: 2f(u^{n+1}) = −(2/(3δt))(3y^{n+1}−4u^{n+1}+u^n) − M(y^{n+1}−u^{n+1}) − h(y^{n+1}) + f(u^n). The paper's equation has coefficient −1/(3δt) instead of −2/(3δt) and uses M(y^n−u^n) instead of M(y^{n+1}−u^{n+1}). The estimate (eq:esti:grad:A) further uses inconsistent coefficient −1/(2δt).",
+      "failure_location": {
+        "quote": "f(u^{n+1}) = -\\frac{1}{3\\delta t}(3y^{n+1} - 4u^{n+1} + u^{n})  - \\left(f(u^{n+1}) - f(u^{n})\\right) -h(y^{n+1}) - M(y^n - u^n).",
+        "tag": "thm:globalconverg"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Correct the derivation of f(u^{n+1}) from (eq:solve:y:pre:general): use coefficient −2/(3δt) and M(y^{n+1}−u^{n+1}); redo subsequent estimates.",
+      "overall_effect": "The substitution for f(u^{n+1}) and all subsequent gradient estimates in thm:globalconverg(i) are invalid. The qualitative conclusion survives but the proof is broken.",
+      "primary_affected_tag": "thm:globalconverg",
+      "target_type": "formal_result",
+      "title": "Wrong equation for f(u^{n+1}) derived from optimality condition in thm:globalconverg proof",
+      "why_classification": "Multiple incorrect algebraic steps in one derivation must be corrected and the estimates redone, but the proof structure and conclusion survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $ \\rho := \\frac{1-\\theta}{2\\theta-1}$.",
+          "tag": "them:local:rate"
+        }
+      ],
+      "failure_explanation": "For θ∈(1/2,1): −(1−θ)/(2θ−2) = (1−θ)/(2(1−θ)) = 1/2, so the stated bound n^{1/2} diverges and is trivially true for bounded sequences. The appendix proof derives ρ = (1−θ)/(2θ−1), giving the correct rate n^{−(1−θ)/(2θ−1)} which depends on θ. The statement's denominator 2θ−2 should be 2θ−1.",
+      "failure_location": {
+        "quote": "$\\|u^n-u^*\\| < c_2 n^{-\\frac{1-\\theta}{2\\theta-2}} $ for $n>n_2$.",
+        "tag": "them:local:rate"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Change 2θ−2 to 2θ−1 in the exponent in Theorem them:local:rate(iii).",
+      "overall_effect": "The stated rate for θ∈(1/2,1) is a useless trivial bound rather than the correct convergence rate n^{−(1−θ)/(2θ−1)} derived in the appendix.",
+      "primary_affected_tag": "them:local:rate",
+      "target_type": "formal_result",
+      "title": "Local convergence rate exponent has wrong denominator: 2θ−2 instead of 2θ−1",
+      "why_classification": "Single-character correction forced by the appendix proof; no inference or argument needs repair."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:til:1",
+        "prop:til2",
+        "coro:til1",
+        "thm:square:sum:til",
+        "thm:globalconverg:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "y^{n} = \\argmin_u \\left\\{H^n(u) - \\langle \\nabla F^n(u^{n}),u\\rangle + \\frac12\\|u-\\hat{u}\\|^2_M\\right\\}",
+          "tag": null
+        },
+        {
+          "quote": "The equation \\eqref{eq:solve:y:pre:general} for $\\hat u^n = \\tilde u^n$ becomes",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "From the subproblem (eq:algorithmic:update) with proximal term (1/2)‖u−û‖²_M, the optimality condition gives M(y^n−û^n). With û^n=ũ^n this is M(y^n−ũ^n), not (2M/δt)(y^n−ũ^n). The paper's claim that (eq:til:yn) follows from (eq:solve:y:pre:general) is algebraically wrong; the proximal coefficient is off by 2/δt.",
+      "failure_location": {
+        "quote": "\\frac{2M}{\\delta t}(y^{n} - \\Tilde u^n)",
+        "tag": "eq:til:yn"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace 2M/δt with M in (eq:til:yn) and redo the analysis for the û=ũ case with adjusted constants (the qualitative structure persists with weaker bounds).",
+      "overall_effect": "All results for the û=ũ case (Propositions prop:til:1, prop:til2, Corollary coro:til1, Theorems thm:square:sum:til, thm:globalconverg:M) analyze a different equation than the algorithm actually produces.",
+      "primary_affected_tag": "eq:til:yn",
+      "target_type": "other",
+      "title": "Wrong proximal coefficient 2M/δt instead of M in (eq:til:yn) for û=ũ case",
+      "why_classification": "Requires redoing the analysis for the û=ũ case with changed constants but no new proof architecture or loss of convergence guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tilde A(x,y)=H(x) + F(x) + (\\frac{1}{3\\delta t} + \\frac{L}{2})||x-y||^2+\\ \\frac{1 + \\lambda_{\\max}}{3\\delta t}\\|x- y\\|^2_M is a KL function.",
+          "tag": "thm:globalconverg:M"
+        }
+      ],
+      "failure_explanation": "The quadratic term ((1+λ_max)/(3δt))‖x−y‖²_M has gradient (2(1+λ_max)/(3δt))M(x−y). The paper uses M̃ = ((1+λ_max)/(6δt))M, giving coefficient (1+λ_max)/(6δt) instead of 2(1+λ_max)/(3δt)—off by a factor of 4.",
+      "failure_location": {
+        "quote": "\\tilde M=\\frac{1 + \\lambda_{\\max}}{6\\delta t}M.",
+        "tag": "thm:globalconverg:M"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace M̃ = ((1+λ_max)/(6δt))M with the correct (2(1+λ_max)/(3δt))M and redo the gradient estimates with corrected constants.",
+      "overall_effect": "All gradient estimates in the proof of thm:globalconverg:M(i) use an incorrect M̃ coefficient. The qualitative conclusion survives but the proof is invalid.",
+      "primary_affected_tag": "thm:globalconverg:M",
+      "target_type": "formal_result",
+      "title": "Gradient of Ã computed with M̃ off by factor of 4 in thm:globalconverg:M",
+      "why_classification": "Requires redoing the gradient computation and associated estimates but no new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "By the update of $y^{k+1}$ as in \\eqref{eq:til:yn}, we obtain",
+          "tag": "thm:globalconverg:M"
+        }
+      ],
+      "failure_explanation": "From (eq:til:yn) at step n+1: 2f(u^{n+1}) = −(2/(3δt))(3y^{n+1}−4u^{n+1}+u^n) − (2M/δt)(y^{n+1}−ũ^{n+1}) − h(y^{n+1}) + f(u^n). The paper's equation has coefficient −1/(2δt) for the BDF2-like term instead of −2/(3δt), a wrong value even relative to (eq:til:yn).",
+      "failure_location": {
+        "quote": "f(u^{n+1}) = -h(y^{n+1})-\\frac{2M}{\\delta t}(y^{n+1} - \\Tilde{u}^{n+1})-\\frac{1}{2\\delta t}(3y^{n+1} - 4u^{n+1} + u^{n}) - \\left(f(u^{n+1}) - f(u^{n})\\right).",
+        "tag": "thm:globalconverg:M"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Correct the derivation of f(u^{n+1}) from (eq:til:yn) using coefficient −2/(3δt) and redo subsequent estimates.",
+      "overall_effect": "The substitution for f(u^{n+1}) and subsequent gradient estimates in thm:globalconverg:M(i) are invalid.",
+      "primary_affected_tag": "thm:globalconverg:M",
+      "target_type": "formal_result",
+      "title": "Wrong equation for f(u^{n+1}) derived in thm:globalconverg:M proof",
+      "why_classification": "Requires correcting the algebraic derivation and redoing estimates, but the proof structure and conclusion survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nabla_i \\tilde P_i(u_i)= \\text{sign}(u_i) \\dfrac{[\\min\\{\\theta \\mu,|u_i|\\} -\\mu]_{+}} {(\\theta-1)}",
+          "tag": null
+        },
+        {
+          "quote": "The Lipschitz constant $L$ of $\\nabla F$ is $1/(\\theta-1)$ \\cite[Example 4.3]{Wen2018} with $L=1/9$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Direct integration of the SCAD penalty gives p̃_i(u_i) = (|u_i|−μ)²/(2(θ−1)) for μ<|u_i|<θμ (no μ in denominator). The paper writes (|u_i|−μ)²/(2(θ−1)μ), which is discontinuous at |u_i|=θμ (gives μ(θ−1)/2 vs (θ−1)μ²/2 from the third case). The gradient formula sign(u_i)[min{θμ,|u_i|}−μ]_+/(θ−1) and Lipschitz constant 1/(θ−1) are consistent with the correct formula (without μ), contradicting the stated p̃_i. The boundary should be θμ not θ.",
+      "failure_location": {
+        "quote": "\\frac{(|u_i| - \\mu)^2}{2(\\theta - 1)\\mu}& \\text{if} \\ \\ \\ \\ \\mu<|u_i|<\\theta",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Remove μ from the denominator and change the boundary θ to θμ in the middle case of p̃_i.",
+      "overall_effect": "The SCAD model definition for p̃_i is wrong and inconsistent with its gradient and with (eq:huber-scad). The algorithm uses the gradient (which is correct), so computation is unaffected, but the model definition is wrong.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "SCAD auxiliary function p̃_i formula has erroneous μ in denominator and wrong boundary",
+      "why_classification": "Local formula correction forced by consistency with the gradient and (eq:huber-scad); no inference or construction needs repair."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "H(u) =  \\sum_{ij}\\frac{\\epsilon}{2}w_{ij}(u(i)-u(j))^2 + \\frac{\\eta}{2}\\sum_i\\Lambda(i)(u(i)-y(i))^2$ and $F(u) = \\frac{1}{\\epsilon}\\mathbb{W}(u)$",
+          "tag": null
+        },
+        {
+          "quote": "Transitioning from $H(u) + F(u)$ to $H^n(u) - F^n(u)$ constitutes a special convex splitting approach at the $n$-th iteration.",
+          "tag": null
+        },
+        {
+          "quote": "the global convergence of these two models thus follows.",
+          "tag": "rem:KL:conver:two:models"
+        }
+      ],
+      "failure_explanation": "With binary labels y(i)∈{0,1}, Λ(i)=2y(i)−1 ∈ {−1,1}. For y(i)=0 the prior term is −(η/2)u(i)², which is concave in u(i). The Hessian η·diag(Λ) has negative eigenvalues, so H(u) is not convex. The problem setup assumes H is convex and the algorithm's convergence analysis (descent via strong convexity of H^n) does not apply to non-convex H.",
+      "failure_location": {
+        "quote": "Specifically, $\\Lambda(i) = 2y(i) - 1$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Replace Λ(i)=2y(i)−1 with Λ(i)=|2y(i)−1|=1 (non-negative weights) or move the non-convex prior term into F; alternatively, extend the analysis to handle non-convex H.",
+      "overall_effect": "The convergence analysis does not apply to the Ginzburg-Landau segmentation model as described. Remark rem:KL:conver:two:models's claim that convergence follows is unsupported for this model.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Ginzburg-Landau model H(u) is non-convex when Λ(i)<0, violating convexity assumption",
+      "why_classification": "Requires modifying the model definition or extending the analysis, but a comparable segmentation model and convergence result can survive with a local change to Λ."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$F(u) = \\frac{1}{\\epsilon}\\mathbb{W}(u)$",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathbb{W}(u) = \\frac14\\sum_{i=1}^{n}(u(i)^2 - 1)^2$",
+          "tag": null
+        },
+        {
+          "quote": "$\\nabla F(u)$ is a Lipschitz continuous function with constant $L$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "F(u)=(1/(4ε))Σ(u(i)²−1)² has gradient ∇_iF=(1/ε)(u(i)³−u(i)), whose Hessian (1/ε)(3u(i)²−1) is unbounded as |u(i)|→∞. Hence ∇F is not Lipschitz continuous on ℝⁿ, violating the problem setup's assumption and the key hypothesis used throughout the convergence analysis (Lipschitz constant L of ∇F).",
+      "failure_location": {
+        "quote": "the parameter $\\delta t$ must satisfy $\\delta t<\\frac{2}{3L}$, where $L$ is the Lipschitz constant of $F(u)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Restrict the analysis to a bounded region where ∇F is Lipschitz (proving iterates remain bounded with bounded effective Lipschitz constant) or modify the model to use a globally Lipschitz gradient potential.",
+      "overall_effect": "The convergence analysis (descent estimates, square-summability, KL-based convergence) assumes Lipschitz ∇F and does not apply to the Ginzburg-Landau model. Remark rem:KL:conver:two:models's convergence claim for this model is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Ginzburg-Landau model ∇F is not Lipschitz (quartic double-well), violating algorithm assumption",
+      "why_classification": "Requires either a boundedness argument with modified constants or a model change, but a recognizably comparable convergence result can be recovered without new global proof architecture."
+    }
+  ],
+  "issues_found": 11,
+  "paper_id": "2411.07661",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n01",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "82023cb4a713f803031fb66ea375960c872e0ef9830eb307112b4b7b18610917",
+  "status": "ok"
+}

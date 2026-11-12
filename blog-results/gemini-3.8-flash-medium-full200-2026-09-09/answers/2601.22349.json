@@ -1,0 +1,91 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\hat{\\mu}_{k+1}|\\pi) \n\n            \\leq \\KL(\\hat \\mu_{1}|\\pi_{\\tau(t_0)})\\exp\\biggl( -\\sum_{i=1}^k\\frac{2\\step_i}{\\Clsi(t_i)} \\biggr) \n            + c\\sum_{i=0}^{k-1}\\exp\\biggl( -\\sum_{j=0}^i\\frac{2\\step_{k-j}}{\\Clsi(t_{k-j})} \\biggr)|\\tau(t_{k-i})-\\tau(t_{k-1-i})|\n            + c\\sum_{i=0}^{k-1}\\step^2_{k-i}\\exp\\biggl( -\\sum_{j=0}^{i-1}\\frac{2\\step_{k-j}}{\\Clsi(t_{k-j})} \\biggr) + c\\tau(t_k)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Equation (10) bounds KL(\\hat{\\mu}_k | \\pi) using step sizes h_1, ..., h_k and time points t_1, ..., t_k rather than the step sizes h_0, ..., h_{k-1} and time points t_0, ..., t_{k-1} that actually generate X_k ~ \\hat{\\mu}_k from X_0 ~ \\hat{\\mu}_0. For example, at k=1, the bound incorrectly depends on the future unexecuted step size h_1 rather than the executed step size h_0. The proof in equation (50) establishes a bound for \\hat{\\mu}_{k+1} starting from \\hat{\\mu}_1, but the lemma statement shifted the iterate indices to k and 0 without shifting the summation indices of the step sizes and times.",
+      "failure_location": {
+        "quote": "\\KL(\\hat{\\mu}_{k}|\\pi) \n            \\leq \\KL(\\hat \\mu_{0}|\\pi_{\\tau(t_0)})\\exp\\biggl(-\\sum\\limits_{i=1}^k\\frac{2\\step_i}{\\Clsi(t_i)}\\biggr)\n            +c\\sum_{i=0}^{k-1}\\exp\\biggl(-\\sum\\limits_{j=0}^i\\frac{2\\step_{k-j}}{\\Clsi(t_{k-j})}\\biggr)|\\tau(t_{k-i})-\\tau(t_{k-1-i})|\n            + c \\sum_{i=0}^{k-1}\\step_{k-i}^2\\exp\\biggl(-\\sum\\limits_{j=0}^{i-1}\\frac{2\\step_{k-j}}{\\Clsi(t_{k-j})}\\biggr) + c\\tau(t_k)",
+        "tag": "thm discrete final bound"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Shift the summation indices in equation (10) so that the bound is expressed in terms of the executed steps h_0, ..., h_{k-1} and times t_0, ..., t_{k-1}, or restate the lemma for \\hat{\\mu}_{k+1} starting from \\hat{\\mu}_1.",
+      "overall_effect": "The non-asymptotic bound in Lemma 4.4 is incorrect as stated for general time-varying step sizes h_k.",
+      "primary_affected_tag": "thm discrete final bound",
+      "target_type": "formal_result",
+      "title": "Index mismatch in discrete non-asymptotic KL divergence bound",
+      "why_classification": "Re-indexing the step sizes is a routine local correction that directly aligns the lemma statement with the proof and leaves Theorem 4.3 and all subsequent guarantees intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the minimizing argument in \\cref{eq:moreau} is unique, the Moreau envelope is differentiable and its gradient is globally Lipschitz with constant bounded by $\\lip/(1-\\tau\\lip)$ \\citep[Remark 4.17]{habring2025diffusionjournal}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Proposition 4.4 defines the upper bound on \\tau in terms of a constant L via \\bar{\\tau} \\in (0, 1/\\alpha \\wedge 1/L) and invokes results from Habring et al. (2025) that require \\nabla U to be globally L-Lipschitz. However, the hypothesis that \\nabla U is Lipschitz continuous with constant L is omitted from the statement of Proposition 4.4. Weak convexity, differentiability, dissipativity, and convexity outside a ball do not imply global Lipschitz continuity of \\nabla U.",
+      "failure_location": {
+        "quote": "If  $U$ is $\\alpha$-weakly convex and differentiable, $\\nabla U$ is dissipative, and $U$ is convex outside a ball, then the path \\( (p_\\tau)_{\\tau \\in [0, \\bar{\\tau}]} \\) \\cref{eq:daz path} satisfies \\Cref{Ass_drift} on $[0,\\overline{\\tau}]$ for any $\\overline{\\tau}\\in(0,1/\\alpha\\wedge 1/\\lip)$.",
+        "tag": "prop:daz_ass"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that \\nabla U is Lipschitz continuous with constant L to the statement of Proposition 4.4.",
+      "overall_effect": "Proposition 4.4 is incomplete and ill-defined because L is undefined in its hypotheses, and the path fails to satisfy Assumption 3.2 without Lipschitzness of \\nabla U.",
+      "primary_affected_tag": "prop:daz_ass",
+      "target_type": "formal_result",
+      "title": "Omitted Lipschitz gradient hypothesis in DAZ path guarantee",
+      "why_classification": "Adding the standard local condition that \\nabla U is L-Lipschitz is routine, matches the preceding prose, and fully preserves the claim without affecting proofs or scope."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:convolution_ass"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\partial_\\tau \\log p_\\tau(x) = \\frac{d}{2(1-\\tau)} + \\frac{x\\cdot \\nabla\\log p_\\tau(x)}{2(1-\\tau)} + \\frac{1}{2(1-\\tau)}(\\Delta \\log p_\\tau(x) +|\\nabla\\log p_\\tau(x)|^2).",
+          "tag": null
+        },
+        {
+          "quote": "As shown in~\\citep[Lemma 3.2]{cordero2025non}, the Eigenvalues of $\\nabla^2 \\log p_\\tau(x)$ are bounded uniformly in $\\tau$ and $x$ and, thus, the result follows.",
+          "tag": null
+        },
+        {
+          "quote": "If $U$ is twice continuously differentiable, has a Lipschitz gradient and is strongly convex outside a ball, then the path $(p_\\tau)_{\\tau\\in[0,1]}$ \\cref{eq convolution path} satisfies \\Cref{Ass_drift}.",
+          "tag": "prop:convolution_ass"
+        }
+      ],
+      "failure_explanation": "In the proof of Lemma 4.5, every term in the expression for \\partial_\\tau \\log p_\\tau(x) contains a prefactor 1 / (2(1 - \\tau)). The proof erroneously infers boundedness on [0,1] solely from uniform eigenvalue bounds on \\nabla^2 \\log p_\\tau, ignoring the divergence of 1 / (1 - \\tau) as \\tau -> 1^-. Moreover, the claim is mathematically false on [0,1]: for any target distribution with non-zero mean m_0 != 0 (e.g. a shifted Gaussian), \\partial_\\tau \\log p_\\tau(x) = - (x \\cdot m_0) / (2 \\sqrt{1 - \\tau}) + (1/2)|m_0|^2, which diverges as \\tau -> 1^- for all x with x \\cdot m_0 != 0. Thus, |\\partial_\\tau U_\\tau(x)| cannot be bounded by c(|x|^2 + 1) uniformly on [0,1].",
+      "failure_location": {
+        "quote": "There exists $c>0$ such that the density \\cref{eq convolution path} satisfies for $\\tau\\in[0,1]$, $|\\partial_\\tau  U_\\tau(x)| \\leq c(|x|^2+1)$.",
+        "tag": "lemma:convolutional path growth"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict the interval of \\tau in Lemma 4.5 and Proposition 4.6 from [0,1] to [0, \\bar{\\tau}] for any \\bar{\\tau} \\in (0,1), mirroring the formulation of Proposition 4.2.",
+      "overall_effect": "Lemma 4.5 is false on [0,1], which invalidates Proposition 4.6. The convolutional path does not satisfy Assumption 3.2 on [0,1], meaning the theoretical guarantees do not cover initializing the diffusion at the standard Gaussian base measure \\tau = 1.",
+      "primary_affected_tag": "lemma:convolutional path growth",
+      "target_type": "formal_result",
+      "title": "Divergence of time derivative on [0,1] for convolutional path",
+      "why_classification": "Excluding \\tau = 1 excludes the pure Gaussian noise distribution at which annealed Langevin sampling is initialized, thereby excluding a central advertised regime of the paper."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2601.22349",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0eab2e6cc55b92ab67363667326c9b28e88ecb2a12f43253d86fdb08b6888b7c",
+  "status": "ok"
+}

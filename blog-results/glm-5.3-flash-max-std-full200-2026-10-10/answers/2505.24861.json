@@ -1,0 +1,103 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dot \\Sigma_t = -\\frac\\gamma\\kappa(I - \\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1})\\Sigma_t -\\frac\\gamma\\kappa\\Sigma_t\\,(I - \\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1}) + 2\\mathbf C_{*,t},",
+          "tag": null
+        },
+        {
+          "quote": "\\mu_{\\beta, \\kappa\\mathbf C_{*,t}/\\beta}(\\rho_t; U_t) = (\\beta\\Sigma^{-1} + \\Sigma_t^{-1} + \\frac\\beta\\kappa\\mathbf C_{*,t}^{-1})^{-1}(\\beta\\Sigma^{-1}m + \\Sigma_t^{-1}m_t + \\frac\\beta\\kappa\\mathbf C_{*,t}^{-1}U_t)",
+          "tag": "eq:lmm:lcbs:gauss:moments:mu-w"
+        },
+        {
+          "quote": "\\mathbf C(\\rho_t; U_t) &= \\mathcal C_\\alpha(\\rho_t) = (\\alpha\\Sigma^{-1}+\\Sigma_t^{-1})^{-1}",
+          "tag": "eq:lmm:lcbs:gauss:moments:C:Calpha"
+        }
+      ],
+      "failure_explanation": "Under the lemma's hypothesis the SDE is linear with drift coefficient matrix A_t = -(\\gamma/\\kappa)(I - (\\beta/\\kappa)P_t C_{*,t}^{-1}) (the U_t-coefficient of the displayed weighted mean) and constant diffusion \\sqrt{2C_{*,t}}. The correct covariance equation is \\dot\\Sigma_t = A_t\\Sigma_t + \\Sigma_t A_t^T + 2C_{*,t}, i.e. the second cross-term must be \\Sigma_t C_{*,t}^{-1} P_t (since A_t^T = -(\\gamma/\\kappa)(I - (\\beta/\\kappa)C_{*,t}^{-1}P_t)). The proof instead writes the second term with the untransposed factor, \\Sigma_t(I - (\\beta/\\kappa)P_t C_{*,t}^{-1}), i.e. it implicitly assumes P_t C_{*,t}^{-1} is symmetric. Generically P_t C_{*,t}^{-1} is a product of two symmetric matrices that do not commute (e.g. for C_{*,t} = (\\alpha\\Sigma^{-1}+\\Sigma_t^{-1})^{-1} with non-commuting \\Sigma, \\Sigma_t), so the stated ODE is false; indeed its right-hand side need not be symmetric, while \\dot\\Sigma_t of any Gaussian law must be symmetric.",
+      "failure_location": {
+        "quote": "\\dot\\Sigma_t &= 2\\Bigl[\\mathbf C_{*,t} - \\frac\\gamma\\kappa\\Sigma_t + \\frac{\\gamma\\beta}{2\\kappa^2}\\left(P_t\\mathbf C_{*,t}^{-1}\\Sigma_t + \\Sigma_tP_t\\mathbf C_{*,t}^{-1}\\right)\\Bigr]",
+        "tag": "eq:lmm:lcbs:gauss:moments:evol-C"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the second cross-term \\Sigma_tP_tC_{*,t}^{-1} by \\Sigma_t C_{*,t}^{-1}P_t in both the lemma statement and the proof's linear-SDE covariance identity (use \\Sigma_t A_t^T with A_t^T = -(\\gamma/\\kappa)(I - (\\beta/\\kappa)C_{*,t}^{-1}P_t)). This is a one-line mechanical correction; all downstream uses are in commutative configurations where corrected and stated forms coincide.",
+      "overall_effect": "The general Gaussian moment ODE (eq:lmm:lcbs:gauss:moments:evol-C), the central formula of the paper's Gaussian analysis, is false whenever \\Sigma_t does not commute with P_t C_{*,t} (e.g. anisotropic targets with generic initial covariances). The corollary on the gamma values and the CBS-equivalence lemma only invoke the formula at stationary/commuting configurations, where the erroneous and correct forms coincide, so those results remain valid.",
+      "primary_affected_tag": "lmm:lcbs:gauss:moments",
+      "target_type": "formal_result",
+      "title": "Covariance ODE in the Gaussian moment lemma uses a non-transposed drift factor",
+      "why_classification": "A local, routine correction (transpose one factor in one displayed equation and its derivation) restores a correct lemma, and every dependent result uses the formula only in the commuting regime where stated and corrected forms agree, so no substantive claim or guarantee is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For any choice of the CBS parameter",
+          "tag": "lmm:compare:cbs:equiv"
+        },
+        {
+          "quote": "a weighted covariance $\\mathbf C_{U,t} = \\mathcal C_{\\alpha, \\lambda \\mathcal C(\\rho_t)}(\\rho_t; U_t)$ with scalars $\\alpha\\ge0$ and $\\lambda > 0$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The lemma asserts the equivalence 'For any choice of the CBS parameter alpha' > 0' with the parameter prescription alpha > 0, kappa = alpha, beta = alpha', lambda = alpha'/(alpha - alpha'). For alpha <= alpha' this yields lambda <= 0 (undefined at alpha = alpha'), i.e. a weighting matrix lambda*C(rho_t) that is not positive definite, outside the admissible class in which the weighted covariance preconditioner, the weighted means, and the square-root diffusion of (eq:lcbs:loc-prec:lcbs) are defined. Hence the stated equivalence is supported only for alpha > alpha', a restriction the statement does not impose.",
+      "failure_location": {
+        "quote": "\\alpha > 0, \\qquad \\kappa = \\alpha, \\qquad \\beta = \\alpha', \\qquad \\text{and} \\qquad \\lambda = \\frac{\\alpha'}{\\alpha - \\alpha'},",
+        "tag": "eq:lmm:compare:cbs:equiv:params"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis alpha > alpha' (equivalently lambda > 0) to the lemma statement; the given proof then applies verbatim for every admissible choice, leaving a comparable (slightly restricted) result.",
+      "overall_effect": "The lemma's claimed generality over all CBS parameters alpha' > 0 is unsupported; the equivalence holds only for admissible configurations with alpha > alpha'.",
+      "primary_affected_tag": "lmm:compare:cbs:equiv",
+      "target_type": "formal_result",
+      "title": "CBS-equivalence lemma prescribes inadmissible lambda for alpha <= alpha'",
+      "why_classification": "Adding one standard admissibility condition (alpha > alpha', i.e. lambda > 0) fully repairs the statement, the proof is unaffected, and no other result uses the excluded regime, so every substantive guarantee survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "eq:comput:lcbs-alg"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "w_{a,A}(v; u) &\\coloneqq \\exp\\bigl(-\\norm{v-u}_A^2/2\\bigr)\\widehat\\pi(v)^a",
+          "tag": "eq:cbs-approx:w"
+        },
+        {
+          "quote": "U_{n+1}^i = U_n^i + \\Bigl[-\\frac\\gamma\\kappa\\Bigl(U_n^i - \\widehat\\mu_{\\beta,\\kappa\\widehat{\\mathbf C}/\\beta}^{(\\nu,i)}(\\bm U_n; U_n^i)\\Bigr) + \\nabla_{u^i}\\cdot\\widehat{\\mathbf C}\\Bigr]\\dt + \\sqrt{2\\dt}\\,\\widehat{\\mathbf C}^{1/2}\\xi_n^i",
+          "tag": "eq:comput:lcbs-alg"
+        },
+        {
+          "quote": "Note that the correction term contains a derivative of $\\widehat\\pi$ when $\\alpha\\ne0$, which is problematic in our otherwise derivative-free method. In this paper we always choose $\\alpha=0$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The constructed object is named as the particle approximation of the drift mean mu_{beta, kappa C/beta}(rho_t; U_t) of the localized CBS dynamics (eq:lcbs:loc-prec:lcbs), whose weight function is w_{beta, kappa*C/beta}(v;u) = exp(-(beta/(2*kappa))*||v-u||^2_C) * pi_hat(v)^beta. The displayed formula instead weights particles with w_{alpha, lambda*C}, i.e. the weight function of the (optional) weighted covariance preconditioner, with the pi-exponent alpha and kernel scale lambda; it does not depend on beta or kappa at all. With the paper's standing choice alpha = 0 the drift mean carries no pi-weight at all, so the specified scheme's drift does not approximate the analyzed mean-field drift, and the bias analysis / gamma-values of Sections 3-4 do not transfer to the algorithm as written.",
+      "failure_location": {
+        "quote": "\\widehat\\mu_{\\beta,\\kappa\\widehat{\\mathbf C}/\\beta}^{(\\nu,i)}(\\bm U_n; U_n^i) \\coloneqq \\frac{\\sum_{j=1}^J \\mathbbm 1_{i\\ne j\\wedge\\theta_n^{i,j}\\le\\nu}\\,U_n^j\\,w_{\\alpha,\\lambda\\widehat{\\mathbf C}}^{ij}}{\\sum_{j=1}^J \\mathbbm 1_{i\\ne j\\wedge\\theta_n^{i,j}\\le\\nu}\\,w_{\\alpha,\\lambda\\widehat{\\mathbf C}}^{ij}}",
+        "tag": "eq:particle:mu-batch"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Redefine the random-batch weights as w^{ij}_{beta, kappa*C/beta} (the weight function of the mean named in the subscript), or equivalently rename the quantity and restate which mean-field object the algorithm approximates; the intended scheme must then be pinned down and the numerical claims confirmed against it. No new proof architecture is required, but the choice between the two readings must be resolved.",
+      "overall_effect": "The paper's practical localized CBS algorithm, as specified by (eq:particle:mu-batch) and (eq:comput:lcbs-alg), operates with a different drift weighting than the analyzed mean-field dynamics; the Gaussian-exactness/bias-removal interpretation and the evidential value of the numerical experiments for the theory become unreliable as written.",
+      "primary_affected_tag": "eq:particle:mu-batch",
+      "target_type": "algorithm",
+      "title": "Random-batch weighted mean is built from weights that do not match the drift mean it is named after",
+      "why_classification": "A contained resolution exists (fix the weight function to match the subscript), avoiding new proof architecture, but the two possible readings define different schemes, so the correction changes the specified algorithm and requires reconciling the reported experiments with it rather than a mechanical one-token edit."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2505.24861",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "21ce5f33da8200f8f8cc6d533722a99bf0425119ca5ce41c491ee7b53c44cf4f",
+  "status": "ok"
+}

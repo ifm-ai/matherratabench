@@ -1,0 +1,136 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For each $k \\in \\Aactive$, increment $\\mathrm{counter}_k$ if the\n        applicable criterion among~\\eqref{eq:s1}--\\eqref{eq:s4} is met,\n        else reset $\\mathrm{counter}_k = 0$.",
+          "tag": null
+        },
+        {
+          "quote": "If $\\mathrm{counter}_k \\ge n_{\\min}$, move $k$ to $\\Afrozen$:\n        remove from $\\Aactive$, stop updating $\\tau_k$ and $\\tau_{N+k}$.",
+          "tag": null
+        },
+        {
+          "quote": "Free variables ($0 < u_i < C_{k(i)}$) are never frozen.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Each training point has two dual variables, and both can have applicable but different boundary criteria. The procedure supplies only one counter per training point and does not say whether both criteria, either criterion, or some priority rule is required before removing the entire pair. In particular, one member may satisfy its freezing criterion while the other is free or is an MVP-extremal boundary variable that must remain active. Removing the training point then also freezes the second member, contrary to the stated variable-level rule.",
+      "failure_location": {
+        "quote": "\\State \\textbf{Shrinking check:}\n           update $\\mathrm{counter}$ per \\eqref{eq:s1}--\\eqref{eq:s4};\n           move indices with $\\mathrm{counter} \\ge n_{\\min}$ to $\\Afrozen$",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Define a pair-safe training-point rule, such as requiring both dual variables to be safely shrinkable and vetoing removal whenever either is free, or instead maintain separate active status and counters for all $2N$ dual variables. The unshrinking logic and counters must then follow the same granularity.",
+      "overall_effect": "The shrinking step is not uniquely executable and can remove a dual variable that has not met any valid freezing condition, undermining active-set progress and the claimed convergence behavior.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Training-point shrinking does not specify how two dual-variable criteria are combined",
+      "why_classification": "A complete repair requires a nontrivial active-set invariant or a redesign from sample-level to dual-variable-level shrinking, although it does not require changing the underlying SMO subproblem."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$t = 1, 2, \\ldots, \\mathrm{maxiter}$}",
+          "tag": "alg:smo"
+        },
+        {
+          "quote": "If\n$\\Delta^{\\mathrm{full}} > \\varepsilon_{\\mathrm{tol}}$, a frozen variable\nviolates KKT: reset $\\Aactive = \\{1,\\ldots,N\\}$, $\\Afrozen = \\emptyset$,\nupdate $\\tau$ from~\\eqref{eq:reconstruct}, and continue.",
+          "tag": null
+        },
+        {
+          "quote": "Finite termination to $\\varepsilon_{\\mathrm{tol}}$-optimality follows\nfrom standard results~\\cite{Fan2005, Chang2011}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The only iteration loop has already ended when reconstruction is performed, so there is no enclosing outer loop to continue. Consequently, the algorithm has no defined behavior when full KKT checking detects a violation. The same gap occurs after exhaustion of `maxiter`, and the source does not specify whether the iteration budget is reset, extended, or reported as failure.",
+      "failure_location": {
+        "quote": "\\If{$\\Delta^{\\mathrm{full}} > \\varepsilon_{\\mathrm{tol}}$}\n  \\State Reset $\\Aactive \\leftarrow \\{1,\\ldots,N\\}$, $\\Afrozen \\leftarrow \\emptyset$;\n         continue outer loop\n\\EndIf",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add an explicit reconstruction/restart loop that resumes SMO after unshrinking, define whether `maxiter` is global or per cycle, and return success only after the full violation is within tolerance; budget exhaustion must instead produce a declared nonconvergence status.",
+      "overall_effect": "The complete procedure is undefined precisely in the case where unshrinking is needed, so it does not establish that it returns a fully certified solution or supports the stated finite-termination guarantee.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "The reconstruction restart refers to a nonexistent outer loop",
+      "why_classification": "The mathematical update remains usable, but a complete resolution must redesign the termination and restart control flow and reconcile it with the iteration cap and advertised certification guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State Compute $\\Delta^{\\mathrm{full}}$ via \\eqref{eq:full-violation}",
+          "tag": "alg:smo"
+        },
+        {
+          "quote": "\\Delta^{\\mathrm{full}} =\n  \\max_{i \\in \\Iup^{\\mathrm{full}}} \\tau_i\n  - \\min_{j \\in \\Idown^{\\mathrm{full}}} \\tau_j,",
+          "tag": "eq:full-violation"
+        },
+        {
+          "quote": "\\hat{b} = \\frac{\\tau_{i^*} + \\tau_{j^*}}{2}.",
+          "tag": "eq:bias-midpoint"
+        }
+      ],
+      "failure_explanation": "After reconstruction, the algorithm computes only the numerical full violation and never reassigns $i^*$ and $j^*$ to the full-set maximizer and minimizer. The retained indices are from the last active-set scan and need not be the tight full KKT bounds when frozen variables exist. Their midpoint can therefore fall outside the actual admissible bias interval in the no-free-vector case.",
+      "failure_location": {
+        "quote": "\\State $\\hat{b} \\leftarrow |\\mathcal{S}_{\\mathrm{free}}|^{-1}\n       \\sum_{i \\in \\mathcal{S}_{\\mathrm{free}}}\\tau_i$\n       if $\\mathcal{S}_{\\mathrm{free}} \\neq \\emptyset$,\n       else $\\hat{b} \\leftarrow (\\tau_{i^*}+\\tau_{j^*})/2$",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "During the full-violation scan, store full-set argmax and argmin indices and use those reconstructed extrema in the midpoint fallback.",
+      "overall_effect": "Even when the reconstructed dual variables pass the full tolerance test, the returned bias and hence the prediction function can be incorrect in the bound-only regime.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "No-free-vector bias fallback can use stale active-set extrema",
+      "why_classification": "This is a short local repair to the reconstruction scan that preserves the optimization method, rates, and claimed scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bigl(\\Omega_s\\bigr)_{k\\ell} =\n  \\tfrac{1}{2}\\!\\left(K(\\mathbf{x}_k,\\mathbf{x}_\\ell) +\n                a\\,K(\\mathbf{x}_k,-\\mathbf{x}_\\ell)\\right),\n  \\quad k,\\ell = 1,\\ldots,N,",
+          "tag": "eq:sym-kernel"
+        },
+        {
+          "quote": "or equivalently $\\Omega_s = \\tfrac{1}{2}(\\Omega + a\\Omega^*)$\nwhere $\\Omega^*_{k\\ell} = K(\\mathbf{x}_k, -\\mathbf{x}_\\ell)$.",
+          "tag": null
+        },
+        {
+          "quote": "For the symmetric-kernel\nvariant (m2) with $a = +1$, $P \\succeq 0$ is preserved and the same\nguarantees apply.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a general PSD kernel, the cross matrix $\\Omega^*_{k\\ell}=K(x_k,-x_\\ell)$ need not be symmetric or PSD. For example, the valid rank-one kernel $K(x,z)=(x+2)(z+2)$ with points $1,2$ gives $\\Omega^*=\\begin{bmatrix}3&0\\\\4&0\\end{bmatrix}$, which is not symmetric, and the symmetric part of $\\Omega+\\Omega^*$ is indefinite. Thus the stated formula does not ensure $\\Omega_s\\succeq0$, and the convexity and convergence conclusions for $a=+1$ do not follow without an additional invariance hypothesis or a different projected-kernel construction.",
+      "failure_location": {
+        "quote": "For $a = +1$ (even symmetry), $\\Omega_s \\succeq 0$\nfollows from the fact that $\\Omega$ and $\\Omega^*$ are individually PSD.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Either impose and use sufficient inversion-invariance assumptions on $K$ that make the even/odd projected kernels PSD, thereby restricting the kernel scope, or replace the two-term formula by a valid symmetrized projected-kernel construction and redo the associated scaling and convergence argument.",
+      "overall_effect": "The m2 dual need not be a convex quadratic program even in the advertised even-symmetry case, so the claim that the convex SMO guarantees carry over to all such kernels is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Positive semidefiniteness of the even symmetric kernel is not guaranteed",
+      "why_classification": "Repair requires either a material restriction on the advertised kernel class or a revised kernel construction and corresponding derivation; it is more than a local algebraic correction but does not necessarily require replacing the whole SMO framework."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

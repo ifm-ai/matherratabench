@@ -1,0 +1,120 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=(\\tilde{\\lambda}I_r)^{-1}-(\\tilde{\\lambda}I_r)^{-1}M\\{M^T (\\tilde{\\lambda}I_r)^{-1}M+(I_n)^{-1} \\}M^T(\\tilde{\\lambda}I_r)^{-1}\\notag",
+          "tag": "thm:woodberry_identity"
+        },
+        {
+          "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_n-\\frac{1}{\\tilde{\\lambda}^3}M^T\\{MM^T+\\tilde{\\lambda}I_r\\}M\\label{eq:wi2}",
+          "tag": "thm:woodberry_identity"
+        }
+      ],
+      "failure_explanation": "The Woodbury identity is misapplied in both expansions: the inner brace matrix must itself be inverted, and the scalar prefactor is wrong. The correct identities are (\\tilde{\\lambda}I_r+MM^T)^{-1}=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}}M(M^TM+\\tilde{\\lambda}I_n)^{-1}M^T and (M^TM+\\tilde{\\lambda}I_n)^{-1}=\\frac{1}{\\tilde{\\lambda}}I_n-\\frac{1}{\\tilde{\\lambda}}M^T(MM^T+\\tilde{\\lambda}I_r)^{-1}M, whereas eq:wi1 and eq:wi2 state \\frac{1}{\\tilde{\\lambda}^3} times the UNINVERTED matrices. Hence the displayed expansions are false equations and the proof does not establish the lemma as written. The lemma's statement is nonetheless true: for \\tilde{\\lambda}>0 both \\tilde{\\lambda}I+MM^T and \\tilde{\\lambda}I+M^TM are invertible, and (M^TM+\\tilde{\\lambda}I_n)M^T=M^T(MM^T+\\tilde{\\lambda}I_r) yields the identity directly; its later use in eq:errbound2 of thm:err_bound applies the correct identity.",
+      "failure_location": {
+        "quote": "=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T\\label{eq:wi1}",
+        "tag": "thm:woodberry_identity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Recompute the Woodbury expansions with the inner matrix inverted and the correct scalar prefactors, or replace the proof by the one-line argument (M^TM+\\tilde{\\lambda}I_n)M^T=M^T(MM^T+\\tilde{\\lambda}I_r) with invertibility for \\tilde{\\lambda}>0; the statement and all uses then stand unchanged.",
+      "overall_effect": "Only the proof of thm:woodberry_identity is defective: the intermediate identities eq:wi1 and eq:wi2 (and the derived eq:wi3, eq:wi4) are false as displayed. The lemma statement is correct and every downstream application (eq:errbound2 in thm:err_bound) uses the true identity, so no other result is invalidated.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Woodbury expansion in the proof of thm:woodberry_identity is algebraically false (dropped inverses, wrong prefactor)",
+      "why_classification": "The lemma is true and the algebraic slips are routine local corrections (restore the dropped inverse and fix the prefactor); no inference, claim, rate, or regime downstream changes, so the repair is short and local."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_{t+1} - x_\\star\\|_2 = \\|\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}(x_t - x_\\star)\\\\|_2 [\\text{Using \\eqref{eq:errbound2}}]\\notag",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2\\label{ew:errbound3}",
+          "tag": "ew:errbound3"
+        }
+      ],
+      "failure_explanation": "The proof estimates \\|\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}v\\| \\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|v\\|, but for the typically rank-deficient block A_\\tau one has \\lambda_{\\min}(A_\\tau^TA_\\tau)=0, so \\|(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}\\|_2=1/\\tilde{\\lambda}, not 1/(\\lambda_{\\min}^{+}+\\tilde{\\lambda}). Equivalently, the update factor \\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1} acts as the identity on \\mathcal{N}(A_\\tau), so the error component in \\mathcal{N}(A_\\tau)\\cap\\mathcal{R}(A^T) is never contracted and the claimed factor <1 is impossible. Concrete counterexample: A=((1,0),(1,1)), b=(1,2)^T, x_\\star=(1,1)^T, block A_\\tau=(1,0) (so \\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)=1), x_t=(2,2)\\in\\mathcal{R}(A^T): then x_{t+1}-x_\\star=(\\tilde{\\lambda}/(1+\\tilde{\\lambda}),1) and \\|x_{t+1}-x_\\star\\|=\\sqrt{1+\\tilde{\\lambda}^2/(1+\\tilde{\\lambda})^2} > \\frac{\\tilde{\\lambda}}{1+\\tilde{\\lambda}}\\sqrt{2} = \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}+\\tilde{\\lambda}}\\|x_t-x_\\star\\|. The same failure defeats the iterated expectation bound, whose induction step is exactly this invalid inequality.",
+      "failure_location": {
+        "quote": "\\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau) + \\tilde{\\lambda}} \\|x_t - x_\\star\\|_2",
+        "tag": "thm:err_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate the theorem for the block-residual seminorm (valid because A_\\tau(x_t-x_\\star)\\in\\mathcal{R}(A_\\tau), where A_\\tau A_\\tau^T has smallest eigenvalue \\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)>0), or add the hypothesis x_t-x_\\star\\in\\mathcal{R}(A_\\tau^T); recovering a full-error rate requires a new argument over the orthogonality- and residue-based sampling of blocks.",
+      "overall_effect": "The paper's central convergence guarantee for ROR-BK — per-step and expected linear contraction of the full error \\|x_t-x_\\star\\|_2 at rate \\tilde{\\lambda}/(\\lambda_{\\min}^{block}+\\tilde{\\lambda}) — is false as stated. What remains valid is only the block-residual seminorm contraction \\|A_\\tau(x_{t+1}-x_\\star)\\\\|_2 \\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}+\\tilde{\\lambda}}\\|A_\\tau(x_t-x_\\star)\\\\|_2; any claim of fast convergence of the iterates themselves is unsupported by this theorem.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "thm:err_bound contraction factor is false: the null-space component of the error is not contracted",
+      "why_classification": "The root is a single invalid norm estimate, and a local correction preserves a same-rate contraction for a natural seminorm, so no new global proof architecture is needed. But the advertised full-error linear rate and its iterated expectation form are withdrawn — a genuine loss of the theorem's main guarantee; this is a limited weakening to a recognizably comparable result rather than a collapse of the method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, when $x_k$ is an approximate solution of \\eqref{eq:linear_system} obtained through \\cref{algo:fabgmres_dobk}, it is the minimum residual-norm solution, since $x_k \\in \\mathcal{R}(A^T) \\perp \\mathcal{N}(A)$.",
+          "tag": null
+        },
+        {
+          "quote": "$y_k = \\arg\\min_{y \\in \\mathbb{R}^k} \\|\\beta e_1 - \\tilde{H}_k y\\|_2$",
+          "tag": "algo:fabgmres_dobk"
+        }
+      ],
+      "failure_explanation": "FGMRES minimizes \\|b-Ax\\| only over the affine Krylov space x_0+span{z_1,...,z_k} (via y_k=\\arg\\min_y \\|\\beta e_1-\\tilde{H}_k y\\|_2); it returns the global minimum-residual solution only if x_\\star-x_0 lies in that space. The proof's final inference is invalid: x_k\\in\\mathcal{R}(A^T) (equivalently x_k\\perp\\mathcal{N}(A)) makes x_k the minimum-norm vector among all vectors sharing its residual b-Ax_k; it does not make x_k a minimizer of \\|b-Ax\\|_2 over \\mathbb{R}^n. Hence the claim that FABGMRES with ROR-BK inner iterations gives a solution minimizing \\|b-Ax_k\\|_2 is false as stated.",
+      "failure_location": {
+        "quote": "FABGMRES with an inner iteration of ROR-BK (\\cref{algo:fabgmres_dobk}) gives a solution $x_k \\in \\mathcal{R}(A^T)$ minimizing $\\norm{b-Ax_k}_2$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Rephrase the claim as giving a solution x_k\\in\\mathcal{R}(A^T), i.e., the minimum-norm solution among all vectors with the same residual b-Ax_k, or delete the minimization clause; no change to the algorithm or its analysis is needed.",
+      "overall_effect": "The minimization guarantee attributed to the ROR-BK-preconditioned FAB-GMRES is withdrawn; the valid part of the remark (x_k\\in\\mathcal{R}(A^T), via thm:x_in_range_A_transpose) and the algorithm itself are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unlabelled FAB-GMRES remark falsely claims the iterate is the minimum-residual-norm solution",
+      "why_classification": "A one-line rephrasing removes the false minimization claim while preserving the substantive range-membership conclusion; no rate, regime, or algorithmic guarantee changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "x^{(\\mu)}=\\text{arg}\\text{min}_{x\\in \\mathbb{R}^{n\\times 1}} \\|Ax-b\\|_{\\bar{W}}^2, \\text {and} \\quad r^{(\\mu)}=b-Ax^{(\\mu)}",
+          "tag": "define_xr"
+        },
+        {
+          "quote": "\\leq (1 - \\alpha)^T \\left\\lVert x_0 - x^{(\\mu)} \\right\\rVert.",
+          "tag": "thm:dobk_for_least_square_problems"
+        }
+      ],
+      "failure_explanation": "The theorem is unsupported and partly ill-defined as stated. (i) The entire proof is a bare citation to Theorem 4.1 of [ReRBK] — an analysis of the TA-ReBlocK method — with no verification that its hypotheses cover the raw mean iterates of ROR-BK under the regularized weights W(S)=I_S^T(A_SA_S^T+\\tilde{\\lambda}I)^{-1}I_S; a necessary nontrivial argument is missing. (ii) x^{(\\mu)}=\\arg\\min_{x\\in\\mathbb{R}^n}\\|Ax-b\\|_{\\bar{W}}^2 is set-valued whenever A is rank-deficient (the paper explicitly targets underdetermined systems m<n), so the bound is ill-defined unless the minimum-norm solution in \\mathcal{R}(A^T) is selected. (iii) The mean iteration obeys \\mathbb{E}[x_{t+1}]-x^{(\\mu)}=(I-\\bar{P})(\\mathbb{E}[x_t]-x^{(\\mu)}) with \\bar{P}=A^T\\bar{W}A, and I-\\bar{P} is the identity on \\mathcal{N}(\\bar{P})=\\{v:\\bar{W}^{1/2}Av=0\\}; the rate (1-\\alpha)^T therefore requires x_0-x^{(\\mu)}\\in\\mathcal{R}(\\bar{P}) (e.g., \\bar{W} positive definite and x^{(\\mu)}\\in\\mathcal{R}(A^T)), hypotheses not assumed.",
+      "failure_location": {
+        "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}. Appendix at \\cite{ReRBK} outlines the analysis of the convergence of $x^{(\\mu)}$ to $x_\\star$ as $m \\rightarrow \\infty$.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Define x^{(\\mu)} as the minimum-norm (in \\mathcal{R}(A^T)) minimizer, assume \\bar{W}\\succ0 (every row sampled with positive probability), and replace the citation with the fixed-point computation \\mathbb{E}[x_{t+1}]-x^{(\\mu)}=(I-\\bar{P})(\\mathbb{E}[x_t]-x^{(\\mu)}) plus \\|I-\\bar{P}\\|\\le1-\\alpha on \\mathcal{R}(A^T), using that the eigenvalues of P(S)=A_S^T(A_SA_S^T+\\tilde{\\lambda}I)^{-1}A_S lie in [0,1).",
+      "overall_effect": "The advertised mean-convergence of ROR-BK iterates to a weighted least-squares solution (used in the introduction to motivate ROR-BK as a stable solver for uniform-sampling RBK) is unproven as written and ill-defined for rank-deficient/underdetermined systems; no other labelled result depends on it.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "thm:dobk_for_least_square_problems is unsupported as stated and x^(mu) is ill-defined for rank-deficient A",
+      "why_classification": "The statement can be saved by adding standard missing hypotheses (minimum-norm x^{(\\mu)}, positive-definite \\bar{W}) and a short fixed-point argument, so no new global proof architecture is required; but as written the proof is only a citation and the claim is ill-defined in the advertised underdetermined regime, which is more than a routine local fix."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

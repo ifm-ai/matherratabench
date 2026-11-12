@@ -1,0 +1,119 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "sec4:cor1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "and the~stepsize parameters satisfy~$\\beta\\in(0.5,1]$,~$\\chi>1.5\\beta$, and $c_{\\beta}>1/\\{1.5(1-\\rho^\\tau)\\}$ for $\\beta=1$.",
+          "tag": "sec3:thm2"
+        },
+        {
+          "quote": "We emphasize that our growth~conditions~on the gradient and Hessian noises are weaker than those assumed in \\cite{Na2022Statistical}, and by a sharper analysis, our assumption on $\\chi_t$ is relaxed from $\\chi>1$ to $\\chi>0.5(\\beta+1)$. We~show that all their results still hold, with proofs deferred to Appendix \\ref{pf:sec3:subsec2} for completeness.",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, we only have to note that our growth conditions in Assumptions \\ref{ass:2} and \\ref{ass:3} on gradients and Hessians do not affect the proof of normality (though they affect the proof of convergence),~since the term $\\|\\bx_t-\\bx^\\star\\|$ in the growth conditions converges to $0$ almost surely.",
+          "tag": "pf:sec3:thm2"
+        }
+      ],
+      "failure_explanation": "Theorem sec3:thm2 claims the CLT for all beta in (0.5,1] with chi > 1.5beta. Its proof defers entirely to the proof of Theorem 5.6 of Na2022Statistical, which per the paper's own account was established under chi > 1. Whenever beta < 2/3 the admissible range chi in (1.5*beta, 1) lies strictly outside that hypothesis set, and the appendix provides no verification that the transferred normality argument (in particular the treatment of the stepsize-randomness term I_{2,t}) remains valid there; the only relaxation it discusses is the moment-condition one. Thus the stated theorem is unsupported as written in the regime beta in (0.5, 2/3), chi in (1.5*beta, 1).",
+      "failure_location": {
+        "quote": "The proof of asymptotic normality is almost identical to the proof of Theorem 5.6 in \\cite{Na2022Statistical}.",
+        "tag": "pf:sec3:thm2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Write out the normality argument under chi > 1.5beta, verifying each step of the transferred proof of [Na2022, Thm 5.6] with the weaker stepsize condition (the paper's own estimates E||I_{2,i}||^2 <~ chi_i^2 from Appendix E suffice to control the stepsize-randomness term at the sqrt(varphi_t) scale); alternatively restate Theorem sec3:thm2 under the stronger condition chi > 1, explicitly excluding beta in (0.5, 2/3).",
+      "overall_effect": "The asymptotic normality guarantee \\eqref{nequ:4}/\\eqref{equ:lyap} is unproven for beta in (0.5, 2/3); consequently the confidence-interval/region coverage guarantees of Corollary sec4:cor1, which combine this CLT with the estimator's consistency, are unestablished in that regime. The covariance estimator's own consistency (Theorem sec4:thm1) is not affected.",
+      "primary_affected_tag": "sec3:thm2",
+      "target_type": "formal_result",
+      "title": "Asymptotic normality (Theorem sec3:thm2) not established under the stated relaxed stepsize condition",
+      "why_classification": "The repair requires carrying out a contained but nontrivial CLT argument (adapting Na2022's proof with sharper stepsize-randomness bounds), or weakening the advertised regime chi > 1.5beta to chi > 1, which excludes a stated parameter range; a comparable normality result survives either way, so this is more than minor but not a loss of the architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We point out that $\\hat{\\Xi}_t$ can also serve as a consistent~covariance estimator for conditioned SGD methods, which follow the update form \\eqref{nequ:3} though~$B_t$~may~not approximate the objective Hessian $\\nabla^2F_t$.",
+          "tag": null
+        },
+        {
+          "quote": "B_t = \\frac{1}{t}\\sum_{i=0}^{t-1} \\barH_i",
+          "tag": "nequ:5"
+        },
+        {
+          "quote": "\\mE\\big[\\|B_t-B^\\star\\|^4\\big]\\lesssim \\beta_t^2 + \\frac{\\chi_t^4}{\\beta_t^4}",
+          "tag": "sec4:lem1"
+        }
+      ],
+      "failure_explanation": "The prose asserts that Xi_hat_t is a consistent covariance estimator for conditioned SGD methods (AdaGrad, RMSProp, quasi-Newton) because Theorem sec4:thm1 'does not require B_t to converge to the true Hessian'. What the paper establishes: under Assumptions ass:1--ass:4 with B_t defined as the average of stochastic Hessians (eq. nequ:5), the proof of Lemma sec4:lem1 derives E||B_t - B^*||^4 = O(beta_t^2 + chi_t^4/beta_t^4) -> 0, and the whole error analysis of Theorem sec4:thm1 (the terms I_{3,i} via delta^i containing {B_i^{-1}-(B^*)^{-1}}grad F_i and (C_i-C^*)(x_i-x^*), and the approximation error theta^k via ||B_k - B^*||) relies on this derived convergence and on the Hessian-averaging structure. For conditioned SGD, B_t is not an average of stochastic Hessians and need not converge to grad^2 F(x^*); the limiting covariance is a different Lyapunov solution driven by the limit of B_t. No part of the paper identifies that limit or proves consistency of Xi_hat_t for it. The difference: a consistency guarantee for conditioned SGD is claimed; nothing beyond the sketched-Newton setting (where B_t -> B^* is derived, not assumed) is established.",
+      "failure_location": {
+        "quote": "Notably, Theorem \\ref{sec4:thm1} does~not~\\mbox{require}~$B_t$~to~\\mbox{converge}~to~the true Hessian $\\nabla^2 F(\\tx)$, making our analysis directly applicable to conditioned SGD methods.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Either withdraw/reframe the claim as a conjecture, or prove the extension: assume B_t -> B_infty (not the Hessian), re-derive the iterate decomposition and dominant-term analysis with the limiting covariance replaced by the Lyapunov solution driven by B_infty, and establish the analogue of Theorem sec4:thm1; a limited weakening of the claim leaves the core results intact.",
+      "overall_effect": "The claimed generalization of the estimator's consistency guarantee to conditioned SGD methods (Section sec:4.3 bullet) is unsupported; readers would take Theorem sec4:thm1 as covering AdaGrad/RMSProp-type updates, which the formal content does not cover.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Overclaim: analysis claimed directly applicable to conditioned SGD where B_t need not converge to the Hessian",
+      "why_classification": "The claim cannot be fixed by a local edit without withdrawing an advertised generalization; a complete repair requires a new (contained but nontrivial) analysis with a different limiting covariance, while the paper's core results survive untouched -- more than minor, no major loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "sec4:lem1",
+        "sec4:thm1",
+        "sec4:cor1",
+        "appen:A4:lem2",
+        "appen:A4:lem3",
+        "appen:A4:lem4",
+        "appen:A4:lem5",
+        "appen:A5:lem1",
+        "appen:A5:lem2",
+        "appen:A5:lem3",
+        "appen:A5:lem4"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Define a sequence $\\{\\tilde{\\phi}_t\\}_{t=\\tilde{t}-1}^{\\infty}$ as follows:",
+          "tag": "aux:lem5"
+        },
+        {
+          "quote": "\\tilde{\\phi}_t = \\begin{dcases}\\phi_{t} + \\sum_{i=0}^{\\tilde{t}-2}\\prod_{j=i+1}^{\\tilde{t}-1}\\prod_{k=1}^l |1-\\eta_j\\sigma_k|\\varphi_i \\phi_i, &t = \\tilde{t}-1,\\\\ \\phi_t, &t\\geq \\tilde{t}.\\end{dcases}",
+          "tag": "aux:lem5"
+        },
+        {
+          "quote": "Since $\\lim_{t \\rightarrow \\infty}\\eta_t/\\varphi_t = 1$ and $\\lim_{t \\rightarrow \\infty}\\varphi_t = 0$",
+          "tag": "aux:lem5"
+        }
+      ],
+      "failure_explanation": "In the proof of Lemma aux:lem5 the auxiliary sequence is defined by phi-tilde_{t-1} = phi_{t-1} + sum_{i=0}^{t-2} (prod_{j=i+1}^{t-1} prod_k |1-eta_j sigma_k|) varphi_i phi_i (no division by varphi_{t-1}), and the proof then asserts the equality sum_{i=0}^t (prod_{j>i} prod_k |1-eta_j sigma_k|) varphi_i phi_i = sum_{i=t-1}^t (prod_{j>i} ...) varphi_i phi-tilde_i. Matching the i = t-1 terms shows the equality holds only if varphi_{t-1} = 1; since varphi_t -> 0, the right-hand side is smaller than the left-hand side by the factor varphi_{t-1} < 1 on the added finite sum. The subsequent bound via (appen:A1:equ1a) therefore controls a strictly smaller quantity than the original series, so the lemma's stated bound is not established by this argument. (The lemma's statement itself is true: inserting the normalization sum(...)/varphi_{t-1} into the definition of phi-tilde_{t-1} makes the identity exact and the remaining chain verbatim, since phi-tilde_i = phi_i for i >= t so Lemma aux:lem1's hypotheses are unaffected; alternatively the finite initial segment can be bounded separately by o(phi_t).)",
+      "failure_location": {
+        "quote": "& = \\sum_{i = \\tilde{t}-1}^t \\prod_{j=i+1}^t \\prod_{k=1}^l |1-\\eta_j \\sigma_k| \\varphi_i \\tilde{\\phi_i} \\leq \\sum_{i = \\tilde{t}-1}^t \\prod_{j=i+1}^t \\prod_{k=1}^l (1-\\varphi_j\\sigma_k/2) \\varphi_i \\tilde{\\phi_i}",
+        "tag": "aux:lem5"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the definition of phi-tilde_{t-1} to phi_{t-1} + (1/varphi_{t-1}) * sum_{i<=t-2} (prod ...) varphi_i phi_i, so that the asserted decomposition is an identity and the remaining argument applies verbatim; or bound the finite initial segment sum_{i<=t-2} (prod_{j>i} ...) varphi_i phi_i separately by o(phi_t). Both are two-line local repairs preserving the lemma's statement and all downstream rates.",
+      "overall_effect": "As written, the proof of Lemma aux:lem5 fails; this lemma supplies the kernel bound used to solve the fourth-moment recursion in the proof of Lemma sec4:lem1 (rate \\eqref{xtrate}) and hence, transitively, the moment estimates used for the consistency and rate of Xi_hat_t (Theorem sec4:thm1) and the coverage guarantee of Corollary sec4:cor1. All these results become unsupported until the lemma's proof is repaired; the statements themselves survive.",
+      "primary_affected_tag": "aux:lem5",
+      "target_type": "formal_result",
+      "title": "Invalid identity in the proof of the contraction-kernel Lemma aux:lem5 (missing 1/varphi normalization)",
+      "why_classification": "A one-line correction of the definition of phi-tilde_{t-1} (or a separate o(phi_t) bound for the finite initial segment) makes the proof valid; the lemma's conclusion, its role in Lemma sec4:lem1, and every substantive downstream claim and rate are preserved with no new argument needed."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2502.07114",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "5795d993fca496eda9980ed8dde0e2aeba7630de81807e6eeb6cca25ed99805c",
+  "status": "ok"
+}

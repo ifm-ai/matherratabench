@@ -1,0 +1,300 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "As shown in Tables \\ref{tex2d1}, \\ref{tex2d2} and \\ref{tex2d8}, the two algorithms exhibit comparable accuracy and stability, with no single method displaying a decisive advantage in these low-dimensional regimes.",
+          "tag": null
+        },
+        {
+          "quote": "& 70  & 1.160317 & 1.240760 & 0.150684 & 0.131828 & 6.9328\\%",
+          "tag": "tex2d8"
+        },
+        {
+          "quote": "& 70  & 1.160317 & 1.126632 & 0.134559 & 0.107561 & 2.9030\\%",
+          "tag": "tex2d8"
+        }
+      ],
+      "failure_explanation": "The abstract asserts a uniform advantage over DBDP1. But in the paper's own Tables tex2d1, tex2d2 and tex2d8 (d=1,2,8), DBDP1 has the smaller relative error in 8 of 9 rows (e.g., d=8, N=70: DBDP1 2.9030% vs DBR 6.9328%), and the body itself concedes 'no single method displaying a decisive advantage in these low-dimensional regimes'. Only the high-dimensional comparisons (d>=15, d>=50) support an advantage, so the universal claim is false as stated.",
+      "failure_location": {
+        "quote": "Numerical results demonstrate that the DBR scheme consistently outperforms the DBDP1 method, maintaining accuracy up to $d=200 $ for bounded solutions",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Qualify the abstract claim to the regimes where the tables support it (high dimensions), consistent with the body's own statement.",
+      "overall_effect": "The advertised empirical scope is overstated at the low-dimensional end; a reader is misled about uniform superiority of the method.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Abstract claims DBR 'consistently outperforms' DBDP1, contradicted by the paper's own low-dimensional results",
+      "why_classification": "A localized rewording preserves all reported results and the substantive high-dimensional advantage; no formal result or guarantee is affected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "S_{y,i}\\left(p_i^m, X_{i+1}^{\\pi, m} \\right) &= \\frac{1}{K_i}\\sum\\limits_{k=1}^{K_i} \\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i+1}^{m,k},\\theta_{y,i+1}^*)",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathcal{Y}_{i+1}^{m,k} \\gets \\mathcal{NN}_{y,i+1}(t_{i+1}, X_{i+1}^{\\pi,m,k}, \\theta^*_{y,i})$\\;",
+          "tag": "alg:dynamic-batching-final"
+        },
+        {
+          "quote": "$\\mathcal{Z}_i^{m,k} \\gets \\mathcal{NN}_{z,i}(t_i, X_i^{\\pi,m,k}, \\theta_{z,i}^{*})$\\;",
+          "tag": "alg:dynamic-batching-final"
+        }
+      ],
+      "failure_explanation": "In the displayed $Loss_{Y,i}$, the $f$-term lies outside the $\\frac1K\\sum_k$ average yet is evaluated at $X_i^{\\pi,m,k}$ and $\\mathcal Z_i^{m,k}$, which carry the free index $k$; moreover $X_i^{\\pi,m,k}$ is never defined (branching exists only forward from $X_i^{\\pi,m}$), and $\\mathcal Z_i^{m,k}$ is defined at this undefined point. The central training loss of the 'fully implementable' algorithm is therefore not a well-defined number as written, and it deviates from the regression target $S_{y,i}$ of (\\ref{NS-MC-3}) (where the $k$-average covers the network values and $f$ is evaluated at $(t_i,X_i^{\\pi,m})$ with the time-$i$ $Z$-network). The label-generation step also uses the time-$i$ parameter $\\theta^*_{y,i}$ for the time-$(i+1)$ network, the drift is written as an undefined $b$ (elsewhere $\\mu$), and $g$ is called with a spurious time argument.",
+      "failure_location": {
+        "quote": "$Loss_{Y,i} \\gets \\frac{1}{M} \\sum\\limits_{m=1}^{M} \\Bigg[ \\bigg| \\frac{1}{K} \\sum\\limits_{k=1}^{K} \\mathcal{Y}_{i+1}^{m,k} + f(t_i, X_i^{\\pi,m,k}, \\mathcal{NN}_{y,i}(t_i, X_i^{\\pi,m}, \\theta_{y,i}^{r}), \\mathcal{Z}_i^{m,k}) \\cdot h",
+        "tag": "alg:dynamic-batching-final"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Rewrite $Loss_{Y,i}$ to match $S_{y,i}$: average $\\mathcal Y^{m,k}_{i+1}$ over $k$, evaluate $f$ at $(t_i,X_i^{\\pi,m},\\mathcal{NN}_{y,i}(\\theta),\\mathcal Z_i^m)$ with $\\mathcal Z_i^m=\\mathcal{NN}_{z,i}(t_i,X_i^{\\pi,m},\\theta^*_{z,i})$, use $\\theta^*_{y,i+1}$ in the label network, and fix the $b$/$g$ signatures.",
+      "overall_effect": "Algorithm 1 cannot be executed as written, and its loss differs from the quantity $S_{y,i}$ on which the error analysis (Theorem ae-DMCE) and convergence analysis are built.",
+      "primary_affected_tag": "alg:dynamic-batching-final",
+      "target_type": "algorithm",
+      "title": "Algorithm 1's Y-loss is ill-defined and inconsistent with the analyzed regression target",
+      "why_classification": "All corrections are forced by the source's own definitions ($S_{y,i}$, the simulated processes), are local to the pseudocode, and leave the theorems and the scheme's guarantees untouched."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "ae-DMCE-R"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$Y_{i+1}^{\\pi,m,k} = u(t_{i+1},X_{i+1}^{\\pi,m,k})$ is independently and identically distributed as $Y_{i+1}^{\\pi,m}$",
+          "tag": null
+        },
+        {
+          "quote": "R_{i,2}^{y}&= \\frac{1}{K_i}\\sum\\limits_{k=1}^{K_i} Y_{i+1}^{\\pi,m,k}+hf(t_{i},X_{i}^{\\pi,m},Y_{i}^{\\pi,m},Z_{i}^{\\pi,m})- \\mathcal{NN}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i}^{m},\\theta_{y,i}^*)",
+          "tag": null
+        },
+        {
+          "quote": "S_{y,i}\\left(p_i^m, X_{i+1}^{\\pi, m} \\right) &= \\frac{1}{K_i}\\sum\\limits_{k=1}^{K_i} \\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i+1}^{m,k},\\theta_{y,i+1}^*)",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Z}_{i}-S_{z,i}\\left(p_{i}^{m},\\Delta W_i^{m}, X_{i+1}^{\\pi,m} \\right)\\right|^2\\right] =\\mathbb{E}\\left[\\left|R_{i,2}^{z}\\right|^2\\right]",
+          "tag": "Deep-NN-E-9-1-z"
+        }
+      ],
+      "failure_explanation": "$S_{y,i}$ and $S_{z,i}$ are built from the trained networks $\\mathcal{NN}_{y,i+1}(\\theta^*_{y,i+1})$ with network arguments inside $f$, while $R^y_{i,2}$ and $R^z_{i,2}$ are defined via the exact-solution labels $Y^{\\pi,m,k}_{i+1}=u(t_{i+1},\\cdot)$ and exact-process arguments $(Y^{\\pi,m}_i,Z^{\\pi,m}_i)$. Hence the asserted identities $\\mathcal{Y}_i-S_{y,i}=-R^y_{i,2}$ and $\\mathcal{Z}_i-S_{z,i}=-R^z_{i,2}$ are non-sequiturs: the two sides differ by the gap between exact and network labels and between the $f$-arguments. The stability argument needed to bridge them (expressing this gap through the $R$-terms via the Lipschitz property of $f$ and (NS-MC-2-1)) is absent, so Step 2 and Step 4 of the proof are unproven (in Step 4 an unexplained factor $h$ additionally appears on $|R^z_{i,2}|^2$ in Deep-NN-E-9-z-1).",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Y}_{i}-S_{y,i}\\left(p_{i}^{m}, X_{i+1}^{\\pi,m} \\right)\\right|^2\\right] =\\mathbb{E}\\left[\\left|R_{i,2}^{y}\\right|^2\\right]",
+        "tag": "Deep-NN-E-9-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Define the residuals consistently with the scheme's labels, or add an explicit lemma bounding the exact-label/network-label discrepancy via the Lipschitz property of $f$ and (NS-MC-2-1), then redo the Step 2/4 decompositions; the statement of ae-DMCE survives with residuals of comparable meaning.",
+      "overall_effect": "The derivation of Theorem ae-DMCE's error bound (Steps 2 and 4) is invalid as written; Theorem thm:added-1 (which builds on ae-DMCE) and Theorem ae-DMCE-R (whose proof imports 'the same arguments as in Step 2' and 'Steps 3 and 4') are consequently not established.",
+      "primary_affected_tag": "ae-DMCE",
+      "target_type": "formal_result",
+      "title": "Proof of Theorem ae-DMCE equates network-label training residuals with exact-solution residuals via false identities",
+      "why_classification": "The repair requires a contained but nontrivial stability argument (a new lemma relating the two residual notions); the theorem's statement, structure and role survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$g$ is a linear growth function.",
+          "tag": null
+        },
+        {
+          "quote": "and $g$ is a $L_{g}$-Lipschitz function.",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The estimate $\\mathbb{E}[|Y^{\\pi,m}_i-Y_{t_i}|^2]\\le Ch$ cited from [GELC07, ZJ04, HCPHWX20] requires (at least) a Lipschitz terminal condition; Theorem ae-DMCE assumes only '(iv) $g$ is a linear growth function', under which the rate fails in general (linear growth gives no modulus on $|g(x)-g(y)|$, so the discrete-vs-continuous $Y$ error need not be $O(h)$). The paper's own Theorem thm:added-1 adds '$g$ is $L_g$-Lipschitz' precisely when invoking the same literature, confirming the hypothesis gap.",
+      "failure_location": {
+        "quote": "where we use  the estimates $\\mathbb{E}\\left[\\left|Y_{i}^{\\pi,m}-  Y_{t_i}\\right|^2\\right]\\le Ch$ and $\\mathbb{E}\\left[\\max\\limits_{0\\le i\\le N}\\left| Y_{t_i}\\right|^2\\right]< +\\infty$ (see \\cite{GELC07,ZJ04,HCPHWX20}) in the last inequalities.",
+        "tag": "ae-DMCE"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Note that only the moment bound $\\mathbb{E}[|Y^{\\pi,m}_{i+1}|^2]\\le C$ is needed at this step and derive it directly from (i)-(iv) (Euler moment estimates), keeping the terminal term $\\mathbb{E}[|g(X_T)-g(X_N^{\\pi,m})|^2]$ explicit as in the statement; or add a Lipschitz/uniform-continuity assumption on $g$.",
+      "overall_effect": "One step of the proof of ae-DMCE is unsupported under the stated assumptions, so the theorem's claimed scope (linear-growth terminal data) is not backed by the proof as written.",
+      "primary_affected_tag": "ae-DMCE",
+      "target_type": "formal_result",
+      "title": "Proof of Theorem ae-DMCE invokes a cited error rate outside its hypotheses (needs Lipschitz g, only linear growth assumed)",
+      "why_classification": "A routine local substitution (a directly available moment bound) repairs the step without changing the statement, the method, or any downstream claim."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "ae-DMCE-R"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\le C(1+h) +C\\mathbb{E}\\left[\\left| R_{i+1,1}^{y}\\right|^2+h\\left|R_{i,1}^{z}\\right|^2\\right] +C\\mathbb{E}\\left[\\left| R_{i+1,2}^{2}\\right|^2+h\\left| R_{i,2}^{z}\\right|^2\\right]",
+          "tag": "Deep-NN-E-9-3-1"
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Z}_{i}-\\mathcal{V}^m_{t_i}\\right|^2\\right] \\le&  CN+CN\\mathbb{E}\\left[\\left|R_{i+1,2}^{y} \\right|^2",
+          "tag": "Deep-NN-E-9-z-1"
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\int_{t_{i}}^{t_{i+1}} |Z_{s}-\\mathcal{Z}_{i}|^2ds \\right] \\le 2\\mathbb{E}\\left[\\int_{t_{i}}^{t_{i+1}} |Z_{s}-\\mathcal{V}^m_{t_i}|^2ds \\right] +C\\mathbb{E}\\left[\\left|R_{i+1,2}^{y} \\right|^2 +h\\left| R_{i,2}^{z}\\right|^2 +\\left|R_{i+1,1}^{y}\\right|^2\\right]",
+          "tag": "Deep-NN-E-16-1"
+        },
+        {
+          "quote": "S_{z,i}\\left(p_i^m,\\Delta W_{i}^{m}, X_{i+1}^{\\pi, m} \\right) &=\\frac{1}{K_i}\\sum\\limits_{k=1}^{K_i} \\left[\\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i+1}^{m,k},\\theta_{y,i+1}^*) \\frac{\\left(\\Delta W_{i}^{m,k}\\right)^\\top}{h}\\right]",
+          "tag": null
+        },
+        {
+          "quote": "=\\mathbb{E}\\left[\\left|\\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p^m_{i+1},\\theta_{y,i+1}^*) \\frac{(\\Delta W_{i}^m)^\\top}{h}-\\mathbb{E}_i\\left[\\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p^m_{i+1},\\theta^{*}_{y,i+1})\\frac{(\\Delta W_{i}^m)^\\top}{h}\\right]\\right|^2\\right]",
+          "tag": "Deep-NN-E-9-3-z"
+        }
+      ],
+      "failure_explanation": "The labels $S_{y,i},S_{z,i}$ are defined (and used in Algorithm 1) as $K_i$-path Monte Carlo averages, so their deviation from the conditional expectations $\\mathcal U^m_{t_i},\\mathcal V^m_{t_i}$ is of order $1/K_i$ (resp. $d/(hK_i)$). The proof instead bounds them by the variance of a single sample: Step 2 produces the $O(1)$ term $C(1+h)$ (Deep-NN-E-9-3-1) and Step 4 rewrites $S_{z,i}$ as a single realization (Deep-NN-E-9-3-z, contradicting its own definition), producing $CN$ (Deep-NN-E-9-z-1). These terms are then silently discarded: Deep-NN-E-10 omits $C(1+h)$, and inserting Deep-NN-E-9-z-1 into Deep-NN-E-16 yields $2h\\cdot CN=O(1)$ per time step, i.e. $O(N)$ after summation, yet Deep-NN-E-16-1 states only the $R$-terms. As displayed, the chains of inequalities are false at these steps, so the $Y$- and $Z$-bounds of Theorem ae-DMCE are not derived.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Y}_{i}-\\mathcal{U}_{t_i}\\right|^2\\right] \\le&  C\\mathbb{E}\\left[\\left|R_{i,2}^{y} \\right|^2+\\left|R_{i+1,2}^{y} \\right|^2+h\\left| R_{i,2}^{z}\\right|^2 +\\left|R_{i+1,1}^{y}\\right|^2+h\\left|R_{i,1}^{z}\\right|^2\\right]",
+        "tag": "Deep-NN-E-10"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Redo Steps 2 and 4 with the actual $K_i$-average labels: $S_{y,i}-\\mathcal U^m_{t_i}$ and $S_{z,i}-\\mathcal V^m_{t_i}$ are then Monte Carlo errors (order $1/K_i$ and $d/(hK_i)$, i.e. $R_{i,1}$-type terms) plus $O(h)$ argument gaps, which are absorbed into the theorem's existing $R_{i,1},R_{i,2}$ terms; the stated bound then survives (with $K=O(N^3)$ as in thm:added-1).",
+      "overall_effect": "Steps 2 and 4 of the proof of Theorem ae-DMCE fail, so its error bound (both components) is unproven as written; Theorem thm:added-1 and Theorem ae-DMCE-R (which reuse these steps) inherit the failure.",
+      "primary_affected_tag": "ae-DMCE",
+      "target_type": "formal_result",
+      "title": "Proof of Theorem ae-DMCE treats the Monte Carlo labels as single samples and silently drops the resulting O(1)/O(N) error terms",
+      "why_classification": "The repair is a contained but genuine reworking of two proof steps, while the theorem's statement, rates and advertised scope are preserved."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(\\ref{Deep-NN-E-r-7}) and (\\ref{Deep-NN-E-r-8}) show that to achieve a convergence rate of $O(\\frac{1}{N})$ in Theorem \\ref{ae-DMCE}, it suffices to choose the parameters $R, \\varepsilon,K$ such that",
+          "tag": null
+        },
+        {
+          "quote": "\\inf_{\\mathcal{NN}_{y,i}\\in \\mathcal{G}_{\\mathcal{K}_i, 1+d, n}}\\mathbb{E}\\left[\\left|y(p^m_{i}) - \\mathcal{NN}_{y,i}(p^{m}_{i},\\theta_{y,i})\\right|^2\\right] \\le C\\left(R^2\\varepsilon^2 +\\frac{1+R^2\\varepsilon^2}{R^2 }\\right)",
+          "tag": "Deep-NN-E-r-7"
+        },
+        {
+          "quote": "We approximate $y(t_{i}, X_{i}^{\\pi,m})$ by means of a $\\mathcal{K}_i$-Lipschitz GroupSort neural network $\\mathcal{NN}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p^m_{i},\\theta^{*}_{y,i})$ in $\\mathcal{NN}_{y,i}=\\mathcal{G}_{\\mathcal{K}_i, 1+d, n}^{\\zeta_\\kappa,L, \\mathbf{n}}$.",
+          "tag": null
+        },
+        {
+          "quote": "$\\theta^{*}_{y,i} = \\arg \\min\\limits_{\\theta_{y,i}^{r_j}} F_{y,i}^{r_j}(\\theta_{y,i}^{r_j})$",
+          "tag": null
+        },
+        {
+          "quote": "where $\\tilde{p}_i^m = (t_i,\\tilde{X}_{i}^{\\pi,m})$.",
+          "tag": null
+        },
+        {
+          "quote": "F_{y,i}^{r_j}(\\theta_{y,i}^{r_j})= & \\frac{1}{M}\\sum_{m=1}^{M} \\left| S_{y,i}\\left(p_i^m, X_{i+1}^{\\pi, m} \\right) - \\mathcal{NN}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_i^m,\\theta_{y,i}^{r_j})\\right|^2",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem asserts that the DBR scheme's error is $\\le Ch$ specifying only the network classes, $K=O(N^3)$ and architecture sizes. The proof computes best-approximation infima of the scheme-dependent target functions $y_i,z_i$ over the GroupSort classes and then jumps directly to the conclusion. It never shows that the scheme's networks - produced by SGD on the self-referential, network-label, $M$-sample empirical losses - attain (or approach) these infima, nor does it bound the residuals $R_{i,2}$ of Theorem ae-DMCE in terms of them. The outer sample size $M$ and any training-quality hypothesis are absent from the statement, although with finite $M$ even exact empirical minimization leaves an uncontrolled generalization error; since the classes contain arbitrarily bad networks and SGD success is not hypothesized, the statement as quantified is not established. The proof also uses an undefined process $\\tilde X^{\\pi,m}$ and conflates the best approximant with the trained network.",
+      "failure_location": {
+        "quote": "\\max\\limits_{0\\le i\\le N}\\mathbb{E}\\left[\\left|Y_{t_i}-\\mathcal{Y}_{i}\\right|^2\\right] +\\mathbb{E}\\left[\\sum\\limits_{i=0}^{N-1}\\int_{t_{i}}^{t_{i+1}} |Z_{s}-\\mathcal{Z}_{i}|^2ds \\right]\\le Ch",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must (i) restate the theorem for parameters that (near-)minimize the losses over the GroupSort classes, adding explicit hypotheses on the optimization/training quality and on the sample sizes $M$ and $K$, and (ii) supply the missing induction bounding the scheme's regression residuals by the best-approximation errors of the scheme-dependent targets, including the feedback of the trained networks at later time steps.",
+      "overall_effect": "The paper's headline theoretical claim - rigorous half-order convergence of the proposed scheme (abstract and conclusion) - is unproven; the advertised guarantee for the method lacks support.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Theorem thm:added-1 (half-order convergence) is not established: no link from approximation theory to the trained scheme, no optimization or sample-size control",
+      "why_classification": "The central guarantee changes type (from unconditional convergence of the trained scheme to a conditional statement under unproven training-quality and sample-size hypotheses), and the missing argument - optimization/generalization control plus the approximation-to-scheme induction - is new proof architecture not present in the source."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "ae-DMCE-R"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\overline{Y}_{i}^{\\pi,m}= & \\mathbb{E}_{i}\\Big[Y_{i+1}^{\\pi,m}+hf(t_{i},X_i^{\\pi,m},\\overline{Y}_{i}^{\\pi,m},Z_i^{\\pi,m})\\Big]",
+          "tag": "NS-M-R"
+        },
+        {
+          "quote": "Y_i^{\\pi,m} = &\\max\\left\\{\\overline{Y}^{\\pi,m}_{i},g\\left(X_{i}^{\\pi,m}\\right)\\right\\}",
+          "tag": "NS-M-R"
+        },
+        {
+          "quote": "\\widehat{F}_{y,i}^{r_j}(\\theta_{y,i}^{r_j})= & \\frac{1}{M}\\sum_{m=1}^{M} \\left| S_{y,i}\\left(p_i^m, X_{i+1}^{\\pi, m} \\right) - \\widehat{\\mathcal{NN}}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_i^m,\\theta_{y,i}^{r_j})\\right|^2",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\left|\\widehat{\\mathcal{Y}}_{i}-\\overline{\\mathcal{U}}^m_{t_i}\\right|^2\\right] &\\le C\\mathbb{E}\\left[N\\left|\\widehat{R}_{i+1,2}^{y} \\right|^2+\\left| \\widehat{R}_{i,2}^{z}\\right|^2 +N\\left|\\widehat{R}_{i+1,1}^{y}\\right|^2+\\left|\\widehat{R}_{i,1}^{z}\\right|^2\\right]",
+          "tag": "Deep-NN-E-8-R-R"
+        }
+      ],
+      "failure_explanation": "The ideal reflected scheme (NS-M-R) defines the pre-reflection value at $t_i$ from the REFLECTED value $Y^{\\pi,m}_{i+1}=\\max\\{\\overline Y^{\\pi,m}_{i+1},g\\}$ at $t_{i+1}$. The RDBR scheme however trains $\\widehat{\\mathcal{NN}}_{y,i}$ on the labels $S_{y,i},S_{z,i}$ inherited from Section 3, which are built from the PRE-reflection networks $\\widehat{\\mathcal{NN}}_{y,i+1}$, and applies the obstacle only pointwise at output time (NS-DMC-R). Hence the trained networks realize the plain (non-reflected) backward recursion and the scheme's output is $\\max\\{\\text{plain BSDE value},g\\}$, which differs from the reflected/VI solution by a non-vanishing amount (the early-exercise premium in optimal stopping is lost). The analysis conceals this: (Deep-NN-E-1-hq) compares the ideal $\\overline Y^{\\pi,m}_i$ (built on reflected values) with $\\overline{\\mathcal U}^m_{t_i}$ (built on raw networks), and (Deep-NN-E-8-R-R) claims - via 'the same arguments as in Step 2', which only bound training residuals - that $\\mathbb E[|\\widehat{\\mathcal Y}_i-\\overline{\\mathcal U}^m_{t_i}|^2]$, a quantity containing the reflection gap, is controlled by the regression residuals; this does not follow.",
+      "failure_location": {
+        "quote": "\\widehat{\\mathcal{Y}}_{i} = &  \\max\\left\\{\\widehat{\\mathcal{NN}}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p^{m}_{i},\\theta^{*}_{y,i}),g\\left(X_{i}^{\\pi,m}\\right)\\right\\}",
+        "tag": "NS-DMC-R"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Incorporate the obstacle into the backward labels - use $\\max\\{\\widehat{\\mathcal{NN}}_{y,i+1}(\\cdot),g(\\cdot)\\}$ (and the corresponding reflected values in $S_{z,i}$) when forming the regression targets at each step - and redevelop the analysis with auxiliary processes built on the reflected values, using $|\\max(a,c)-\\max(b,c)|\\le|a-b|$ and the cited reflected-BSDE estimates; a recognizably comparable scheme and convergence statement then remain within reach.",
+      "overall_effect": "The Section 4 extension is unreliable: the RDBR scheme as constructed does not approximate the variational-inequality solution, and the convergence claim of Theorem ae-DMCE-R for this scheme (including its bridging steps) is invalid.",
+      "primary_affected_tag": "NS-DMC-R",
+      "target_type": "algorithm",
+      "title": "RDBR scheme for variational inequalities omits the reflection feedback in its regression labels, so it does not discretize the reflected BSDE",
+      "why_classification": "The defect invalidates the construction as written, but the repair (feeding the reflection into the labels, as dictated by the paper's own ideal scheme NS-M-R) is local and standard, and a comparable scheme and theorem survive without new global proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the DBR scheme remains robust up to d=20 with relative errors under $9.7\\% $",
+          "tag": null
+        },
+        {
+          "quote": "$\\operatorname{Rel. err.}(\\mathfrak{u}(0,x_0)) = |u(0,x_0)-\\overline{\\mathfrak{u}}(0,x_0)|/|u(0,x_0)|$",
+          "tag": null
+        },
+        {
+          "quote": "& 90  & 0.259041 & 0.249463 & 0.446021 & 0.366364 & 3.6974\\%",
+          "tag": "tex2d20"
+        },
+        {
+          "quote": "& 90  & 0.259041 & 0.076700 & 0.288634 & 0.264827 & 70.3907\\%",
+          "tag": "tex2d20"
+        },
+        {
+          "quote": "the DBR method maintains relative errors consistently below $10\\%$ across all tested temporal discretizations, achieving an impressive $1.2529\\%$ relative error at $N=140$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The claimed relative errors (about 1.3-9.7% at d=15,20) are errors of the average $\\overline{\\mathfrak u}$ over 10 independent runs, as the paper's own metric definition shows. The same tables report per-run mean absolute errors of 0.11-0.23 at d=15 (25-50% of $|u(0,x_0)|=0.452$) and 0.22-0.37 at d=20 (85-143% of $|u(0,x_0)|=0.259$), with standard deviations up to 0.446 at d=20 - larger than the solution value itself and larger than DBDP1's (0.23-0.29). A single DBR run at d=20 is thus not accurate to a few percent (the standard error of the 10-run mean, about 0.13-0.14, exceeds the claimed 3.4-3.7% accuracies), and 'stability' is not retained relative to DBDP1. The prose ('remains robust', 'retains its accuracy and stability', 'remarkably low relative errors', 'substantially mitigates numerical variance') claims more than the tables support.",
+      "failure_location": {
+        "quote": "This striking performance gap unequivocally demonstrates that the DBR algorithm retains its accuracy and stability in high-dimensional regimes where traditional methods like DBDP1 completely break down.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Requalify the abstract and Section 5 claims: state explicitly that the reported relative errors are those of the 10-run average, present the per-run mean absolute errors and standard deviations as the accuracy/stability indicators, and soften 'retains accuracy and stability' accordingly.",
+      "overall_effect": "The empirical narrative supporting the paper's core selling point (robustness of DBR in high dimensions) is overstated; readers are misled about what a single run of the algorithm achieves at d=15-20.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "High-dimensional robustness and accuracy claims rest on the error of the 10-run mean while the tables show O(1) per-run errors",
+      "why_classification": "The repair is a substantive requalification of the advertised empirical scope (not a cosmetic edit and not a forced single correction), but no theorem, rate, or formal guarantee is lost."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2603.14721",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n01-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "dd6bd1deacab2c05cf174a3acad690d6a89f2de12aae5840afd20a33b4928009",
+  "status": "ok"
+}

@@ -1,0 +1,41 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence-theta"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Repeat{$k\\tau > T$}{",
+          "tag": "algorithm"
+        },
+        {
+          "quote": "\\left\\|U-\\Pi_h(u(T))_{i,j}\\right\\|_{\\ell_h^2}\\leq C_{T,u_0,f,\\gamma,\\zeta} (h^2+\\tau)",
+          "tag": "thm:convergence-theta"
+        }
+      ],
+      "failure_explanation": "Algorithm 1 contains two defects that prevent it from implementing the stated theta-scheme and delivering the convergence guarantee of Theorem 7.1. First, in the update step on line 11, the discrete spatial Laplacian \\Delta_h is omitted in the explicit term, writing (id + \\tau(1-\\theta))U instead of (id + \\tau(1-\\theta)\\Delta_h)U. When \\theta < 1 (such as the Crank-Nicolson case \\theta = 1/2), this does not discretize the diffusion term (1-\\theta)\\Delta_g u at the current time level and instead simulates an equation with an extraneous zero-order reaction term. Second, the repeat-until loop check `until k\\tau > T` evaluates after `k <- k + 1`; when T is an exact multiple of \\tau (as required for the Crank-Nicolson second-order result in Theorem 7.1), the loop completes step k = T/\\tau, increments k to T/\\tau + 1, tests (T/\\tau + 1)\\tau > T (which is true), but has already advanced U to time T + \\tau rather than stopping at T, introducing an O(\\tau) time-shift error that ruins the claimed O(h^2 + \\tau^2) rate.",
+      "failure_location": {
+        "quote": "$U\\leftarrow ({\\rm id}-\\tau \\theta \\Delta_h)^{-1}\\left[ \\left({\\rm id}+\\tau (1-\\theta)\\right)U+ \\tau f((k+\\theta)\\tau,\\xi_{i,j}) \\right] $",
+        "tag": "algorithm"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "In Algorithm 1, replace `({\\rm id} + \\tau(1-\\theta))` with `({\\rm id} + \\tau(1-\\theta)\\Delta_h)` in line 11, and adjust the loop condition/structure so that the iteration terminates exactly after step k = T/\\tau (for instance, checking `k\\tau \\ge T` or running a loop for k = 0, ..., \\lfloor T/\\tau \\rfloor - 1).",
+      "overall_effect": "Algorithm 1 fails to execute the Crank-Nicolson or general theta-scheme as intended whenever \\theta \\in [1/2, 1), and produces an output at time T + \\tau rather than T when T is an integer multiple of \\tau, thereby invalidating the convergence guarantee stated in Theorem 7.1 for the output U.",
+      "primary_affected_tag": "algorithm",
+      "target_type": "algorithm",
+      "title": "Missing spatial operator and overshooting stopping criterion in Algorithm 1",
+      "why_classification": "The mathematical derivations and proofs in Section 7 already use the correct operator ((1-\\theta)\\Delta_h) and target step count k_{\\tau, T} = \\lfloor T/\\tau \\rfloor; localized corrections to the pseudocode in Algorithm 1 fully restore all advertised convergence rates and guarantees of Theorem 7.1 without any new proof architecture."
+    }
+  ],
+  "issues_found": 1,
+  "paper_id": "2409.01211",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "1bd264ce0744fe3d6f170f7113e3acb5dc2934bc252abd7335b9302e0a2a9d1d",
+  "status": "ok"
+}

@@ -1,0 +1,244 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "At time step n, second-order Strang splitting \\cite{strang1968construction} is \nshown as:",
+          "tag": null
+        },
+        {
+          "quote": "\\text{step 1 : } \\frac{\\mathbf{U}_1 - \\mathbf{U}^n}{\\Delta t_1} = \\mathbf{S}(\\mathbf{U}_1), \\quad \\Delta t_1 = \\Delta t/2,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed composition consists of backward Euler, forward Euler, and backward Euler steps. Symmetric ordering does not make these first-order subsolvers second-order. In particular, when S vanishes, the displayed algorithm is simply forward Euler. The higher-order solvers introduced later are not the updates specified by these identities.",
+      "failure_location": {
+        "quote": "\\text{step 2 : } \\frac{\\mathbf{U}_2 - \\mathbf{U}_1}{\\Delta t_2} = \\text{RHS}(\\mathbf{U}_1), \\quad \\Delta t_2 = \\Delta t,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Write the splitting diagram using subproblem solution operators, and explicitly substitute the later SDIRK2 and higher-order SSP-RK integrations when asserting second-order accuracy. Retain the stated qualification about the first-order fallback.",
+      "overall_effect": "The displayed construction does not have its stated second-order temporal accuracy.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The displayed Strang update uses first-order Euler substeps",
+      "why_classification": "The required higher-order subsolvers already appear later in the source, so a local correction of the splitting specification preserves the intended method and its attainable order."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In single-phase flow regions, \n    since steps 1 and 3 can be bypassed, \n    the algorithm effectively reduces to step 2 alone.",
+          "tag": null
+        },
+        {
+          "quote": "\\rho \\mathbf{u}^2 + p\\mathbf{I}  \\\\\n        \\mathbf{u}(E + p)",
+          "tag": "kapila5eq"
+        },
+        {
+          "quote": "successfully stabilizes two-phase flow cases in the paper and \nlocks the splitting errors at the interfaces,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The argument establishes only that no local source update is needed where kappa vanishes. It does not establish confinement of accumulated errors. Outside the special pressure-velocity equilibrium, splitting errors in volume fraction perturb pressure through the EOS. The momentum and energy fluxes then transmit those errors into pure-phase regions, including along acoustic waves. Such regions can consequently inherit second-order temporal errors.",
+      "failure_location": {
+        "quote": "Therefore, the second-order limitation of Strang splitting is thus localized to the temporal precision \n    at the two-phase interface, while \n    preserving high-order fidelity in the smooth, single-phase regions.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict the assertion to local error generation and to single-phase domains of dependence unaffected by mixed-region errors; remove the claim that splitting errors remain locked at interfaces.",
+      "overall_effect": "The claimed interface confinement and higher global temporal accuracy throughout smooth single-phase regions are unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Vanishing source terms do not confine splitting errors to interfaces",
+      "why_classification": "A meaningful local or domain-of-dependence statement survives, but the regional global-error guarantee must be weakened. The numerical update and its overall second-order description need not change."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Given $z_1^n \\in [0, 1]$ and $\\Delta t_{\\mathrm{im}} > 0$,",
+          "tag": "thm:implicit_solver"
+        },
+        {
+          "quote": "\\nu^{n+1} &= z_1^{n+1}\\nu_1^{n+1} + z_2^{n+1}\\nu_2^{n+1},",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "\\nu_k^{n+1} &= (\\frac{1}{\\rho_k c_k^2})^{n+1}= \\frac{1}{\\gamma_k (p^{n+1}+p_{w,k})}, \\\\\n        p^{n+1} &= (\\rho e)^{n}(\\gamma^{n+1}-1)-\\gamma^{n+1} p_{w}^{n+1},",
+          "tag": "imkappa"
+        }
+      ],
+      "failure_explanation": "Continuity is neither assumed nor guaranteed by the Tammann formulas. Take gamma_1=gamma_2=2, p_w,1=0, p_w,2=1, fixed internal-energy density 3/2, z^n=1/2, and Delta t_im div(u)=-3. The initial pressure is 1/2>0. Along the source step, p(z)=2z-1/2 and kappa(z)=z(1-z)/(3z-1/2), which has a genuine pole at z=1/6. The implicit equation would require (z-1/2)(3z-1/2)=-3z(1-z), hence z=-1/4. Thus no solution in [0,1] exists, even after removable singularities are cancelled. Endpoint signs can make bisection converge to a pole rather than a root.",
+      "failure_location": {
+        "quote": "The continuity of $F(z_1)$ guarantees the \nexistence of root $z_1^{n+1} \\in [0, 1]$.",
+        "tag": "thm:implicit_solver"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a pole-free valid root bracket and a root-selection rule throughout the claimed regime, or explicitly abandon the unconditional gas-liquid guarantee.",
+      "overall_effect": "The backward-Euler existence theorem, the proposed bisection implementation, and the inherited unconditional volume-fraction BP guarantee of the adaptive implicit solver fail for admissible gas-liquid input data.",
+      "primary_affected_tag": "thm:implicit_solver",
+      "target_type": "formal_result",
+      "title": "The implicit source function can have poles and no bounded root",
+      "why_classification": "The theorem is false even for initially positive-pressure states. Adding continuity, energy-range, or small-step restrictions would remove part of the advertised unconditional regime; retaining that regime requires a different source-step construction or analysis."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\int_{I_{i,j}} D_h \\varphi_{i,j}^m  \\mathrm dS =\\int_{\\partial I_{i,j}} \n    \\widehat{(\\mathbf{u} \\cdot \\mathbf{n})} \\varphi_{i,j}^m  \n    \\mathrm dl  - \\int_{I_{i,j}} \\mathbf{u} \\cdot \\nabla \\varphi_{i,j}^m  \\mathrm dS.",
+          "tag": "eq:reconstruction_Dh"
+        },
+        {
+          "quote": "When we use the DG($P^K$) method for variable $\\mathbf{U}$, \nthe expected spatial accuracy for the velocity field $\\mathbf{u}$ is $\\mathcal{O}(\\Delta x^{K+1})$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Consider K=1 on a uniform one-dimensional mesh, embedded in the stated Cartesian setting, with constant density and positive smooth velocity u=C+x^2. Its cellwise L2 projection is u_h=C+x_i^2+h^2/12+2x_i(x-x_i), an O(h^2) approximation. These projected traces agree across interfaces, so the proposed numerical flux introduces no lifting correction. The reconstructed derivative is therefore D_h=2x_i, whereas u_x=2x; its maximum error is h, not O(h^2). Additional superconvergence or reconstruction assumptions are necessary.",
+      "failure_location": {
+        "quote": "To recover the optimal $(K+1)$-th order accuracy for the divergence \nterm, inspired by the LDG method \\cite{cockburn1998local}, we employ the following reconstruction procedure to \nobtain a approximation $D_h\\approx \\nabla\\cdot\\mathbf u$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Withdraw the automatic order-restoration guarantee and describe the formula only as a weak derivative reconstruction. Retaining the claimed order requires a different reconstruction or a proved additional approximation property of the actual DG velocity.",
+      "overall_effect": "The asserted optimal spatial accuracy of the reconstructed source divergence, and the claimed restoration of optimal source-term precision, are not established by this procedure.",
+      "primary_affected_tag": "eq:reconstruction_Dh",
+      "target_type": "algorithm",
+      "title": "The weak divergence reconstruction does not automatically restore optimal order",
+      "why_classification": "The stated input accuracy permits a full order loss, including only first-order divergence accuracy for P1. The source supplies no comparable construction or estimate preserving the advertised optimal rate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\theta_{\\min} = \\min\\{ \\theta_{z_1}, \\theta_{z_1\\rho_1}, \\theta_{z_2\\rho_2} \\},",
+          "tag": "BP_Z"
+        },
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The two cases overlap, and selecting the lower-bound factor need not enforce the upper bound. For example, mean z=0.5, minimum -0.1, and maximum 1.5 give a lower-bound factor approximately 5/6, leaving the limited maximum approximately 4/3. Such data occur for the quadratic z(xi)=0.4+0.8xi+0.3xi^2 on [-1,1]. Constant positive partial densities and constant pressure can make all other limiting factors equal to one.",
+      "failure_location": {
+        "quote": "\\theta_{z_1} = \\begin{cases} \n    \\frac{(\\overline{z}_1)_{i,j}^n - \\varepsilon_z}{(\\overline{z}_1)_{i,j}^n - m_{i,j}}, & \\text{if } m_{i,j} < \\varepsilon_z, \\\\\n    \\frac{(1 - \\varepsilon_z) - (\\overline{z}_1)_{i,j}^n}{M_{i,j} - (\\overline{z}_1)_{i,j}^n}, & \\text{if } M_{i,j} > 1 - \\varepsilon_z,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Compute separate lower- and upper-bound factors, using one for an inactive constraint, and take their minimum together with one.",
+      "overall_effect": "The limiter can leave quadrature-point volume fractions outside [0,1], despite an admissible cell average.",
+      "primary_affected_tag": "BP_Z",
+      "target_type": "algorithm",
+      "title": "The volume-fraction limiter fails when both bounds are violated",
+      "why_classification": "Taking the minimum of the two required factors is a routine local correction preserving conservation, common-factor limiting, and the intended bounds."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{\\gamma-1}=\\frac{z_1}{\\gamma_1-1}+\\frac{z_2}{\\gamma_2-1},",
+          "tag": "eq:mixture_parameters"
+        },
+        {
+          "quote": "p(\\mathbf{U}) = \\frac{E - \\frac{|\\rho\\mathbf{u}|^2}{2\\rho} - \\left( \\frac{z_1 \\gamma_1 p_{w, 1}}{\\gamma_1 - 1} + \\frac{z_2 \\gamma_2 p_{w, 2}}{\\gamma_2 - 1} \\right)}{\\frac{z_1}{\\gamma_1 - 1} + \\frac{z_2}{\\gamma_2 - 1}},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Convexity of the positive-pressure set does not imply concavity of pressure itself. With gamma_1=2, gamma_2=3, zero reference pressures and velocity, and constant positive partial densities summing to one, take z=1/2+xi/4 and E=3/4-13xi/8. The mean-state pressure is 1 and the minimum pressure is -1 at xi=1, so the prescribed factor is approximately 1/2. The resulting pressure at that point is approximately -1/13, still negative. The variable EOS denominator invalidates the pressure-chord estimate underlying the formula.",
+      "failure_location": {
+        "quote": "\\frac{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\varepsilon_p}{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y))}, & \\text{if } \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y)) < \\varepsilon_p,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Apply the same scaling construction to the concave residual Q(U)=E-|m|^2/(2rho)-B(z)-epsilon_p A(z), where A and B are the EOS denominator and background-pressure term. Use the minimum of Q over the quadrature points to select the factor.",
+      "overall_effect": "The pressure limiter can fail even when the cell average is admissible and Step 1 has already enforced all density and volume-fraction bounds.",
+      "primary_affected_tag": "BP_P",
+      "target_type": "algorithm",
+      "title": "The pressure scaling factor incorrectly treats pressure as concave",
+      "why_classification": "The needed concavity is already established in the convexity proof, and subtracting epsilon_p times the affine denominator preserves it. Replacing pressure values by this residual is a local repair without changing the substantive guarantees."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        },
+        {
+          "quote": "We note that our framework will be a BP-OEDG scheme for five equation transport model \nwhen we omit step 1 and step 3.",
+          "tag": null
+        },
+        {
+          "quote": "For all cases, we simply employ $\\Delta t \\propto \\Delta x$ and $CFL=0.1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Mean-preserving limiting cannot put all positive-weight quadrature states in the convex set Gp when their mean lies outside Gp. The transport update can produce precisely this failure under a normal CFL. For the admitted P0 specialization, set gamma_1=gamma_2=2, reference pressures 0 and 1, constant z=1/2, density 1, pressure epsilon=0.001, and velocities (-a,0,a) in three adjacent cells, with a=0.1. Write c=sqrt(1+2epsilon), S=a+c, and lambda=Delta t/h. The stated Lax-Friedrichs update gives central momentum zero, unchanged z, and p_new=epsilon-lambda*a*c*(c-a/2). At lambda*S=0.1 this is approximately -0.00765, while partial densities stay positive. No average-preserving limiter can repair this cell. This counterexample uses no implicit source step and survives correction of both limiter factors.",
+      "failure_location": {
+        "quote": "2. Strang Splitting Step 2 : &DG solver for Eq. \\ref{eq:RHS} $(\\Delta t)$&  \n   \\textbf{OEDG+BP limiter} \\\\",
+        "tag": "tab:computational_flow"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must guarantee admissible cell averages before every limiting stage. This requires an appropriate invariant-domain update, state-dependent step restriction or rejection, or a change to the positivity and conservation guarantees.",
+      "overall_effect": "The claimed pressure-BP property of the transport variant and the stage-wise BP justification for the full computational procedure fail. Convexity of Gp alone does not provide the missing cell-average invariant.",
+      "primary_affected_tag": "tab:computational_flow",
+      "target_type": "algorithm",
+      "title": "The algorithm does not preserve the admissible cell averages required by its limiters",
+      "why_classification": "The necessary pressure-dependent step bound can tend to zero as pressure approaches zero relative to the reference pressure. Imposing it can forfeit the advertised standard-CFL operation; merely correcting the pointwise limiters cannot restore the guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\mathcal{G} = \\left\\{ \\mathbf{U} : z_1\\rho_1 > 0, z_2\\rho_2 > 0, \\ c^2(\\mathbf{U})>0,\\ z_1\\in[0,1] \\right\\}$",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{U}^{(1)} = \n [1.2, \\ 0, \\ 0, \\ 1000, \\ 1]^T",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{U}^{(2)} = [0, \\ 1000, \\ 0, \n \\ 6001, \\ 0]^T",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The first proposed witness has z_2 rho_2=0 and the second has z_1 rho_1=0, whereas G requires both partial densities to be strictly positive. Neither witness belongs to the stated set. Their midpoint therefore does not, as written, demonstrate non-convexity of G.",
+      "failure_location": {
+        "quote": "Thus, $\\mathbf{U}^{(1)}$ is physically \n admissible and belongs to $\\mathcal{G}$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "For sufficiently small positive delta, replace the witnesses by [1.2(1-delta),1000delta,0,1000,1-delta] and [1.2delta,1000(1-delta),0,6001,delta]. Their midpoint is unchanged, their partial densities are positive, and the endpoint sound-speed signs persist by continuity.",
+      "overall_effect": "Appendix A does not supply its claimed counterexample for the admissible set actually defined in the paper.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The non-convexity witnesses are excluded by the stated admissible set",
+      "why_classification": "A routine perturbation and continuity check repairs the witnesses while preserving the non-convexity conclusion and all other claims."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2604.25672",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6e33d4743ac4690d4731311b541c59b0314910ae99b86bef3e25e9c3e4e7b64a",
+  "status": "ok"
+}

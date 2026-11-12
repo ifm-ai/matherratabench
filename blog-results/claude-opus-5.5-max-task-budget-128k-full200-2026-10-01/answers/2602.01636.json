@@ -1,0 +1,134 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\Omega \\subset \\mathbb{R}^d$, $d\\in\\{2,3\\}$ be a bounded polyhedral Lipschitz domain.",
+          "tag": null
+        },
+        {
+          "quote": "V := H^1_0(\\Omega)",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, the $u$-dependent diffusion model \\eqref{eq:quasi-u-diffusion} satisfies (C3) on $B_{\\rho}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With V=H^1_0(Omega), d in {2,3}, there is no constant C_infinity with ||v||_{L^infinity} <= C_infinity ||v||_V; H^1 functions can be unbounded, e.g. log-log singularities in 2D. Likewise no M_infinity(rho) bounds ||w||_{L^infinity} on the ball B_rho, which contains unbounded functions. Every step of the Lipschitz bound uses these constants: eq:quasi-u-coeffdiff, the K_2 term, and ||delta u||_{L^infinity}. Without them, the linearisation eq:quasi-u-DF is not even a bounded operator V->V* on B_rho. The claimed (C3) bound eq:quasi-u-C3 with L(rho) from eq:quasi-u-Lrho therefore holds for no admissible data.",
+      "failure_location": {
+        "quote": "\\|v\\|_{L^\\infty(\\Omega)}\\leq C_\\infty\\|v\\|_V \\quad \\forall v\\in V,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must recast the quasilinear verification in a functional setting where L^infinity control holds (e.g. W^{1,q}_0 with q>d). That would require new residual and stability certificates in the corresponding dual norm.",
+      "overall_effect": "The only quasilinear realisation of (C3) is vacuous in the paper's setting, so the advertised coverage of quasilinear models by the NK workflow is unsupported.",
+      "primary_affected_tag": "eq:quasi-u-C3",
+      "target_type": "other",
+      "title": "Quasilinear (C3) example rests on a false H^1_0 to L^infinity embedding for d=2,3",
+      "why_classification": "Within the H^1_0 Hilbert framework no comparable version of the quasilinear (C3) claim survives. Restoring it needs a different functional setting, i.e. new proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "- \\int_\\Omega A\\nabla z_h\\cdot\\nabla v dx",
+          "tag": "rem:adjoint-residual-computable"
+        },
+        {
+          "quote": "\\leq \\|\\sigma_h^{\\ast}-A\\nabla z_h\\|_{A_0^{-1}}",
+          "tag": "rem:adjoint-residual-computable"
+        }
+      ],
+      "failure_explanation": "Here G(z_h)(v) = int psi v - int A grad z_h . grad v - int d_s c z_h v. Integrating by parts against sigma gives G(v) = int (sigma - A grad z_h).grad v + int (s* + div sigma) v. With div sigma* = Pi^0 s*, as prescribed, the true element residual s* + Pi^0 s* is not mean-free, so the local Poincare step of Theorem 4.4 does not apply. The displayed residual R_T* = s* - div sigma* is not the residual of G. Theorem 4.4 applies to -G only with source d_s c z_h - psi = -s*.",
+      "failure_location": {
+        "quote": "s_h^{\\ast} := \\psi - \\partial_s c(\\cdot,\\tilde u_h)\\, z_h ,",
+        "tag": "rem:adjoint-residual-computable"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Apply Theorem 4.4 to -G: set s_h* := d_s c(.,u_h) z_h - psi, choose div sigma* = Pi^0 s* elementwise, and use R_T* = s* - div sigma* with mismatch ||sigma* - A grad z_h||.",
+      "overall_effect": "The computable bound on ||G(z_h)||_{V*} that enters E_J in Theorem 8.4 is not justified as written. The reported adjoint-enhanced widths are therefore not certified by the stated construction.",
+      "primary_affected_tag": "rem:adjoint-residual-computable",
+      "target_type": "algorithm",
+      "title": "Adjoint residual certification uses the wrong sign of the source, so the stated bound does not follow from Theorem 4.4",
+      "why_classification": "A local sign correction restores a valid application of the existing theorem, with no new argument and no loss of guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "p(\\rho):=\\eta + \\frac{L(\\rho)}{2\\alpha}\\rho^{2}-\\rho,",
+          "tag": "eq:pq"
+        },
+        {
+          "quote": "bracket an admissible radius by testing a geometric sequence",
+          "tag": "rem:rho-choice"
+        },
+        {
+          "quote": "Therefore, once a bracket is found, bisection is well-defined and returns a certified admissible radius.",
+          "tag": null
+        },
+        {
+          "quote": "An admissible verification radius is selected by a simple bracketing--bisection search, justified for an affine Lipschitz model.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Since L>0, p(rho) >= eta - rho + L rho^2/(2 alpha) > 0 for every rho <= eta when eta>0, and p(eta) = L(eta) eta^2/(2 alpha) > 0. After the test at 2 eta fails, the shrinking loop only tests eta, eta/2, ..., all inadmissible, so the algorithm always returns fail and never reaches bisection. It searches in the wrong direction. For affine L the admissible set can be non-empty while 2 eta fails. Example: L=L_1 rho, alpha=1, eta slightly above 1/(2 sqrt(L_1)); then rho = sqrt(2/(3L_1)) satisfies p<=0 and q=2/3<1, yet the algorithm fails. The 'nearly maximal radius via bisection' is thus never delivered.",
+      "failure_location": {
+        "quote": "$\\rho_{\\rm low}\\gets \\rho_{\\rm up}/2$",
+        "tag": "alg:rho"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Redesign the search over (eta, rho_q): e.g. test increasing radii or rho_j = eta(1+2^{-j})*c, or locate the minimiser of the convex p. Then bracket against the upper threshold and bisect, and restate the correctness proposition for this procedure.",
+      "overall_effect": "The advertised bracketing-bisection radius selection is non-functional. It succeeds only when the initial guess 2 eta is admissible (as in all reported runs) and reports failure even when admissible radii exist. Proposition A.4's bisection guarantees concern a branch that cannot be entered.",
+      "primary_affected_tag": "alg:rho",
+      "target_type": "algorithm",
+      "title": "Shrinking-bracketing phase of the radius search can never succeed; bisection branch is unreachable",
+      "why_classification": "The NK theorem is unaffected, but the stated search procedure and its guarantee fail. A new, albeit simple, search design and correctness argument are needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:alg-rho-correct"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "is either empty or an interval of the form $[\\rho_-,\\rho_+]$",
+          "tag": "lem:adm-interval"
+        },
+        {
+          "quote": "Let $\\alpha>0$ and $\\mathfrak r\\geq 0$ be given",
+          "tag": "lem:adm-interval"
+        }
+      ],
+      "failure_explanation": "[rho_-, rho_+] intersected with (0, rho_q) equals [rho_-, rho_+] (closed) when rho_+ < rho_q, not [rho_-, min) half-open. This case occurs for affine L with L_1>0: at the upper root of p, q can be as small as about 2/3. Then sup AD is admissible, contradicting the claim that Adm fails on [rho_*, rho_up]. In addition, for r=0 (allowed), {p<=0} = (0, rho_+], so rho_->0 is not attained and the form [rho_-, ...) fails.",
+      "failure_location": {
+        "quote": "\\mathcal{AD}=[\\rho_-,\\min\\{\\rho_+,\\rho_q\\}),",
+        "tag": "lem:adm-interval"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "State that AD is an interval with endpoints rho_- <= rho_+, which may be closed or open at rho_+. Require r>0 (or treat r=0 separately), and adjust the threshold statement to non-strict inequalities.",
+      "overall_effect": "The stated structure of AD and the 'unique threshold' formulation are false in some regimes. Proposition A.4's proof step 'rho_mid in AD, i.e. rho_mid < rho_+' relies on it, though its final inequalities remain true.",
+      "primary_affected_tag": "lem:adm-interval",
+      "target_type": "formal_result",
+      "title": "Admissible set need not be half-open [rho_-, rho_+); intersection computed incorrectly",
+      "why_classification": "A local restatement of endpoint types preserves the interval structure and the bisection conclusions, with no new argument."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2602.01636",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "aaa0e909cab0611fa762a4e1ad34d48e6b147159ad5762cb13df845d52ffc8eb",
+  "status": "ok"
+}

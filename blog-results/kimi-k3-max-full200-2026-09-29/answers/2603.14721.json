@@ -1,0 +1,251 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& 70  & 1.160317 & 1.240760 & 0.150684 & 0.131828 & 6.9328\\%  \\\\",
+          "tag": "tex2d8"
+        },
+        {
+          "quote": "& 70  & 1.160317 & 1.126632 & 0.134559 & 0.107561 & 2.9030\\%   \\\\",
+          "tag": "tex2d8"
+        },
+        {
+          "quote": "& 90  & 0.259041 & 0.249463 & 0.446021 & 0.366364 & 3.6974\\%  \\\\",
+          "tag": "tex2d20"
+        },
+        {
+          "quote": "& 90  & 0.259041 & 0.076700 & 0.288634 & 0.264827 & 70.3907\\%  \\\\",
+          "tag": "tex2d20"
+        },
+        {
+          "quote": "For low-dimensional cases ($d=1, 2, 8$),  both the DBR and DBDP1 methods demonstrate satisfactory performance, achieving relative errors generally below $7\\%$ across different $N$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The abstract claims consistent outperformance and robust accuracy. The tables do not support this: for Example 2 at d=8 the listed DBDP1 relative errors and mean absolute errors are better than DBR for all shown N; the text itself says there is no decisive low-dimensional advantage. At d=20 the small DBR \"Rel.err.\" is only the error of the 10-run sample mean, while the mean absolute error is 0.366364 with standard deviation 0.446021 against true value 0.259041, and for N=90,100 DBDP1 has smaller mean absolute error and standard deviation. Thus the evidence does not establish consistent outperformance or per-run relative errors under 9.7%.",
+      "failure_location": {
+        "quote": "Numerical results demonstrate that the DBR scheme consistently outperforms the DBDP1 method",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Qualify the numerical claims: drop \"consistently\", state explicitly that the reported relative error is the bias of the 10-run mean, and discuss the mean absolute error and standard deviation before claiming robustness.",
+      "overall_effect": "The numerical superiority/robustness claims in the abstract and introduction are materially overstated; the formal theorems are not directly affected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Abstract overclaims consistent numerical superiority and per-run robustness",
+      "why_classification": "The repair is a local correction of numerical prose and metric interpretation; no theorem or algorithm guarantee depends on it, and a narrower high-dimensional claim remains supported by the defined relative-error column."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "R_{i,2}^{y}&=  \\frac{1}{K_i}\\sum\\limits_{k=1}^{K_i} Y_{i+1}^{\\pi,m,k}+hf(t_{i},X_{i}^{\\pi,m},Y_{i}^{\\pi,m},Z_{i}^{\\pi,m})- \\mathcal{NN}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i}^m,\\theta_{y,i}^*)",
+          "tag": null
+        },
+        {
+          "quote": "S_{y,i}\\left(p_i^m, X_{i+1}^{\\pi, m} \\right) = \\frac{1}{K_i}\\sum\\limits_{k=1}^{K_i} \\mathcal{NN}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i+1}^{m,k},\\theta_{y,i+1}^*)",
+          "tag": null
+        },
+        {
+          "quote": "+hf(t_{i},X_{i}^{\\pi,m},\\mathcal{NN}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i}^{m},\\theta_{y,i}^{r_j}),\\mathcal{NN}_{z,i+1,1+d, n\\times d}^{\\varrho, L, \\mathbf{n}}(p_{i}^{m},\\theta_{z,i}^*))",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Z}_{i}-S_{z,i}\\left(p_{i}^{m},\\Delta W_i^{m}, X_{i+1}^{\\pi,m} \\right)\\right|^2\\right] =\\mathbb{E}\\left[\\left|R_{i,2}^{z}\\right|^2\\right].",
+          "tag": "ae-DMCE"
+        }
+      ],
+      "failure_explanation": "The proof equates the residual against the actual bootstrapped training label S_{y,i} with R_{i,2}^y. But R_{i,2}^y is defined using the exact discrete BSDE quantities Y_{i+1}^{\\pi,m,k} and f(t_i,X_i^{\\pi,m},Y_i^{\\pi,m},Z_i^{\\pi,m}), whereas S_{y,i} uses the previously trained network at i+1 and the current y-network iterate inside f. These are different random variables, and the analogous z equality has the same mismatch.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Y}_{i}-S_{y,i}\\left(p_{i}^{m}, X_{i+1}^{\\pi,m} \\right)\\right|^2\\right] =\\mathbb{E}\\left[\\left|R_{i,2}^{y}\\right|^2\\right].",
+        "tag": "ae-DMCE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redefine the residuals to be the actual training-label residuals, or prove a rigorous estimate relating exact-BSDE labels to the bootstrapped labels at every backward step before inserting them into the Gronwall argument.",
+      "overall_effect": "The residual terms controlled in Theorem ae-DMCE are not the residuals minimized by the stated DBR losses, so the error representation used for Gronwall and later convergence is unreliable.",
+      "primary_affected_tag": "ae-DMCE",
+      "target_type": "formal_result",
+      "title": "Training-label residual is falsely identified with an exact-BSDE residual",
+      "why_classification": "The proof architecture can remain, but the residual definitions and at least one consistency estimate must be changed; this is more than a local typo yet does not by itself force abandonment of the error-bound framework."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\le C(1+h) +C\\mathbb{E}\\left[\\left| R_{i+1,1}^{y}\\right|^2+h\\left|R_{i,1}^{z}\\right|^2\\right] +C\\mathbb{E}\\left[\\left| R_{i+1,2}^{2}\\right|^2+h\\left| R_{i,2}^{z}\\right|^2\\right],",
+          "tag": "ae-DMCE"
+        },
+        {
+          "quote": "+\\frac{1}{ h}\\sum\\limits_{i=0}^{N-1}\\mathbb{E}\\left[\\left|\\mathcal{Y}_{i}-\\mathcal{U}^m_{t_i}\\right|^2\\right]\\right).",
+          "tag": "ae-DMCE"
+        }
+      ],
+      "failure_explanation": "The preceding estimate bounds E|S_{y,i}-U_{t_i}^m|^2 by C(1+h) plus residual terms. After Young's inequality this produces an additional C(1+h) in E|Y_i-U_{t_i}^m|^2, but the displayed bound for E|Y_i-U_{t_i}^m|^2 keeps only residual terms. Because the earlier Gronwall estimate multiplies this quantity by 1/h and sums over N=Theta(1/h), retaining the omitted constant gives a Theta(h^{-2}) contribution, not the stated bound.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\left|\\mathcal{Y}_{i}-\\mathcal{U}_{t_i}\\right|^2\\right] \\le&  C\\mathbb{E}\\left[\\left|R_{i,2}^{y} \\right|^2+\\left|R_{i+1,2}^{y} \\right|^2+h\\left| R_{i,2}^{z}\\right|^2 +\\left|R_{i+1,1}^{y}\\right|^2+h\\left|R_{i,1}^{z}\\right|^2\\right].",
+        "tag": "ae-DMCE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "A repair must prove the missing O(h) control of the centered bootstrapped label/conditional variance (with specified Monte Carlo sizes and any needed extra regularity) or else change the error bound; no such estimate is presently supplied.",
+      "overall_effect": "The main upper error bound is not proved as stated; the later half-order convergence theorem inherits the gap.",
+      "primary_affected_tag": "ae-DMCE",
+      "target_type": "formal_result",
+      "title": "An O(1) term is dropped before the 1/h Gronwall sum",
+      "why_classification": "Keeping the term that the proof actually derives destroys the asserted estimate, and obtaining the needed O(h) bound requires a new nontrivial conditional-variance/Monte Carlo argument rather than a local correction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "assume that $X_0 \\in L^{2+\\delta}\\left(\\mathcal{F}_0, \\mathbb{R}^d\\right)$, for some $\\delta>0$",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "\\frac{C||X_i^{\\pi,m}||^2_{\\frac{2q}{2q-1}}}{R^2}\\left(\\left||y(p^m_{i}) - y(t_i,0)\\right||^2_{2q}+\\left||\\mathcal{NN}_{y,i}(p^m_{i},\\theta_{y,i}) - y(t_i,0)\\right||^2_{2q}\\right)",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "which is verified with $R = O(N^{\\frac{3}{2}}), \\varepsilon = O(N^{-3}), K= O(N^{3})$.",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The two Hölder exponents are 1/q and (2q-1)/q, whose sum is 2 rather than 1; for an indicator event of probability p this would falsely give p <= C p^{(2q-1)/q}. A correct estimate puts the indicator to power (q-1)/q and, with a 2q-moment Markov bound, yields tail decay O(R^{-2(q-1)})=O(R^{-delta}), not the displayed O(R^{-2}) unless a fourth-moment choice delta=2 is separately justified. Hence the later choice R=O(N^{3/2}), epsilon=O(N^{-3}) is unsupported for the stated arbitrary delta>0.",
+      "failure_location": {
+        "quote": "\\le 4\\mathcal{K}^2R^2\\varepsilon^2 +\\left(\\mathbb{E}\\left[\\left|y(p^m_{i}) - \\mathcal{NN}_{y,i}(p^{m}_{i},\\theta_{y,i})\\right|^{2q}\\right]\\right)^\\frac{1}{q}\\left(\\mathbb{E}\\left[ \\textbf{1}^\\frac{2q}{2q-1}_{||X_i^{\\pi,m}||_2>R}\\right]\\right)^\\frac{2q-1}{q}",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Correct the Hölder and Markov exponents and either explicitly use a fourth moment (which must be stated or justified) to keep R=O(N^{3/2}), epsilon=O(N^{-3}), or recompute R, epsilon and the network size for the actual delta.",
+      "overall_effect": "The compact-domain approximation/tail balance and the resulting GroupSort network size are not established for the stated moment assumption.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Invalid Hölder/Markov tail estimate in the convergence proof",
+      "why_classification": "The defect is a real invalid estimate, but it is contained in the tail step: a corrected moment/tail choice preserves the half-order conclusion, while the general-delta statement would need a restated complexity bound."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\theta^{*}_{y,i} = \\arg \\min\\limits_{\\theta_{y,i}^{r_j}} F_{y,i}^{r_j}(\\theta_{y,i}^{r_j})",
+          "tag": null
+        },
+        {
+          "quote": "F_{y,i}^{r_j}(\\theta_{y,i}^{r_j})= & \\frac{1}{M}\\sum_{m=1}^{M} \\left| S_{y,i}\\left(p_i^m, X_{i+1}^{\\pi, m} \\right) - \\mathcal{NN}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_i^m,\\theta_{y,i}^{r_j})\\right|^2",
+          "tag": "NS-MC-3"
+        },
+        {
+          "quote": "+N\\left|R_{i+1,1}^{y}\\right|^2 +\\left|R_{i,1}^{z}\\right|^2\\right],",
+          "tag": "ae-DMCE"
+        },
+        {
+          "quote": "$ K = O(N^{3})$, $K=\\max\\limits_{0\\le i\\le N}\\{K_i\\}$.",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "Equations (Deep-NN-E-r-7) and (Deep-NN-E-r-8) bound the population approximation infimum over a GroupSort class. Theorem ae-DMCE requires bounds for residuals of the empirical SGD minimizer computed from M sampled paths and K_i Monte Carlo labels, and also for the Monte Carlo residuals R_{i,1}^y,R_{i,1}^z. No finite-sample estimation error, SGD optimization error, or Monte Carlo rate in K_i is proved; writing K=O(N^3) in the parameter balance does not itself estimate those residuals.",
+      "failure_location": {
+        "quote": "(\\ref{Deep-NN-E-r-7}) and (\\ref{Deep-NN-E-r-8}) show that to achieve a convergence rate of $O(\\frac{1}{N})$ in Theorem \\ref{ae-DMCE}, it suffices to choose the parameters $R, \\varepsilon,K$ such that",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add a rigorous estimation/optimization analysis linking the empirical SGD minimizer to the best GroupSort approximant and prove the required R_{i,1}/R_{i,2} rates under explicit M and K_i; otherwise weaken the theorem to an ideal-approximator statement.",
+      "overall_effect": "The proved statement supports, at most, existence of ideal networks with small population error; it does not establish half-order convergence of the implementable trained DBR output.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Best-approximation bounds are used as if they controlled the empirical SGD/Monte Carlo scheme",
+      "why_classification": "This changes the guarantee type from convergence of the actual algorithm to existence of a good population approximant unless substantial new statistical/optimization arguments are added."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "ae-DMCE-R"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Y_i^{\\pi,m} = &\\max\\left\\{\\overline{Y}^{\\pi,m}_{i},g\\left(X_{i}^{\\pi,m}\\right)\\right\\},\\\\ Z_{i}^{\\pi,m} = &\\mathbb{E}_{i}\\big[Y_{i+1}^{\\pi,m}\\frac{(\\Delta W_{i}^m)^\\top}{h}\\big].",
+          "tag": "NS-M-R"
+        },
+        {
+          "quote": "\\widehat{\\mathcal{V}}_{t_i}^m  & =\\mathbb{E}_i\\left[\\widehat{\\mathcal{NN}}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i+1}^m ,\\theta^{*}_{y,i+1})\\frac{(\\Delta W_{i}^m)^\\top}{h}\\right].",
+          "tag": "Deep-NN-E-R"
+        },
+        {
+          "quote": "\\overline{\\mathcal{U}}_{t_i}^m & =\\mathbb{E}_i\\left[\\widehat{\\mathcal{NN}}_{y,i+1,1+d, n}^{\\varrho, L, \\mathbf{n}}(p_{i+1}^m ,\\theta^{*}_{y,i+1})+hf\\left(t_i, X_{i}^{\\pi,m}, \\overline{\\mathcal{U}}_{t_i}^m, \\widehat{\\mathcal{V}}_{t_i}^m  \\right)\\right]",
+          "tag": "Deep-NN-E-R"
+        }
+      ],
+      "failure_explanation": "In the discrete reflected BSDE, the continuation value and Z_i are computed from the already reflected next value Y_{i+1}^{\\pi,m}=max{\\bar Y_{i+1}^{\\pi,m},g(X_{i+1}^{\\pi,m})}. The RDBR construction applies the maximum only to the output at time i, while the labels/auxiliary quantities use the unreflected network NN_{y,i+1} at time i+1. When the constraint is active at i+1, the regression target is the wrong random variable.",
+      "failure_location": {
+        "quote": "\\widehat{\\mathcal{Y}}_{i} = &  \\max\\left\\{\\widehat{\\mathcal{NN}}_{y,i,1+d, n}^{\\varrho, L, \\mathbf{n}}(p^{m}_{i},\\theta^{*}_{y,i}),g\\left(X_{i}^{\\pi,m}\\right)\\right\\},",
+        "tag": "NS-DMC-R"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Use the reflected next value \\widehat{\\mathcal Y}_{i+1}=max{\\widehat{NN}_{y,i+1},g(X_{i+1}^{\\pi,m})} in S_{y,i}, S_{z,i}, \\bar{\\mathcal U}_{t_i}^m, \\widehat{\\mathcal V}_{t_i}^m and in the corresponding residuals, then propagate this change through the error proof.",
+      "overall_effect": "As stated, the RDBR scheme does not implement the reflected Euler scheme on active-constraint states, so its variational-inequality guarantee and Theorem ae-DMCE-R are unreliable.",
+      "primary_affected_tag": "NS-DMC-R",
+      "target_type": "algorithm",
+      "title": "RDBR recursion omits the reflection in the next-time regression target",
+      "why_classification": "The correction is the standard reflected-scheme modification, but it changes the construction and the proof rather than being a single forced symbol; a comparable RDBR method should survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\max\\limits_{0 \\leq i \\leq N-1} \\mathbb{E}\\left[\\left|Y_{t_i}-Y_{i}^{\\pi,m}\\right|^{2 }\\right]&=\\varepsilon(h),",
+          "tag": "ae-DMCE-R"
+        },
+        {
+          "quote": "\\mathbb{E}\\left[\\sum\\limits_{i=0}^{N-1}\\int_{t_{i}}^{t_{i+1}} |Z_{t}-Z^{\\pi,m}_{i}|^2dt \\right]&=O(h^{\\frac{1}{2}}),",
+          "tag": "ae-DMCE-R"
+        },
+        {
+          "quote": "The error estimate for the $Z$-component can be derived using the same arguments as in Steps 3 and 4 of the proof of Theorem \\ref{ae-DMCE}; thus, the details are omitted here.",
+          "tag": "ae-DMCE-R"
+        },
+        {
+          "quote": "with $\\varepsilon(h) = O(h^{1/2})$ under Assumption \\ref{ass-1}, and $\\varepsilon(h) = O(h)$ under  Assumption \\ref{ass-2};",
+          "tag": "ae-DMCE-R"
+        }
+      ],
+      "failure_explanation": "Combining max_i E|Y_i^{\\pi,m}-\\widehat{Y}_i|^2 with max_i E|Y_{t_i}-Y_i^{\\pi,m}|^2=epsilon(h) must add a C epsilon(h) term; the displayed Y conclusion omits it and would falsely imply zero time-discretization error when the residuals vanish. In addition, the Z-component is only asserted by analogy even though the reflected-BSDE estimate quoted in the proof gives the Z time-discretization part as O(h^{1/2}); no argument is supplied for the claimed O(h) combined rate under Assumption ass-2.",
+      "failure_location": {
+        "quote": "\\max\\limits_{0\\le i\\le N-1}\\mathbb{E}\\left[\\left|Y_{t_i}-\\widehat{\\mathcal{Y}}_{i}\\right|^2\\right] \\le C\\sum\\limits_{i=0}^{N-1}\\mathbb{E}\\left[N\\left|\\widehat{R}_{i+1,2}^{y} \\right|^2+\\left| \\widehat{R}_{i,2}^{z}\\right|^2 +N\\left|\\widehat{R}_{i+1,1}^{y}\\right|^2+\\left|\\widehat{R}_{i,1}^{z}\\right|^2\\right].",
+        "tag": "ae-DMCE-R"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Restore the C epsilon(h) term for Y and either prove the required reflected Z estimate, including any first-order improvement under Assumption ass-2, or weaken the combined bound to the supported O(h^{1/2}).",
+      "overall_effect": "The proof does not establish the stated RDBR error bound; in particular the first-order claim for the combined Y and Z error under Assumption ass-2 is unsupported.",
+      "primary_affected_tag": "ae-DMCE-R",
+      "target_type": "formal_result",
+      "title": "RDBR error proof drops the discretization error and leaves the Z rate unproved",
+      "why_classification": "Adding the omitted epsilon(h) is local, but the missing reflected-Z argument is nontrivial; a comparable half-order variational-inequality bound remains while the extra first-order claim is not established."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2603.14721",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "dd6bd1deacab2c05cf174a3acad690d6a89f2de12aae5840afd20a33b4928009",
+  "status": "ok"
+}

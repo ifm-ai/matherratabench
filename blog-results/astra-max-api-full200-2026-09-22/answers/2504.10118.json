@@ -1,0 +1,445 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{\\bm{z}} \\Phi(\\bm{z}) = \\frac{1}{2} \\sum_{k=1}^N \\left\\| |\\mathcal{F}(\\bm{Q}\\odot P_k \\bm{z})| - \\sqrt{\\bm{d}_k} \\right\\|_2^2",
+          "tag": "eqn:data_misfit"
+        },
+        {
+          "quote": "\\|\\mathcal{F}(\\bm{z}_k)\\|_2^2=m^2\\|\\bm{z}_k\\|_2^2\\quad\\text{and}\\quad\\|\\mathcal{F}^{-1}(\\bm{z}_k)\\|_2^2=\\frac{1}{m^2}\\|\\bm{z}_k\\|_2^2",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the explicitly stated Fourier normalization, the exit-wave loss equals the data-misfit loss divided by m^2, not the same function Phi. This discrepancy already occurs when all Fourier entries are nonzero. The minimization problems have the same minimizers, but their objective values and gradients differ by m^2.",
+      "failure_location": {
+        "quote": "\\min_{\\bm{z}}\\Phi(\\bm{z}) &= \\frac{1}{2} \\sum_{k=1}^N  \\left\\|\\bm{Q}\\odot P_k \\bm{z} - \\mathcal{R}_k(P_k \\bm{z}) \\right\\|_2^2",
+        "tag": "eqn:exit_misfit"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Define Phi consistently as the normalized data loss, with prefactor 1/(2m^2), or explicitly distinguish the two positively scaled objectives and translate their gradients and tolerances.",
+      "overall_effect": "The identification of the original loss with the subsequently analyzed loss, including its gradient and residual scale, is incorrect. Results explicitly formulated for the exit-wave loss do not automatically have the stated normalization for the original data loss.",
+      "primary_affected_tag": "eqn:exit_misfit",
+      "target_type": "other",
+      "title": "Parseval rescaling is missing from the objective identification",
+      "why_classification": "A local normalization correction preserves the minimizers, algorithms, and asymptotic rates without a new argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\bm{u} \\in \\mathbb{R}^{m^2}$ is an {a priori chosen regularization coefficient}",
+          "tag": null
+        },
+        {
+          "quote": "\\Phi^{\\texttt{PIE}}_k\\left(\\bm{z}_k ; \\bm{z}_k^{(j)}\\right) = \\frac{1}{2} \\left\\|\\bm{Q} \\bm{z}_k - \\mathcal{R}_k\\left(\\bm{z}_k^{(j)}\\right)\\right\\|_2^2 + \\frac{1}{2}\\bm{u}\\cdot\\left|\\bm{z}_k - \\bm{z}_k^{(j)}\\right|^2",
+          "tag": "eqn:rPIE-surrogate"
+        }
+      ],
+      "failure_explanation": "No positivity condition is imposed on the generic vector u before a zero-gradient solution is declared to be the minimizer. For the scalar case Q=1, d=1, reference iterate i, and u=-2, the surrogate is -|z-i|^2/2 and is unbounded below. The displayed update nevertheless returns i. Zero denominators are also admitted by the stated domain.",
+      "failure_location": {
+        "quote": "\\bm{z}_k^{(j)}\\leftarrow \\bm{z}_k^+ = \\bm{z}_k^{(j)} + \\frac{\\overline{\\bm{Q}}}{\\bm{u} + |\\bm{Q}|^2}\\left(\\mathcal{R}_k\\left(\\bm{z}_k^{(j)}\\right) - \\bm{Q}\\bm{z}_k^{(j)}\\right)",
+        "tag": "eqn:rPIE_update"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Require nonnegative regularization and positive entries of u+|Q|^2 wherever the quotient is used, with an explicit unchanged-coordinate convention for completely flat coordinates.",
+      "overall_effect": "The generic regularized-surrogate minimization construction is not valid for its stated parameter domain, although the later rPIE choice avoids negative curvature for nonzero probes.",
+      "primary_affected_tag": "eqn:rPIE_update",
+      "target_type": "algorithm",
+      "title": "The generic PIE update need not minimize its surrogate",
+      "why_classification": "These are standard local conditions and a degenerate-coordinate convention; the advertised nonzero-probe rPIE parameter choices remain available."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$f_h:\\mathbb{R}^{N_h^2}\\to\\mathbb{R}$ is defined on the fine grid",
+          "tag": null
+        },
+        {
+          "quote": "\\STATE \\textbf{Pre-smoothing}: Apply $k_1$ iterations of a convergent optimization algorithm to $\\min_{\\bm{z}} f_h(\\bm{z})$ to obtain $\\bar{\\bm{z}}_h$ (with $\\bm{z}_h^{(j)}$ as the initial guess).",
+          "tag": "alg:mgopt"
+        },
+        {
+          "quote": "\\nabla f_h(\\bm{z}_h) = 0 \\implies \\bm{I}_h^H \\nabla f_h(\\bm{z}_h) = 0 \\iff \\nabla f_s(\\bm{I}_h^H\\, \\bm{z}_h) = 0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "First-order matching and descent do not imply global optimality for the unrestricted nonlinear objectives described here. For example, take f_h(x)=sum_i p(x_i), where p(t)=t^4/4-4t^3/3+3t^2/2, and f_H(y)=|y|^2/2. Starting at zero, gradient-based smoothing and the exact corrected coarse solve both remain at zero, a strict local minimum. Yet p(3)=-9/4<p(0)=0. The correction therefore does not supply the asserted optimal-solution guarantee.",
+      "failure_location": {
+        "quote": "\\texttt{MG/OPT} nevertheless returns the optimal solution even if $f_H$ and $f_h$ differ significantly.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the unconditional optimal-solution assertion by base-point first-order consistency and appropriately conditional stationarity claims. Retaining global optimality requires additional global assumptions or a different argument.",
+      "overall_effect": "The preliminary explanation materially overstates what first-order consistency can establish for nonconvex MG/OPT.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "MG/OPT is given an unsupported global-optimality guarantee",
+      "why_classification": "The supported correction abandons a global-optimality guarantee in the stated nonlinear regime; a comparable global guarantee is not supplied by the source."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{z}^{(j+1)} = \\operatornamewithlimits{argmin}_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z} ; \\bm{z}^{(j)}\\right)",
+          "tag": "eqn:surrogate_minimization"
+        },
+        {
+          "quote": "\\Phi\\left(\\bm{z}^{(j+1)}\\right)=\\Phi\\left(\\bm{z}^{(j)}\\right)\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The formal analysis concerns descent and stationarity, not recovery of a global minimizer. A source-compatible counterexample has one 2-by-2 scan, Q=(1,1,1,0), square-root data (1,1,1,1), and z=(i/2,i/2,i/2,0). Its Fourier exit wave is (3i/2,i/2,i/2,-i/2), so R=(i/2,i/2,i/2,-i/2). Every illuminated coordinate already minimizes the surrogate, and the exit-wave loss remains 1/8. The object (i,0,0,0) has loss zero. All Fourier entries at the nonglobal fixed point are nonzero.",
+      "failure_location": {
+        "quote": "it serves as a majorization of~\\eqref{eqn:exit_misfit} that recovers the optimal solution",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Withdraw global recovery and state only the descent and stationarity conclusions actually supported. A global-recovery theorem would require additional assumptions or a new mechanism excluding nonglobal fixed points.",
+      "overall_effect": "The claimed optimal-solution recovery is false even for exact full-surrogate minimization at a differentiable iterate.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Exact surrogate minimization can remain at a nonglobal fixed point",
+      "why_classification": "A substantive global-recovery guarantee must be abandoned; repairing the local convergence calculations cannot restore it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that this computation does not work when $\\mathcal{F}(\\bm{Q}\\odot \\bm{z}_k))_r=0$ at some index $r$.  This issue can be prevented by finding the gradient using the third statement of Proposition~\\ref{prop:mm_cond}.",
+          "tag": null
+        },
+        {
+          "quote": "\\epsilon\\left\\langle\\nabla_{\\bm{x}}\\Phi\\left(\\bm{x}^{(j)},\\bm{y}^{(j)}\\right),\\bm{h}\\right\\rangle+o(\\epsilon)&= \\Phi\\left(\\bm{x}^{(j)}+\\epsilon \\bm{h},\\bm{y}^{(j)}\\right)-\\Phi\\left(\\bm{x}^{(j)},\\bm{y}^{(j)}\\right)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Taylor expansion assumes the differentiability it is supposed to establish. Already for Q=1, d=1, and a scalar variable, Phi(z)=(|z|-1)^2/2 has directional derivative -|h| at z=0, which is not linear in h. Thus no real or complex gradient exists there. Choosing a phase for R(0), or using the gradient of a touching quadratic majorizer, does not create a classical gradient of Phi.",
+      "failure_location": {
+        "quote": "\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right) = \\nabla_{\\bm{z}}\\widetilde{\\Phi}\\left(\\bm{z}^{(j)} ; \\bm{z}^{(j)}\\right)",
+        "tag": "eqn:gradient_agreement"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict classical-gradient assertions to points where every positive-data Fourier component is nonzero, and make the rate theorem conditional on this along the relevant iterates. Retaining zero-component coverage requires an explicitly defined nonsmooth stationarity replacement.",
+      "overall_effect": "Unconditional gradient agreement, gradient-based optimality, the stationarity-rate theorem, and gradient-based stopping comparisons are not established at positive-data Fourier zeros.",
+      "primary_affected_tag": "prop:mm_cond",
+      "target_type": "formal_result",
+      "title": "Classical gradients are asserted at nondifferentiable Fourier zeros",
+      "why_classification": "A meaningful differentiable-regime version survives, but the claimed treatment of zero Fourier components cannot be preserved by a phase convention or routine algebra."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{z}^{(j+1)} = \\operatornamewithlimits{argmin}_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z} ; \\bm{z}^{(j)}\\right)",
+          "tag": "eqn:surrogate_minimization"
+        },
+        {
+          "quote": "\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = \\nabla_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z}^{(j+1)};\\bm{z}^{(j+1)}\\right) = 0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof establishes only the forward implication. The reverse implication is false because one iteration can arrive at a stationary minimizer with strict decrease. For m=n=N=1, Q=1, d=1, and z^(0)=2i, exact surrogate minimization gives z^(1)=i. The objective decreases from 1/2 to zero, while the gradient at z^(1) is zero.",
+      "failure_location": {
+        "quote": "\\Phi\\left(\\bm{z}^{(j+1)}\\right)=\\Phi\\left(\\bm{z}^{(j)}\\right)\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Retain equality implies stationarity of the new iterate, or replace the right-hand side of the equivalence by stationarity of the old iterate and prove that equivalence using quadratic optimality.",
+      "overall_effect": "The theorem's asserted equivalence is false independently of all zero-phase and differentiability problems.",
+      "primary_affected_tag": "thm:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "Stationarity of the new iterate does not characterize zero decrease",
+      "why_classification": "The descent result survives, but a substantive necessary-and-sufficient condition must be changed rather than merely clarified."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\overline{\\bm{z}-\\bm{z}^{(j)}}\\cdot\\left(\\frac{1}{2} \\sum_{k=1}^N P_k^{\\top}\\nabla_{\\bm{z}_k}\\Phi_k\\left(\\bm{z}_k^{(j)}\\right)\\right)",
+          "tag": null
+        },
+        {
+          "quote": "We denote $\\frac{1}{2}\\left\\|\\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right\\|_\\infty$ by $L$. Then, the choice $\\bm{z}=\\bm{z}^{(j)}-\\frac{1}{L}\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)$ yields:",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The final quadratic expansion drops the factors 1/2 on both conjugate linear terms, doubling Re(delta*gradient). With M=||sum P_k^T|Q|^2||_infinity, the valid bound is M||delta||^2/2+Re(delta*gradient). Choosing delta=-gradient/M gives decrease at least ||gradient||^2/(2M), not 2||gradient||^2/M. Consequently the resulting rate constant is 2M, rather than M/2. At horizon zero, Q=d=1 and z^(0)=2i already give 1<=1/4 in the claimed bound.",
+      "failure_location": {
+        "quote": "\\min_{0\\leq j\\leq n} \\left\\|\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\right\\|_2^2\\leq\\frac{\\left\\|\\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right\\|_\\infty}{2(n+1)}\\Phi\\left(\\bm{z}^{(0)}\\right)",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Keep the factors 1/2 in the linear terms, use the comparison step -gradient/M, and replace M/[2(n+1)] by 2M/(n+1), treating M=0 separately.",
+      "overall_effect": "The explicit stationarity-rate constant and the sufficient-decrease estimate used to derive it are false.",
+      "primary_affected_tag": "thm:convergence_rate",
+      "target_type": "formal_result",
+      "title": "Dropped factors give a fourfold-too-small stationarity bound",
+      "why_classification": "The repair is local quadratic algebra and preserves the O(1/n) stationarity rate without a new convergence argument."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{z}^{(j+1)} = \\operatornamewithlimits{argmin}_{\\bm{z}} \\widetilde{\\Phi}\\left(\\bm{z} ; \\bm{z}^{(j)}\\right)",
+          "tag": "eqn:surrogate_minimization"
+        },
+        {
+          "quote": "\\STATE $\\bm{z}^{\\texttt{recon}}[x : x + m,\\; y : y + m] \\leftarrow \\texttt{MGPS}_k\\left(\\bm{Q},\\bm{u}, \\bm{z}^{\\texttt{recon}}_k, \\mathcal{R}_k\\left(\\bm{z}^{\\texttt{recon}}_k\\right)\\right)$.",
+          "tag": "alg:MGrPIE"
+        },
+        {
+          "quote": "gives a descending direction of the surrogate model on the fine grid~\\eqref{eqn:fine_grid_surrogate_model} at $\\bm{z}'_{k}$",
+          "tag": "thm:coarse_grid_update"
+        }
+      ],
+      "failure_explanation": "The convergence theorems assume minimization of one frozen full surrogate. MGrPIE instead recomputes phases and performs regularized component updates sequentially; a direction result for one component does not imply convergence for their sum. For two repeated scans with Q identically one and measured amplitudes respectively one and two, rPIE regularization is zero. Fine post-smoothing therefore sets the current Fourier amplitudes exactly to the current scan's data. Epoch outputs alternate between amplitudes one and two according to the final scan, rather than approach the summed-loss minimizer at amplitude 3/2. Starting at that minimizer even increases the normalized loss from 1/4 to 1/2.",
+      "failure_location": {
+        "quote": "This new solver can be analytically justified; we provide its well-definedness, consistency, and convergence in Section~\\ref{sec:weights_property}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Limit the proved convergence claims to exact full-surrogate minimization and the local coarse-step assertions. Retaining a convergence guarantee for MGrPIE requires a new stochastic analysis and compatible update or stepsize assumptions.",
+      "overall_effect": "The advertised convergence, monotonic-descent, and sublinear-convergence justification does not cover the implemented stochastic multigrid algorithm, including allowed inconsistent noisy data.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Full-batch MM analysis does not establish stochastic MGrPIE convergence",
+      "why_classification": "The central stochastic solver's convergence guarantee is false in an allowed regime; it cannot be recovered by repairing the existing full-batch proof locally."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "one can set $\\bm{W}_{\\bm{z}} = \\bm{J}$, a vector of ones, and $\\bm{Q}_H = \\bm{M}_h^H(\\bm{Q})$, where the application of $\\bm{M}_h^H$ yields a downsampled version of $\\bm{Q}$ by taking the entry of minimum norm in each bin",
+          "tag": null
+        },
+        {
+          "quote": "\\nabla_{\\bm{z}_k}\\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)^*\\bm{I}_H^h\\left(\\bm{e}_{H,k}\\right)\\leq0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The default descent proof relies on an unweighted restricted fine gradient, which these alternative weights do not produce. In one bin take Q=(1,2,2,2), zero data so R=0, and z'=(1,-1/4,-1/4,-1/4). The fine gradient is (1,-1,-1,-1), whereas the alternative restriction gives z_H'=1/16 and Q_H=1. Its proximal correction is e_H=-1/[16(1+u_H)]. Unweighted prolongation therefore has fine-gradient inner product 1/[8(1+u_H)]>0.",
+      "failure_location": {
+        "quote": "In such cases, the properties discussed in Section~\\ref{sec:weights_property} still hold.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Retract the descent and unchanged gradient-consistency claims for this alternative, retaining only properties separately verified for it; alternatively redesign its transfer operators and prove new bounds.",
+      "overall_effect": "The asserted transfer of all consistency and descent properties to the optional minimum-norm-probe construction is false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The proposed alternative weights can produce a fine-grid ascent direction",
+      "why_classification": "A limited weakening of the optional construction leaves the default method intact, while preserving the alternative's descent guarantee requires a contained new construction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:automatic_regularization_selection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{W}_{\\bm{u}}^H = \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}",
+          "tag": "eqn:def_weights"
+        },
+        {
+          "quote": "$\\bm{u}_H = \\bm{W}_{\\bm{u}}^H \\odot \\bm{I}_h^H\\,\\bm{u}$: the coarse-grid regularization term.",
+          "tag": null
+        },
+        {
+          "quote": "\\STATE Coarse probe: $\\bm{Q}_H \\leftarrow \\bm{I}_h^H\\left(\\bm{Q}\\right)$.",
+          "tag": "alg:MGPS"
+        }
+      ],
+      "failure_explanation": "A nonzero complex probe can average to zero. For a bin Q=(1,-1,1,-1), its mean is zero while the mean intensity is one. Thus W_u^H=0 and u_H=0, and both displayed update forms contain 0/0; conventions for undefined weights do not address this defined zero weight. With zero data and z'=ones, the coarse proximal objective is identically zero, so an arbitrary minimizing coarse displacement may even have positive inner product with the nonzero fine gradient. A minimizer-selection rule is necessary.",
+      "failure_location": {
+        "quote": "\\bm{e}_{H,k} &= -\\frac{\\overline{\\bm{Q}_H}}{\\bm{u}_H + |\\bm{Q}_H|^2}\\left(\\bm{Q}_H\\bm{z}_{H,k}' - \\mathcal{R}^H_k\\left(\\bm{z}_k^{(j)}\\right)\\right)",
+        "tag": "eqn:coarse_grid_rPIE_update"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Specify an unchanged-coordinate minimizer on zero-curvature coarse coordinates, implement that case throughout MGPS, and state the update formulas and operator comparisons with matching degenerate-case conventions.",
+      "overall_effect": "The coarse-step theorem and recursive MGPS/MGrPIE operation are not well defined for allowed probes. The associated coarse update operators are also undefined on these bins.",
+      "primary_affected_tag": "thm:coarse_grid_update",
+      "target_type": "formal_result",
+      "title": "Averaging a complex probe can make the coarse update undefined",
+      "why_classification": "The repair is local to degenerate coarse coordinates but requires an explicit selection rule and corresponding changes to the advertised update correspondence, not merely bounded weights."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{u}_H + |\\bm{Q}_H|^2&= \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\bm{I}_h^H\\left(\\bm{u}+|\\bm{Q}|^2\\right)",
+          "tag": null
+        },
+        {
+          "quote": "\\bm{I}_h^H\\left(\\frac{1}{\\bm{u}+|\\bm{Q}|^2}\\right)&= \\frac{1}{\\bm{u}_H + |\\bm{Q}_H|^2}\\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Writing D=u+|Q|^2, the coarse maximum is 1/(I_h^H D), while the restricted fine maximum is I_h^H(1/D). These are generally unequal; the unary-commutation lemma concerns prolongation, not averaging. For Q=(1,2,1,2) and the prescribed rPIE choice alpha=1/2, D=(5/2,4,5/2,4). The two maxima are respectively 4/13 and 13/40. This counterexample has no zero coarse probe or denominator.",
+      "failure_location": {
+        "quote": "\\max_{\\|\\bm{g_1}\\|_\\infty\\leq1}\\left|\\bm{e}_{H,k}(\\bm{I}_h^H\\bm{g_1})\\right|_r= \\max_{\\|\\bm{g_2}\\|_\\infty\\leq1} \\left|\\bm{I}_h^H\\bm{e}_k(\\bm{g_2})\\right|_r",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Replace equality by the Jensen inequality 1/(I_h^H D) <= I_h^H(1/D), subject to positive denominators and explicit degenerate-case handling. This retains a one-sided magnitude-control interpretation.",
+      "overall_effect": "The claimed exact matching of worst-case coarse and restricted fine update magnitudes, and its proof, are false.",
+      "primary_affected_tag": "prop:automatic_regularization_selection",
+      "target_type": "formal_result",
+      "title": "Restriction does not commute with reciprocal regularization",
+      "why_classification": "The existing weights still support a comparable stability bound, but the substantive exact-matching guarantee must be weakened."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{G}(\\bm{z}) \\defeq \\frac{1}{Nm}\\sum_{k=1}^N\\|\\nabla_{\\bm{z}_k}\\Phi_k(P_k\\bm{z})\\|_2",
+          "tag": null
+        },
+        {
+          "quote": "\\nabla_{\\bm{z}}\\Phi(\\bm{z}) &= \\sum_{k=1}^N P_k^\\top \\nabla_{\\bm{z}_k}\\Phi_k(P_k\\bm{z})",
+          "tag": "eqn:misfit_derivative_full"
+        }
+      ],
+      "failure_explanation": "The executable termination test requires all component gradients to be small, not stationarity of their sum. For two scalar measurements of the same pixel with Q=1 and amplitudes one and two, Phi(z)=[(|z|-1)^2+(|z|-2)^2]/2 is minimized at |z|=3/2. Nevertheless G(z)=(||z|-1|+||z|-2|)/2 is at least 1/2 everywhere it is differentiable. For tol<1/2 the procedure cannot return, even if an exact optimizer of the summed objective is supplied. This obstruction remains after fixing the stochastic update rule.",
+      "failure_location": {
+        "quote": "\\item If $\\mathcal{G}(\\bm{z}) < \\texttt{tol}$, we conclude that the solver has converged and return $\\bm{z}$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Use the existing full-gradient sum as the fine-grid stationarity test, retaining the component-gradient quantity only as a sufficient condition for optional coarse-level pruning.",
+      "overall_effect": "The proposed convergence-controlled loop can fail to terminate on allowed inconsistent noisy data. The conditional coarse-gradient proposition itself remains valid, but it does not establish attainability of this fine-grid stopping condition.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The stopping test can reject every point of a noisy problem",
+      "why_classification": "Repair requires changing the stopping statistic and separating fine-grid termination from the componentwise coarse-bound guarantee; retuning a small tolerance does not solve the problem generally."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:mm_cond",
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $\\theta(0)$ is undefined, we set $\\mathcal{R}_k(\\bm{z}_k)_r = \\mathcal{F}^{-1}\\left(\\sqrt{\\bm{d}_k}\\right)_r$ when $\\mathcal{F}(\\bm{Q}\\odot \\bm{z}_k)_r = 0$.",
+          "tag": "def:REW"
+        },
+        {
+          "quote": "\\mathcal{R}_k\\left(P_k\\bm{z}^{(j)}\\right)_r =\n\\begin{cases}\n\\mathcal{F}^{-1}\\left(\\sqrt{\\bm{d}_k}\\right)_r\\,, & \\text{if } j=0\\,, \\\\\n\\mathcal{R}_k\\left(P_k\\bm{z}^{(j-1)}\\right)_r\\,, & \\text{if } j\\geq 1\\,.\n\\end{cases}",
+          "tag": "eqn:specification"
+        }
+      ],
+      "failure_explanation": "A zero Fourier coefficient requires choosing that coefficient's phase before applying the inverse transform. Replacing the same-index spatial entry of R does not preserve the measured Fourier amplitudes and leaves other entries dependent on the undefined phase. Even after provisionally choosing any unit phase, the claimed inequality can fail: with a 2-by-2 DFT, Q=ones, square-root data=ones, test Fourier wave (0,i,i,i), and reference Fourier wave (i,i,i,i), the footnote's spatial overwrite gives the two squared norms as 7/4 and 1/4. Correcting only the separate theta=0 predicate does not repair this coordinate mismatch.",
+      "failure_location": {
+        "quote": "\\left\\|\\bm{Q} \\bm{z}_k - \\mathcal{R}_k\\left(\\bm{z}_k\\right)\\right\\|_2^2\\leq \\left\\|\\bm{Q} \\bm{z}_k - \\mathcal{R}_k\\left(\\bm{z}^{(j)}_k\\right)\\right\\|_2^2",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Select unit phases coefficientwise in Fourier space, using phase one initially and the previous Fourier phase at later zero coefficients, and only then apply the inverse Fourier transform.",
+      "overall_effect": "The revised exit wave is not the Fourier-amplitude projection assumed by the supporting proposition, so majorization and its downstream arguments are unreliable for partially zero Fourier waves.",
+      "primary_affected_tag": "prop:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "Zero-frequency handling overwrites spatial rather than Fourier coordinates",
+      "why_classification": "This is a local repair of the zero-phase construction; the existing scalar phase inequality then supplies the same majorization argument without new global analysis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:mm_cond",
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For any complex numbers $x,y\\in\\mathbb{C}$ and $d\\geq0$",
+          "tag": "lem:convergence_iterative_surrogate"
+        },
+        {
+          "quote": "\\bm{d}_k = |\\mathcal{F}(\\bm{Q}\\odot P_k \\bm{z}^\\ast)|^2 + \\epsilon_k, \\quad k = 1, \\ldots, N,",
+          "tag": null
+        },
+        {
+          "quote": "$\\epsilon_k \\in \\mathbb{R}^{m^2}$ corresponds to the noise associated with the $k$-th measurement",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The general additive-noise setup does not require observed data to remain nonnegative, but the lemma is applied with amplitudes sqrt(d_k), which must be real and nonnegative. Negative allowed observations make the intended real square root undefined. Even interpreting it as a complex square root does not save the inequality: in the scalar case Q=F=1 and d=-1, take x=i and reference y=1. Then R(x)=-1 and R(y)=i, giving squared norms 2 and 0.",
+      "failure_location": {
+        "quote": "The inequality and the additional equality outcomes follow from Lemma~\\ref{lem:convergence_iterative_surrogate}, which applies to the inequality element-wise.",
+        "tag": "prop:convergence_iterative_surrogate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "Require nonnegative observed intensities throughout, or explicitly define a nonnegative preprocessing operation before constructing the objective and revised exit waves.",
+      "overall_effect": "The amplitude objective and majorization analysis do not cover the stated unrestricted additive real-noise model.",
+      "primary_affected_tag": "prop:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "Amplitude majorization is used without nonnegative-data hypotheses",
+      "why_classification": "A standard data-domain condition resolves the defect and preserves the paper's actual Poisson-noise experiments and intended intensity-data setting."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=-4\\left(\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right)\\right)^*\\operatorname{diag}(\\bm{A})\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Positive definiteness of diag(A) shows only that equality is equivalent to I_h^H g=0. The restriction operator has a nontrivial kernel. For example, a fine gradient (1,-1,0,0) in one bin is nonzero but averages to zero, so the coarse direction and the displayed inner product are both zero. Such a gradient is realized by Q=ones, zero data, and z' equal to that vector.",
+      "failure_location": {
+        "quote": "Additionally, equality implies $\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)=0$.",
+        "tag": "prop:multigrid_convergence"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-015",
+      "least_adequate_overall_repair": "Replace the equality conclusion by I_h^H g=0. Any implication to full fine-grid stationarity would require an additional condition eliminating restriction-kernel components.",
+      "overall_effect": "The proposition does not establish strict descent away from fine-grid stationarity. Its nonpositivity assertion, which is the part used by the coarse-grid-update theorem, remains valid.",
+      "primary_affected_tag": "prop:multigrid_convergence",
+      "target_type": "formal_result",
+      "title": "Zero restricted gradient does not imply zero fine-grid gradient",
+      "why_classification": "The nonascent result survives, but the substantive equality characterization must be weakened from fine-grid stationarity to vanishing restricted gradient."
+    }
+  ],
+  "issues_found": 15,
+  "paper_id": "2504.10118",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e9a1fb619c786f644b01b96a3fc12b8566c68fb3b203771e6f1978a95647dfae",
+  "status": "ok"
+}

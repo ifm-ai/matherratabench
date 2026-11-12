@@ -1,0 +1,69 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:minberrcost",
+        "c:minberr"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\alpha =-\\frac{1}{\\|\\b\\|_2}\\left((\\T_k)_{1,1}(\\v_{\\min})_1 +(\\T_k)_{1,2}(\\v_{\\min})_2\\right)",
+          "tag": "l:quotient"
+        },
+        {
+          "quote": "$\\frac{1}{\\widehat\\alpha}\\W\\begin{bmatrix}\n0\\\\ \\widehat\\v    \n\\end{bmatrix}=\\begin{bmatrix}\n-1 \\\\ \\frac{1}{\\widehat\\alpha}\\v\n\\end{bmatrix}$",
+          "tag": "l:quotient"
+        }
+      ],
+      "failure_explanation": "In Lemma 4, the generalized eigenvalue problem (4.7) for minimizing backward error has the candidate solution vector parameterized as [-1; y]. The congruence matrix W satisfies W*[0; v_min] = [alpha; v_min]. Equating [alpha; v_min] to a multiple of [-1; y] requires y = -(1/alpha)*v_min, but the proof erroneously asserts that the first component is +1 (and in the subsequent sentence claims that dividing [alpha; v] by alpha yields -1 as the first component), thereby inverting the sign of y and setting x_k = (1/alpha)*Q_k*v_min = -x_k^*. Furthermore, the generalized Rayleigh quotient (4.5) minimizes ||A*x - b||_2 / ||x||_2 rather than the backward error ||A*x - b||_2 / (||A||_2 * ||x||_2), so the minimum singular value sigma_min equals ||A*x_k - b||_2 / ||x_k||_2, meaning berr_{A,b}(x_k) = sigma_min / ||A||_2 rather than sigma_min whenever ||A||_2 != 1. As a result, the returned iterate x_k has the wrong sign (maximizing rather than minimizing residual along that direction) and the reported backward error formula lacks the 1/||A||_2 factor.",
+      "failure_location": {
+        "quote": "\\x_k = \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "In Lemma 4, Algorithm 1, Theorem 5, and Corollary 1, redefine alpha without the leading minus sign (or set x_k = -(1/alpha)*Q_k*v_min) and divide sigma_min by ||A||_2 (or assume/prescale A so that ||A||_2 = 1, setting the convergence threshold in Algorithm 1 to epsilon * ||A||_2).",
+      "overall_effect": "Lemma 4 produces an iterate with inverted sign and an unnormalized backward error value. Consequently, Algorithm 1 outputs an incorrect solution with large residual error, its termination check tests an unscaled threshold sigma_min < epsilon, and Theorem 5 and Corollary 1 fail as stated because MINBERR does not achieve the guaranteed backward error.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Sign inversion and missing matrix norm normalization in MINBERR reduction",
+      "why_classification": "A routine sign fix in the solution extraction formula and scaling the threshold/backward error by ||A||_2 completely repairs Lemma 4, Algorithm 1, Theorem 5, and Corollary 1 without changing the proof architecture or weakening the convergence rate or asymptotic complexity guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\alpha = -\\frac{1}{\\|\\b\\|_2}(\\B_k)_{1,1}(\\v_{\\min})_1",
+          "tag": "prop:minberrNE"
+        },
+        {
+          "quote": "The proof of $\\berr_{\\A,\\b}(\\widehat\\x) = \\|\\tilde \\B_k\\widehat{\\bf v}\\|_2/\\|\\widehat {\\bf v}\\|_2$ is as in Lemma~\\ref{l:quotient}, noting that $(\\widehat\\x)_1=-1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In Proposition 1 and its proof in Appendix B, the reduction of the normal-equations generalized eigenvalue problem (B.1) reproduces the same defects as Lemma 4: the vector W*[0; v_min] has first component alpha = -(1/||b||_2)*(B_k)_{1,1}*(v_min)_1, which matches [-1; y] only when y = -(1/alpha)*v_min, yet Proposition 1 claims x_k = (1/alpha)*Q_k*v_min, inverting the sign of the solution. Additionally, the eigenvalue sigma_min is the minimum of ||A*x - b||_2 / ||x||_2, so berr_{A,b}(x_k) = sigma_min / ||A||_2 rather than sigma_min. Hence x_k does not minimize backward error, and Algorithm 2 outputs the negated solution under an unscaled stopping tolerance.",
+      "failure_location": {
+        "quote": "\\x_k :=\\!\\argmin_{\\x\\in \\mathrm{Span}(\\Q_k)}\\!\\!\\berr_{\\A,\\b}(\\x) \\ = \\ \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+        "tag": "prop:minberrNE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "In Proposition 1 and Algorithm 2, redefine alpha = (1/||b||_2)*(B_k)_{1,1}*(v_min)_1 (or set x_k = -(1/alpha)*Q_k*v_min) and set berr_{A,b}(x_k) = sigma_min / ||A||_2 (testing sigma_min < epsilon * ||A||_2 in Step 5 of Algorithm 2).",
+      "overall_effect": "Proposition 1 outputs an iterate with inverted sign and incorrect backward error value. Consequently, Algorithm 2 does not minimize backward error over Span(Q_k) and tests an unscaled threshold sigma_min < epsilon rather than sigma_min / ||A||_2 < epsilon.",
+      "primary_affected_tag": "prop:minberrNE",
+      "target_type": "formal_result",
+      "title": "Sign inversion and missing matrix norm normalization in MINBERR-NE reduction",
+      "why_classification": "A straightforward local sign correction and scaling by ||A||_2 completely restores Proposition 1 and Algorithm 2 without requiring any replacement arguments or loss of advertised claims."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2604.16075",
+  "question_id": "Q1",
+  "run_name": "gemini-3.8-flash-medium-2026-09-09-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e8809ffebe5951ca04910fb6d942792c2e647636a18f4a3772a38aab1b066ff9",
+  "status": "ok"
+}

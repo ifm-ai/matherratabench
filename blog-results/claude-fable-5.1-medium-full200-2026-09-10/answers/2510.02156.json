@@ -1,0 +1,155 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "=(\\tilde{\\lambda}I_r)^{-1}-(\\tilde{\\lambda}I_r)^{-1}M\\{M^T (\\tilde{\\lambda}I_r)^{-1}M+(I_n)^{-1} \\}M^T(\\tilde{\\lambda}I_r)^{-1}",
+          "tag": null
+        },
+        {
+          "quote": "=\\frac{1}{\\tilde{\\lambda}}I_n-\\frac{1}{\\tilde{\\lambda}^3}M^T\\{MM^T+\\tilde{\\lambda}I_r\\}M",
+          "tag": "eq:wi2"
+        }
+      ],
+      "failure_explanation": "The Woodbury formula is (A+UCV)^{-1}=A^{-1}-A^{-1}U(C^{-1}+VA^{-1}U)^{-1}VA^{-1}; the proof omits the inverse on the middle factor, yielding the false expressions (wi1),(wi2). For the scalar M=1 (r=n=1), (1+\\lambda)^{-1} is not equal to 1/\\lambda-(1+\\lambda)/\\lambda^3. The proof then compares two incorrect expansions that happen to coincide, so it does not establish the lemma.",
+      "failure_location": {
+        "quote": "=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T",
+        "tag": "eq:wi1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the proof by the one-line argument M^T(MM^T+\\lambda I_r)=(M^TM+\\lambda I_n)M^T followed by multiplication by the two inverses, or apply Woodbury correctly.",
+      "overall_effect": "The lemma's statement (the standard push-through identity) is true, but its given proof is invalid; results citing the lemma remain correct in substance.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Woodbury identity misapplied in proof of push-through lemma (inverse of middle factor dropped)",
+      "why_classification": "The statement is a standard true identity with a trivial correct proof; no claim or dependent result is lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_{t+1} - x_\\star\\|_2 \\leq \n    \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau) + \\tilde{\\lambda}} \\|x_t - x_\\star\\|_2",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "&=I-\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}",
+          "tag": "eq:errbound2"
+        },
+        {
+          "quote": "Here, $\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau)$ is the smallest non-zero eigenvalue of $A_\\tau^T A_\\tau$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The matrix \\tilde\\lambda(A_\\tau^TA_\\tau+\\tilde\\lambda I)^{-1} has eigenvalue 1 on the null space of A_\\tau^TA_\\tau, so its 2-norm is 1 whenever a block has fewer than n independent rows (the generic case, since blocks have floor(m/k) rows). The bound with the smallest *non-zero* eigenvalue only holds if x_t-x_\\star lies in R(A_\\tau^T), which is not established (membership in R(A^T) does not imply membership in R(A_\\tau^T)). Counterexample: A=I_2, blocks {row 1},{row 2}, x_t-x_\\star=e_2, \\tau=1 gives x_{t+1}-x_\\star=e_2 with no contraction, contradicting the claimed factor \\tilde\\lambda/(1+\\tilde\\lambda)<1. The 'equivalent' expectation bound and its rate \\tilde\\lambda/(\\lambda_min^block+\\tilde\\lambda) inherit the failure.",
+      "failure_location": {
+        "quote": "&\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2",
+        "tag": "ew:errbound3"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either restrict to blocks with full column rank (floor(m/k) >= n, excluding the advertised sparse/underdetermined regimes) or replace the theorem by an expected-contraction analysis in terms of the spectrum of the averaged operator (e.g., \\bar P), which is a different argument and rate.",
+      "overall_effect": "The paper's main convergence guarantee for Algorithm 1 (deterministic per-step and expected linear rate) is false in the regime the method targets (blocks with far fewer rows than n, e.g., all experiments with 100-row blocks); the advertised rate is meaningless.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "Per-block contraction bound in Theorem err_bound is false when A_tau^T A_tau is singular",
+      "why_classification": "No comparable version of the stated per-step or expected linear rate survives; a valid result requires new proof architecture (averaging over the sampling) and changes the guarantee type and rate."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\min}^{+}(A_\\tau^{T}A_\\tau)}\\lesssim \\|x_{t+1}-x_\\star\\|_2^2 & \\lesssim \\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\max}^{+}(A_\\tau^{T}A_\\tau)}",
+          "tag": "eq:errbound5"
+        },
+        {
+          "quote": "But, these dynamic blocks can yield more ill-conditioned least-square problems.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The bounds in (errbound5) involve \\lambda_{\\min}^+(A_S^TA_S) and \\lambda_{\\max}(A_S^TA_S), which depend on the chosen row set S. Maximizing \\|r_S\\|^2 over S does not minimize \\|r_S\\|^2/\\lambda_{\\max}(A_S^TA_S) or \\|r_S\\|^2/\\lambda_{\\min}^+(A_S^TA_S): the largest-residual rows may be nearly collinear (as the paper itself notes), inflating \\lambda_{\\max} and deflating \\lambda_{\\min}^+, so another set S' can give strictly better bounds. The claim that both bounds are minimized is therefore unsupported, and a one-step reduction of bounds does not imply faster convergence over many iterations.",
+      "failure_location": {
+        "quote": "we minimize the above upper and lower bounds of the error $\\|x_{t+1}-x_\\star\\|_2^2$ in \\cref{eq:errbound5}, as $\\lambda_{\\min}^{+}, \\lambda_{\\min}^{-}$ are bounded for a given system, and thus ensure faster convergence in general over many iterations.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Weaken the statement: using the uniform bound \\lambda_{\\max}(A_S^TA_S)\\le\\lambda_{\\max}(A^TA), the maximal-residual block minimizes a block-independent upper bound on the one-step error; drop the lower-bound claim and the 'faster convergence in general' conclusion, or add an explicit assumption of uniformly comparable block spectra.",
+      "overall_effect": "The theoretical justification for the residual-based dynamic block (and the introductory claim that it provably enhances SOBK's convergence) is not established.",
+      "primary_affected_tag": "thm:convergence_boost",
+      "target_type": "formal_result",
+      "title": "Convergence-boost argument ignores block-dependence of eigenvalue bounds",
+      "why_classification": "A contained, weaker but recognizably comparable statement (one-step upper bound optimization) is supportable; the stronger claims about both bounds and overall convergence must be dropped."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "it is the minimum residual-norm solution, since $x_k \\in \\mathcal{R}(A^T) \\perp \\mathcal{N}(A)$.",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, when $x_k$ is an approximate solution of \\eqref{eq:linear_system} obtained through \\cref{algo:fabgmres_dobk}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof only shows x_k \\in R(A^T). Membership in R(A^T) says nothing about the residual norm of an approximate iterate; it implies only that, if x_k is an exact solution of Ax=b, it is the minimum-norm solution. The stated conclusion that the (approximate) x_k minimizes \\|b-Ax_k\\|_2 is a non sequitur.",
+      "failure_location": {
+        "quote": "gives a solution $x_k \\in \\mathcal{R}(A^T)$ minimizing $\\norm{b-Ax_k}_2$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate: all iterates lie in R(A^T), so upon convergence to an exact solution the limit is the minimum 2-norm solution A^\\dagger b.",
+      "overall_effect": "The remark's guarantee about the FAB-GMRES output is unsupported as stated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "FAB-GMRES remark conflates membership in R(A^T) with minimizing the residual norm",
+      "why_classification": "The intended (min-norm at convergence) statement follows directly from the given argument; only the wording of the conclusion needs correction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bar{W}=\\mathbb{E}_{S \\sim \\mu}[W(S)], \\text{and} \\quad \\bar{P}=  \\mathbb{E}_{S\\sim \\mu}[P(S)]",
+          "tag": "eq:w_p"
+        },
+        {
+          "quote": "$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$ where $i=1,2,\\dots m$",
+          "tag": "algo:roar-bk"
+        },
+        {
+          "quote": "Let us denote the sampling procedure of \\cref{algo:roar-bk} as $\\mu$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The cited convergence-in-mean result for regularized block Kaczmarz requires blocks drawn i.i.d. from a fixed distribution independent of the current iterate, so that E[x_{t+1}]-x^{(\\mu)}=(I-\\bar P)(E[x_t]-x^{(\\mu)}). In Algorithm 1 the fourth block per iteration is chosen deterministically from the current residual r=b-Ax_j, so the 'sampling rule' depends on x_j; \\bar W, \\bar P and hence x^{(\\mu)} in (eq:w_p) are not well-defined fixed objects, the expectation does not factor, and one ROR-BK iteration is a composition of four updates rather than a single sampled update. The theorem is therefore not a consequence of the cited result.",
+      "failure_location": {
+        "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the theorem to the purely randomized part of the update (orthogonality-based sampling of fixed blocks, with \\mu the fixed distribution \\mathcal P and one update per step), for which the cited theorem applies; drop the claim for the residual-based dynamic block or supply a separate analysis.",
+      "overall_effect": "The claimed convergence of ROR-BK iterates in mean to a weighted least-squares solution (also advertised in the introduction) is unsupported for the algorithm as defined.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "Weighted least-squares convergence theorem cites a result whose iterate-independent sampling hypothesis ROR-BK violates",
+      "why_classification": "A comparable result survives for the randomized-block updates via the cited theorem, but the guarantee must be withdrawn for the residual-based step, which is a central feature of the method."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

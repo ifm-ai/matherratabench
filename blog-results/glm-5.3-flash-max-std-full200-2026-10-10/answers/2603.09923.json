@@ -1,0 +1,218 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:sum:tail",
+        "lemma:G:bound",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\ts \\alpha_t = \\rho_t^{-1/2},",
+          "tag": null
+        },
+        {
+          "quote": "\\ts \\rho_t = 1 + \\sum_{i=1}^t \\| \\g_i \\|^2,",
+          "tag": null
+        },
+        {
+          "quote": "\\EEE[\\|\\s_{t}\\|^2] &=& \\EEE\\left[\\left\\| \\alpha_{t} (\\nabla f(\\x_{t};\\xi_{t}) - \\nabla f(\\x_{t})) \\right\\|^2\\right] + \\EEE[ \\|\\z_{t} \\|^2]",
+          "tag": "lemma:bound:eee:1"
+        }
+      ],
+      "failure_explanation": "In OptEMA-M the EMA coefficient alpha_t = rho_t^{-1/2} depends on the current sample g_t (rho_t contains ||g_t||^2), so zeta_t is not conditionally independent of the noise term alpha_t(grad f(x_t;xi_t)-grad f(x_t)). The proof's identity E||s_t||^2 = E||alpha_t(g_t-grad f)||^2 + E||zeta_t||^2 silently drops the cross term 2E<zeta_t, alpha_t nu_t>, which is generally nonzero because alpha_t is a nonlinear function of ||g_t||. The stated inequality is false: take f(x)=1/2||x||^2-e_1^T x (smooth, lower-bounded), x_1=0 (so s_0 = e_1), noise nu_1 = +-11 e_1 with prob. 1/2 each (mean zero, second moment 121); then E||s_1||^2 = ((1+10/sqrt(101))^2 + (1-12/sqrt(145))^2)/2 ≈ 1.990 while E[(1-alpha_1)||s_0||^2 + B_1] ≈ 0.909 + 0.992 = 1.900, a violation.",
+      "failure_location": {
+        "quote": "\\EEE[ \\|\\s_t\\|^2 ] \\leq \\EEE[ (1-\\alpha_{t}) \\|\\s_{t-1}\\|^2   +  B_{t}],",
+        "tag": "lemma:bound:eee:1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must re-derive the tracking-error recursion for OptEMA-M accounting for the dependence of alpha_t on the current sample (e.g., a conditional Cauchy-Schwarz argument with the extra cross term absorbed, or a redefinition of the algorithm making alpha_t predictable), and then re-establish the downstream chain through Theorem the:it:EMA:M.",
+      "overall_effect": "The claimed recursion for the gradient-tracking error of OptEMA-M is false, so the weighted tracking-error bound (Lemma lemma:sum:tail), the logarithmic bounds (Lemma lemma:G:bound), the aggregate bounds (Lemmas lemma:M:sum:s, lemma:M:sum:m) and the headline guarantee of Theorem the:it:EMA:M are all unsupported.",
+      "primary_affected_tag": "lemma:bound:eee:1",
+      "target_type": "formal_result",
+      "title": "Tracking-error recursion for OptEMA-M is false: the dropped cross term does not vanish because alpha_t depends on the current gradient",
+      "why_classification": "The lemma's statement itself is false (explicit counterexample), and every supported resolution requires reworking the tracking-error architecture of the OptEMA-M analysis (or changing the algorithm's update), so no comparable version of the affected claims is supported by the source."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exists constants $C_f,C_g\\geq 0$ such that $\\EEE[f(\\x_{t})] - f^* \\leq C_f \\ln(e + t)$",
+          "tag": "lemma:G:bound"
+        },
+        {
+          "quote": "Defining $A_t \\triangleq 4 \\sigma^2 + 4 L \\EEE[\\hat{f}_t]$",
+          "tag": "lemma:G:bound"
+        },
+        {
+          "quote": "A_{t}\\leq c_0 \\ln\\left( e +  (\\max_{i=1}^t A_i)\\cdot t \\right).",
+          "tag": "lemma:log:up"
+        }
+      ],
+      "failure_explanation": "The preceding display bounds E[f(x_T)-f_*] by K·E[ln(e+ sum_t ||g_t||^2)] with a path-dependent random variable inside the logarithm. The closure step replaces this random variable pathwise by 4T(sigma^2 + L max_t f-hat_t), which requires pathwise bounds on both sum_t ||nu_t||^2 (only an expectation bound T sigma^2 via Jensen is available) and on max_t f-hat_t; it further replaces E[max_t f-hat_t] by max_t E[f-hat_t] when defining the deterministic sequence A_t. Both substitutions are invalid inferences (E[max_t X_t] is not bounded by max_t E[X_t] without an extra factor up to T, and the noise sum is bounded by T sigma^2 only in expectation). Lemma lemma:log:up is therefore applied outside its hypothesis, and the logarithmic bounds E[f(x_t)-f*] <= C_f ln(e+t) and E||g_t||^2 <= C_g ln(e+t) are not established.",
+      "failure_location": {
+        "quote": "\\overset{\\step{2}}{\\leq}&  \\ts \\EEE[ \\left( \\hat{f}_1 + c_1 C_w + \\tfrac{4 c_2}{\\mu} \\right) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))]",
+        "tag": "lemma:G:bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Close the recursion at the level of expectations: bound E[max_{t<=T} f-hat_t] via the pathwise descent inequality and E[max_t f-hat_t] <= sum_t E[f-hat_t] together with a Lemma-lemma:log:up-type argument, and pass the noise sum through Jensen; the stated logarithmic form of the lemma survives with adjusted logarithmic constants.",
+      "overall_effect": "The constants C_f and C_g of Lemma lemma:G:bound, on which Lemma lemma:M:sum:s, Lemma lemma:M:sum:m and Theorem the:it:EMA:M rely, are unestablished (these downstream results have additional independent defects reported separately).",
+      "primary_affected_tag": "lemma:G:bound",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:G:bound closes its logarithmic recursion by substituting random pathwise maxima into a deterministic recursion",
+      "why_classification": "The repair is a contained, nontrivial maximal-inequality argument reusing the paper's own tools; the lemma's stated logarithmic form and every downstream rate survive with adjusted constants."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\leq & \\max_{i=1}^t \\EEE[\\|\\nabla f(\\x_i;\\xi_i)\\|^2 ] \\nn\\ &\\leq & C_g \\ln(e+t).",
+          "tag": "lemma:M:sum:s"
+        },
+        {
+          "quote": "step \\step{3} uses $\\tau_T \\leq \\sqrt{C_g} \\sqrt{ \\ln(e+T)}$",
+          "tag": "lemma:M:sum:s"
+        },
+        {
+          "quote": "\\ts \\EEE[ \\sum_{t=1}^T  \\|\\s_t\\|^2] \\leq \\EEE[\\tfrac{C_s (\\ln(e+T))^{3/2}}{\\alpha_T}] = \\EEE[C_s (\\ln(e+T))^{3/2} \\rho_T^{1/2}].",
+          "tag": "lemma:M:sum:s"
+        }
+      ],
+      "failure_explanation": "The proof repeatedly treats expectation-level bounds as pathwise ones: (i) E||m_t||^2 <= max_{i<=t} E||grad f(x_i;xi_i)||^2 <= C_g ln(e+t) bounds the expectation of a pathwise maximum of the EMA recursion by the bound on a single summand (the union bound gives an extra factor t); (ii) E[max_{t<=T} ||s_t||^2] is replaced by the per-iterate bound 3(C_g+C_f+sigma^2) ln(e+T) from (eq:bound:sss), losing a factor T; (iii) tau_T <= sqrt(C_g ln(e+T)) is used pathwise inside expectations although Lemma lemma:G:bound only controls E||g_t||^2, and under variance-only noise E[max_{t<=T} ||g_t||^2] can grow like a power of T; (iv) the final step multiplies the pathwise factor 1/alpha_T = rho_T^{1/2} into an expectation-level bound on sum alpha_t ||s_t||^2. Consequently the claimed aggregate bound with a trajectory-independent constant C_s is unsupported.",
+      "failure_location": {
+        "quote": "\\overset{\\step{2}}{\\leq}& \\ts   \\big( \\left( 1 + 3\\lambda + 3\\lambda\\tau_T \\right) \\left(1 + C_f\\right)  + 3 \\left(C_g + C_f +\\sigma^2 \\right)  \\big) \\cdot  \\ln \\left(e + T \\right)",
+        "tag": "lemma:M:sum:s"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must re-establish the aggregate bound on the tracking error with valid probability handling under the stated variance-only assumption (e.g., a maximal-type bound for E[max_t ||s_t||^2] and for the tau_T-factors), and verify that the resulting constants keep Theorem the:it:EMA:M's advertised rate intact.",
+      "overall_effect": "Lemma lemma:M:sum:s's conclusion with a T-independent constant C_s is unestablished; the constant C_s enters Lemma lemma:M:sum:m and the fixed point in Theorem the:it:EMA:M, whose deterministic rate T^{-1/2} depends on C_s (and the related constants) not growing with T or with the trajectory.",
+      "primary_affected_tag": "lemma:M:sum:s",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:M:sum:s bounds pathwise maxima of the tracking error and tau_T using per-iterate expectation bounds",
+      "why_classification": "No source-supported resolution preserves the stated trajectory-independent constant; honest repairs introduce maximal-type arguments and factors growing with T or rho_T, which cascades into Lemma lemma:M:sum:m and can destroy the advertised O~(T^{-1/2}) zero-noise term, i.e., a major loss without new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\EEE[f(\\x_{t})] - f^* \\leq C_f \\ln(e + t)",
+          "tag": "lemma:G:bound"
+        },
+        {
+          "quote": "\\ts\\big(1+\\tau_T\\big)\\cdot \\tfrac{\\max_{t=1}^T f(\\x_{t}) - f_*}{\\gamma_T}",
+          "tag": "lemma:M:sum:m"
+        },
+        {
+          "quote": "1 + \\tau_T~\\overset{\\step{1}}{\\leq}~\\ts 1 + \\sqrt{C_g \\ln (e+T)}",
+          "tag": "lemma:M:sum:m"
+        }
+      ],
+      "failure_explanation": "The proof bounds the random pathwise maximum max_{t<=T}(f(x_t)-f_*) appearing inside the expectation by C_f ln(e+T), and the random factor 1+tau_T by iota*sqrt(ln(e+T)). Lemma lemma:G:bound only establishes expectations E[f(x_t)]-f* <= C_f ln(e+t) for each fixed t (and Lemma lemma:log:up applies to deterministic sequences), so E[max_t(f(x_t)-f_*)] <= C_f ln(e+T) is an unsupported inference (a union bound gives an extra factor T); likewise E||g_t||^2 <= C_g ln(e+t) is used pathwise for tau_T. The constants C_o and the displayed two-term bound for E[sum_t ||grad f(x_t)||^2] are therefore not established.",
+      "failure_location": {
+        "quote": "\\step{2} uses Inequality (\\ref{eq:iota}), Inequality (\\ref{eq:bound:gamma:fxfxt1}), $f(\\x_t) - f_*\\leq C_f \\ln(e+t)$",
+        "tag": "lemma:M:sum:m"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Establish an expectation-level maximal bound, e.g., E[max_{t<=T}(f(x_t)-f_*)] <= C ln(e+T) via the pathwise descent inequality together with Lemma lemma:sum_by_parts and a Lemma-lemma:log:up-type closure, and control E[(1+tau_T)/gamma_T] with corrected moment bounds; the two-term shape of the lemma then holds with adjusted logarithmic constants.",
+      "overall_effect": "The key aggregate gradient-norm bound of Lemma lemma:M:sum:m, and hence the constant Gamma in Theorem the:it:EMA:M, is unsupported (the theorem also inherits the defects of Issues ISSUE-001 to ISSUE-003).",
+      "primary_affected_tag": "lemma:M:sum:m",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:M:sum:m substitutes expectation bounds for the random maximum of f(x_t) and for tau_T",
+      "why_classification": "A contained but genuinely new maximal-inequality step is needed; the lemma's structure and the downstream rates (up to polylogarithmic factors) survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "there exist constants $C_f,C_g\\geq 0$ such that $\\EEE [f(\\x_{t}) - f^*] \\leq C_f \\ln(e + t)$",
+          "tag": "lemma:G:bound:2"
+        },
+        {
+          "quote": "Defining $A_t \\triangleq 4 \\sigma^2 + 4 L \\EEE[\\hat{f}_t]$",
+          "tag": "lemma:G:bound:2"
+        },
+        {
+          "quote": "Invoking Lemma \\ref{lemma:log:up}, this inequality directly implies:",
+          "tag": "lemma:G:bound:2"
+        }
+      ],
+      "failure_explanation": "As in the OptEMA-M chain, the closure substitutes the random path-dependent quantities sum_t ||g_t||^2 (bounded by T sigma^2 only in expectation, via Jensen) and the pathwise maximum max_t f-hat_t into a recursion that Lemma lemma:log:up only supports for deterministic sequences with A_t defined via expectations. The step E[max_t f-hat_t] -> max_t E[f-hat_t] is an invalid inference; hence the conclusions E[f(x_t)-f*] <= C_f ln(e+t) and E||g_t||^2 <= C_g ln(e+t) are not established by this proof.",
+      "failure_location": {
+        "quote": "\\EEE[\\big( \\hat{f}_1 + c_3  +  \\tfrac{c_1 + 2 c_2}{\\alpha^2} \\big) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))]",
+        "tag": "lemma:G:bound:2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "As for the OptEMA-M chain: prove an expectation-level maximal bound E[max_{t<=T} f-hat_t] = O(ln(e+T)) (pathwise descent inequality plus a Lemma-lemma:log:up-type closure) and redo the substitution at the level of expectations; the stated logarithmic conclusions survive with adjusted constants.",
+      "overall_effect": "The logarithmic bounds on E[f(x_t)-f*] and E||g_t||^2 for the OptEMA-V chain are unestablished; Lemma lamma:bound:sum:nabla and Theorem the:it:EMA:V, which use C_f and C_g, are left unsupported.",
+      "primary_affected_tag": "lemma:G:bound:2",
+      "target_type": "formal_result",
+      "title": "Lemma lemma:G:bound:2 (OptEMA-V) closes its recursion with an invalid pathwise substitution",
+      "why_classification": "The repair is a contained nontrivial maximal-inequality argument; the lemma's logarithmic form and all downstream guarantees survive with adjusted constants."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "there exist constants $C_f,C_g\\geq 0$ such that $\\EEE [f(\\x_{t}) - f^*] \\leq C_f \\ln(e + t)$",
+          "tag": "lemma:G:bound:2"
+        },
+        {
+          "quote": "where step \\step{1} uses Lemma \\ref{lemma:sum_by_parts} and the fact that $\\gamma_t\\leq \\big(1 + \\sum_{j=1}^t \\|\\m_j\\|^2 \\big)^{-1/2}$; step \\step{2} uses Lemma \\ref{lemma:G:bound:2}, the fact that $\\frac{1}{\\gamma_T} = (1+\\mu\\tau_T) \\sqrt{1+\\MMM}$",
+          "tag": "lamma:bound:sum:nabla"
+        },
+        {
+          "quote": "1 + \\tau_T~\\overset{\\step{1}}{\\leq}~\\ts 1 + \\sqrt{C_g \\ln (e+T)}",
+          "tag": "lamma:bound:sum:nabla"
+        }
+      ],
+      "failure_explanation": "Term III contains the random ratio (max_{t<=T} f(x_t)-f_*)/gamma_T and the factor 1+mu*tau_T. The proof replaces max_t(f(x_t)-f_*) by C_f ln(e+T) and tau_T by i ota sqrt(ln(e+T)) inside the expectation, citing Lemma lemma:G:bound:2; that lemma establishes only the expectations E[f(x_t)-f*] <= C_f ln(e+t) and E||g_t||^2 <= C_g ln(e+t) for each fixed t, and no pathwise or maximal bound under variance-only noise is available (E[max_{t<=T}||g_t||^2] is only bounded by a union-bound argument, i.e., with a factor T). Hence C_o and the displayed bound E[sum_t ||grad f(x_t)||^2] <= C_o ln^2(e+T) rho_T^{1/2} are unsupported.",
+      "failure_location": {
+        "quote": "\\ts  C_f \\ln(e+T) \\cdot (1+\\mu\\tau_T) \\sqrt{1+\\MMM} + 2 c_3 \\sqrt{1+\\MMM}",
+        "tag": "lamma:bound:sum:nabla"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Prove an expectation-level maximal bound for the objective values (and the needed tau_T moments) along the trajectory, e.g., via the pathwise descent inequality combined with Lemma lemma:sum_by_parts and a Lemma-lemma:log:up-type argument, and re-derive C_o with the corrected moment bounds; the lemma's displayed form and Theorem the:it:EMA:V's rate survive with adjusted logarithmic constants.",
+      "overall_effect": "The core aggregate bound behind Theorem the:it:EMA:V is unsupported, so the OptEMA-V guarantee (and the claimed O~(T^{-1/2}+sigma^{1/2}T^{-1/4}) rate) is unestablished.",
+      "primary_affected_tag": "lamma:bound:sum:nabla",
+      "target_type": "formal_result",
+      "title": "Lemma lamma:bound:sum:nabla bounds random maxima of f(x_t) and tau_T pathwise from expectation-level lemmas",
+      "why_classification": "The repair adds a contained maximal-inequality ingredient; the lemma's conclusion and the advertised rate remain recognizably comparable after the correction."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2603.09923",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7b0dd08a3822424a13d5abe6787b30dbd3aaca288887f32f89d091821f7ea682",
+  "status": "ok"
+}

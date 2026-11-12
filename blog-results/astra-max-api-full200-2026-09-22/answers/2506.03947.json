@@ -1,0 +1,338 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lambda_j = \\alpha^{1/\\ell}\\exp \\left(\\frac{2\\pi i (j-1)}{\\ell}\\right), {\\quad j=1, \\ldots, \\ell},",
+          "tag": null
+        },
+        {
+          "quote": "U_j = \\frac{1}{\\sqrt{\\ell}}\\left(1,\\exp\\left(\\frac{2\\pi i(j-1)}{\\ell}\\right), \\exp\\left(\\frac{2\\pi i(2(j-1))}{\\ell}\\right),\\dots,\\exp\\left(\\frac{2\\pi i(\\ell-1)(j-1)}{\\ell}\\right)\\right)^{\\top},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the lower cyclic shift defining C_alpha, a positive-exponent Fourier column has eigenvalue alpha^(1/ell) exp(−2πi(j−1)/ell), not the displayed lambda_j. In particular, at alpha=1 the stated conventions give U Lambda U*=C_1^T. Consequently the factorization and its derived inverse formula use the wrong block circulant when ell>2.",
+      "failure_location": {
+        "quote": "& = (\\Gamma_{\\alpha}^{-1}U\\otimes I_\\sizeA) (I_{\\ell}\\otimes {A} - \\Lambda \\otimes I_\\sizeA)(U^*\\Gamma_{\\alpha}\\otimes I_\\sizeA).",
+        "tag": "eq:palpha"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Keep the stated lambda_j ordering and conjugate U consistently in the factorization and inverse-application formulas.",
+      "overall_effect": "The FFT-based application in eq:Paform does not apply the inverse of the preconditioner whose spectrum was analyzed. The separate shifted-block spectral results remain valid.",
+      "primary_affected_tag": "eq:palpha",
+      "target_type": "other",
+      "title": "The Fourier phases diagonalize the opposite cyclic shift",
+      "why_classification": "A local, consistent Fourier-sign correction restores the exact construction without changing the method, spectral conclusions, or computational complexity."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:errorbound",
+        "lem:asymptoticrate",
+        "thm:convergence",
+        "prop:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "p^* = \\frac{\\ln\\left(\\frac{1}{\\epsilon}+ \\sqrt{\\frac{1}{\\epsilon^2}-1}\\right)}{\\ln\\left(\\frac{1+\\sqrt{\\upsilon_{\\min}/\\upsilon_{\\max}}}{1-\\sqrt{\\upsilon_{\\min}/\\upsilon_{\\max}}}\\right)}.",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{\\| {e}_p \\|_2}{\\| {e}_0 \\|_2} \\le {\\left| T_p \\left(\\frac{\\xi_j^{(1)}+\\xi_j^{(N)}}{\\xi_j^{(1)}-\\xi_j^{(N)}}\\right) \\right|}^{-1}.",
+          "tag": null
+        },
+        {
+          "quote": "Compute $r({{j}}) = \\frac{\\ln(\\sigma_1)}{\\ln(\\sigma_{{j}})}$.",
+          "tag": "alg:AssignIterations"
+        }
+      ],
+      "failure_explanation": "The hypotheses permit M=mI with equal spectral endpoints. The displayed iteration formula then divides by zero inside the logarithm; interpreting its limit as p*=0 incorrectly gives zero iterations for a nonzero initial error. The same unhandled case A=mI makes later Chebyshev formulas divide by mu_1−mu_N, gives sigma_j=0 in the allocation algorithm, and invalidates the strict improvement and strict non-optimality claims on this boundary.",
+      "failure_location": {
+        "quote": "Let $M$ be symmetric positive definite, with eigenvalues in $[\\upsilon_{\\min},\\upsilon_{\\max}]$. The CI method applied to $M\\chi = \\beta$ converges to a given tolerance, $\\epsilon$, in $\\lceil p^* \\rceil$ iterations, where",
+        "tag": "thm:AxelssonIteration"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Require distinct positive endpoints for the displayed formulas and handle a collapsed interval separately by exact scalar scaling. In that branch the convergence factor is zero and the strict comparisons must be replaced by equality.",
+      "overall_effect": "Several stated error, rate, and optimality formulas, as well as the resource allocation, are undefined or false for an allowed class of SPD matrices.",
+      "primary_affected_tag": "thm:AxelssonIteration",
+      "target_type": "formal_result",
+      "title": "Collapsed spectral intervals are not handled in the Chebyshev formulas",
+      "why_classification": "The exceptional system is solved by one trivial scaling operation; a common local branch resolves the downstream failures without a new lemma or loss of the nondegenerate results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "({A} - \\lambda_j I_\\sizeA) x_j = b_j, \\quad j = 1,\\dots, \\ell,",
+          "tag": "eq:blockproblem"
+        },
+        {
+          "quote": "\\Re({x_j}) \\\\ -\\Im({x_j})",
+          "tag": "eq:saddlesystem"
+        }
+      ],
+      "failure_explanation": "Write B=Psi−isI, x=u+iv and b=f+ig. The complex equation gives Psi u+s v=f and Psi v−s u=g. Multiplying the displayed saddle matrix by (u,−v)^T therefore gives (−g,f)^T, not (−f,g)^T. As written, an exact saddle solve reconstructs a solution of Bx=i conjugate(b), generally not Bx=b.",
+      "failure_location": {
+        "quote": "-\\Re({b_j})\\\\ \\Im({b_j})",
+        "tag": "eq:saddlesystem"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Keeping the displayed matrix and unknown vector, replace the right-hand side by (−Im(b_j), Re(b_j))^T.",
+      "overall_effect": "The claimed equivalent real reformulation, and hence the saddle-point preconditioner application, returns the wrong shifted-system solution even with an exact inner solve.",
+      "primary_affected_tag": "eq:saddlesystem",
+      "target_type": "algorithm",
+      "title": "The real saddle-point system has the wrong right-hand side",
+      "why_classification": "This is a local correction to the executable transformation; it leaves its spectrum, dimension, and solver architecture unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $\\phimat$ and $\\psimat$ symmetric positive definite.",
+          "tag": null
+        },
+        {
+          "quote": "\\phimat + \\psimat & 0 \\\\ 0 & \\phimat+\\psimat",
+          "tag": "eq:minresprecond"
+        },
+        {
+          "quote": "For complex roots $\\lambda_{j}$, $j \\in [2,\\ell/2]\\cup [\\ell/2+2,\\ell]$, we solve \\eqref{eq:saddlesystem} using MINRES, {which requires two applications of $A$ per iteration}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Here Phi=Im(lambda_j)I, which is negative definite for the lower-half-plane roots that the implementation also solves. For example, take ell=4, alpha=1, A=diag(2,3), and lambda_4=−i. The preconditioned eigenvalues include ±sqrt(5), outside the claimed intervals. Moreover, Phi+Psi can be indefinite when mu_N<Re(lambda_j)+|Im(lambda_j)|, despite the paper's admissibility condition mu_N>|lambda_j|.",
+      "failure_location": {
+        "quote": "The eigenvalues of the preconditioned system $\\mathcal{P}_{D}^{-1}\\mathcal{S}$ lie in  $\\big[-1,-\\frac{1}{\\sqrt{2}}\\big] \\cup \\big[\\frac{1}{\\sqrt{2}},1\\big]$.",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use Psi+|Im(lambda_j)|I in both positive diagonal preconditioner blocks. For negative imaginary parts, a swap of the two real coordinates reduces the spectral argument to the positive-imaginary case.",
+      "overall_effect": "The spectral bound fails for the negative-imaginary shifts, and the displayed preconditioner is not necessarily eligible for standard preconditioned MINRES.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "Negative-imaginary shifts violate the saddle preconditioner's positivity assumption",
+      "why_classification": "An absolute-value correction and a routine block swap preserve the same spectral interval and cover all original shifts without a new solver or nontrivial spectral argument."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Compute $r({{j}}) = \\frac{\\ln(\\sigma_1)}{\\ln(\\sigma_{{j}})}$.",
+          "tag": "alg:AssignIterations"
+        },
+        {
+          "quote": "\\rho(\\lambda_j) < \\rho(\\Re(\\lambda_j)) = {\\sigma_j},",
+          "tag": "eq:real rate of conv"
+        },
+        {
+          "quote": "we use \\eqref{eq:real rate of conv} to design a resource-allocation heuristic based on the approach discussed after Theorem \\ref{thm:AxelssonIteration}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Ignoring rounding, the allocation equalizes sigma_j raised to the allocated iteration count, not actual errors. The paper itself establishes that complex shifts can have strictly smaller decay factors than sigma_j. As the budget grows, their achieved errors can therefore become arbitrarily smaller relative to those of a real shift, even for endpoint eigenvector errors. Only a heuristic balance of modeled upper-bound exponents is established.",
+      "failure_location": {
+        "quote": "$\\mathcal{P}_{NC2}$ allocates the budget according to Algorithm~1. This approach is based on the upper bound on the asymptotic convergence factor (as given in Theorems \\ref{thm:AxelssonIteration} and \\ref{thm:convergence}) for each sub-problem, ensuring similar accuracy of the computed solution across all sub-problems.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the claim to balancing the modeled asymptotic upper-bound decay, and retain achieved-tolerance similarity only as an empirical observation rather than an assurance.",
+      "overall_effect": "The implementation discussion and conclusion overstate the allocation heuristic as an achieved-accuracy guarantee.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Balancing rate upper bounds does not ensure equal achieved tolerances",
+      "why_classification": "The actual-tolerance guarantee must be withdrawn, but the resource heuristic and its reported practical comparisons remain recognizable and usable."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The total permitted number of matrix--vector products with $A$ used to apply any of our new preconditioners is given by $\\ell n_x  \\resource$, where $\\resource$ is a user-defined parameter. We investigate a range of values, $\\resource \\in [0.1,1]$.",
+          "tag": null
+        },
+        {
+          "quote": "as we take the initial guess $\\chi_0 = 0$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "There is no minimum-allocation or insufficient-budget branch. For the allowed nondegenerate diffusion case ell=4, n_x=2, eta=0.1, the total budget is 0.8. Since the normalized weights sum to one, every allocated count is zero. Zero-start inner solves then return zero in every block, so the supposed inverse action is the zero operator and the outer iteration cannot advance. Selective zero allocations similarly produce a singular approximate inverse.",
+      "failure_location": {
+        "quote": "Allocation is $\\texttt{all} = \\lfloor r  \\ell n_x \\resource\\rfloor$ where the floor operation is applied entrywise.",
+        "tag": "alg:AssignIterations"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Reserve at least one inner step per block, distribute only the remaining budget by the weights, and explicitly reject or separately handle budgets that cannot fund this minimum.",
+      "overall_effect": "The allocation can fail to produce a usable preconditioner on inputs permitted by the stated parameter ranges.",
+      "primary_affected_tag": "alg:AssignIterations",
+      "target_type": "algorithm",
+      "title": "Flooring the allocation can eliminate entire inverse blocks",
+      "why_classification": "A routine feasible-budget guard and minimum-allocation rule resolve this boundary failure without altering the positive-allocation analysis or resource scaling."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\rho(\\lambda_j) < \\rho(\\Re(\\lambda_j)) = {\\sigma_j},",
+          "tag": "eq:real rate of conv"
+        },
+        {
+          "quote": "\\frac{\\| {e}_p \\|_2}{\\| {e}_0 \\|_2} \\le {\\left| T_p \\left(\\frac{\\xi_j^{(1)}+\\xi_j^{(N)}}{\\xi_j^{(1)}-\\xi_j^{(N)}}\\right) \\right|}^{-1}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "An asymptotic factor bound does not imply the finite-step bound sigma_j^p. For an admissible example, take ell=4, alpha=1, A=diag(2,4), and lambda_j=i. At p=1 the CI error factor is exactly 1/sqrt(10), whereas the proposed real-part factor is (sqrt(2)−1)/(sqrt(2)+1), which is smaller. Thus the stated procedure does not produce guaranteed error envelopes.",
+      "failure_location": {
+        "quote": "The dashed lines show an upper bound on the relative error at each iteration, which is obtained by multiplying the initial error by the upper bound on the asymptotic  convergence factor given by Theorem \\ref{thm:convergence}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Use the finite-p Chebyshev bound already supplied by Proposition prop:errorbound when constructing and describing the error envelopes.",
+      "overall_effect": "The claimed upper-bound interpretation of the plotted dashed curves is unsupported; the asymptotic convergence theorem itself is unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "An asymptotic factor is incorrectly used as a finite-iteration error bound",
+      "why_classification": "The source already contains the required finite-iteration bound, so a local replacement fixes the inference without changing the convergence rate or solver."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "small resource setting ($\\resource=0.2$)",
+          "tag": null
+        },
+        {
+          "quote": "Allocation is $\\texttt{all} = \\lfloor r  \\ell n_x \\resource\\rfloor$ where the floor operation is applied entrywise.",
+          "tag": "alg:AssignIterations"
+        },
+        {
+          "quote": "This means that all sub-problems are solved to approximately the same tolerance ($0.6$ for $\\alpha=1)$, resulting in better overall performance of the preconditioner.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the stated ell=10, n_x=100, alpha=1 experiment, the appendix gives mu_N approximately 1.049344 and mu_1 approximately 204.970656. Substitution into Algorithm 1 with eta=0.2 gives 60 iterations for lambda=1 and 9 for lambda=−1, not 30 and 4. The latter counts belong to eta=0.1. The accompanying tolerance explanation therefore concerns the wrong allocation; the finite-step bounds for the correct real-block counts are already about 0.30 and 0.32.",
+      "failure_location": {
+        "quote": "In contrast, for $\\mathcal{P}_{NC2}$ Algorithm 1 assigns more iterations to the subproblem corresponding to $\\lambda_j=1$ and fewer to the case for $\\lambda_j=-1$ ($30$ and $4$ respectively when $\\alpha=1$).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Correct the eta=0.2 counts to 60 and 9 and replace the associated tolerance example by values or finite-step bounds for those counts.",
+      "overall_effect": "The numerical explanation of how the low-resource allocation operates and balances accuracy is inconsistent with the specified algorithm and experimental budget.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The allocation example uses half the stated resource budget",
+      "why_classification": "This requires routine reevaluation of an illustrative example, not a new allocation method or revision of the reported tables."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mu_{\\min} ={}& \\mu_{1,1} = 1 + \\frac{8 \\nu}{h^2} \\, \\sin^2 \\left ( \\frac{\\pi}{2(n_x+1)} \\right )",
+          "tag": null
+        },
+        {
+          "quote": "since $h = \\frac{1}{n_x+1}$.",
+          "tag": null
+        },
+        {
+          "quote": "\\lambda_{\\max}(\\mathcal{P}_{\\alpha}^{-1} \\mathcal{A}) = \\frac{\\mu_{\\sizeA}^\\ell}{\\mu_{\\sizeA}^\\ell-\\alpha}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The appendix gives mu_N=1+8 nu (n_x+1)^2 sin^2(pi/(2(n_x+1))), which varies with n_x. For example, its values at n_x=2 and n_x=3 are 1+18 nu and 1+32 nu(2−sqrt(2)). Consequently the largest preconditioned eigenvalue also varies. Only the smallest eigenvalue is exactly fixed at one; the largest approaches a mesh-independent limit.",
+      "failure_location": {
+        "quote": "We note that for this problem the extreme eigenvalues of $\\mathcal{P}_\\alpha^{-1}\\mathcal{A}$ do not change as $n_x$ increases (see Corollary \\ref{cor:extremeevals}).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Replace exact invariance by the limiting value and mesh-independent bounds obtained from the appendix formula, and base the scaling interpretation on those bounds.",
+      "overall_effect": "The exact mesh-invariance claim used to interpret the scaling experiments is false, although mesh-uniform spectral control remains possible.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The exact preconditioned extreme eigenvalues are not mesh invariant",
+      "why_classification": "The claimed exact invariance must be weakened, but a comparable dimension-robust spectral conclusion follows from formulas already in the source."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "for $\\nu = \\frac{D^2}{2\\ell-4}$, where $D$ is the Daley lengthscale, which we take to be $0.2$,",
+          "tag": null
+        },
+        {
+          "quote": "\\mu_{\\min} ={}& \\mu_{1,1} = 1 + \\frac{8 \\nu}{h^2} \\, \\sin^2 \\left ( \\frac{\\pi}{2(n_x+1)} \\right )",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In this experiment A depends on ell through nu. At fixed n_x, write c=4D^2 h^(−2) sin^2(pi/(2(n_x+1))). Then mu_N=1+c/(ell−2), so mu_N^ell tends to exp(c), not infinity. The largest preconditioned eigenvalue therefore tends to exp(c)/(exp(c)−alpha)>1. For the stated D=0.2, mu_N^ell actually decreases with ell, so the claimed monotonic direction is also reversed.",
+      "failure_location": {
+        "quote": "Additionally, as $\\umin>1\\ge \\alpha$ for this experiment, the expression in Corollary \\ref{cor:extremeevals} is monotonically decreasing with increasing $\\ell$. Therefore the largest eigenvalue of $\\mathcal{P}_\\alpha^{-1}\\mathcal{A}$ decreases as $\\ell$ increases, with $\\lim_{\\ell \\rightarrow \\infty} \\lambda_{\\max}(\\mathcal{P}_\\alpha^{-1}\\mathcal{A}) = 1$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Substitute the ell-dependent diffusion coefficient into the spectral formula and replace the decreasing-to-one claim by the correct finite limiting bound. Interpret the experiments using bounded spectra rather than progressively stronger clustering.",
+      "overall_effect": "The asserted improving eigenvalue clustering and limiting eigenvalue one do not describe the experimental family. The theoretical explanation for block-count scalability is incorrect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The block-count scaling argument incorrectly holds A fixed",
+      "why_classification": "The trend and limit require a substantive correction, but uniform spectral bounds and a comparable scalability discussion survive without new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We apply $\\mathcal{P}_{D}^{-1}$ blockwise, using the \\texttt{HSL\\_MI20} algebraic multigrid solver \\cite{boyle2010hsl_mi20} as a black box with default parameters, using a single V-cycle.",
+          "tag": null
+        },
+        {
+          "quote": "Matrix--vector products with $A$ are shown in red, with the blue line with crosses showing the number of AMG initializations multiplied by $80$ (in accordance with the results of Figure \\ref{fig:AMGvsMatvec}).",
+          "tag": "fig:residual_vs_matvecsSP"
+        },
+        {
+          "quote": "\\phimat + \\psimat & 0 \\\\ 0 & \\phimat+\\psimat",
+          "tag": "eq:minresprecond"
+        }
+      ],
+      "failure_explanation": "The displayed total adds explicit operator matrix-vector products and AMG setup costs. However, each preconditioned MINRES iteration also applies two AMG V-cycles through the two diagonal blocks, and the real-root CG solves repeatedly apply AMG as well. These application costs are not the ell initialization costs and are not included in the stated sum. Calibrating setup alone therefore does not establish total preconditioner work or the resulting total-cost ranking.",
+      "failure_location": {
+        "quote": "The blue dashed line shows the total approximate cost in terms of matrix--vector products.",
+        "tag": "fig:residual_vs_matvecsSP"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Identify the curve as a setup-plus-explicit-operator proxy, withdraw total-cost conclusions drawn from it, and use the reported wallclock comparisons for total efficiency. A complete equivalent-matvec model would additionally need to cost every V-cycle application.",
+      "overall_effect": "The total-cost interpretation of the curve and the efficiency conclusions derived from that proxy are unsupported. The separately reported wallclock measurements are not invalidated by this omission.",
+      "primary_affected_tag": "fig:residual_vs_matvecsSP",
+      "target_type": "prose_claim",
+      "title": "The claimed total cost omits repeated AMG applications",
+      "why_classification": "A contained reassessment or limitation of the cost claims is required, while the solver constructions, spectral theory, and independent timing comparisons remain available."
+    }
+  ],
+  "issues_found": 11,
+  "paper_id": "2506.03947",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3524514ec032ec87b79cf3f5eba88988a0a08a64f20bf981e36596fab8eae76d",
+  "status": "ok"
+}

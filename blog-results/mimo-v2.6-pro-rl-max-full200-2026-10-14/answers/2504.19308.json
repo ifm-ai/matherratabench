@@ -1,0 +1,164 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "algo:cd_matrix_multiplication"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that the unique entries of $R_k$ in its first column, are evaluated using this corresponding column of $W\\Tilde{A}$ i.e. $R_k\\hat{e}_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}$, as in step-4 of this algorithm.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "From U = W\\Tilde{A} one obtains U(k,j) = \\sqrt{n}\\,r_{k,j}\\,\\omega^{-kj} (row k, column j). The first column of R_k is (r_{k,0},…,r_{k,n-1}) = (1/\\sqrt{n})\\,D^k\\,U_{(k)}, obtained from row k of U multiplied by D^k and scaled by 1/\\sqrt{n}. The stated formula instead takes column k of U (which gives entries r_{p,k} varying p, i.e. the k-th entries of the first columns of all R_p) and multiplies by (D^k)^{-1}, producing a different vector. For n=2 and A=[[a,b],[c,d]] the formula yields (D^0)^{-1}U^{(0)} = (1/\\sqrt{2})(a+d,\\,a-d)^T while the true first column of R_0 is ((a+d)/2,\\,(b+c)/2)^T.",
+      "failure_location": {
+        "quote": "R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)}",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the extraction formula with R_k\\hat{e}_1 = (1/\\sqrt{n})\\,D^k\\,U_{(k)} where U_{(k)} is row k of U = W\\Tilde{A} and the diagonal scaling is D^k (not (D^k)^{-1}).",
+      "overall_effect": "The circulant components R_j produced are incorrect, making all downstream circulant-based multiplication results in algo:cd_matrix_multiplication unreliable.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "Wrong formula for circulant component extraction in FFT-based decomposition",
+      "why_classification": "The formula is wrong but the correction is a local one-formula fix that preserves the method, O(n^2 log n) complexity, and all guarantees. No new lemma or construction is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Delta A {\\tilde{B}} \\gets \\text{IFFT}\\left( \\sum_{t \\in In_B} ((\\text{FFT}(\\Delta A) L_B[t])  C^t )\\right)",
+          "tag": "algo:cd_matrix_multiplication"
+        },
+        {
+          "quote": "\\( L[j] \\gets \\Lambda_j\\)",
+          "tag": "algo:circulant_decomposition_fft"
+        }
+      ],
+      "failure_explanation": "Step 5 computes the products using L_A[t] = \\Lambda_t (cycle diagonal matrices) together with C^t, but \\tilde{A} = \\sum_t R_{A_t}D^t is defined via circulant matrices R_{A_t} and diagonal matrices D^t. The cycle decomposition \\sum_t \\Lambda_t C^t is a different decomposition from the circulant decomposition \\sum_t R_t D^t; the two agree only in special cases. The correct FFT-based formula should use W^*R_A[t] (the DFT of the first column of R_t) as the elementwise multiplier with C^t\\,FFT(B), not \\Lambda_t. For n=2 with all components selected (so \\tilde{A} = A), the stated formula yields W^*AWB rather than AB.",
+      "failure_location": {
+        "quote": "\\tilde{A}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right))",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the formulas with the correct circulant-matrix FFT products: \\tilde{A}B = IFFT(\\sum_t \\sqrt{n}\\,(W^*R_A[t]) \\circ (C^t\\,FFT(B))) and the analogous row-FFT formula for \\Delta A\\tilde{B} using the circulant components of B.",
+      "overall_effect": "Both product terms in the first-order approximation are computed from the wrong decomposition, producing incorrect results even when the circulant components themselves are correct.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "Multiplication step uses cycle components instead of circulant components",
+      "why_classification": "The formulas use wrong quantities but the correct formulas follow from standard circulant-matrix FFT multiplication. The fix is contained and preserves the O(n^2 log n) complexity and first-order method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We can rewrite the product \\( AB \\) as \\( A W^* W B \\). This formulation is equivalent to applying the Fourier transform to the rows of matrix \\( A \\) and the columns of matrix \\( B \\).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the paper's normalized DFT matrix W (where W^*W = I), \\tilde{A}\\tilde{B} = AW^*\\cdot WB = AB exactly. The first-order approximation M = \\tilde{A}_{approx}\\tilde{B} + \\Delta A\\tilde{B}_{approx} therefore approximates AB, yet the algorithm divides by n. Even with no truncation (\\tilde{A}_{approx} = \\tilde{A}), the output is AB/n. The factor 1/n would only be correct for unnormalized DFT matrices, contradicting the stated definition of W.",
+      "failure_location": {
+        "quote": "Return: $M \\gets \\frac{1}{n}(\\tilde{A}_{approx}\\tilde{B}+\\Delta A\\tilde{B}_{\\text{approx}})$",
+        "tag": "alg:mul_topk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Remove the factor 1/n (or use unnormalized DFT matrices consistently and retain the factor).",
+      "overall_effect": "The algorithm returns an approximation of AB/n instead of AB, a constant scaling error in all results produced by this method.",
+      "primary_affected_tag": "alg:mul_topk",
+      "target_type": "algorithm",
+      "title": "Spurious 1/n factor in sparsified multiplication output",
+      "why_classification": "A single local scalar correction preserves every substantive claim, guarantee, and complexity bound."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:estimated_relative_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, $\\eqref{eq:uniform_distributions_norms5}$ results in $\\mathbf{E}[\\|AB\\|_F^2]\\approx\\frac{9}{16}\\mathbf{E}[\\|A\\|_F^2].\\mathbf{E}[\\|B\\|_F^2]$. When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": "th:uniform_distribution_norms"
+        }
+      ],
+      "failure_explanation": "The statement claims exact equality but the proof derives only an approximate result and only for E[||AB||_F^2]. The step from E[X^2] ≈ (9/16)E[Y^2]E[Z^2] to E[X] ≈ (3/4)YZ is unjustified: it requires a concentration or delta-method argument (E[√S] ≈ √(E[S]) when Var(S)/E[S]^2 → 0) that is not provided. The proof's own conclusion uses ≈ while the statement uses =. Moreover, the right-hand side contains ||A||_F and ||B||_F, which are random for random matrices, making the exact equality ill-posed as stated.",
+      "failure_location": {
+        "quote": "For two random matrices $A$ and $B$ with entries $\\sim$ $U(0,a)$, $\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$.",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Weaken the statement to ≈ (valid for large n with ||A||_F, ||B||_F known) and supply the missing concentration/delta-method argument to justify E[||AB||_F] ≈ √(E[||AB||_F^2]) ≈ (3/4)||A||_F||B||_F.",
+      "overall_effect": "The exact identity is false as stated. The approximate version used in Proposition th:estimated_relative_error (Case-2 denominator) lacks rigorous support because the E[X^2]-to-E[X] step is unjustified.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Exact-equality theorem on expected Frobenius norm is not established",
+      "why_classification": "The approximate result is salvageable with a contained nontrivial argument and a limited statement weakening, leaving a recognizably comparable result without new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We know that $Var[\\norm{AB}_F]$ and $Var[\\norm{\\Delta A.\\Delta B}_F]$ $\\to 0$ for large $n$ and a random distribution of the entries (as in \\cref{th:concentrationprob}, for example).",
+          "tag": "th:estimated_relative_error"
+        },
+        {
+          "quote": "the denominator can be approximated by two cases of matrices that may have entries with either a mean zero as in \\cref{th:expected_norm_square}, or unsigned entries as in \\cref{th:uniform_distribution_norms}",
+          "tag": "th:estimated_relative_error"
+        }
+      ],
+      "failure_explanation": "The proof assumes without establishing: (1) that Var[||AB||_F] and Var[||ΔA ΔB||_F] vanish—the cited concentration result requires Haar-distributed singular vectors, which is not verified for the residue matrices; (2) that E[X/Y] ≈ E[X]/E[Y], which needs concentration of the denominator; (3) that residue-matrix entries are equally likely positive and negative and normally distributed, which neither is proved nor follows from the truncation construction. These unestablished premises are used to derive the stated Case-1 and Case-2 formulas.",
+      "failure_location": {
+        "quote": "the numerator can be approximated by that of a normal distribution as the entries of the residue matrices are equally likely to be of either signs",
+        "tag": "th:estimated_relative_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "State and verify explicit distributional hypotheses on the residue matrices (e.g., Haar singular vectors and mean-zero entries), supply the missing concentration argument for the ratio step, and justify or replace the normal-distribution approximation. Alternatively, weaken the claim to an explicitly heuristic approximation supported empirically.",
+      "overall_effect": "Both error-estimation formulas are unsupported for general residue matrices. The a priori error-estimation guarantee advertised in the abstract and used in the numerical-results discussion is unreliable without additional distributional hypotheses.",
+      "primary_affected_tag": "th:estimated_relative_error",
+      "target_type": "formal_result",
+      "title": "Relative-error proposition relies on unproven distributional assumptions",
+      "why_classification": "The formulas may hold under appropriate conditions and are empirically supported, but rigorous support requires adding nontrivial hypotheses and arguments. A limited weakening leaves a recognizably comparable result."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\text{Var}(S) = \\mathbf{E}[S^2] - \\mathbf{E}[S]^2 = \\frac{1}{n(n+1)} \\left( \\beta_1 \\beta_2 - \\frac{\\alpha_1^2 \\alpha_2^2}{n} \\right)$",
+          "tag": "lem:added-2"
+        }
+      ],
+      "failure_explanation": "The moment E[|Q_ij|^2 |Q_kl|^2] is set to 1/(n(n+1)) for all (i,j) ≠ (k,l), but for Haar unitary (or orthogonal) matrices the value depends on the index-sharing pattern: 1/(n(n+1)) when the two pairs share a row or column, and 1/(n^2−1) when they share neither. The uniform moment yields a wrong E[S^2] and hence a wrong Var(S). For D_1 = D_2 = I_n one has S = n deterministically (so Var(S) = 0), yet the stated formula gives n(1−n)/(n+1) < 0 for n > 1, contradicting non-negativity of variance.",
+      "failure_location": {
+        "quote": "Now using the fact that for Haar distributed matrices we have $\\mathbf{E}[|Q_{i,j}|^4]  = \\frac{2}{n(n+1)}$ and $\\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2]  = \\frac{1}{n(n+1)}$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Use the correct index-dependent moments and redo the computation, yielding Var(S) = (nβ₁ − α₁²)(nβ₂ − α₂²)/(n(n²−1)); then correct the downstream Taylor-expansion formulas.",
+      "overall_effect": "Both E[S^2] and Var(S) are wrong. The Taylor-expansion analysis of E[√S] at the end of the appendix uses the incorrect variance and produces wrong numerical coefficients.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Incorrect Haar-moment formulas yield wrong E[S^2] and negative variance",
+      "why_classification": "The corrected formula is structurally different but derivable from standard Weingarten-calculus moments via a contained recomputation. The qualitative conclusions (Var(S) → 0 and validity of the Taylor expansion) survive."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

@@ -1,0 +1,75 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:infsup1_lambda",
+        "lem:infsup_lambda",
+        "thm:infsup",
+        "cor:added-1",
+        "thm:optimal_timestepping"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "q_{T}(t_{T+1}) = 2\\,\\frac{3-|T|\\lambda}{|T|^2\\lambda^2 + 4|T|\\lambda + 6}\\quad\\text{ and }\\quad \\partial_t q_{T} (t_{T+1})  = -\\lambda q_{T}(t_{T+1})",
+          "tag": "eq:qeval"
+        },
+        {
+          "quote": "\\lambda \\norm{u_{\\rm F}}{L^2(\\II_i)}^2\\simeq \\lambda \\sum_{k=1}^{\\#\\II_i-1} |T_k| |f_{T_{k}}(t_{k+1})|^2",
+          "tag": "lem:infsup1_lambda"
+        }
+      ],
+      "failure_explanation": "The proof asserts that for $u_{\\rm F} \\in {\\rm F}_{\\II_i}$, both $\\lambda^{-1}\\norm{\\partial_t u_{\\rm F}}{L^2}^2$ and $\\lambda\\norm{u_{\\rm F}}{L^2}^2$ are equivalent to $\\sum_{T\\in\\II_i} |T|\\lambda |u_{\\rm F}(t_{T+1})|^2$. This is mathematically false: when $|T|\\lambda = 3$, formula (3.4) gives $q_T(t_{T+1}) = 0$ and $\\partial_t q_T(t_{T+1}) = 0$, so the right-endpoint evaluation vanishes identically, whereas $\\norm{q_T}{L^2(T)}^2 = |T|/5 > 0$ and $\\norm{\\partial_t q_T}{L^2(T)}^2 > 0$. Furthermore, as $|T|\\lambda \\to \\infty$, $\\lambda\\norm{q_T}{L^2}^2 \\sim |T|\\lambda$ while $\\lambda^{-1}\\norm{\\partial_t q_T}{L^2}^2 \\sim (|T|\\lambda)^{-1}$, so the two terms scale inversely and are not uniformly equivalent across parameter regimes.",
+      "failure_location": {
+        "quote": "\\lambda^{-1}\\norm{\\partial_t u_{\\rm F}}{L^2(\\II_i)}^2\\simeq\\sum_{T\\in\\II_i}|T|\\lambda^{-1}|\\partial_t {u_F}(t_{T+1})|^2 =\\sum_{T\\in\\TT}|T|\\lambda|{u_{F}}(t_{T+1})|^2\\simeq \\lambda \\norm{u_{\\rm F}}{L^2(\\II_i)}^2",
+        "tag": "lem:infsup0_lambda"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Estimate $\\norm{u_{\\rm F}}{L^2(T)}$ using the left-endpoint value $u_{\\rm F}(t_T)$ where $q_T(t_T) = 1$ is uniformly bounded away from 0, and bound the jump recursion at node $t_k$ directly via $|f_{T_k}(t_k)| \\le \\kappa_0 |f_{T_{k-1}}(t_{k-1})| + |l_{T_{k-1}}(t_k)|$ without passing through point evaluations at $t_{T+1}$.",
+      "overall_effect": "The inf-sup stability proofs for subspaces of large time steps (Lemma 3.9) and arbitrary regions (Lemma 3.8) become mathematically incomplete as written, undermining the inf-sup stability of the hybrid time stepping scheme in Theorem 3.4 and the rate optimality in Theorem 3.1.",
+      "primary_affected_tag": "lem:infsup0_lambda",
+      "target_type": "formal_result",
+      "title": "Invalid norm equivalence for invisible ansatz functions via right-endpoint evaluation",
+      "why_classification": "A contained technical revision using the left-endpoint values avoids the vanishing point evaluation at $|T|\\lambda = 3$ and restores the uniform estimates without requiring a new global proof architecture or altering any theorem statement or rate."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{ u_h - u^{\\normalfont\\text{(rb)}}_{R,\\TT_\\ell} }{\\mathcal{X}_R^{\\normalfont\\text{(rb)}}} \\lesssim \\min\\{\\eta_{\\ell}^{\\rm (rb)},(\\#\\TT_\\ell)^{-s^{\\rm (rb)}}\\} + C e^{\\alpha\\tend} R^\\frac{1}{4} \\exp \\left( -\\sqrt{\\frac{\\pi d R}{4}} \\right)",
+          "tag": "thm:exp_conv"
+        },
+        {
+          "quote": "\\norm{ u_h - \\mathsf{P}^{\\normalfont\\text{(rb)}}_{R,M} u_h }{\\XX^{\\normalfont\\text{(rb)}}_{R,M}}^2 \\leq \\norm{ u_h - \\mathsf{P}^{\\normalfont\\text{(rb)}}_{R,M} u_h }{\\XX_h}^2",
+          "tag": "thm:fully_discrete_error"
+        }
+      ],
+      "failure_explanation": "The full semi-discrete solution $u_h$ belongs to $\\XX_h = L^2(0,\\tend; V_h) \\cap H^1(0,\\tend; V_h^\\star)$, whereas $V_R^{\\rm (rb)}$ is a proper subspace of $V_h$ of dimension $R \\ll \\dim(V_h)$. In general, $u_h(t) \\notin V_R^{\\rm (rb)}$ and $u_h - \\mathsf{P}_R^{\\rm (rb)} u_h \\in (V_R^{\\rm (rb)})^\\perp \\setminus \\{0\\}$. Consequently, neither $u_h - u_{R,\\TT_\\ell}^{\\rm (rb)}$ nor $u_h - \\mathsf{P}_R^{\\rm (rb)} u_h$ belongs to $\\XX_R^{\\rm (rb)}$, and evaluating their norms in $\\XX_R^{\\rm (rb)}$ is ill-defined. Moreover, the claim cannot be salvaged simply by replacing the norm with $\\norm{\\cdot}{\\XX_h}$, because the dual norm on $V_h^\\star$ cannot be bounded by the dual norm on $V_R^{\\star}$ (the inclusion $V_R \\subset V_h$ yields the reverse inequality $\\norm{\\cdot}{V_R^\\star} \\le \\norm{\\cdot}{V_h^\\star}$).",
+      "failure_location": {
+        "quote": "\\norm{ u_h - u^{\\normalfont\\text{(rb)}}_{R,\\TT_\\ell} }{\\mathcal{X}^{\\normalfont\\text{(rb)}}_R} \\lesssim \\min\\{\\eta_{\\ell}^{\\rm (rb)},(\\#\\TT_\\ell)^{-s^{\\rm (rb)}}\\} + \\norm{ u_h - \\mathsf{P}^{\\normalfont\\text{(rb)}}_R u_h }{\\XX^{\\normalfont\\text{(rb)}}_R}",
+        "tag": "eq:convergence_time_approx_V_rb_R"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must formulate a well-defined error metric on the ambient space $\\XX_h$ (or a projection-based error such as $\\norm{\\mathsf{P}_R^{\\rm (rb)} u_h - u_{R,\\TT_\\ell}^{\\rm (rb)}}{\\XX_R^{\\rm (rb)}}$) and establish stability bounds relating the reduced dual norm to the full space dual norm without loss of the advertised exponential convergence rates.",
+      "overall_effect": "The main error guarantees for the reduced basis model order reduction method (Theorems 4.1, 4.2, and 4.7) fail as stated because the error measure on the left-hand side is mathematically undefined for the true solution $u_h$.",
+      "primary_affected_tag": "eq:convergence_time_approx_V_rb_R",
+      "target_type": "formal_result",
+      "title": "Error bounds evaluated in the norm of a reduced subspace to which the solution does not belong",
+      "why_classification": "The error bound of the central model order reduction theorems is ill-defined on the actual target solution $u_h$, and extending the inf-sup stability control of the time derivative back to the ambient space $\\XX_h$ requires essentially new analysis and proof architecture."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2512.05676",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "70525655112dd5e6a4b9e036ce5bd3048782cdaa98dd74861d388a6c2188eeea",
+  "status": "ok"
+}

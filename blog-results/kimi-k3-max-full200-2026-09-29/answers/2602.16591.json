@@ -1,0 +1,236 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat{\\aii}_{\\bm{k}}\n    :=\n    \\frac{1}{V}\\,\n    \\frac{\\hat{M}(\\bm{k})}{\\hat\\varphi(\\bm{k})^2}\\,\n    \\hat{\\ai}_{\\bm{k}},",
+          "tag": "eq:diag_scale"
+        },
+        {
+          "quote": "\\hat f_{\\bk} \\;=\\; \\sum_{\\br\\in\\Z^3} c_{\\bk + m\\br}(f).",
+          "tag": "eq:alias"
+        },
+        {
+          "quote": "\\aii_{\\bm l}\n    =\n    \\sum_{\\bm k\\in\\mathcal I_{\\bm m}}\n    \\hat \\aii_{\\bm k}\\,e^{-\\frac{2\\pi}{L}\\i\\,\\bm k\\cdot(h\\bm l)},",
+          "tag": "alg:SE_Fourier"
+        }
+      ],
+      "failure_explanation": "With the transforms exactly as displayed (unnormalized forward DFT in step 2, unnormalized inverse DFT in step 4), the spread data satisfy $\\hat a_{\\bk}=m^3\\sum_{\\br}c_{\\bk+m\\br}(\\tilde\\varphi\\text{-data})\\approx \\frac{m^3}{V}\\hat\\varphi(\\bk)\\hat\\rho(\\bk)$, not $\\hat\\rho(\\bk)\\hat\\varphi(\\bk)$ as asserted (a factor $m^3/V=1/h^3$ is dropped), and the interpolation step contributes another factor $m^3c_{\\bk}$. Composing the five steps therefore returns $\\frac{m^6}{V^2}\\phi_i^{\\text{far}}$ instead of $\\phi_i^{\\text{far}}$: with the displayed transforms the correct diagonal factor is $\\frac{V}{m^6}\\frac{\\hat M(\\bk)}{\\hat\\varphi(\\bk)^2}$ (equivalently, the deconvolution must use the grid DFT of the sampled window, or $h^3$ factors must appear in spreading/interpolation). The same convention error appears in the aliasing identity (eq:alias): for the displayed (unnormalized) DFT of grid samples one has $\\hat f_{\\bk}=m^3\\sum_{\\br}c_{\\bk+m\\br}(f)$, so the stated identity is missing the factor $m^3$. The matrix form (eq:matform) inherits the inconsistency.",
+      "failure_location": {
+        "quote": "which approximates $\\hat{\\rho}(\\bm{k})\\,\\hat\\varphi(\\bm{k})$",
+        "tag": "alg:SE_Fourier"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Adopt and state one consistent normalization convention: e.g., deconvolve by the window's grid DFT $\\sum_{\\bl}\\tilde\\varphi(h\\bl)e^{2\\pi i\\bk\\cdot\\bl/m}$, or include $h^3$ in the spreading and interpolation steps, or replace $1/V$ in (eq:diag_scale) by $V/m^6$; correct (eq:alias) with the factor $m^3$.",
+      "overall_effect": "Algorithm 2 as literally specified does not deliver its stated output contract: the returned far field is off by the factor $m^6/V^2=(m/L)^6$; the standalone identity (eq:alias) is off by $m^3$; and the deconvolution choice analyzed in Proposition prop:interpol_est does not match the algorithm as written. Several inequivalent-looking repairs exist (grid-DFT deconvolution, $h^3$ factors, rescaled diagonal), so this is not a pure typo. The error analysis propositions are internally self-consistent and the reported numerics necessarily used a consistent normalization, so no substantive claim about the method changes.",
+      "primary_affected_tag": "alg:SE_Fourier",
+      "target_type": "algorithm",
+      "title": "FFT/window normalization inconsistency in the fast Ewald algorithm",
+      "why_classification": "The defect is purely a normalization-convention inconsistency: the repair is a short, local, routine convention fix (with several standard equivalent choices), and every substantive claim, rate, and guarantee survives unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:interpol_est"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The truncated window $\\varphi_t^{c_w}(\\bx)$ with Fourier transform given by $\\hat{\\varphi}^{c_w}(\\bomega)$ in $[-c_w/\\alpha,c_w/\\alpha]^3$ is what we will refer to as the PSWF window function",
+          "tag": "eq:truncwindow"
+        },
+        {
+          "quote": "is never used in practice, since only Fourier modes within the band\n$[-c_s/r_c,\\, c_s/r_c]$ are required.",
+          "tag": null
+        },
+        {
+          "quote": "The Fourier-transformed mollifier is evaluated at all available wavenumbers (also outside the bandlimit)\nwithout additional truncation.",
+          "tag": null
+        },
+        {
+          "quote": "\\psi_0^{c_w}\\!\\Big(\\tfrac{2}{m}(k_i+m r_i)\\Big)^2",
+          "tag": "prop:interpol_est"
+        },
+        {
+          "quote": "\\left|\\tfrac{2}{m}(k_i + m r_i)\\right| \\in [1,3],",
+          "tag": "eq:shifted-range"
+        }
+      ],
+      "failure_explanation": "The display assigns to one function two properties that cannot hold simultaneously: per-coordinate bandlimit $c_w/\\alpha$ (true only of the bandlimited extension of $\\psi_0^{c_w}$ to $\\R$, whose per-coordinate transform is $\\frac{2\\pi}{c_w\\lambda_0}\\psi_0^{c_w}(\\alpha\\omega_i/c_w)/\\psi_0^{c_w}(0)$, not $\\lambda_0\\psi_0^{c_w}(\\alpha\\omega_i/c_w)/\\psi_0^{c_w}(0)$ as displayed) and the displayed transform formula, which by Lemma lem:PSWFrelation is the finite-interval transform, i.e., the transform of the compactly supported truncated window $\\varphi_t^{c_w}$ (which is entire, hence not bandlimited). The paper's actual usage (deconvolution on grid modes, Table tab:reference_windows, the sentence after (eq:truncwindow)) is that of the truncated window, for which the formula is correct on the band cube; the bandlimit clause is then false. Moreover, outside-band values are in fact required and used — cubic-grid corner modes have $|\\bomega|$ up to $\\sqrt3\\,\\omega_{\\max}=\\sqrt3\\,c_s/r_c>c_s/r_c$, the reference computation is explicitly 'evaluated at all available wavenumbers (also outside the bandlimit)', and prop:interpol_est evaluates $\\psi_0^{c_w}$ at arguments in $[1,3]$ — contradicting the claims (in sec:PSWF_mollifier and in the Table tab:mollifiers caption) that the outside-band region is 'never used in practice'. Finally, the extension of $\\psi_0^c$ beyond $[-1,1]$ that all these outside-band evaluations presuppose is never defined, and Lemma lem:PSWFrelation (the identity licensing them) is stated only for $\\omega\\in[-c,c]$.",
+      "failure_location": {
+        "quote": "The Fourier transform of $\\varphi^{c_w}$ has per-coordinate bandlimit $|\\omega_i|\\le c_w/\\alpha$ and is given by",
+        "tag": "eq:PSWFwindow_ft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Define the bandlimited extension of $\\psi_0^c$ to $\\R$ (via the eigenvalue integral for all $s\\in\\R$), extend Lemma lem:PSWFrelation to all $\\omega$, attribute the displayed FT formula to the truncated window (dropping the bandlimit clause) or to the extension (with the corrected per-coordinate constant $2\\pi/(c_w\\lambda_0)$), and correct the two 'never used' remarks.",
+      "overall_effect": "The PSWF window's Fourier characterization is internally inconsistent (no function satisfies both clauses of (eq:PSWFwindow_ft)); two practical claims about outside-band values never being used are false; and prop:interpol_est as written evaluates the PSWF on $[1,3]$ where the paper has not defined it. All numerical usage and downstream formulas are correct once the standard extension is adopted.",
+      "primary_affected_tag": "eq:PSWFwindow_ft",
+      "target_type": "other",
+      "title": "PSWF window Fourier transform conflates truncated window with bandlimited extension; outside-band values used but undefined",
+      "why_classification": "The repairs are short, local, and forced (a standard extension definition plus corrected statements); every formula actually used downstream is already correct under this repair, so no substantive claim, rate, or guarantee is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:PSWF_split_errors"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $f:[0,\\infty)\\to[0,\\infty)$ be nonincreasing.",
+          "tag": "lem:cubecover"
+        },
+        {
+          "quote": "|\\gamma_\\sigma(x)| \\le \\delta \\qquad \\text{for all } |x| \\ge \\sigma,",
+          "tag": null
+        },
+        {
+          "quote": "until slowly decaying\n$\\mathrm{sinc}$-type oscillations in the PSWF spectrum dominate the total error",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Lemma lem:cubecover applies only to nonincreasing radial functions, but no hypothesis of lemma:dirsumerr_L2 ensures that $|\\hat M(\\bomega)|^2=16\\pi^2|\\hat\\gamma_\\sigma(|\\bomega|)|^2/|\\bomega|^4$ is nonincreasing: the paper's mollifier definition requires only evenness, non-negativity, unit mass, and a pointwise tail bound. For the PSWF mollifier — the case the bound is used for in prop:PSWF_split_errors — the property is false: $\\gamma_{r_c}^{c_s}$ jumps to zero at $\\pm r_c$ (since $\\psi_0^{c_s}(1)>0$), so its Fourier transform has a slowly decaying oscillatory tail beyond the band (the paper itself refers to 'slowly decaying sinc-type oscillations in the PSWF spectrum'), and the sum $\\sum_{|\\bk|>\\Kmax}$ with $\\omega_{\\max}=c_s/r_c$ runs precisely over that non-monotone beyond-band region. The invoked estimate is therefore used outside its hypotheses in the paper's central case.",
+      "failure_location": {
+        "quote": "Since $|\\hat M(\\bk)|^2$ is radial and nonincreasing in $|\\bk|$, the\nlattice-to-continuum estimate of Lemma~\\ref{lem:cubecover} (Appendix~\\ref{app:cubecover}) yields the bound",
+        "tag": "lemma:dirsumerr_L2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Apply the covering argument only where $|\\hat M|^2$ is monotone (on the PSWF band it is decreasing) and control the beyond-band tail by a monotone envelope obtained from a new tail estimate for the PSWF extension; alternatively, add monotonicity of $|\\hat M|^2$ as an explicit hypothesis and verify it in each application.",
+      "overall_effect": "The proof of lemma:dirsumerr_L2 is unsupported for general mollifiers and invalid as stated for the PSWF mollifier; prop:PSWF_split_errors inherits the gap, so the rigorous split-truncation bound is not established for the paper's main construction. The fitted closed-form model (eq:PSWF_model) and all numerical results are independent of this gap.",
+      "primary_affected_tag": "lemma:dirsumerr_L2",
+      "target_type": "formal_result",
+      "title": "Truncation-error proof invokes lattice covering under a false monotonicity assumption",
+      "why_classification": "Preserving the exponential rate requires a new, contained tail-envelope lemma for the PSWF extension (more than a routine local fix), but the bound's form and all rates survive with modified constants, and the empirically validated models are unaffected — a recognizably comparable result remains."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "C_* \\;:=\\; 1 \\;+\\;\n\\left(\\frac{\\omega_{\\max}}{\\omega_*}\\right)^{\\!2}\\,\n\\frac{c_s\\,\\lambda_0^{2}}{\\,2\\pi - c_s\\,\\lambda_0^{2}\\,}.",
+          "tag": "prop:PSWF_split_errors"
+        },
+        {
+          "quote": "1-\\mu_0(c) \\sim 4\\sqrt{\\pi c}\\,e^{-2c} \\qquad \\text{as } c\\to\\infty,",
+          "tag": "eq:fuchs"
+        },
+        {
+          "quote": "where $\\mu_0(c) = c/(2\\pi)\\,\\lambda_0^2$ is the first concentration eigenvalue",
+          "tag": null
+        },
+        {
+          "quote": "Since $\\int_{\\omega_*}^{\\omega_{\\max}} \\le \\int_{0}^{\\omega_{\\max}}$, we relate the in-band and tail energies",
+          "tag": "prop:PSWF_split_errors"
+        }
+      ],
+      "failure_explanation": "The prose claims $C_*\\approx1$, but by the paper's own definition $C_* = 1+(\\omega_{\\max}/\\omega_*)^2\\,\\mu_0/(1-\\mu_0)$ with $\\mu_0=c_s\\lambda_0^2/(2\\pi)$, and Fuchs' asymptotics ((eq:fuchs), cited in rem:eig_errors) give $1-\\mu_0\\sim4\\sqrt{\\pi c_s}\\,e^{-2c_s}$; hence $C_*$ grows like $e^{2c_s}/(4\\sqrt{\\pi c_s})$ (e.g., $\\sim4\\times10^8$ at $c_s\\approx11.5$) — false by many orders of magnitude, for any $\\omega_*/\\omega_{\\max}\\approx1$. The bloat originates in the proof step $\\int_{\\omega_*}^{\\omega_{\\max}}|\\hat\\gamma|^2\\le\\int_0^{\\omega_{\\max}}|\\hat\\gamma|^2$, which replaces the exponentially small energy of the narrow sliver $[\\omega_*,\\omega_{\\max}]$ near the band edge by the full $\\mathcal O(1)$ in-band energy. Consequently the bound actually proved in prop:PSWF_split_errors is $C_*(2\\pi/\\lambda_0^2-c_s)=(2\\pi/\\lambda_0^2-c_s)+c_s(\\omega_{\\max}/\\omega_*)^2\\sim c_s$, i.e., the squared-error bound decays only algebraically ($\\sim c_s^{-3/2}$, RMS $\\sim c_s^{-3/4}$), not exponentially; at practical tolerances the proven bound is orders of magnitude above the model. The derivation of the exponential closed-form model (eq:PSWF_model) from the proposition is therefore invalid as written, and the Section 5 claim of 'establishing exponential error decay and providing sharp bounds' is unsupported for the split error.",
+      "failure_location": {
+        "quote": "In practical settings, where the truncation parameter $\\Kmax$ is sufficiently \nlarge (so that $\\omega_* \\approx \\omega_{\\max}$), this factor satisfies \n$C_* \\approx 1$ and can therefore be neglected.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Delete the $C_*\\approx1$ claim and sharpen the in-band estimate in prop:PSWF_split_errors: using monotonicity of $|\\hat\\gamma_{r_c}^{c_s}|$ on the band, bound $\\int_{\\omega_*}^{\\omega_{\\max}}|\\hat\\gamma|^2\\omega^{-2}d\\omega\\le |\\hat\\gamma(\\omega_*)|^2/\\omega_*$, which is exponentially small since $r_c\\omega_*/c_s=1-\\sqrt3/m$; restate the proposition with the resulting $\\mathcal O(1)$ prefactor replacing $C_*$.",
+      "overall_effect": "The closed-form split-error model (eq:PSWF_model) loses its claimed rigorous derivation; the rigorous split bound of prop:PSWF_split_errors is algebraic and nearly vacuous at practical tolerances rather than exponential and sharp as advertised in the abstract and Section 5. The model itself, the fitted constants, the parameter-selection procedure, and all numerics remain valid (they are empirically confirmed).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that the prefactor $C_*$ is asymptotically negligible undermines the rigorous split-error bound",
+      "why_classification": "The false prefactor claim breaks the link between the rigorous bound and the exponential model — a real loss of the advertised 'rigorous, sharp, exponential' split theory — but a contained nontrivial repair (sharpening one proof step via on-band monotonicity) restores a comparable exponential bound, and all practical outputs survive on numerical validation; no global re-architecture or major loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "and by evenness and monotonicity of $\\psi_0^{c_w}$,",
+          "tag": "eq:psi-at-least-edge"
+        },
+        {
+          "quote": "until slowly decaying\n$\\mathrm{sinc}$-type oscillations in the PSWF spectrum dominate the total error",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The premise that $\\psi_0^c$ is nonincreasing on $[0,\\infty)$ is false: the extension of $\\psi_0^c$ beyond $[-1,1]$ has an oscillatory, slowly decaying tail — equivalently, since $\\hat\\psi_0^c(\\omega)=\\lambda_0\\psi_0^c(\\omega/c)$, the 'slowly decaying sinc-type oscillations in the PSWF spectrum' that the paper itself displays and discusses. Both (eq:ratio-le-1) (used at arguments up to $\\sqrt3>1$) and (eq:psi-at-least-edge) (which requires $|\\psi_0^{c_w}(x)|\\le\\psi_0^{c_w}(1)$ for $x\\in[1,3]$) rest on this false monotonicity claim, and they feed the reduction of the aliasing sum to (eq:axis-bound) and hence the closed-form model (eq:window_err_model). The steps are therefore unjustified as written, though the derivation is explicitly approximate and the resulting model is numerically validated.",
+      "failure_location": {
+        "quote": "Since $|\\bm{k}|\\ge |k_i|$ and $\\psi_0^{c}$ is even and nonincreasing on\n$[0,\\infty)$, we have",
+        "tag": "eq:ratio-le-1"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the global monotonicity claim by the envelope property $|\\psi_0^c(x)|\\le\\psi_0^c(1)$ for $|x|\\ge1$ (stated and proved or cited as a property of the PSWF extension); the remainder of the heuristic derivation is unchanged.",
+      "overall_effect": "Two displayed inequalities in the heuristic derivation of the aliasing closed-form model (eq:window_err_model) are supported by a false premise; the model itself is unaffected in practice because it is explicitly approximate and confirmed against numerical experiments.",
+      "primary_affected_tag": "eq:ratio-le-1",
+      "target_type": "other",
+      "title": "Heuristic aliasing reduction assumes $\\psi_0^c$ is monotone on $[0,\\infty)$",
+      "why_classification": "The defect sits inside an explicitly approximate, numerically validated derivation, and the needed substitute is a single local envelope property; every substantive claim and the final model survive, so a short local repair suffices."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "c_w \\approx -\\frac{1}{2} W \\bigg(\\!-2 B_w^2  \\frac{e^{-2c_s}}{c_s}\\bigg),\\qquad B_w := \\frac{A_s}{A_w}\\sqrt{\\frac{r_c}{L}}.",
+          "tag": "eq:cwW"
+        },
+        {
+          "quote": "where the approximation uses $c_s\\approx c_w$ with $c_s<c_w$\n(see Section~\\ref{sec:num_results}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The argument of $W$ is a small negative number in $(-1/e,0)$, where two real branches exist. The default principal branch $W_0$ takes values in $(-1,0)$, producing $c_w=-\\tfrac12W_0(\\cdot)\\in(0,\\tfrac12)$ — e.g., $c_w\\sim10^{-7}$ at typical parameters — whereas the intended solution of $c_w^{1/2}e^{-c_w}=B_wc_s^{-1/2}e^{-c_s}$ is the large root $c_w>c_s\\gg1$ (consistent with the paper's use of $c_s<c_w$), which requires the $W_{-1}$ branch. As written, step 2 (and (eq:cwW)) returns the wrong root, leading to $\\alpha\\approx0$ and a meaningless window support $P$.",
+      "failure_location": {
+        "quote": "\\STATE Solve $c_w = -\\frac{1}{2}W\\big(-2 B_w^2 \\frac{e^{-2c_s}}{c_s}\\big)$ for $c_w$, where $B_w := \\frac{A_s}{A_w}\\sqrt{\\frac{r_c}{L}}$.",
+        "tag": "alg:parameter"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Specify the $W_{-1}$ branch in (eq:cwW) and in step 2 of Algorithm alg:parameter.",
+      "overall_effect": "The parameter-selection procedure as literally specified computes a nonsensical window bandlimit, so its stated guarantee (parameters achieving the prescribed tolerance) fails; all other steps are unaffected.",
+      "primary_affected_tag": "alg:parameter",
+      "target_type": "algorithm",
+      "title": "Lambert $W$ branch unspecified: principal branch yields the wrong root for $c_w$",
+      "why_classification": "The correction is a single forced branch specification that any competent reader/implementer must make; no inference, model, or guarantee changes once the branch is fixed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:dirsumerr_L2",
+        "prop:PSWF_split_errors"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For any $\\bx\\in Q_{\\bm{k}}$ one has\n$||\\bx|-|\\bm{k}||\\le\\sqrt{3}/2$.\nMonotonicity of $f$ then yields the stated bound.",
+          "tag": "lem:cubecover"
+        },
+        {
+          "quote": "the\nlattice-to-continuum estimate of Lemma~\\ref{lem:cubecover} (Appendix~\\ref{app:cubecover}) yields the bound",
+          "tag": "lemma:dirsumerr_L2"
+        }
+      ],
+      "failure_explanation": "The stated bound is false. Counterexample: $K=1>\\sqrt3/2$ and $f=\\mathbb 1_{[0,\\sqrt2]}$ (nonincreasing, non-negative). The left side is $\\#\\{\\bk\\in\\Z^3:1<|\\bk|\\le\\sqrt2\\}=\\#\\{|\\bk|=\\sqrt2\\}=12$, while the right side is $\\tfrac{4\\pi}{3}\\big((\\sqrt2)^3-(1-\\tfrac{\\sqrt3}{2})^3\\big)\\approx 11.84$. The proof sketch is correspondingly invalid: monotonicity and $||\\bx|-|\\bk||\\le\\sqrt3/2$ give only $f(|\\bk|)\\le f(|\\bx|-\\sqrt3/2)$ on $Q_{\\bk}$, whose radial change of variables produces an extra Jacobian factor $(1+\\tfrac{\\sqrt3/2}{|\\by|+\\sqrt3/2})^2$ and a lower integration limit $K-\\sqrt3$ — both are dropped in the stated lemma. Standard corrected versions exist with modified constants.",
+      "failure_location": {
+        "quote": "\\sum_{|\\bm{k}|>K} f(|\\bm{k}|)\n\\;\\le\\;\n\\int_{|\\bx|>K-\\sqrt{3}/2}\nf(|\\bx|)\\,d\\bx.",
+        "tag": "lem:cubecover"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace lem:cubecover by a correct covering bound, e.g. $\\sum_{|\\bk|>K}f(|\\bk|)\\le\\int_{|\\bx|>K-\\sqrt3/2}f(|\\bx|-\\sqrt3/2)\\,d\\bx$ (or the equivalent version with lower limit $K-\\sqrt3$ and the radial Jacobian factor), and propagate the modified constants through lemma:dirsumerr_L2 and prop:PSWF_split_errors.",
+      "overall_effect": "The lattice-to-continuum step in lemma:dirsumerr_L2 rests on a false lemma, so the constant 8 there (and the constants of prop:PSWF_split_errors that follow from it) are not justified; the shape, exponential rate, and practical content of the truncation bounds survive any standard corrected covering estimate.",
+      "primary_affected_tag": "lem:cubecover",
+      "target_type": "formal_result",
+      "title": "Lattice covering lemma is false as stated",
+      "why_classification": "The lemma is false with an explicit counterexample and its proof's key inference is invalid, so a corrected covering statement and proof are required and the constants in two downstream results must be reworked — more than a routine local fix — but the replacement is standard and contained, and every substantive claim and rate survives."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2602.16591",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s3",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "5a7eb2381d02244a14f856ec8d079a82235af947f81b4666b55d9a1bda2341cf",
+  "status": "ok"
+}

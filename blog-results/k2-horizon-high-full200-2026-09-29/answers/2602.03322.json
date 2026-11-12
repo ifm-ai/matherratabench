@@ -1,0 +1,138 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $x_i$ denotes the global grid points, and $\\mathcal{I}$ is an interpolation operator ensuring a smooth transition in the overlapping region. In practice, this is implemented by interpolating the envelope values $a_j^{\\pm,n}$ onto the global grid, with a piecewise linear or quadratic interpolation, followed by reconstruction via \\eqref{eq:pq}--\\eqref{eq:upq}.",
+          "tag": "alg"
+        },
+        {
+          "quote": "\\wt{p}(t,\\xi)=a^+(t,\\xi)\\e^{\\iu\\kappa\\xi/\\eps}\\e^{\\iu \\vartheta t/\\eps^2}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed formula interpolates the raw values $p_j^n$ and $q_j^n$, which contain the factor $\\e^{\\iu\\kappa\\xi/\\eps}$. A piecewise linear interpolant of such carrier-modulated data has $O(h)$ error when $\\kappa h/\\eps$ is not small. The prose describes a different, envelope-based implementation, but that is not what the formal reconstruction formula specifies.",
+      "failure_location": {
+        "quote": "u_i^n = \\mathcal{I}(\\{p_j^{n}\\}, x_i) + \\mathcal{I}(\\{q_j^{n}\\}, x_i)",
+        "tag": "alg"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Define $\\mathcal{I}$ on the envelopes $a_j^{\\pm,n}$ and reconstruct via \\eqref{eq:pq}--\\eqref{eq:upq}, or explicitly use a carrier-aware interpolant, and include the resulting overlap interpolation error in the proof of Theorem~\\ref{thm}.",
+      "overall_effect": "The $O(h^2)$ reconstruction guarantee in Theorem~\\ref{thm} is unsupported during wave-packet overlap.",
+      "primary_affected_tag": "alg",
+      "target_type": "algorithm",
+      "title": "Overlap reconstruction interpolates carrier-modulated values",
+      "why_classification": "The repair is contained and preserves the advertised second-order accuracy, but the algorithm as formally written does not deliver the reconstruction contract used by the error theorem."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:polarized"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "In practice, the sequence $(p^n_j)_{j\\in\\mathbb{Z}}$ must be truncated to a finite-dimensional vector, typically by imposing periodic boundary conditions over a finite interval. In this paper we will not study the error due to the truncation to a finite interval.",
+          "tag": null
+        },
+        {
+          "quote": "The same error bounds hold true for the implicit weighted Crank--Nicolson finite difference method~\\eqref{eq:WCN} without any stability condition between $\\tau$ and $h$.",
+          "tag": "thm"
+        }
+      ],
+      "failure_explanation": "The proof combines infinite-grid modulated expansions with Algorithm~\\ref{alg}, while the numerical computation is explicitly truncated and periodically closed and that error is declared out of scope. The theorem nevertheless states an unconditional uniform bound at all $x_i$.",
+      "failure_location": {
+        "quote": "uniformly for $t_n = n\\tau \\leq T$ and $x_i$.",
+        "tag": "thm"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add a hypothesis that the computational interval contains the wave packets and that the neglected truncation error is within the stated tolerance, or explicitly restrict the theorem to the untruncated infinite-grid scheme.",
+      "overall_effect": "The finite-dimensional error guarantee in Theorem~\\ref{thm}, and the analogous polarized statement, is broader than what the analysis establishes.",
+      "primary_affected_tag": "thm",
+      "target_type": "formal_result",
+      "title": "Error theorem ignores finite-interval truncation",
+      "why_classification": "A local scope hypothesis or explicit exclusion of truncation error repairs the statement without changing the proved estimates."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:MFE",
+        "thm",
+        "thm:polarized"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\| d \\|_{L^\\infty([0,T]\\times \\mathbb{R})} \\le c(\\tau^2+h^2+\\eps)",
+          "tag": "lem:defect-max"
+        },
+        {
+          "quote": "\\| f \\|_{L^\\infty(\\mathbb{R})} \\le \\| f \\|_{A(\\mathbb{R})} \\quad\\text{ and }\\quad \\| f \\|_{A(\\mathbb{R})} \\le c_1\\,\\max(\\| f \\|_{L^\\infty(\\mathbb{R})},\\| f' \\|_{L^\\infty(\\mathbb{R})}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The maximum-norm defect bound does not by itself yield an $\\eps$-independent $A(\\mathbb{R})$ bound for a defect containing $\\e^{\\iu\\kappa\\xi/\\eps}$. The stated inequality in \\eqref{eq:katz} would introduce derivative norms and lose powers of $\\eps$ unless the oscillatory carrier/envelope structure is tracked. The cited analogous steps are not reproduced, so a nontrivial consistency estimate is missing.",
+      "failure_location": {
+        "quote": "The proof is based on \\eqref{eq:katz} and follows the same steps as the proof in \\cite[Lemma 4.2]{shi2025weighted}.",
+        "tag": "lem:defect-wiener"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Prove the $A(\\mathbb{R})$ defect bound directly for the modulated defect, for example by using the Banach-algebra product rule together with explicit carrier/envelope estimates.",
+      "overall_effect": "The consistency input needed by the nonlinear stability argument for Theorems~\\ref{th:MFE}, \\ref{thm}, and \\ref{thm:polarized} is unproved in the required Wiener-algebra norm.",
+      "primary_affected_tag": "lem:defect-wiener",
+      "target_type": "formal_result",
+      "title": "Wiener-norm defect bound lacks a complete proof",
+      "why_classification": "A dedicated Wiener-algebra estimate is required, but this is a contained missing argument rather than a loss of the advertised accuracy."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:stability",
+        "lem:stability-cn",
+        "th:MFE",
+        "thm",
+        "thm:polarized"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "equivalent to the norm $\\|\\cdot\\|_{A(\\mathbb{R}) \\times A(\\mathbb{R})}$ uniformly in $\\eps,\\tau,h$ subject to \\eqref{eq:stability}",
+          "tag": "th:stability"
+        },
+        {
+          "quote": "\\gamma_\\theta =\\alpha+\\kappa^2(1-\\sin(\\beta-\\theta h)/\\beta)\\alpha",
+          "tag": null
+        },
+        {
+          "quote": "|\\kappa||\\alpha|\\leq |\\beta|\\quad \\text{for}\\, |\\beta| < 1.",
+          "tag": "eq:stability"
+        }
+      ],
+      "failure_explanation": "For $|\\beta|<1$, condition \\eqref{eq:stability} permits $\\alpha=\\vartheta\\tau/\\eps^2\\to0$. At $\\theta h=\\beta$, $\\gamma_\\theta\\to0$ and $\\wt\\gamma_\\theta\\to1$, so the two eigenvalues coalesce and the eigenvector matrix $V(\\theta)$ becomes ill-conditioned on the order of $1/|\\alpha|$. Thus no $\\mu<1$ independent of $\\tau,h$ is available, the asserted uniform norm equivalence is not established, and in the limit the recurrence has a Jordan block.",
+      "failure_location": {
+        "quote": "Since $\\frac{\\wt{\\gamma}_\\theta ^2}{(1+\\gamma_\\theta ^2)}\\leq\\mu< 1$ by condition~\\eqref{eq:stability}",
+        "tag": "th:stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either restrict the stability lemma to $\\tau/\\eps^2$ bounded away from zero and treat the classical regime separately, or construct a uniform stability norm and error argument that remains valid as $\\alpha\\to0$.",
+      "overall_effect": "Lemma~\\ref{lem:stability} loses its uniform constant, and the uniform error bounds in Theorems~\\ref{th:MFE}, \\ref{thm}, and \\ref{thm:polarized}, as well as the Crank--Nicolson analogue in Lemma~\\ref{lem:stability-cn}, are unsupported.",
+      "primary_affected_tag": "th:stability",
+      "target_type": "formal_result",
+      "title": "Uniform norm equivalence in linear stability fails as tau tends to zero",
+      "why_classification": "The advertised uniform-in-$\\tau,h$ stability statement cannot be repaired locally; it requires excluding the classical regime or a new uniform stability argument."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2602.03322",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "758deb3574d6f318d96a278ac617da2e486cf2a971b73263c6cefe9252adfbef",
+  "status": "ok"
+}

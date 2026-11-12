@@ -1,0 +1,72 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "|I_2|\\leq k^2\\mu_{\\mathup{msh}}^{-1}H^2\\int_{\\Omega}|c|\\mu_{\\text{msh}}H^{-2}|z_i|\\cdot|\\mathcal{T}z'|\\dx x\\leq C_1k^2\\mu_{\\mathup{msh}}^{-1}H^2\\|z_i\\|_{\\tilde{s}}\\|z'\\|_{\\tilde{s}}\n\\leq C_*\\Lambda\\RoundBrackets*{\n\\norm{z}_{\\tilde{s}}^2+\\norm{z_i}_{\\tilde{s}}\\norm{z}_{\\tilde{s},\\hat{K}_i^{m+1}}}",
+          "tag": "prop:exponential decay"
+        },
+        {
+          "quote": "C''\\RoundBrackets*{\\norm{z}_{\\tilde{a}}^2+\\norm{\\pi z}_{\\tilde{s}}^2} \\leq \\sum_{i=1}^{N_\\mathup{elem}} \\RoundBrackets*{a(z_i, \\mathcal{T}z)+s(\\pi z_i,\\pi\\mathcal{T}z)}",
+          "tag": "prop:exponential decay"
+        }
+      ],
+      "failure_explanation": "In the proof of Theorem 4.4, the estimate for $I_2$ bounds the cross term by the global norm $\\|z\\|_{\tilde{s}}^2$ rather than a localized norm. Summing this bound over all elements $i = 1, \\dots, N$ adds the global term $N$ times, producing $N C_* \\|z\\|_{\tilde{a}}^2 + N C_* \\Lambda \\|\\pi z\\|_{\\tilde{s}}^2$. Moving this to the left-hand side yields coefficients $C_2 - C_* N$ and $C_2 - C_* \\Lambda N$. Here $N = N_{\\text{elem}} = \\mathcal{O}(H^{-d})$ is the total number of coarse grid elements in $\\Omega$. As the coarse mesh is refined ($H \\to 0$), $N \\to \\infty$, which forces both $C_2 - C_* N$ and $C_2 - C_* \\Lambda N$ to $-\\infty$. Thus $C'' > 0$ cannot hold independently of $N$ (or $H$), and taking the maximum rather than the minimum of the two coefficients cannot yield a lower bound on the sum of norms.",
+      "failure_location": {
+        "quote": "where $C''=\\max\\{C_2-C_*N,C_2-C_*\\Lambda N\\}>0$.",
+        "tag": "prop:exponential decay"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a localized bound for $I_2$ in terms of local norms on $\\hat{K}_i^{m+1}$ whose sum over $i$ is controlled by the finite overlap constant $C_{\\text{ol}}$ rather than the global element count $N$.",
+      "overall_effect": "The exponential decay estimate for the difference between global and localized multiscale basis functions outside oversampling regions is unestablished for refined coarse meshes.",
+      "primary_affected_tag": "prop:exponential decay",
+      "target_type": "formal_result",
+      "title": "Exponential decay estimate fails due to coercive constant depending negatively on total element count",
+      "why_classification": "Every supported resolution requires a new proof architecture for localizing the Helmholtz perturbation term without accumulating the global element count $N$ as $H \\to 0$."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:main local"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, \\|v_{\\mathup{ms}}-v_{\\mathup{glo}}\\|_{\\tilde{a}}\\leq C_*'H^{-1}\\|\\mathcal{G}^{\\infty}\\phi\\|_{\\tilde{a}}=\\eta\\|v_{\\mathup{glo}}\\|_{\\tilde{a}},\\text{ where }C_*'=\\frac{\\sqrt{C_1^2+\\alpha^2}\\sqrt{1+C_{\\mathup{inv}}^2}\\sqrt{2C_{\\mathup{po}}}}{C_5}.",
+          "tag": "cea"
+        },
+        {
+          "quote": "\\geq\\underbrace{(\\beta_{\\mathup{glo}}/4-9\\alpha \\eta/4-3\\alpha\\eta/2)}_{\\beta_{\\mathup{cem}}}\\|u_{\\mathup{ms}}\\|_{\\tilde{a}}\\|v_{\\mathup{ms}}\\|_{\\tilde{a}},",
+          "tag": "cea"
+        },
+        {
+          "quote": "The Fortin trick  suggests that it suffices to check that\n\\[\n\\inf_{u\\in\\tilde{V}} \\sup_{ w\\in \\tilde{V}} \\frac{\\mathcal{B}(u, w)}{\\norm{u}_{\\tilde{a}} \\norm{w}_{\\tilde{a}}}\\geq \\beta_{\\text{glo}}\n\\]\nholds.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof of Lemma 4.5 exhibits two fatal flaws. First, it asserts $\\beta_{\\text{cem}} \\|u - u_{\\text{ms}}\\|_{\\tilde{a}}^2 \\le \\mathcal{B}(u - u_{\\text{ms}}, u - u_{\\text{ms}})$, treating the indefinite, sign-changing Helmholtz sesquilinear form $\\mathcal{B}$ as if it were coercive on $V$. Since $\\mathcal{B}$ is non-coercive and sign-changing, $\\mathcal{B}(w, w)$ can be zero or negative, and $u - u_{\\text{ms}} \\notin V_{\\text{ms}}$, so a discrete inf-sup condition on $V_{\\text{ms}}$ cannot justify this step. Second, in attempting to establish the discrete inf-sup stability constant $\\beta_{\\text{cem}}$, the author bounds $\\|v_{\\text{ms}} - v_{\\text{glo}}\\|_{\\tilde{a}} \\le C_*' H^{-1} \\|v_{\\text{glo}}\\|_{\\tilde{a}} = \\eta \\|v_{\\text{glo}}\\|_{\\tilde{a}}$ while dropping the exponential decay factor $\\theta^{(m-1)/2}$. As a result, $\\eta = \\mathcal{O}(H^{-1})$ blows up as $H \\to 0$, contradicting the assumption of small $\\eta$ and making $\\beta_{\\text{cem}} = \\beta_{\\text{glo}}/4 - 15\\alpha\\eta/4$ strictly negative for small $H$. Furthermore, the global inf-sup constant $\\beta_{\\text{glo}}$ used here was never proven, based only on the false assertion that the Fortin trick allows reducing inf-sup on $V_{\\text{glo}}$ to inf-sup on the orthogonal subspace $\\tilde{V}$.",
+      "failure_location": {
+        "quote": "\\beta_{\\mathup{cem}}\\|u-u_{\\mathup{ms}}\\|_{\\tilde{a}}^2\\leq\\mathcal{B}(u-u_{\\mathup{ms}},u-u_{\\mathup{ms}})=\\mathcal{B}(u-u_{\\mathup{ms}},u-v_{\\mathup{ms}})+\\mathcal{B}(u-u_{\\mathup{ms}},v_{\\mathup{ms}}-u_{\\mathup{ms}})",
+        "tag": "cea"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a valid discrete inf-sup condition on $V_{\\text{glo}}$, retain the exponential decay factor $\\theta^{(m-1)/2}$ in $\\eta$ with an oversampling layer $m = \\mathcal{O}(|\\log H|)$ so that $\\beta_{\\text{cem}} > 0$, and prove an error bound using Babuska's inf-sup framework rather than falsely invoking coercivity of $\\mathcal{B}$ on $u - u_{\\text{ms}}$.",
+      "overall_effect": "The discrete inf-sup stability of the multiscale formulation, Cea's lemma, and the main a priori error estimate for the CEM-GMsFEM multiscale solution (Theorem 4.6) are unproven and invalid.",
+      "primary_affected_tag": "cea",
+      "target_type": "formal_result",
+      "title": "Invalid assertion of coercivity for indefinite Helmholtz problem and blowup of inf-sup perturbation parameter in Cea's Lemma",
+      "why_classification": "The primary claim and its main convergence theorem (Theorem 4.6) are invalidated. Repairing them requires establishing discrete inf-sup stability and a non-coercive quasi-optimality theory for the multiscale space, which requires essentially new proof architecture."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2511.20103",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "69b9ef96c2530ae8c6e700e4aca50f55aee99e198b1bdf5ae0475bf8c9778672",
+  "status": "ok"
+}

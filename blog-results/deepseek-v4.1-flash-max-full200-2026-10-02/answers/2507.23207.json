@@ -1,0 +1,102 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\M{W} \\in \\R^{N \\times r}$ have orthonormal columns and $\\M{Z} \\in \\R^{N \\times (N - r)}$.",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "\\|\\M\\Sigma_\\perp(\\M{V}_\\perp\\t \\M{\\Omega})(\\M{V}_r\\t\\M{\\Omega})^\\dagger \\|_F^2 \\le 2r\\left(1+\\frac{\\strank(\\M{Z}) }{\\ell } \\left(1 +  C_{K,d} \\ln^d(8\\ell/\\delta)\\right)\\ln\\frac{4(N-r)}{\\delta}\\right)\\|\\M\\Sigma_\\perp\\|_2^2.",
+          "tag": "thm:rrf"
+        }
+      ],
+      "failure_explanation": "The matrix $\\M\\Sigma_\\perp\\M{V}_\\perp\\t$ has dimensions $(M-r)\\times N$, so it cannot be the matrix $\\M{Z}$ required by Lemma thm:tantheta, which needs $\\M{Z}\\in\\R^{N\\times(N-r)}$. Moreover, $(\\M\\Sigma_\\perp\\M{V}_\\perp\\t)^\\top\\M{\\Omega}=\\M{V}_\\perp\\M\\Sigma_\\perp^\\top\\M{\\Omega}$, whereas the term needing control is $\\M\\Sigma_\\perp\\M{V}_\\perp\\t\\M{\\Omega}$. Thus the lemma is applied to the wrong matrix, and the displayed bound does not follow as written.",
+      "failure_location": {
+        "quote": "Use the result from \\cref{thm:tantheta} with $\\M{Z} =\\M\\Sigma_\\perp\\M{V}_\\perp\\t $  and $\\M{W} = \\M{V}_r$",
+        "tag": "thm:rrf"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the application with the correct matrix, e.g. use $\\M{Z}=\\M{V}_\\perp\\M\\Sigma_\\perp^\\top$ (or handle $\\M\\Sigma_\\perp$ separately) and generalize Lemma thm:tantheta to rectangular $\\M{Z}$ with the appropriate effective dimension in the logarithmic factor.",
+      "overall_effect": "The proof of Theorem thm:rrf is invalid for rectangular matrices; the subsequent block-structured and Tucker guarantees that rely on thm:rrf inherit the gap.",
+      "primary_affected_tag": "thm:rrf",
+      "target_type": "formal_result",
+      "title": "Misapplication of Lemma thm:tantheta in proof of Theorem thm:rrf",
+      "why_classification": "The defect is a nontrivial proof gap in a central result, but it can be repaired by a contained correction and a straightforward generalization of the lemma, without changing the overall method."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:rrf",
+        "thm:added-1",
+        "thm:rhsovd_krp",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[ \\Gamma = \\frac{\\strank(\\M{Z}) }{\\ell } \\left(1 +  C_{K,d} \\ln^d(8\\ell/\\delta)\\right)\\ln\\left(\\frac{4(N-r)}{\\delta}\\right).\\]",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "Then $$(N-r)(f(\\varepsilon))^{\\mu_{\\max}/\\Delta} \\leq (N-r)e^{-\\varepsilon^2\\mu_{\\max}/((2+\\varepsilon)\\Delta) }.$$",
+          "tag": "thm:tantheta"
+        }
+      ],
+      "failure_explanation": "Solving the displayed inequality for $\\varepsilon$ requires $\\varepsilon^2/(2+\\varepsilon)=\\Gamma$. The positive root is $\\varepsilon=(\\Gamma+\\sqrt{\\Gamma^2+8\\Gamma})/2$, which is asymptotically $\\sqrt{2\\Gamma}$ for small $\\Gamma$, not $2\\Gamma$. The claimed value $2\\Gamma$ makes the exponent too small, so the probability bound does not follow and the concentration rate is incorrect.",
+      "failure_location": {
+        "quote": "Set the upper bound equal to $\\delta/4$, solve the quadratic equation for $\\varepsilon$,  and choose the positive root to get $\\varepsilon = 2 \\Gamma$, where $\\Gamma$ is defined in the statement of the theorem.",
+        "tag": "thm:tantheta"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace $\\varepsilon=2\\Gamma$ by the positive solution of $\\varepsilon^2/(2+\\varepsilon)=\\Gamma$ (or equivalently $\\varepsilon=(\\Gamma+\\sqrt{\\Gamma^2+8\\Gamma})/2$) and propagate the resulting $\\sqrt{\\Gamma}$-type factor through all dependent bounds.",
+      "overall_effect": "The main concentration lemma and every range-finder, block-structured, and Tucker guarantee that rely on it are invalid as stated; the error term should decay only as $\\sqrt{\\Gamma}$, not $\\Gamma$, which weakens the sample complexity and approximation bounds.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "Incorrect solution of the quadratic for epsilon in Lemma thm:tantheta",
+      "why_classification": "The defect is in the central concentration argument; correcting it changes the rate from $O(\\Gamma)$ to $O(\\sqrt{\\Gamma})$ and invalidates the advertised improved guarantees, which is a major mathematical loss."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\M{Z} = \\M{Q}_\\perp\\M{Q}_\\perp\\t\\M{M} = \\M{M} - \\M{QQ}\\t\\M{M}$.",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "\\|\\M{Z}\\t\\M{\\Psi}\\|_2^2 \\|(\\M{\\Psi}\\t\\M{Q})^\\dagger\\|_2^2 \\le ... \\ln\\frac{4(m^d-\\ell_l)}{\\delta}",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "In the single-view bound, $\\M{Z}=\\M{Q}_\\perp\\M{Q}_\\perp^\\top\\M{M}$ is $m^d\\times n^d$, so $\\M{Z}^\\top\\M{\\Psi}$ has $n^d$ rows. The matrix Chernoff dimension in Lemma thm:tantheta is the number of rows of $\\M{Z}^\\top\\M{\\Psi}$, hence the logarithmic factor should depend on $n^d$, not on $m^d-\\ell_r$. The proof also uses $m^d-\\ell_l$. This dimension error makes the bound invalid when $n^d$ is large relative to $m^d$.",
+      "failure_location": {
+        "quote": "\\Gamma_l \\equiv   &  \\frac{1}{\\ell_l } \\left(1 +  C_{K,d} \\ln^d(16\\ell_l/\\delta)\\right)\\ln\\frac{8(m^d-\\ell_r)}{\\delta} .",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the logarithmic factor $\\ln(8(m^d-\\ell_r)/\\delta)$ by a factor depending on the effective dimension $n^d$ (e.g. $\\ln(8 n^d/\\delta)$) and update the lower bound on $\\ell_l$ accordingly.",
+      "overall_effect": "The analysis of the single-view block-structured algorithm in Theorem thm:added-1 is invalid for rectangular matrices where $n^d$ is large compared to $m^d$; the required sketch size $\\ell_l$ may be underestimated.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Wrong dimension in the logarithmic factor of Theorem thm:added-1",
+      "why_classification": "The repair is a local correction of the dimension in a logarithmic factor, but it changes the sample-size condition and can weaken the guarantee for strongly rectangular matrices."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2507.23207",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n04b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "35f9666b0e59513382f1e39876245c9aa4f2c7bded3e783f01beb294b5f7ba3d",
+  "status": "ok"
+}

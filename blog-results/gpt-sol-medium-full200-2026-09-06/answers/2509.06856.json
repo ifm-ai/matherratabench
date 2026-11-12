@@ -1,0 +1,264 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf",
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\FOR{$t\\leftarrow T^{\\dagger}$ {\\bfseries to} $T$}\n\t\t  \\STATE $\\beta_{t+1} \\leftarrow \\text{LS\\_Solver}(\\beta_t, X, Y)$\n\t\t\\ENDFOR\n\t\t\\STATE Return $\\beta_{T}$",
+          "tag": "Alg-framework"
+        },
+        {
+          "quote": "\\STATE $K, {\\{B_i\\}}_{i = 1}^{K}, {\\{a_i\\}}_{i = 1}^{K}, {\\{m_i\\}}_{i = 1}^{K}, T, T^{\\dagger}\\leftarrow\\sum\\limits_{i=1}\\limits^{K} a_i, t \\leftarrow 0$",
+          "tag": "Alg-SRHT"
+        }
+      ],
+      "failure_explanation": "Both pseudocodes set T and T^\\dagger equal to the first-stage iteration count. Thus the stated second-stage range has no positive-length refinement interval (or, under inclusive-loop semantics, computes beta_{T+1} and then returns the stale beta_T). This contradicts the analysis requiring T>T^\\dagger.",
+      "failure_location": {
+        "quote": "\\STATE $T, T^{\\dagger}\\leftarrow\\sum\\limits_{i=1}\\limits^{K} a_i, t \\leftarrow 0$",
+        "tag": "Alg-framework"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Take T as a separate input or stopping-time output, set only T^\\dagger=\\sum_i a_i, iterate over indices that compute beta_{T^\\dagger+1},\\ldots,beta_T, and return beta_T.",
+      "overall_effect": "As written, neither algorithm executes the full-scale refinement whose OLS-level precision and cost are analyzed.",
+      "primary_affected_tag": "Alg-framework",
+      "target_type": "algorithm",
+      "title": "The framework assigns no iterations to its advertised second stage",
+      "why_classification": "The control-flow correction is short and preserves the intended method and guarantees without new mathematics."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_theorem1",
+        "Thf",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE",
+        "a1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\STATE $\\beta_{t+1} \\leftarrow \\beta_t - \\mu \\hat{H}^{-1} \\nabla f(\\beta_t; S_i X, S_i Y) + \\eta (\\beta_t - \\beta_{t-1})$",
+          "tag": "Alg-SRHT"
+        },
+        {
+          "quote": "In the case \\(i > 1\\), we set the initial iterates \\({\\beta_{-1}^{i}} = {\\beta_{0}^{i}} = {\\beta_{a_{i-1}}^{i-1}}\\) based on the iterates from the previous sketched LS subproblem.",
+          "tag": "thm:convergence_theorem1"
+        }
+      ],
+      "failure_explanation": "No beta_0 or beta_{-1} is supplied or initialized. Moreover, Algorithm Alg-SRHT carries the global beta_{t-1} across subproblem boundaries, whereas the convergence proof resets both initial momentum states to the previous subproblem's final iterate. Consequently the recurrence actually executed is not the recurrence analyzed.",
+      "failure_location": {
+        "quote": "\\STATE $\\beta_{t+1} \\leftarrow \\text{LS\\_Solver}(\\beta_t, S_i X, S_i Y)$",
+        "tag": "Alg-framework"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add beta_0 to the input, initialize beta_{-1}=beta_0, and explicitly reset the two-step momentum state at every sketched-subproblem boundary and before the full-scale stage, or reanalyze the carried state.",
+      "overall_effect": "The algorithm is not executable from its listed inputs, and all iteration and stopping guarantees that rely on zero-momentum restarts do not apply to its stated updates.",
+      "primary_affected_tag": "Alg-framework",
+      "target_type": "algorithm",
+      "title": "Momentum state is undefined and does not match the analyzed restarts",
+      "why_classification": "Explicit initialization and restart assignments are local changes that align the implementation with the existing proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_theorem1",
+        "Thf",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE",
+        "a1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(B\\) is the \\(N \\times N\\) diagonal random sampling matrix with i.i.d. Bernoulli random variables with success probability \\(m/N\\)",
+          "tag": null
+        },
+        {
+          "quote": "Lastly, We retain the non-zero rows of the matrix \\(S\\), which forms the SRHT matrix, and still denote it as \\(S\\).",
+          "tag": null
+        },
+        {
+          "quote": "namely by left-multiplying the random matrix \\(B_i \\in \\mathbb{R}^{m_i \\times N}\\), which is consisted of the \\(m_i\\) non-zero rows of \\(B\\).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A Bernoulli diagonal matrix has a random number of nonzero rows, not exactly m or each prescribed m_i. A single B also has only one success probability, so it cannot simultaneously supply matrices consisting of exactly m_i nonzero rows for all increasing sizes. The required joint law and nesting of the B_i are therefore undefined, and the fixed-size SRHT embedding theorem cannot directly be applied to this construction.",
+      "failure_location": {
+        "quote": "\\STATE $(S_iX,S_iY)\\leftarrow \\sqrt{\\frac{N}{m_{i}}}B_i(S_0X,S_0Y)$",
+        "tag": "Alg-SRHT"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the Bernoulli-row description by a precise fixed-cardinality nested sampling scheme, such as taking the first m_i rows under one random permutation, and verify or cite the embedding guarantee for that joint construction.",
+      "overall_effect": "The sketched data sequence used by the algorithm is not specified as a valid random construction, undermining its embedding events and all guarantees based on them.",
+      "primary_affected_tag": "Alg-SRHT",
+      "target_type": "algorithm",
+      "title": "The nested SRHT sketches are not well-defined by the stated Bernoulli construction",
+      "why_classification": "A new precise random construction and a matching embedding justification are needed, though the overall algorithmic architecture can remain unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE",
+        "a1",
+        "M-IHS converging rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(W_i = I_d - \\mu (U_{X}^{\\top}\\hat{S}^{\\top}\\hat{S}U_{X})^{-1}U_{X}^{\\top}S_{i}^{\\top}S_{i}U_{X}\\).",
+          "tag": "contrac"
+        },
+        {
+          "quote": "and a similar strategy adopted in the proof of Theorem \\ref{thm:convergence_theorem1} (i.e., constructing a transformation matrix $\\hat{P}$) leads to the following factorization",
+          "tag": "M-IHS converging rate"
+        }
+      ],
+      "failure_explanation": "The product of the inverse of one symmetric positive-definite embedding matrix and another symmetric positive-definite embedding matrix is generally nonsymmetric, so W_i need not admit an orthogonal decomposition U Lambda U^T. The asserted block factorization and ensuing eigenvalue analysis therefore do not follow as written. A similarity-to-symmetric argument, including control of the similarity transformation, is missing.",
+      "failure_location": {
+        "quote": "Let the eigenvalue decomposition of \\(W_i\\) be \\(W_i = \\tilde{U}_i \\Lambda_i \\tilde{U}_i^{\\top}\\), where \\(\\Lambda_i\\) is a real diagonal matrix",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Prove that the relevant preconditioned products are similar to symmetric positive-definite matrices, derive the block spectrum under a valid similarity transformation, and control nonnormality sufficiently to obtain the stated eventual norm bound.",
+      "overall_effect": "The claimed 1/3 contraction, and every convergence or iteration-count result using it, lacks a valid proof.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "The contraction proof orthogonally diagonalizes a generally nonsymmetric matrix",
+      "why_classification": "The conclusion may be recoverable with a contained but nontrivial spectral argument; the present orthogonal factorization cannot be repaired by routine algebra alone."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[ r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}} \\geq \\frac{\\mathbb{E}\\|X({\\tilde{\\beta}^{i-1}} - {\\beta})\\|}{\\mathbb{E}\\|X({\\tilde{\\beta}^{i}} - {\\beta})\\|}, \\]",
+          "tag": "lowerBoundai"
+        },
+        {
+          "quote": "Therefore, the subsequent discussions are based on the following conditions:\n\\begin{itemize}\n\t\\item \\(\\xi > m_i / N > d/N > \\gamma\\);   \\\\\n\t\\item \\(\\operatorname{Var}(\\|X\\tilde{\\beta}^i - X\\beta\\|) \\geq \\operatorname{Var}(\\sqrt{(N - d)/(m_i - d)}\\|X\\hat{\\beta} - X\\beta\\|)\\).\n\\end{itemize}",
+          "tag": "remarkA7"
+        }
+      ],
+      "failure_explanation": "The theorem's displayed definition of r is not the ratio used in its proof. More fundamentally, the proof obtains the comparison of expected errors by invoking an asymptotic PE limit and the extra spectral, ratio, and variance conditions in Remark remarkA7, none of which appear in lowerBoundai. An asymptotic limit also does not by itself yield the exact finite-N inequality asserted in equation (26).",
+      "failure_location": {
+        "quote": "where \\( r(i-1,i) = \\sqrt{m_{i-1} - d / m_{i} - d} \\) .",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the definition of r and either prove a finite-sample expected-error comparison under the algorithm's hypotheses or restate the result as an appropriately qualified asymptotic claim with all spectral and variance assumptions included.",
+      "overall_effect": "The proposed formula for choosing a_i, its monotonicity, and the complexity calculation based on taking these exact lower bounds are unsupported for Algorithm Alg-SRHT under the theorem's stated conditions.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "The stopping-count theorem uses an inconsistent and unsupported precision ratio",
+      "why_classification": "The available repair materially restricts the theorem from a general finite-sample prescription to a conditional asymptotic one, changing a central practical guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cmpxtyAlgSLSE",
+        "a1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\| X(\\beta_{a_i}^{i} - \\tilde{\\beta}^{i}) \\|\n\t\t& \\leq\n\t\t(\\frac{1}{3})^{a_i}\n\t\t\\| X(\\beta_{0}^{i} - \\tilde{\\beta}^{i}) \\|.",
+          "tag": "convergetolssolution"
+        },
+        {
+          "quote": "there exists a constant $M_i > 0$ such that if $a_i > M_i$,",
+          "tag": "thm:convergence_theorem1"
+        },
+        {
+          "quote": "the number of iterations \\(a_1\\) needed for the 1st sketched LS subproblem to full fill (\\ref{14}) satisfies",
+          "tag": "a1"
+        }
+      ],
+      "failure_explanation": "The proofs derive a condition which is sufficient to make an upper bound smaller than the target; they do not prove that every iteration count which achieves the target must satisfy it. They also use the 3^{-a_i} estimate without retaining its required hypothesis a_i>M_i. Thus the formulas are neither established necessary lower bounds nor unconditional sufficient stopping counts, especially for the recommended small counts a_i=2 or 3.",
+      "failure_location": {
+        "quote": "the iteration count \\(a_i\\) needed for the \\(i\\)-th sketched LS subproblem to full fill (\\ref{14}) satisfies",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restate the formulas as sufficient counts, include a_i greater than the relevant contraction threshold (for example, take the maximum of both bounds), or provide a uniform finite-iteration contraction estimate that removes M_i.",
+      "overall_effect": "The claimed stopping rules and the complexity theorem's use of their exact values are invalid even if the expected-error ratio were repaired.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "The iteration thresholds are only sufficient and omit the eventual-contraction threshold",
+      "why_classification": "A comparable stopping guarantee requires either a new uniform convergence estimate or a nontrivial modification of the prescribed counts, but not a new global algorithm."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "T-T^{\\dagger} = & \\log_3(1/\\sigma) - \\sum_{i=1}^{K} a_i \\\\\n    < & \\log_3(1/\\sigma) - K\\log_3(1/\\omega) = \\log_3(\\omega^K/\\sigma).",
+          "tag": "cmpxtyAlgSLSE"
+        }
+      ],
+      "failure_explanation": "The condition omega>sigma^{1/K} only makes the displayed upper bound positive. It does not imply T-T^\\dagger is positive, because each a_i strictly exceeds log_3(1/omega), and their excess may be larger than the available slack. Moreover, the derivation gives only an upper bound on the second-stage count, while the theorem lists the resulting expression as the stage's cost.",
+      "failure_location": {
+        "quote": "\\item The 2nd stage: $4[\\log_3(\\omega^{K}/\\sigma)]Nd$ with $\\omega>\\sigma^{1/K}$.",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Impose the actual feasibility condition \\sum_i a_i<T=\\log_3(1/\\sigma), derive a usable stronger condition on omega if desired, and state the displayed expression only as an upper bound.",
+      "overall_effect": "The asserted second-stage cost and hence the summarized total complexity need not describe any executable run satisfying the theorem's parameter choices.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "The second-stage complexity can correspond to a negative iteration count",
+      "why_classification": "The complexity statement needs reoptimization or stronger parameter restrictions, but its dominant-cost architecture can remain intact."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose also that \\( X \\) is an \\( N \\times d \\) deterministic matrix whose empirical spectral distribution converges weakly to some fixed probability distribution with compact support bounded away from the origin. Then as \\( N \\) tends to infinity, while \\( d/N \\rightarrow \\gamma \\in (0,1) \\), \\( m_i/N \\rightarrow \\xi \\in (\\gamma, 1) \\)",
+          "tag": "lemma:lemma3"
+        },
+        {
+          "quote": "Furthermore, if the condition below holds\n\\[\n\\operatorname{Var}(\\|X\\tilde{\\beta}^i - X\\beta\\|) \\geq \\operatorname{Var}(\\sqrt{\\frac{N - d}{m_i - d}}\\|X\\hat{\\beta} - X\\beta\\|),\n\\]\nwe obtain",
+          "tag": "remarkA7"
+        },
+        {
+          "quote": "In Algorithm \\ref{Alg-SRHT}, let \\(N, m_1\\) be powers of 2, \\(\\delta \\in (0, 1)\\), \\(\\epsilon \\in (0, 1/10)\\), \\(|\\mu-1| \\leq 1/4\\) and \\(\\eta = 53/36 - \\sqrt{17}/3\\).",
+          "tag": "finalerror"
+        }
+      ],
+      "failure_explanation": "Lemma lemma:lemma3 is an asymptotic result requiring spectral-distribution and aspect-ratio limits. Passing from its squared-error limit to the unsquared expectation additionally uses the variance condition in Remark remarkA7. None of these assumptions occurs in finalerror, yet its proof treats the resulting comparison as an exact finite-sample inequality. Therefore finalerror is not established under its stated hypotheses.",
+      "failure_location": {
+        "quote": "According to Theorem \\ref{thm:convergence_theorem1} and Lemma \\ref{lemma:lemma3}, there exists a constant \\({M_1} >0\\), such that if \\(a_1 > M_1\\), it holds that",
+        "tag": "finalerror"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either add all required asymptotic spectral, ratio, and variance hypotheses and weaken the conclusion to an asymptotic statement, or replace the PE argument with a finite-sample first-moment bound sufficient for Theorem Thf.",
+      "overall_effect": "The first-stage error estimate used in the proof of the paper's overall OLS-precision theorem is unsupported for the general full-rank matrices and finite dimensions claimed.",
+      "primary_affected_tag": "finalerror",
+      "target_type": "formal_result",
+      "title": "The first-stage accuracy lemma applies an asymptotic PE result outside its hypotheses",
+      "why_classification": "The source offers only a repair that substantially narrows the finite-sample, general-matrix scope, while preserving that scope would require a new nontrivial statistical argument."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2509.06856",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "981b8984cdca82ea93a1c8e2f7a3a3ff16d853374c7f5e11ece8d6b29bfd4d2f",
+  "status": "ok"
+}

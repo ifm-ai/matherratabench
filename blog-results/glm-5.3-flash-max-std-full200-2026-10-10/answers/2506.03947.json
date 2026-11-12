@@ -1,0 +1,82 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "({A} - \\lambda_j I_\\sizeA) x_j = b_j, \\quad j = 1,\\dots, \\ell,",
+          "tag": "eq:blockproblem"
+        },
+        {
+          "quote": "by writing \n\n\t\t${x_j = \\Re({x_j}) + i \\;\\Im({x_j})}$,\n\t\t${b_j = \\Re({b_j}) + i \\;\\Im({b_j})}$.",
+          "tag": null
+        },
+        {
+          "quote": "The corresponding saddle point problem for \\eqref{eq:blockproblem} is then given by",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Writing x_j = u + iv and b_j = c + id with u, v, c, d real, the system (A - Re(lambda_j)I - i Im(lambda_j)I)(u + iv) = c + id splits into the real equations (A - Re(lambda_j)I)u + Im(lambda_j)v = Re(b_j) and (A - Re(lambda_j)I)v - Im(lambda_j)u = Im(b_j). In the displayed unknown (Re x_j, -Im x_j) = (u, -v) these two equations are exactly [[Im(lambda_j)I, A - Re(lambda_j)I], [A - Re(lambda_j)I, -Im(lambda_j)I]](u, -v) = (-Im(b_j), Re(b_j)). The displayed right-hand side (-Re(b_j), Im(b_j)) therefore corresponds to solving (A - lambda_j I)x = Im(b_j) + i Re(b_j) = i*conj(b_j), not \\eqref{eq:blockproblem}: the displayed saddle point system is not the claimed equivalent purely real system, so MINRES applied to it does not produce x_j and the induced operator differs from the intended approximation of P_alpha^{-1}. (The matrix and unknown convention in the display are correct; only the two right-hand-side components are interchanged.)",
+      "failure_location": {
+        "quote": "\\begin{pmatrix}\n\t\t\t\t\\Re({x_j}) \\\\ -\\Im({x_j})\n\t\t\t\\end{pmatrix} = \\begin{pmatrix}\n\t\t\t\t-\\Re({b_j})\\\\ \\Im({b_j})\n\t\t\t\\end{pmatrix},",
+        "tag": "eq:saddlesystem"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Interchange the two displayed right-hand-side components, replacing (-Re(b_j), Im(b_j)) by (-Im(b_j), Re(b_j)) (equivalently, swap Re and Im in the right-hand side only). This is a one-line local correction; all subsequent theory, algorithms, and experiments stand unchanged.",
+      "overall_effect": "The construction that defines the paper's second preconditioner P_SP is incorrect as written: the 'equivalent problem entirely in real arithmetic' claimed in Section 5.3 (and the abstract's description of the second approach) is not equivalent to \\eqref{eq:blockproblem}, so the P_SP method as specified does not approximate P_alpha^{-1}. No labelled theorem depends on the right-hand side, so no other labelled result is invalidated.",
+      "primary_affected_tag": "eq:saddlesystem",
+      "target_type": "algorithm",
+      "title": "Right-hand side of the real saddle point reformulation (7) has real and imaginary parts swapped",
+      "why_classification": "A short, local, forced correction (swap of the two right-hand-side components) restores the claimed equivalence; no downstream theorem, guarantee, rate, or experiment requires any other change."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Im(\\lambda_j)I_\\sizeA & {A}-\\Re(\\lambda_j)I_\\sizeA \\\\",
+          "tag": "eq:saddlesystem"
+        },
+        {
+          "quote": "with $\\phimat$ and $\\psimat$ symmetric positive definite.",
+          "tag": null
+        },
+        {
+          "quote": "The remaining $\\lambda_j$ have non-zero complex part with $\\lambda_j = \\overline{\\lambda}_{\\ell+2-j}$",
+          "tag": null
+        },
+        {
+          "quote": "For complex roots $\\lambda_{j}$, $j \\in [2,\\ell/2]\\cup [\\ell/2+2,\\ell]$, we solve \\eqref{eq:saddlesystem} using MINRES",
+          "tag": null
+        },
+        {
+          "quote": "{We recall that $\\mu_{\\min} > {\\Re({\\lambda_j})}$, as the shifted systems lie in the right-half plane. Therefore $\\psimat$ is invertible.}",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "In the reformulation (eq:saddlesystem) the blocks are Phi = Im(lambda_j)I_N and Psi = A - Re(lambda_j)I_N. The proof of Theorem thm:added-2 derives zeta^2 = v^T(Psi + Phi Psi^{-1} Phi)v / v^T(Phi+Psi)Psi^{-1}(Phi+Psi)v and then obtains zeta^2 in [1/2, 1] by invoking [pearson2012new, Theorem 4] with Phi and Psi symmetric positive definite; the argument therefore requires Phi > 0, but for the conjugate roots lambda_j with Im(lambda_j) < 0 (which exist for every even l > 2, as the source itself states, and which Section 5.3 also solves via (eq:saddlesystem) with the same preconditioner P_D) Phi is negative definite and the inclusion is false: for Phi = phi I with phi < 0 and Psi symmetric positive definite, the preconditioned eigenvalues are +/- sqrt(phi^2 + psi^2)/(phi + psi), whose moduli strictly exceed 1 because sqrt(phi^2 + psi^2) > |phi + psi| when phi < 0 < psi. Concretely, for the paper's own test problem (l = 10, alpha = 1, n_x = 100, mu_min = 1 + (8 nu/h^2) sin^2(pi/(2(n_x+1))) approx 1.049 by the Appendix) and the root lambda = -lambda_3 = -0.309 - 0.951i, the smallest shifted eigenvalue is psi = mu_min - Re(lambda) = 1.358, giving |zeta| = sqrt(0.951^2 + 1.358^2)/(1.358 - 0.951) approximately 4.1, far outside [-1, -1/sqrt(2)] union [1/sqrt(2), 1]. Hence the stated guarantee does not hold for the saddle point sub-problems that the paper's own method (Section 5.3) solves with this preconditioner.",
+      "failure_location": {
+        "quote": "The eigenvalues of the preconditioned system $\\mathcal{P}_{D}^{-1}\\mathcal{S}$ lie in  $\\big[-1,-\\frac{1}{\\sqrt{2}}\\big] \\cup \\big[\\frac{1}{\\sqrt{2}},1\\big]$.",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict Theorem thm:added-2 (and the reformulation (eq:saddlesystem)) to the scaled roots with Im(lambda_j) > 0 and obtain the conjugate sub-problem solutions by conjugating the corresponding upper-half-plane solves, which is exact since A is real symmetric; alternatively prove the analogous (modified) spectral bound for the sign-flipped systems with Im(lambda_j) < 0. Either repair is local and leaves the method, its cost, and the reported experiments intact.",
+      "overall_effect": "The eigenvalue inclusion used to justify the block diagonal preconditioner P_D (and hence the design of the P_SP inner solver) is only established for the scaled roots with Im(lambda_j) > 0. As written, the theorem's guarantee is applied in Section 5.3 to all complex sub-problems, including the conjugate roots with Im(lambda_j) < 0, where the inclusion fails; the theoretical justification of P_SP is therefore incomplete for half of the inner systems (even though P_D itself remains positive definite there).",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "Saddle point eigenvalue inclusion asserted for all complex shifts but proved only for Im(lambda_j) > 0",
+      "why_classification": "Adding the missing hypothesis Im(lambda_j) > 0 (and handling the conjugate systems by the standard conjugation symmetry, valid since A is real) is a short local repair that preserves the preconditioner, its cost, the convergence behaviour observed in the tables, and a comparable spectral guarantee for all sub-problems; no substantive result or advertised regime is lost."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2506.03947",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3524514ec032ec87b79cf3f5eba88988a0a08a64f20bf981e36596fab8eae76d",
+  "status": "ok"
+}

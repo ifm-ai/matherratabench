@@ -1,0 +1,132 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dot \\Sigma_t = -\\frac\\gamma\\kappa(I - \\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1})\\Sigma_t -\\frac\\gamma\\kappa\\Sigma_t\\,(I - \\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1}) + 2\\mathbf C_{*,t},",
+          "tag": "lmm:lcbs:gauss:moments"
+        },
+        {
+          "quote": "\\mu_{\\beta, \\kappa\\mathbf C_{*,t}/\\beta}(\\rho_t; U_t) = (\\beta\\Sigma^{-1} + \\Sigma_t^{-1} + \\frac\\beta\\kappa\\mathbf C_{*,t}^{-1})^{-1}(\\beta\\Sigma^{-1}m + \\Sigma_t^{-1}m_t + \\frac\\beta\\kappa\\mathbf C_{*,t}^{-1}U_t).",
+          "tag": "lmm:lcbs:gauss:moments"
+        }
+      ],
+      "failure_explanation": "The Gaussian dynamics are linear with drift matrix A_t = -(γ/κ)(I - (β/κ)P_t C_{*,t}^{-1}), where P_t multiplies from the left as seen in the weighted-mean formula. The covariance therefore obeys the Lyapunov equation Σ̇_t = A_tΣ_t + Σ_tA_t^T + 2C_{*,t} with A_t^T = -(γ/κ)(I - (β/κ)C_{*,t}^{-1}P_t). The stated ODE instead contains Σ_tP_tC_{*,t}^{-1} where the correct term is Σ_tC_{*,t}^{-1}P_t, and the proof's intermediate step likewise writes Σ_t(I - (β/κ)P_tC_{*,t}^{-1}) for Σ_tA_t^T, dropping the transpose order. Since P_t and C_{*,t}^{-1} do not commute in general — e.g., for the default preconditioner C_{*,t} = Σ_t whenever Σ and Σ_t do not commute — the displayed covariance ODE is false for generic Gaussian targets and transient states.",
+      "failure_location": {
+        "quote": "\\dot\\Sigma_t &= 2\\Bigl[\\mathbf C_{*,t} - \\frac\\gamma\\kappa\\Sigma_t + \\frac{\\gamma\\beta}{2\\kappa^2}\\left(P_t\\mathbf C_{*,t}^{-1}\\Sigma_t + \\Sigma_tP_t\\mathbf C_{*,t}^{-1}\\right)\\Bigr],",
+        "tag": "lmm:lcbs:gauss:moments"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the last summand Σ_tP_tC_{*,t}^{-1} by Σ_tC_{*,t}^{-1}P_t in the lemma's covariance ODE and write the proof's second term as Σ_tA_t^T = -(γ/κ)Σ_t(I - (β/κ)C_{*,t}^{-1}P_t). The lemma then holds as stated by the standard Lyapunov equation, and no downstream result changes.",
+      "overall_effect": "The transient covariance evolution stated in Lemma 2 is incorrect for non-commuting (Σ, Σ_t, C_{*,t}), including the paper's default preconditioner C(ρ_t) away from stationarity; the mean ODE is correct. No labelled downstream result is invalidated: Corollary 1 evaluates the ODE only at Σ_t = Σ, where all matrices commute and the two orderings coincide, and Lemma 5 uses a parameter choice where P_tC_{*,t}^{-1} is a scalar matrix, so both orderings agree there as well.",
+      "primary_affected_tag": "lmm:lcbs:gauss:moments",
+      "target_type": "formal_result",
+      "title": "Covariance ODE in Gaussian moment lemma has transposed factor order",
+      "why_classification": "The repair is a single forced factor swap inside one display that makes the lemma true with the same proof; every corollary and comparison result is already correct, so no substantive claim, guarantee, or advertised scope is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where we noted that $\\gamma=2\\frac{\\alpha'}{\\alpha'+1}$.",
+          "tag": "lmm:compare:cbs:equiv"
+        },
+        {
+          "quote": "a weighted covariance $\\mathbf C_{U,t} = \\mathcal C_{\\alpha, \\lambda \\mathcal C(\\rho_t)}(\\rho_t; U_t)$ with scalars $\\alpha\\ge0$ and $\\lambda > 0$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The conclusion m_t = m'_{ct}, Σ_t = Σ'_{ct} is derived only for γ = 2α'/(α'+1) — the value the proof explicitly invokes — but the lemma's parameter list never mentions γ; for any other γ the localized covariance ODE differs from the (accelerated) CBS ODE and the claim fails. In addition, the preconditioner class (iv) requires λ > 0, but λ = α'/(α - α') is positive only when α > α'; for α = α' it is undefined and for α < α' it is negative, leaving the stated preconditioner family. Both restrictions are omitted hypotheses the proof needs.",
+      "failure_location": {
+        "quote": "\\alpha > 0, \\qquad \\kappa = \\alpha, \\qquad \\beta = \\alpha', \\qquad \\text{and} \\qquad \\lambda = \\frac{\\alpha'}{\\alpha - \\alpha'},",
+        "tag": "lmm:compare:cbs:equiv"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Amend the parameter display to include γ = 2α'/(α'+1) (equivalently, the value from the γ-formula for this preconditioner in Corollary 1) and the constraint α > α'.",
+      "overall_effect": "As written, the lemma's conclusion fails for the unconstrained values of γ allowed by the statement and is ill-posed for 0 < α ≤ α'; only the intended, unstated parameter regime supports it. The subsequent remark and comparison prose built on the intended parameters are unaffected once the hypotheses are added.",
+      "primary_affected_tag": "lmm:compare:cbs:equiv",
+      "target_type": "formal_result",
+      "title": "CBS-equivalence lemma omits required parameter hypotheses",
+      "why_classification": "Two omitted hypotheses are restored by a local edit of the parameter list; the proof then applies verbatim and the conclusion is unchanged, so no mathematical content is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dot U_t &= -\\tilde{\\mathcal C}_{\\lambda D}^G(\\rho_t; U_t)\\Gamma^{-1}\\,(G(U_t) - y) - \\tilde{\\mathcal C}_{\\lambda D}(\\rho_t; U_t)\\Gamma_0^{-1}\\,(U_t - u_0)\\\\",
+          "tag": null
+        },
+        {
+          "quote": "In the case where $G$ is linear, \\cref{eq:compare:laldi:aldi} is equivalent to \\cref{eq:ips:lang:lang-int} and, hence, has $\\pi$ as an invariant distribution",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The EKS/ALDI drift approximates C(ρ_t)∇log π̂ = -C^G(ρ_t)Γ^{-1}(G(u)-y) - C(ρ_t)Γ_0^{-1}(u-u_0), so the prior term must carry a minus sign — as the paper's own localized ALDI equation immediately below does. With the printed plus sign, the prior force repels particles from the prior mean (for G ≡ 0 the mean solves ṁ_t = +C(ρ_t)Γ_0^{-1}(m_t-u_0), which is unstable), so the display does not describe the EKS/ALDI sampler, and the following sentence's claim that for linear G it is equivalent to the interacting Langevin SDE with invariant distribution π is false as written.",
+      "failure_location": {
+        "quote": "\\dot U_t = -\\mathcal C^G(\\rho_t)\\Gamma^{-1}\\,(G(U_t) - y) + \\mathcal C(\\rho_t)\\Gamma_0^{-1}\\,(U_t - u_0) + \\sqrt{2\\mathcal C(\\rho_t)}\\,\\dot W_t,",
+        "tag": "eq:compare:laldi:aldi"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change the prior term in the displayed equation to -C(ρ_t)Γ_0^{-1}(U_t - u_0), restoring the standard EKS/ALDI dynamics and the validity of the subsequent equivalence claim.",
+      "overall_effect": "The stated EKS/ALDI dynamics and the linear-G equivalence claim built on them are wrong as printed. The localized ALDI display, the rest of the comparison, and the paper's own method and experiments use the correct sign and are unaffected.",
+      "primary_affected_tag": "eq:compare:laldi:aldi",
+      "target_type": "other",
+      "title": "Sign error in the prior drift of the stated EKS/ALDI dynamics",
+      "why_classification": "A single forced sign correction, dictated by the cited dynamics and by the paper's own localized version, restores the display and its one dependent claim with no further changes and no loss of content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\label{eq:cbs-approx:w} w_{a,A}(v; u) &\\coloneqq \\exp\\bigl(-\\norm{v-u}_A^2/2\\bigr)\\widehat\\pi(v)^a.",
+          "tag": null
+        },
+        {
+          "quote": "In this paper we always choose $\\alpha=0$.",
+          "tag": null
+        },
+        {
+          "quote": "Unless mentioned otherwise, localized CBS uses timestep $\\dt=0.01$ and preconditioner $\\mathcal C(\\rho_t)$, an unweighted covariance.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The left-hand side defines the random-batch version of the drift's weighted mean with parameters (β, κĈ/β), whose weights must be w_{β,κĈ/β}(v;u) = exp(-(β/2κ)‖v-u‖²_Ĉ)π̂(v)^β, but the right-hand side sums with the preconditioner weights w_{α,λĈ}^{ij} belonging to the type-(iv) covariance. These are different weight families: with the paper's standing choice α = 0 the written weights contain no posterior factor π̂^β at all (which the paper calls crucial for the drift toward high-probability regions), they use the length scale λ instead of κ/β, and for the default unweighted preconditioner C(ρ_t) no parameter λ exists, so the formula is not even defined in the default configuration.",
+      "failure_location": {
+        "quote": "\\widehat\\mu_{\\beta,\\kappa\\widehat{\\mathbf C}/\\beta}^{(\\nu,i)}(\\bm U_n; U_n^i) \\coloneqq \\frac{\\sum_{j=1}^J \\mathbbm 1_{i\\ne j\\wedge\\theta_n^{i,j}\\le\\nu}\\,U_n^j\\,w_{\\alpha,\\lambda\\widehat{\\mathbf C}}^{ij}}{\\sum_{j=1}^J \\mathbbm 1_{i\\ne j\\wedge\\theta_n^{i,j}\\le\\nu}\\,w_{\\alpha,\\lambda\\widehat{\\mathbf C}}^{ij}}.",
+        "tag": "eq:particle:mu-batch"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace w_{α,λĈ}^{ij} by w_{β,κĈ/β}^{ij} in numerator and denominator, matching the equation's own left-hand side and the non-batched particle mean.",
+      "overall_effect": "The random-batch interaction step used in the main algorithm and in the multimodal experiments is mis-specified: implemented literally it is undefined for the default preconditioner and alters the algorithm's drift by dropping the π̂^β weighting and using the wrong distance scale.",
+      "primary_affected_tag": "eq:particle:mu-batch",
+      "target_type": "algorithm",
+      "title": "Random-batch weighted mean uses mismatched weight function",
+      "why_classification": "The correction is a single forced substitution dictated by the construction's own notation; after it, the step coincides with the intended batch version of the weighted mean and no guarantee or reported behavior is lost."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2505.24861",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s3",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "21ce5f33da8200f8f8cc6d533722a99bf0425119ca5ce41c491ee7b53c44cf4f",
+  "status": "ok"
+}

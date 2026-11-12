@@ -1,0 +1,190 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Due to the intractability of the likelihood, the training is performed by maximizing the usual variational lower bound (VLB)",
+          "tag": null
+        },
+        {
+          "quote": "-\\log q_{\\theta}(u_0) \\leq -\\mathrm{VLB}(\\theta) \\triangleq \\mathbb{E}_{p(u_{0:T})}\\left[ \\log \\frac{p(u_{1:T}|u_0)}{q_{\\theta}(u_{0:T})}\\right]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The bullet claims that PDNO maximizes the evidence likelihood, but the objective derived and optimized is the variational lower bound, introduced precisely because the likelihood is intractable and displayed as the one-sided bound -log q_theta(u_0) <= -VLB(theta). Maximizing a lower bound on the log-likelihood is not maximizing the marginal (evidence) likelihood: the gap is a KL divergence between the forward posterior and the reverse model, which the paper never shows to vanish. The sentence therefore asserts a strictly stronger guarantee than the derivation delivers.",
+      "failure_location": {
+        "quote": "Since our method maximizes the evidence likelihood and it learns a class of distributions $u|a$, it is directly applicable to a noisy data set",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace \"maximizes the evidence likelihood\" by \"maximizes a variational lower bound on the conditional log-likelihood\", matching the objective derived in Section 3.1; no other statement changes.",
+      "overall_effect": "The description of the training objective and the likelihood-maximization guarantee in the contributions list are unreliable; the conclusion drawn from that premise is not supported by likelihood maximization.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Contributions claim the method maximizes the evidence likelihood although it maximizes only the VLB",
+      "why_classification": "The repair is a local rewording to the VLB objective the paper already derives; the method, the loss and every downstream claim survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\log q_{\\theta}(u_0 | a) \\leq -\\text{VLB}(\\theta; a) \\triangleq \\mathbb{E}_{p(u_{0:T}|a)}\\left[\\log \\frac{p(u_{1:T} | u_0)}{q_{\\theta}(u_{0:T}|a)}    \\right]",
+          "tag": null
+        },
+        {
+          "quote": "-\\log q_{\\theta}(u_0 | a) \\leq -\\mathrm{VLB} = \\mathbb{E}_{p(u_{0:T}|a)}\\left[\\log \\frac{p(u_{1:T} | u_0)}{q_{\\theta}(u_{0:T}|a)}\\right]",
+          "tag": "app:split-VLB"
+        }
+      ],
+      "failure_explanation": "The derivation opens with the false identity log q_theta(u_0|a) = E_{p(u_0|a)}[log q_theta(u_0|a)], replacing the pointwise log-density by its average over the data (the two differ for any non-constant q_theta(.|a)). Jensen's inequality is then applied to a quantity already averaged over u_0|a, so what is proved is -E_{p(u_0|a)} log q_theta(u_0|a) <= -VLB, while the conclusion of the derivation and the displays in Sections 3.1-3.2 claim the bound for each individual u_0. Since the right-hand side is an average of the pointwise bounds, it cannot dominate -log q_theta(u_0|a) at every u_0 unless that quantity is constant in u_0.",
+      "failure_location": {
+        "quote": "\\log q_{\\theta}(u_0 | a) &= \\mathbb{E}_{p(u_0|a)}[\\log q_{\\theta}(u_0 | a)]",
+        "tag": "app:split-VLB"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Insert the expectation over p(u_0|a) (or p(u_0)) on the left-hand side of the VLB displays and delete the false opening identity; the bound then holds as stated and all downstream formulas are unchanged.",
+      "overall_effect": "The VLB inequality is unreliable in the pointwise form written in Sections 3.1-3.2 and Appendix A.2; the decomposition eqn:split-VLB and the derived training losses remain valid for the data-averaged objective.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "VLB bound is derived only for the data-averaged NLL but stated as a pointwise bound",
+      "why_classification": "The fix is a local insertion of the missing data expectation in the statement of the bound; the derivation, the decomposition and the training objective need no new argument and every guarantee is preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$1$ if noise-free; $100$ if noisy",
+          "tag": null
+        },
+        {
+          "quote": "0.0046 & $5.08$e$-07$ & 0.0022 & $3.52$e$-07$ & 0.0037 & $1.21$e$-05$",
+          "tag": "tab:darcy_error"
+        },
+        {
+          "quote": "in the noise-free data setting, PDNO achieves lower MRLE",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The \"mean standard deviation\" is defined as the test-set mean of ||std||_2/N_s, i.e. the empirical standard deviation of the N_s samples divided by N_s. This is not a standard deviation: it is driven to zero as N_s grows for any fixed spread of q_theta(.|a), so it is off by a factor N_s from the uncertainty it is claimed to measure. In addition the protocol fixes N_s = 1 for the noise-free tests, for which the empirical standard deviation of one sample is zero (or undefined), yet the noise-free rows of tab:darcy_error report strictly positive MSTD values; those numbers cannot come from the stated definition.",
+      "failure_location": {
+        "quote": "\\frac{\\|\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s}) \\|_2}{N_s}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Remove the 1/N_s normalization (use the unbiased 1/(N_s-1) estimator) and draw N_s >= 2 samples per input in the noise-free tests so that a per-input standard deviation exists, then recompute the reported statistics.",
+      "overall_effect": "The uncertainty evaluation is invalid as defined: the MSTD columns of the tables and, through them, the claims that PDNO recovers the noise magnitude and produces theoretically correct confidence intervals are not quantified by the stated statistic.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "MSTD statistic is divided by the sample count and is inconsistent with the reported values",
+      "why_classification": "The repair is a local correction of the estimator plus routine recomputation of sample statistics; the small-spread and noise-recovery claims survive and no new lemma, construction or argument is required."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a (nonzero mean) Gaussian distribution with the identity covariance, i.e., $u_0 \\sim \\mathcal{N}(m, \\mathbf{I})$, then",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "an additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$, i.e., $u_{\\eta} = u + \\eta$.",
+          "tag": null
+        },
+        {
+          "quote": "\\beta_t \\mathbf{I} & \\mbox{Observations with additive Gaussian noise.}",
+          "tag": "eqn:cov"
+        },
+        {
+          "quote": "The model is trained on the noisy data set with $\\sigma=0.0005$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Proposition prop:added-2 and the paragraph that follows justify Sigma_theta = beta_t I only under the hypothesis u_0 ~ N(m, I), i.e. identity covariance, whereas the paper's noisy-data model is u_eta = u + eta with unknown eta ~ N(0, Sigma(a)). Given a, u_0|a ~ N(u(a), sigma^2 I) yields u_t|a ~ N(sqrt(bar_alpha_t) u(a), v_t I) with v_t = (1-bar_alpha_t) + bar_alpha_t sigma^2, so Bayes' formula gives the true reverse conditional covariance p(u_{t-1}|u_t,a) = (v_{t-1} beta_t / v_t) I. This equals beta_t I only for sigma^2 = 1 and equals the noise-free choice ((1-bar_alpha_{t-1})/(1-bar_alpha_t)) beta_t I only for sigma^2 = 0. For every intermediate noise level used in the experiments the prescribed covariance is not the true one, so the asserted entropy matching fails. Moreover, with Sigma_theta = beta_t I at the last step the learned spread is bounded below by sqrt(beta_1), so still smaller noise levels cannot be represented at all.",
+      "failure_location": {
+        "quote": "Hence, the parameterization~\\eqref{eqn:cov} for $\\Sigma_{\\theta}$ in the Gaussian noise setting is optimal in the sense that $H_p(u_{t-1}|u_t) = H_{q_{\\theta}}(u_{t-1}|u_t)$.",
+        "tag": "app:cov-choice"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restrict the optimality statement to unit-covariance noise and record the noise-dependent matching covariance (v_{t-1} beta_t / v_t) I for Sigma(a) = sigma^2 I; since Sigma is unknown, either estimate it jointly or present beta_t I as a heuristic. The loss function and the mean prediction are unaffected.",
+      "overall_effect": "The justification of the second case of eqn:cov is unreliable, as are the claims that the learned standard deviation recovers the noise magnitude and yields theoretically correct confidence intervals, and the Gaussian-noise instance of the closing exact-likelihood claim.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Optimality of the noisy-data reverse covariance holds only for unit-variance noise",
+      "why_classification": "A contained replacement covariance (which needs estimation of the unknown noise level) or a genuine weakening of the optimality and exactness of the learned spread is required; the method, its training loss and its operator approximation survive without new global proof architecture, so the loss is real but not major."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\beta_t$ is the variance schedule such that the final state $u_T$ is approximately standard normal for $T$ sufficiently large",
+          "tag": null
+        },
+        {
+          "quote": "L_T(\\theta; a) &= \\mathbb{E}_{p(u_0|a)}\\left[\\text{KL}(p(u_T|u_0) || q_{\\theta}(u_T)) \\right]",
+          "tag": "app:split-VLB"
+        },
+        {
+          "quote": "Since $q_{\\theta}(u_T)$ is assumed to be a standard Gaussian, $L_T$ is independent of the parameter $\\theta$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The display asserts H_{q_theta}(u_T) + sum_t H_{q_theta}(u_{t-1}|u_t) = H_p(u_T) + sum_t H_p(u_{t-1}|u_t) \"in both cases\". In the noise-free case u_0 is the fixed solution and p(u_T|u_0) = N(sqrt(bar_alpha_T) u_0, (1-bar_alpha_T) I) has entropy (d/2) log(2 pi e (1-bar_alpha_T)), while the model prior q_theta(u_T) = N(0, I) has entropy (d/2) log(2 pi e); the two agree only in the degenerate case bar_alpha_T = 0. The source itself retains the gap as the term L_T = KL(p(u_T|u_0) || q_theta(u_T)) and describes u_T as only \"approximately standard normal\", contradicting the asserted equality.",
+      "failure_location": {
+        "quote": "H_{q_{\\theta}}(u_T) + \\sum_{t=1}^T H_{q_{\\theta}}(u_{t-1} | u_t)",
+        "tag": "app:cov-choice"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Either add the condition bar_alpha_T = 0 (i.e. beta_T = 1), under which the identity holds, or replace the equalities by the correct relation carrying the already-derived terminal gap L_T.",
+      "overall_effect": "The displayed entropy identity and the closing equality of the two cross-entropies fail in the noise-free setting for any schedule with bar_alpha_T > 0.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Terminal entropy identity of the closing display is false in the noise-free case",
+      "why_classification": "Adding the standard schedule condition bar_alpha_T = 0 (or inserting the L_T term the paper already computes) is a short local repair that preserves the covariance and entropy-matching content, the method and the advertised scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Due to the intractability of the likelihood, the training is performed by maximizing the usual variational lower bound (VLB)",
+          "tag": null
+        },
+        {
+          "quote": "In this case, the parameterization~\\eqref{eqn:cov} for $\\Sigma_{\\theta}$ in the noise free setting is optimal in the sense that $H_p(u_{t-1}|u_t) = H_{q_{\\theta}}(u_{t-1}|u_t)$.",
+          "tag": "app:cov-choice"
+        }
+      ],
+      "failure_explanation": "The text claims that the learned model q_theta achieves the exact likelihood under the true model p and offers the chain of entropy equalities as its reformulation. But E_{q_theta}[-log q_theta(u_{0:T})] is the model's own differential entropy and E_p[-log p(u_{0:T})] the data's; equality of these two numbers does not imply that the model attains the true likelihood (that would require equality of the cross-entropy E_p[-log q_theta(u_{0:T})] with E_p[-log p(u_{0:T})], i.e. q_theta = p), and distinct densities can share the same entropy. What the preceding arguments establish is at most that the parameterized reverse conditionals have the same covariance, hence the same conditional entropy, as the true ones in two idealized cases, which is strictly weaker than exactness.",
+      "failure_location": {
+        "quote": "the learned parametric model $q_{\\theta}$ achieves the exact likelihood under the true model $p$",
+        "tag": "app:cov-choice"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Withdraw the exact-likelihood conclusion and replace it by what the argument shows: in the noise-free case and for unit-variance noise the reverse conditionals of q_theta match the covariance (hence the conditional entropy) of the true reverse conditionals; no exactness statement about q_theta(u_0|a) follows.",
+      "overall_effect": "The exactness guarantee for the learned conditional model advertised at the end of Appendix A.3 is unsupported, and the same overstatement propagates to the claims that the learned standard deviation exactly recovers the noise magnitude and that the predicted confidence intervals coincide with the theoretical ones.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Closing claim of exact likelihood does not follow from matching self-entropies",
+      "why_classification": "The resolution necessarily abandons the exactness guarantee and substitutes a strictly weaker covariance/entropy-matching statement, a real loss of mathematical content; but the method, its loss and the experiments survive without new proof architecture, so the loss is contained rather than major."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2305.14703",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e417f6e97606e57c1bddcad5ccc77b48f42186a7406fb76629c7aa30c1d3514b",
+  "status": "ok"
+}

@@ -1,0 +1,242 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\fE_\\indKS\\|_2 \\leq \\frac{\\|\\fR_\\indKS\\|_{\\Frob}}{2\\sigma_{\\min}(\\fA)},",
+          "tag": "prop1"
+        },
+        {
+          "quote": "=\\; \\frac{\\|\\fR_\\indKS\\|_{\\Frob}}{\\sigma_{\\min}(\\calL)}\\; =\\; \\frac{\\|\\fR_\\indKS\\|_{\\Frob}}{2\\sigma_{\\min}(\\fA)}.",
+          "tag": "prop1"
+        },
+        {
+          "quote": "\\|\\fX-\\tilde{\\fX}_k\\|_2 \\le \\gamma \\Delta_{k,k-1}+ \\frac{(1+\\gamma)\\|\\fR_k\\|_{\\Frob}+\\gamma\\|\\fR_{k-1}\\|_{\\Frob}}{2\\sigma_{\\min}(\\fA)},",
+          "tag": "teo1"
+        }
+      ],
+      "failure_explanation": "The proof reduces the error-residual relation to vec(R)=L vec(E) with L the Kronecker sum and then asserts sigma_min(L)=2 sigma_min(A). This is false for non-symmetric A: for A = [[-1,10],[-10,-1]] (Hurwitz, normal), sigma_min(A)=sqrt(101) so 2*sigma_min(A)~20.1, but L = -2I + 10(I (x) J + J (x) I) with J the 90-degree rotation is normal with eigenvalues -2 +/- 20i, -2, -2, hence sigma_min(L)=2. Taking B=0 (exact solution X=0) and the admissible PSD approximation X_l = I gives R = A + A^T = -2I, ||R||_F = 2 sqrt(2), and ||E||_2 = 1, while the claimed bound gives 1 <= sqrt(2)/sqrt(101) ~ 0.14: the estimate is violated. Since always sigma_min(L) <= 2*min_i|Re lambda_i(A)| <= 2*sigma_min(A) with strict inequality in general, the stated bound is generally too optimistic, not merely misderived.",
+      "failure_location": {
+        "quote": "Using $\\|\\fE\\|_2\\le\\|\\fE\\|_{\\Frob}$ and $\\sigma_{\\min}(\\calL)=2\\sigma_{\\min}(\\fA)$ yields",
+        "tag": "prop1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the constant by a rigorous, computable surrogate for ||L^{-1}||_2 (e.g. sigma_min(L) itself, an auxiliary-Lyapunov-based estimate, or an added hypothesis such as dissipativity of A, under which sigma_min(L) >= 2*lambda_min((A+A^T)/2) is computable by a symmetric iteration) and restate prop1, eq33 and (eq:50) with it; the iteration and stopping architecture survive unchanged.",
+      "overall_effect": "The Lyapunov error-residual bound (prop1), the certified stopping bound (eq:50) of Theorem teo1, and the practical residual tolerances that use 2 sigma_min(A) (eq33 and the numbered list after teo1) are unreliable; the advertised guarantee ||X - X~||_2 <= tol for Algorithm 1, and the MOR results that consume the certified Gramian approximations, inherit this gap.",
+      "primary_affected_tag": "prop1",
+      "target_type": "formal_result",
+      "title": "False Kronecker-sum identity sigma_min(L)=2 sigma_min(A) invalidates the Lyapunov error bound",
+      "why_classification": "A contained new estimate or an added standard hypothesis for the constant restores every guarantee, but the cheap O(n) evaluation of the constant that the paper advertises is necessarily lost or the regime restricted; this exceeds a local routine fix while avoiding new proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA\\fX_k + \\fX_k\\fA^\\T + \\sum_{j=1}^{M}\\left(\\fN_j\\fX_{k-1}\\fN_j^\\T\\right) + {\\fB}_{1}{\\fB}_{1}^\\T = \\zeroMat",
+          "tag": "eq30"
+        },
+        {
+          "quote": "\\State Set ${\\fB}_k \\vcentcolon= [\\fN_1\\fZ_{k-1},\\ldots,\\fN_M\\fZ_{k-1},{\\fB}_1]$",
+          "tag": "alg:statIterGLE"
+        },
+        {
+          "quote": "Consider the approximate solution $\\fX_k$ for the \\GLE~\\eqref{eqn:generic:GLE} provided by \\Cref{alg:statIterGLE} at step $k$, and assume for the moment that the Lyapunov equation \\eqref{alg:statIterGLE:lyap} is solved exactly.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Proposition prop2 is derived for the sequence with EXACT previous iterates (its eq30 uses X_{k-1} and is justified only under 'assume for the moment that the Lyapunov equation is solved exactly'). Theorem teo1 nevertheless applies prop2 to the sequence actually produced by Algorithm 1, in which B_k is built from the approximate factors (line 4: B_k = [N_1 Z_{k-1}, ...] with the computed, inexact Z_{k-1}) and teo1 explicitly carries the subspace residuals R_k, R_{k-1}. For that inexact sequence the recursion (eq31)-(eq32) involves tilde E_{k-1}, not E_{k-1}, so the gamma*||X_k - X_{k-1}||_F step is unestablished and the bound (eq:50) is not derived by the given proof.",
+      "failure_location": {
+        "quote": "Let $\\fX_k$ be the exact solution of the Lyapunov equation~\\eqref{alg:statIterGLE:lyap} computed at step $k$ of \\Cref{alg:statIterGLE}. Using \\Cref{prop1,prop2} we obtain",
+        "tag": "teo1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Re-derive the bound directly for the inexact iterates: from L vec(tilde E_k) = -Pi vec(tilde E_{k-1}) + vec(R_k) one gets ||X - tilde X_k||_2 <= gamma Delta_{k,k-1} + (1+gamma)||R_k||_F/(2 sigma_min(A)), which implies the stated (eq:50); this is a short, local rewrite of the proof.",
+      "overall_effect": "The certified error bound (eq:50) for the inexact stationary iteration is not established as written; the stopping criteria and the advertised guarantee ||X - tilde X||_2 <= tol derived from teo1 are unsupported as proved.",
+      "primary_affected_tag": "teo1",
+      "target_type": "formal_result",
+      "title": "teo1 applies prop2 outside its exact-solve scope: the algorithm feeds inexact factors into the next Lyapunov equation",
+      "why_classification": "The corrected derivation is short, purely local, and yields precisely the stated bound (a fortiori), so every claim and guarantee survives without new arguments."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where we used the fact that $\\fw^{\\T}\\fA_j^{\\T}\\fw<0$ for all $\\fw\\in\\R^{\\stateDim}\\setminus \\{\\zeroVec\\}$ due to \\eqref{eqn:ass:ndeAj}. The result thus follows immediately from~\\eqref{eqn:ass:teo4}.",
+          "tag": "teo4"
+        },
+        {
+          "quote": "\\perturbation=\\hat \\perturbation\\vcentcolon=\\tol \\max_{j=1,\\ldots,M}\\kappa(\\fA_j)",
+          "tag": "eqn:cond:LMI"
+        }
+      ],
+      "failure_explanation": "The proof needs w^T tilde E A_j^T w + mu w^T A_j^T w < 0 for all w and bounds mu*w^T A_j^T w by -mu*sigma_min(A_j)*||w||^2, i.e. claims w^T A_j^T w <= -sigma_min(A_j)||w||^2. Dissipativity only yields w^T A_j^T w = w^T H_j w <= -alpha_j ||w||^2 with alpha_j = lambda_min(-H_j) <= sigma_min(A_j), and the inequality is strict generically (for normal A_j = -I + cJ, alpha_j = 1 while sigma_min = sqrt(1+c^2), so kappa = 1 but the required factor is sqrt(1+c^2)). Consequently mu = kappa(A_j)||X - tilde X|| is in general too small: choosing tilde X = X - eps*W with W PSD aligned with the worst direction, A_j tilde E + tilde E A_j^T has positive Rayleigh quotient whenever the LMI margin of X is below 2(eps)(sigma_1(A_j) - alpha_j)-scale, so the perturbed matrix hat X = tilde X + mu I does not satisfy LMI (eqn:LMI:P); the proof's displayed inequality is simply not derivable from dissipativity.",
+      "failure_location": {
+        "quote": "\\perturbation \\;\\ge\\; \\max_{j\\in\\switchingSet} \\frac{\\sigma_1(\\fA_j)}{\\sigma_\\stateDim(\\fA_j)} \\|\\fX-\\tilde \\fX\\|_2\\;=\\;\\max_{j\\in\\switchingSet}\\kappa(\\fA_j)\\|\\fX-\\tilde \\fX\\|_2,",
+        "tag": "eqn:ass:teo4"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Strengthen the constant to mu >= max_j (sigma_1(A_j)/alpha_j)||X - tilde X||_2 with alpha_j = lambda_min(-(A_j+A_j^T)/2) > 0 from (eqn:ass:ndeAj); with that replacement the same proof works verbatim and the theorem survives with a quantitatively weaker (larger) perturbation.",
+      "overall_effect": "Theorem teo4, the practical prescription mu-hat = tol*max kappa(A_j) in (eqn:cond:LMI), and the claimed construction of stable, error-certified ROMs from approximate GLE solutions (also advertised in the abstract and validated in Table 1) are unsupported for the stated constant.",
+      "primary_affected_tag": "teo4",
+      "target_type": "formal_result",
+      "title": "LMI restoration (teo4) relies on an invalid condition-number bound; the prescribed mu=tol*kappa(A_j) is insufficient",
+      "why_classification": "A contained repair (correct constant, same proof) leaves a recognizably comparable certified-LMI result, but the quantitative guarantee degrades because alpha_j can be far below sigma_min(A_j), so it is more than a routine local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $\\fJ_j\\in\\R^{\\stateDim\\times\\stateDim}$ skew-symmetric, $\\fR_j\\in\\R^{\\stateDim\\times\\stateDim}$ symmetric positive semi-definite, and $\\fQ_j\\in\\R^{\\stateDim\\times\\stateDim}$ symmetric positive definite; cf.~\\cite{GilS17}.",
+          "tag": null
+        },
+        {
+          "quote": "\\fA_j+\\fA^{\\T}_j\\prec\\zeroVec,\\quad\\text{ for all }j\\in\\switchingSet.",
+          "tag": "eqn:ass:ndeAj"
+        }
+      ],
+      "failure_explanation": "The prose asserts that the factorization (eqn:dH) with Q_j = I verifies the dissipativity assumption for every real Hurwitz matrix. With Q_j = I one gets A_j + A_j^T = -2R_j, which is only negative semidefinite because R_j is only assumed positive semidefinite. Counterexample: A = [[-1, 1], [-1, 0]] is Hurwitz (spectrum (-1 +/- i)/... eigenvalues of char. poly lambda^2 + lambda + 1) and admits A = J - R with J skew and R = diag(1, 0) positive semidefinite, yet A + A^T = diag(-2, 0) is not negative definite, so (eqn:ass:ndeAj) fails. The prose therefore overstates the class covered by the hypothesis of teo4.",
+      "failure_location": {
+        "quote": "Whenever $\\fQ_j=\\fI_{\\stateDim}$ for all $j\\in\\switchingSet$, it is straightforward to check that \\eqref{eqn:ass:ndeAj} is verified.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Require R_j strictly positive definite (or Q_j = I plus strict dissipativity) in that sentence; a local strengthening with no effect on any result.",
+      "overall_effect": "The advertised scope of the hypothesis (eqn:ass:ndeAj) of Theorem teo4 is overstated; no labelled result's proof depends on this passage, but the advertised applicability is misleading.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that Q_j = I factorizations of Hurwitz matrices yield dissipativity",
+      "why_classification": "A local strengthening of the stated condition repairs the passage completely; every substantive claim and guarantee elsewhere is preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "As already discussed in \\Cref{sec:MORexplained}, the fact that each subsystem mode is stable is not sufficient to conclude that the \\SLS is stable for each $\\switch\\in \\calS$.",
+          "tag": null
+        },
+        {
+          "quote": "Moreover, if the solution of the \\LMI is not successful, it is possible to exploit the fact that the asymptotic stability of the \\SLS can still be guaranteed under a minimum switching time condition; see \\cite[Sec.~3.2.1]{Lib03}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims a stability guarantee for the PBR reduced-order model (the switched system (eqn:new:red:system)) without LMI assumptions. What the paper establishes is at most stability of each reduced subsystem (Proposition prop:stab, itself incompletely argued), and Section 4.2 explicitly states that switched-system stability then has to be verified a posteriori via a reduced-size LMI or a minimum switching (dwell) time condition. The difference between per-subsystem stability and stability of the switched ROM for all q in S is exactly what the prose glosses over, so the guarantee type promised in the contribution statement is not delivered.",
+      "failure_location": {
+        "quote": "To overcome these limitations, we propose a novel \\MOR strategy for \\SLS that guarantees the stability of the \\ROM and provides a generalized error bound without requiring the \\LMIs to hold.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Weaken the claim to stability of the individual reduced subsystems plus explicitly checkable a-posteriori conditions (reduced LMIs or a dwell-time condition, as already discussed in the paper), or supply the missing switched-system stability argument.",
+      "overall_effect": "A headline advantage of the proposed PBR framework (guaranteed stability of the reduced switched system without LMIs) is materially overstated; a reader may use eqn:new:red:system under arbitrary switching expecting guaranteed stability.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "PBR advertised as guaranteeing ROM stability, which the paper does not establish",
+      "why_classification": "The repair withdraws one advertised guarantee type (unconditional ROM stability) while leaving the method and the error bounds recognizably intact; it is more than a local fix but avoids new proof architecture or loss of the main results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The stability arises from the observation that the solutions $\\fcP_j$ and $\\fcQ_j$ of \\GLEs can be interpreted as generalized Gramians for the mode $j$ of the \\SLS; see \\cite[Sec.~4.7]{DulP00}.",
+          "tag": "prop:stab"
+        },
+        {
+          "quote": "Assume that the \\GLEs~\\eqref{eqn:GLE} are solve exactly  with $\\fA = \\fA_j$ and correspondingly updated $\\fN_i$ for $i,j\\in\\switchingSet$. Then, each subsystem of the switched system $\\switchedSysRedJumps $ defined in \\eqref{eqn:new:red:system} is stable.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Classical square-root balanced truncation is stable because the truncated Gramians satisfy the Lyapunov EQUALITIES of the system being truncated. Here the balancing factors come from the GLE solutions P_j, Q_j of (eqn:GLE) with A = A_j, which contain the extra coupling terms sum_i N_i P_j N_i^T and the inputs of all modes; only a non-strict projected inequality hat A_j hat Sigma_j + hat Sigma_j hat A_j^T + hat B_j hat B_j^T <= -(PSD terms) follows, which rules out Re(lambda) > 0 but not imaginary-axis eigenvalues. Excluding the latter needs a nontrivial minimality/sigma argument using both projected inequalities, which the proof does not provide, and the cited stability theory is for classical Gramians, not these generalized ones. The conclusion of the proposition is thus unsupported as written.",
+      "failure_location": {
+        "quote": "Therefore, each $\\tilde \\fA_j$ is, by construction, stable due to the stability properties of classical square root balance truncation.",
+        "tag": "prop:stab"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Add the adapted argument: project both GLEs, use the two projected inequalities at a hypothetical imaginary-axis eigenvalue to force the corresponding reduced state to be annihilated by all projected inputs and couplings, and conclude a contradiction with the non-minimality implied by the truncated smallest singular value; or weaken the statement to non-positivity of spectral parts plus a genericity assumption.",
+      "overall_effect": "The only formal stability statement for the PBR reduced subsystems is unproven; the motivation contrast with the method of Section 2 and the advertised stability of the PBR become unreliable (the error bounds teo5/teo6 do not depend on it).",
+      "primary_affected_tag": "prop:stab",
+      "target_type": "formal_result",
+      "title": "Stability of PBR subsystems (prop:stab) rests on classical BT stability outside its hypotheses",
+      "why_classification": "A complete resolution needs a contained but genuinely nontrivial new lemma (the classical argument does not transfer verbatim because of the GLE coupling terms), while the method, the error bounds, and the advertised scope survive; hence moderate, not minor or serious."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\left(\\gleG_{o,\\switch}(\\stateDim,\\stateDimRed)+\\gleG_{c,\\switch}(\\stateDim,\\stateDimRed)\\right)",
+          "tag": "eq:err:est:2"
+        },
+        {
+          "quote": "the third reflects the fact that the numerically computed solutions of the \\GLE may not exactly satisfy the \\LMI conditions due to approximation errors.",
+          "tag": null
+        },
+        {
+          "quote": "\\iota(\\stateDimRed, \\Upsilon)\\;\\vcentcolon=&\\;-\n\t\\eta(t)^{-1}\\sum_{k=\\stateDimRed+1}^{\\tilde \\stateDim}\\gleG_{c,o,\\switch}(s_{k+1},s_{k})^{\\frac{1}{2}}H(-\\gleG_{c,o,\\switch}(s_{k+1},s_{k})),",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Lemma teo5 bounds the squared error by H_c + H_o - (G_o + G_c) + 4 sigma-tilde^2||u||^2, so the level-wise terms are sqrt(H_k - G_k + ...). Sub-additivity of the square root then contributes a POSITIVE penalty sqrt((-G_k)^+) whenever G_k < 0, i.e. exactly when the LMI-type conditions are violated. As printed, the third term of (eq:err:est:3) SUBTRACTS gleG^{1/2} whenever gleG < 0, which is (i) not real-valued for negative gleG and (ii) directionally wrong: it shrinks the bound precisely in the violated-LMI regime that teo6 claims to cover ('the third reflects the fact that the numerically computed solutions of the GLE may not exactly satisfy the LMI conditions'). The stated inequality is therefore not derivable from teo5 and is false in that regime; the experiments (eqn:iota, Fig. 5b) treat this term as a positive violation contribution.",
+      "failure_location": {
+        "quote": "-&\n\t\\sum_{k=\\stateDimRed+1}^{\\tilde \\stateDim}   \\gleG_{c,o,\\switch}(s_{k+1},s_{k})^{\\frac{1}{2}}H(-   \\gleG_{c,o,\\switch}(s_{k+1},s_{k})),",
+        "tag": "eq:err:est:3"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Flip the sign of the third term and read the square root on -gleG_{c,o,switch} (i.e. add sqrt((-gleG_{c,o})^+)); a one-line correction that aligns the statement with the derivation from teo5 and with the reported numerics.",
+      "overall_effect": "The main error bound (eq:err:est:3), its use in the experiments (eqn:iota, eqn:err:est:fin, Fig. 5), and the prose claim that teo6 extends thm:BTerrorBound to inexact LMIs are unreliable as stated.",
+      "primary_affected_tag": "teo6",
+      "target_type": "formal_result",
+      "title": "Sign/definiteness error in the a-posteriori term of the PBR error bound (teo6)",
+      "why_classification": "The repair is a forced local sign correction; after it, the recursion from teo5 (sub-additivity plus the standard truncation recursion) yields exactly the stated three-term bound, so no mathematical content is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA_1(i,j)\\vcentcolon=\\begin{cases} -1, & \\mbox{if }i=j \\\\ \n    \t\\frac{1}{2}, & \\mbox{if }i-1=j\\",
+          "tag": "eqn:synt:ex"
+        },
+        {
+          "quote": "The spectral condition numbers are $\\kappa(\\fA_1)=3$ and $\\kappa(\\fA_2)=2.4136$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims both example matrices are normal, which certifies hypothesis (eqn:ass:ndeAj) of teo4. They are not: A_1 = -I + (1/2)L with L the lower shift satisfies (A_1 A_1^T)_{11} = 1 but (A_1^T A_1)_{11} = 1 + 1/4, so A_1 is not normal; A_2 is tridiagonal Toeplitz with |subdiagonal| = 4/5 != 1/5 = |superdiagonal|, hence not normal either. Normality would also force kappa(A_1) = 1, contradicting the value kappa(A_1) = 3 reported in the same paragraph. (The dissipativity hypothesis itself does hold for these matrices, but the source neither states nor verifies that; it rests on the false normality claim.)",
+      "failure_location": {
+        "quote": "Moreover, both $\\fA_1$ and $\\fA_2$ are normal matrices, so the hypothesis of \\Cref{teo4} holds.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Replace the normality claim by a direct dissipativity verification (e.g. Gershgorv/Gershgorin bound on (A_j + A_j^T)/2 for (eqn:synt:ex)); a one-sentence local repair.",
+      "overall_effect": "The numerical validation of the hypothesis of teo4 in Section 5.1 is supported by a false assertion; the conclusion itself survives only because the matrices happen to be dissipative, which the paper does not check.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Example matrices wrongly asserted to be normal",
+      "why_classification": "A short, local replacement of the false justification preserves the experimental conclusion and every substantive claim; no new argument is needed."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2601.13039",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "bd667d07baf9874b99b339d8a0a6b0aa8d1d403f5cfe7b718aa7b9a572affb14",
+  "status": "ok"
+}

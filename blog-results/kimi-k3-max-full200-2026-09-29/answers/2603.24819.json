@@ -1,0 +1,223 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "R_\\theta(D_k)\n=\n\\int_{\\partial D_k}\n\\left(\nU_\\theta\\, n_t + F(U_\\theta)\\cdot n_x\n\\right)\\, dS.",
+          "tag": null
+        },
+        {
+          "quote": "L(\\theta)\n=\n\\lambda_1\\, L_{\\mathrm{cons}}\n+\n\\lambda_2\\, L_{\\mathrm{ent}}\n+\n\\lambda_{\\mathrm{TVD}}\\, L_{\\mathrm{TVD}},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims prescribed boundary conditions are enforced automatically when a control-volume face lies on the physical boundary. But R_\\theta(D_k) evaluates the flux at the network's own trace U_\\theta; no prescribed boundary datum appears in the residual or anywhere in the total loss (initial data enter only via the temporal ansatz at t=0). For hyperbolic conservation laws, boundary conditions must be imposed weakly through the boundary flux using prescribed exterior states (inflow/upwind fluxes); integrating F(U_\\theta)\\cdot n_x over a boundary face only enforces flux balance of whatever values the network happens to take there and constrains nothing. The claim is false as written.",
+      "failure_location": {
+        "quote": "When a boundary face of a control volume $D_k$ coincides with the physical boundary of the domain $\\Omega_x$, the flux integration across this face directly enforces the prescribed boundary conditions naturally through the evaluation of $R_\\theta(D_k)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Delete or qualify the claim (boundary faces merely contribute the network's own flux to the balance), or add explicit boundary-data terms, e.g. prescribed-state fluxes on faces lying on the physical boundary.",
+      "overall_effect": "As described, the method imposes no boundary conditions at all; none of the numerical sections specify boundary data, and the convergence framework (test functions compactly supported in space--time) is silent about boundaries. The advertised seamless boundary enforcement does not exist.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Boundary conditions claimed to be enforced by flux evaluation alone",
+      "why_classification": "No formal result depends on the claim (the theory uses compactly supported test functions); removing the sentence or adding standard weak boundary fluxes is a local change that leaves the method, the theory, and the advertised scope intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "L_{\\mathrm{TVD}}(\\theta) \\approx \\max_{j=1,\\dots,N_t} \\sum_{k=1}^{N_x-1} |U_\\theta(x_{k+1}, t_j) - U_\\theta(x_k, t_j)|,",
+          "tag": null
+        },
+        {
+          "quote": "The TVD regularization guarantees $\\sup_{t \\in [0,T]} TV(U_\\theta(\\cdot, t)) \\leq M$ for some constant $M$;",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "Adding L_TVD as a soft term in a weighted-sum objective and minimizing it does not imply any a priori inequality sup_t TV(U_\\theta) <= M: a penalty is not a constraint, and smallness of the total loss yields no hard bound on any one term. Additionally, the implemented estimator takes a maximum over finitely many random times and a sum over finitely many random points, which underestimates the true supremum over [0,T] and can miss oscillations between samples, so even the penalized quantity is only a lower approximation of sup_t TV. Theorem thm:added-2 properly lists the bound as an assumption; the defect is the prose assertion that the method guarantees it.",
+      "failure_location": {
+        "quote": "To guarantee this condition, we introduce a TVD regularization term:",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Reword: the TVD term promotes bounded variation, and the uniform bound is an assumption to be verified a posteriori (or enforced via a hard constraint/projection). The conditional theorem is unchanged.",
+      "overall_effect": "Applicability of the main convergence theorem to the trained network rests on hypothesis 2, which the method is claimed but not shown to deliver; nothing in the paper establishes sup_t TV(U_\\theta) <= M.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "TVD penalty asserted to guarantee a uniform total-variation bound",
+      "why_classification": "The theorem states the TV bound as an explicit hypothesis, so the formal implication survives; the repair is a wording correction or an a posteriori check with no loss of mathematical content."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Applying the divergence theorem on each $D_i$, the continuous residual translates into boundary flux integrals, corresponding exactly to the local conservation residual $R_{\\mathrm{cons}}(D_i)$ and entropy residual $R_{\\mathrm{ent}}(D_i, k)$.",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\mathcal{R}_{k,\\varphi}(U_\\theta) \\le \\sum_{i=1}^{N_D} \\left( \\|\\partial_t \\varphi\\|_{L^\\infty} + \\|\\nabla_x \\varphi\\|_{L^\\infty} \\right) \\cdot \\left( |R_{\\mathrm{cons}}(D_i)| + |R_{\\mathrm{ent}}(D_i, k)| \\right).",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\mathcal{A} = \\left\\{ \\varphi \\in C_c^\\infty(\\Omega \\times (0,T)) : \\varphi \\ge 0, \\|\\partial_t \\varphi\\|_{L^\\infty} + \\|\\nabla_x \\varphi\\|_{L^\\infty} \\le 1 \\right\\}.",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{1}{N_D} \\sum_{k=1}^{N_D} \\frac{\\big(\\max\\{0,\\,E_\\theta(D_k)\\}\\big)^2}{|D_k|}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The claimed control of the Kruzhkov-type dual defect E_R by the residuals of one fixed partition is impossible. Counterexample within the paper's own definitions (Burgers flux f(u)=u^2/2, entropy pair (u^2/2, u^3/3)): take any partition, a smooth w not identically zero compactly supported in the interior of a single cell D_j, and U_\\theta = (t/T)\\,\\varepsilon w (which satisfies the temporal ansatz with U_0 = 0). Then U_\\theta vanishes on every cell boundary, so R_\\theta(D_i) = 0 and E_\\theta(D_i) = 0 for all i, hence L_cons = L_ent = 0; but for k=0 and a test function \\varphi \\in \\mathcal{A} with \\partial_t\\varphi \\approx 1 on supp w, \\mathcal{R}_{0,\\varphi}(U_\\theta) = \\varepsilon\\int |w|\\,\\partial_t\\varphi + O(\\varepsilon^2) > 0, so E_R(U_\\theta) > 0 while the stated right-hand side is 0. The proof's steps are also invalid as written: integration by parts yields boundary integrals weighted by \\varphi itself (plus interior strong-residual terms \\int_{D_i}\\varphi\\,\\mathrm{sgn}(U_\\theta-k)(\\partial_t U_\\theta+\\nabla\\cdot F)), from which the factor (||\\partial_t\\varphi||_\\infty+||\\nabla\\varphi||_\\infty) cannot be factored to obtain the unweighted residuals; the object R_ent(D_i,k) is never defined; and the one-sided loss built from a single entropy pair cannot bound the supremum over the whole Kruzhkov family |\\cdot-k|. Root cause: cell residuals over one fixed partition probe only piecewise-constant test fields and cannot control the W^{1,\\infty}-test-function supremum without refinement-dependent consistency terms.",
+      "failure_location": {
+        "quote": "E_R(U_\\theta) \\leq \\sqrt{|\\Omega \\times (0,T)|} \\cdot \\left( \\sqrt{L_{\\mathrm{cons}}(\\theta)} + \\sqrt{L_{\\mathrm{ent}}(\\theta)} \\right).",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must restate the link over a refining or dense family of control volumes (maximal diameter h tending to 0, N_D tending to infinity), add a space--time BV (or equivalent oscillation) bound on U_\\theta, control the full Kruzhkov entropy family (or prove that the single strictly convex entropy loss controls it in the scalar case), and prove a test-function approximation lemma. The resulting bound necessarily contains additional h-dependent consistency terms, so convergence holds only in the joint limit of vanishing losses and refining volumes, and the stated quarter-rate in terms of the two losses alone must be withdrawn.",
+      "overall_effect": "The main convergence theorem loses its only link between the training losses and E_R (Step 3 quotes the lemma verbatim); the quarter-rate L^1 bound and the convergence corollary are unproven, and the abstract/introduction claims of a rigorous convergence analysis and the first explicit L^1 convergence rate for a mesh-free control-volume PINN become unreliable. Separately, the lemma is stated for partitions while the algorithm evaluates the loss on randomly sampled, non-covering, multi-scale volumes, so even a repaired partition lemma would not directly apply to the implemented loss.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Lemma bounding the weak truncation error by the discrete losses is false",
+      "why_classification": "The lemma is false as stated (explicit counterexample with exactly zero losses but positive defect) and it is the paper's central theoretical contribution; every correct replacement requires new hypotheses and a new approximation argument, and changes the advertised guarantee, since small losses at fixed sampling no longer imply small L^1 error. The main theorem and the headline rate claim do not survive as stated."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "L_{\\mathrm{cons}}(\\theta)\n=\n\\frac{1}{N_D}\n\\sum_{k=1}^{N_D}\n\\frac{\\|R_\\theta(D_k)\\|_2^2}{|D_k|}.",
+          "tag": null
+        },
+        {
+          "quote": "E_R(U_\\theta) \\leq \\sqrt{|\\Omega \\times (0,T)|} \\cdot \\left( \\sqrt{L_{\\mathrm{cons}}(\\theta)} + \\sqrt{L_{\\mathrm{ent}}(\\theta)} \\right).",
+          "tag": "lem:added-1"
+        }
+      ],
+      "failure_explanation": "Because the Section-3 losses carry the factor 1/N_D, the identity is \\sum_i \\|R(D_i)\\|^2/|D_i| = N_D \\, L_{\\mathrm{cons}}(\\theta) (and similarly for the entropy term). The Cauchy--Schwarz step therefore yields \\sum_i |R(D_i)| \\le \\sqrt{N_D\\,|\\Omega\\times(0,T)|}\\,\\sqrt{L_{\\mathrm{cons}}}, so the lemma's stated constant \\sqrt{|\\Omega\\times(0,T)|} is too small by a factor \\sqrt{N_D} whenever N_D > 1; the proof establishes only the weaker bound containing \\sqrt{N_D}. This normalization slip is independent of the structural falsity in ISSUE-003. The main theorem's constant K_opt correspondingly misses a factor N_D^{1/4}.",
+      "failure_location": {
+        "quote": "\\sum_{i=1}^{N_D} |R_{\\mathrm{cons}}(D_i)| = \\sum_{i=1}^{N_D} \\frac{|R_{\\mathrm{cons}}(D_i)|}{\\sqrt{|D_i|}} \\sqrt{|D_i|} \\le \\left( \\sum_{i=1}^{N_D} \\frac{|R_{\\mathrm{cons}}(D_i)|^2}{|D_i|} \\right)^{1/2} \\left( \\sum_{i=1}^{N_D} |D_i| \\right)^{1/2}.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Insert the factor \\sqrt{N_D} in the lemma's bound and N_D^{1/4} in K_opt (or drop the 1/N_D normalization in the loss definitions); a forced, local correction. Note that any refinement-based repair of ISSUE-003 must additionally avoid constants that grow with N_D.",
+      "overall_effect": "The stated constants in Lemma 1 and in Theorem thm:added-2 are wrong by factors \\sqrt{N_D} and N_D^{1/4} respectively; for fixed N_D the convergence statement itself (losses tending to 0) is unaffected.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Missing sqrt(N_D) normalization factor in the loss-based bound",
+      "why_classification": "A single forced algebraic correction restores the intended inequality with no change to the method, the rate, or the convergence claim at fixed N_D; no new argument or loss of content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|U_\\theta(\\cdot, T) - u(\\cdot, T)\\|_{L^1(\\Omega)} \\leq K_{\\mathrm{opt}} \\cdot \\left(L_{\\mathrm{cons}}(\\theta)^{1/4} + L_{\\mathrm{ent}}(\\theta)^{1/4}\\right).",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "Asserting that the rate 1/4 is optimal requires lower-bound or saturation examples showing the estimate chain is sharp; no such argument appears anywhere in the paper. The exponent is simply the outcome of composing a square-root (Bouchut--Perthame) estimate with another square root (Lemma 1), and the sharpness of neither step is discussed. Moreover the rate itself rests on the defective Lemma 1 (ISSUE-003). The claim is unsupported as written.",
+      "failure_location": {
+        "quote": "The convergence rate of $1/4$ is optimal for arbitrary control volume partitions.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Delete the word optimal or replace the sentence by the supported statement that the analysis yields a rate of 1/4, unless a saturating worst-case example is supplied.",
+      "overall_effect": "Overstates the strength of the convergence result; readers are led to believe the quarter rate cannot be improved within the framework, which the paper does not establish.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unsupported optimality claim for the 1/4 convergence rate",
+      "why_classification": "A local wording correction removes the unsupported sharpness assertion; no other claim or proof depends on optimality."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "This construction guarantees $U_\\theta(x,0) \\equiv U_0(x)$, eliminating the initial condition error term from the convergence analysis.",
+          "tag": null
+        },
+        {
+          "quote": "Construct temporal ansatz: $U_\\theta(x,t) = (1-\\tau(t))U_0(x) + \\tau(t)\\mathcal{N}_\\theta(x,t)$",
+          "tag": "alg:weak_entropy_pinn"
+        },
+        {
+          "quote": " & \\multicolumn{3}{c}{$t=0.0$} ",
+          "tag": "tab:burger_riemann_errors"
+        }
+      ],
+      "failure_explanation": "The temporal ansatz makes U_\\theta(x,0) = U_0(x) an identity, so every relative error at t=0 must vanish identically (the two functions compared are literally equal, independent of quadrature). Yet the error tables report nonzero WE-PINNs errors in the t=0.0 column: 8.07e-03 (L1) for the Riemann shock, and likewise 1.702e-03 (rarefaction), 1.824e-02 (interaction), 1.776e-03 and 4.787e-02 (dam-break). Either the ansatz was not used in the reported runs or the errors were computed or reported inconsistently; the source does not reconcile the contradiction.",
+      "failure_location": {
+        "quote": "WE-PINNs & 8.07e-03 & 5.79e-02 & 7.95e-01 & 4.98e-03 & 3.35e-02 & 5.00e-01 & 4.32e-03 & 3.16e-02 & 4.649e-01 \\\\",
+        "tag": "tab:burger_riemann_errors"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Recompute or correct the t=0 entries (which must be zero under the ansatz), or state explicitly that the reported solutions were trained or evaluated without the temporal ansatz.",
+      "overall_effect": "The claimed exact enforcement of the initial condition and the reported initial-time accuracy cannot both hold; the evaluation protocol behind all the error tables is cast into doubt.",
+      "primary_affected_tag": "tab:burger_riemann_errors",
+      "target_type": "other",
+      "title": "Nonzero reported errors at t=0 contradict the exact-initial-condition ansatz",
+      "why_classification": "A local correction of the reported numbers or a clarifying sentence resolves the inconsistency; the method, the theory, and the other numerical claims are untouched."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nabla_U q^{(j)}(U) = \\nabla_U \\eta(U)\\,\\nabla_U F^{(j)}(U), \\qquad j=1,\\dots,d.",
+          "tag": null
+        },
+        {
+          "quote": "In all cases, the entropy functions are convex and the corresponding entropy fluxes satisfy the compatibility condition with the physical flux, ensuring consistency with the entropy inequality.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the 1D shallow-water system in conserved variables (h, hu), eta = (1/2)hu^2 + (1/2)gh^2 gives grad(eta) = (gh - u^2/2, u) and DF = [[0,1],[gh - u^2, 2u]], so compatibility requires grad(q) = (u(gh - u^2), gh + 3u^2/2), i.e. q = (1/2)hu^3 + gh^2 u = (eta + (1/2)gh^2)u. The stated flux q = eta*u = (1/2)hu^3 + (1/2)gh^2 u has half the required barotropic term and fails the compatibility relation (the same defect occurs componentwise in 2D). Consequently, for smooth exact solutions the quantity penalized by L_ent satisfies the boundary integral of (eta n_t + (eta u).n_x) equals minus the integral of partial_x((1/2) g h^2 u), which is nonzero in general and can be positive, so the SWE entropy residual is not entropy production and even penalizes the exact smooth solution. The closing claim of Appendix C that the pairs satisfy the compatibility condition is false for the shallow-water pair.",
+      "failure_location": {
+        "quote": "\\eta(U) = \\frac{1}{2} h |\\mathbf{u}|^2 + \\frac{1}{2} g h^2, \\qquad\nq(U) = \\eta(U)\\,\\mathbf{u},",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace q by (eta + (1/2) g h^2) u (componentwise in the multi-dimensional case); the correction is forced by the compatibility equations. The shallow-water numerical results should be recomputed with the corrected pair for the entropy-enforcement claims to hold as described.",
+      "overall_effect": "The entropy inequality enforced in the shallow-water experiments (1D dam break and the 2D SWE appendix tests) is the wrong inequality; entropy-admissibility enforcement for SWE is inconsistent with the paper's own compatibility requirement. The scalar convergence theory, which uses the Kruzhkov family, is unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Shallow-water entropy flux violates the stated compatibility condition",
+      "why_classification": "The repair is a forced, one-term coefficient correction localized to the SWE entropy pair; no formal result depends on it (the theory is restricted to scalar laws), and the method and advertised scope survive unchanged."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2603.24819",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p2-retry",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "693e11400d8e8c9b7da21ad4ea16f4554e73c427eb19da05eee866ed9b1db33d",
+  "status": "ok"
+}

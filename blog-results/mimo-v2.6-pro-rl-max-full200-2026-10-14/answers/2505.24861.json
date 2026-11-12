@@ -1,0 +1,85 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dot \\Sigma_t = -\\frac\\gamma\\kappa(I - \\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1})\\Sigma_t -\\frac\\gamma\\kappa\\Sigma_t\\,(I - \\frac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1}) + 2\\mathbf C_{*,t},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a linear SDE with drift matrix A the covariance obeys \\dot\\Sigma_t = A\\Sigma_t + \\Sigma_t A^T + 2\\mathbf C_{*,t}. Here A = -(\\gamma/\\kappa)(I - (\\beta/\\kappa)P_t\\mathbf C_{*,t}^{-1}) so A^T contains \\mathbf C_{*,t}^{-1}P_t, not P_t\\mathbf C_{*,t}^{-1}. Both the derivation step and the stated formula use P_t\\mathbf C_{*,t}^{-1} in the second factor, so the sum P_t\\mathbf C_{*,t}^{-1}\\Sigma_t + \\Sigma_t P_t\\mathbf C_{*,t}^{-1} is not symmetric whenever P_t and \\mathbf C_{*,t} fail to commute. Since \\dot\\Sigma_t must be symmetric, the formula is false in general; the correct second term is \\Sigma_t\\mathbf C_{*,t}^{-1}P_t (the transpose of the first).",
+      "failure_location": {
+        "quote": "\\dot\\Sigma_t &= 2\\Bigl[\\mathbf C_{*,t} - \\frac\\gamma\\kappa\\Sigma_t + \\frac{\\gamma\\beta}{2\\kappa^2}\\left(P_t\\mathbf C_{*,t}^{-1}\\Sigma_t + \\Sigma_tP_t\\mathbf C_{*,t}^{-1}\\right)\\Bigr]",
+        "tag": "eq:lmm:lcbs:gauss:moments:evol-C"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace \\Sigma_t P_t\\mathbf C_{*,t}^{-1} by \\Sigma_t\\mathbf C_{*,t}^{-1}P_t in eq:lmm:lcbs:gauss:moments:evol-C and correspondingly replace the second factor (I - \\tfrac\\beta\\kappa P_t\\mathbf C_{*,t}^{-1}) by (I - \\tfrac\\beta\\kappa\\mathbf C_{*,t}^{-1}P_t) in the derivation line of the proof (i.e. use A^T where the transpose belongs).",
+      "overall_effect": "The covariance ODE in lmm:lcbs:gauss:moments is unreliable outside the commuting regime (generic case for preconditioners (ii)–(iv) when \\Sigma and \\Sigma_t do not commute). The two downstream uses (cor:lcbs:gauss:gamma and lmm:compare:cbs:equiv) evaluate the formula only at \\Sigma_t = \\Sigma with \\mathbf C_{*,t} proportional to \\Sigma, where every matrix commutes and the discrepancy vanishes, so those conclusions are not invalidated.",
+      "primary_affected_tag": "lmm:lcbs:gauss:moments",
+      "target_type": "formal_result",
+      "title": "Covariance moment ODE is not symmetric for non-commuting data",
+      "why_classification": "The repair is a single local swap of two matrix factors that restores symmetry and makes the lemma valid in full generality; no new lemma or argument is needed and every downstream claim (which lives in the commuting case) continues to hold unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "a weighted covariance $\\mathbf C_{U,t} = \\mathcal C_{\\alpha, \\lambda \\mathcal C(\\rho_t)}(\\rho_t; U_t)$ with scalars $\\alpha\\ge0$ and $\\lambda > 0$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The lemma quantifies over any CBS parameter \\alpha' > 0 and states the localized-CBS parameters with only \\alpha > 0. The prescribed \\lambda = \\alpha'/(\\alpha - \\alpha') is undefined at \\alpha = \\alpha' and strictly negative for \\alpha < \\alpha', while the preconditioner \\mathcal C_{\\alpha,\\lambda\\mathcal C(\\rho_t)} is defined only for \\lambda > 0. Hence the parameter choice is not a valid instance of the preconditioner class on a nonempty part of the stated range, and the claimed equivalence is ill-defined there (the weight kernel \\exp(-(2\\lambda)^{-1}\\|\\cdot\\|^2) ceases to be a decaying Gaussian kernel).",
+      "failure_location": {
+        "quote": "\\alpha > 0, \\qquad \\kappa = \\alpha, \\qquad \\beta = \\alpha', \\qquad \\text{and} \\qquad \\lambda = \\frac{\\alpha'}{\\alpha - \\alpha'},",
+        "tag": "eq:lmm:compare:cbs:equiv:params"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis \\alpha > \\alpha' (equivalently \\lambda > 0) to the parameter list in lmm:compare:cbs:equiv, optionally treating \\alpha = \\alpha' separately as the limit \\lambda = \\infty with \\mathbf C = \\mathcal C_\\alpha.",
+      "overall_effect": "The equivalence conclusion of lmm:compare:cbs:equiv is meaningful only for \\alpha > \\alpha' (with \\alpha = \\alpha' as the limiting case \\lambda \\to \\infty giving \\mathbf C = \\mathcal C_\\alpha); for \\alpha \\le \\alpha' the statement does not describe a well-defined localized-CBS instance.",
+      "primary_affected_tag": "lmm:compare:cbs:equiv",
+      "target_type": "formal_result",
+      "title": "CBS-equivalence lemma admits parameter values that violate the preconditioner hypothesis",
+      "why_classification": "Adding the standard local condition \\alpha > \\alpha' (already implicit in the definition of preconditioner (iv)) is a one-clause edit; the Gaussian-equivalence conclusion, its time-rescaling factor c, and its advertised scope (for any \\alpha' > 0 one can realize CBS via localized CBS) all survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dot U_t = -\\frac\\gamma\\kappa\\Bigl(U_t - \\mu_{\\beta,\\kappa\\mathbf C_{U,t}/\\beta}(\\rho_t; U_t)\\Bigr) + \\nabla_u \\cdot \\mathbf C_{U,t} + \\sqrt{2\\mathbf C_{U,t}}\\,\\dot W_t.",
+          "tag": "eq:lcbs:loc-prec:lcbs"
+        },
+        {
+          "quote": "w_{a,A}(v; u) &\\coloneqq \\exp\\bigl(-\\norm{v-u}_A^2/2\\bigr)\\widehat\\pi(v)^a.",
+          "tag": "eq:cbs-approx:w"
+        }
+      ],
+      "failure_explanation": "The left-hand subscript (\\beta, \\kappa\\widehat{\\mathbf C}/\\beta) and the mean-field drift mean \\mu_{\\beta,\\kappa\\mathbf C_{U,t}/\\beta} require weights w_{\\beta,\\kappa\\widehat{\\mathbf C}/\\beta} (exponent \\beta on \\widehat\\pi and metric \\kappa\\widehat{\\mathbf C}/\\beta), but the defining ratio uses w_{\\alpha,\\lambda\\widehat{\\mathbf C}} (exponent \\alpha and metric \\lambda\\widehat{\\mathbf C}). The two parameter pairs are independent in the paper's design (\\kappa and \\beta are explicitly kept independent, and \\alpha,\\lambda belong to the covariance preconditioner), so the two weight functions differ. As written the random-batch mean is not a particle approximation of the mean-field drift mean. For the default preconditioner \\widehat{\\mathbf C} = \\widehat{\\mathcal C} (i.e. \\alpha = 0, \\lambda = \\infty) the written weights degenerate to w = 1, i.e. an unweighted neighbour mean, which plainly cannot reproduce the strongly localised weight exp(-(\\beta/2\\kappa)\\|\\cdot\\|^2_{\\widehat{\\mathbf C}})\\widehat\\pi^\\beta required by eq:lcbs:loc-prec:lcbs.",
+      "failure_location": {
+        "quote": "\\widehat\\mu_{\\beta,\\kappa\\widehat{\\mathbf{C}}/\\beta}^{(\\nu,i)}(\\bm U_n; U_n^i) \\coloneqq \\frac{\\sum_{j=1}^J \\mathbbm 1_{i\\ne j\\wedge\\theta_n^{i,j}\\le\\nu}\\,U_n^j\\,w_{\\alpha,\\lambda\\widehat{\\mathbf{C}}}^{ij}}{\\sum_{j=1}^J \\mathbbm 1_{i\\ne j\\wedge\\theta_n^{i,j}\\le\\nu}\\,w_{\\alpha,\\lambda\\widehat{\\mathbf{C}}}^{ij}}",
+        "tag": "eq:particle:mu-batch"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "In eq:particle:mu-batch replace both occurrences of the weight w_{\\alpha,\\lambda\\widehat{\\mathbf C}}^{ij} by w_{\\beta,\\kappa\\widehat{\\mathbf C}/\\beta}^{ij} so that the right-hand side matches the left-hand label and the mean-field drift mean.",
+      "overall_effect": "The localized CBS algorithm eq:comput:lcbs-alg, which invokes \\widehat\\mu^{(\\nu,i)}_{\\beta,\\kappa\\widehat{\\mathbf C}/\\beta} in its drift, is not a valid particle discretisation of the mean-field dynamics eq:lcbs:loc-prec:lcbs as specified. Any implementation that follows the displayed formula literally would run a different algorithm from the one analysed and described.",
+      "primary_affected_tag": "eq:particle:mu-batch",
+      "target_type": "algorithm",
+      "title": "Random-batch drift mean is defined with the wrong weight function",
+      "why_classification": "The fix is a short, local subscript replacement in a single defining display; once made, the random-batch step is a valid (self-interaction-free, randomly subsampled) discretisation of the mean-field drift mean and every stated guarantee and numerical claim survives without new analysis."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2505.24861",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n04",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "21ce5f33da8200f8f8cc6d533722a99bf0425119ca5ce41c491ee7b53c44cf4f",
+  "status": "ok"
+}

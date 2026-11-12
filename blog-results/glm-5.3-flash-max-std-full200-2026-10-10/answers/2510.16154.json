@@ -1,0 +1,194 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\IF{ $J(\\Pi_E(\\varepsilon^{(j)} - \\sigma^{(j)}\\, D^{(j)} )) > J(\\varepsilon^{(j)}) - c \\,\\sigma^{(j)} |D^{(j)}|^2$ }",
+          "tag": "alg:dal"
+        },
+        {
+          "quote": "\\STATE $D^{(j)} \\gets \\partial_\\varepsilon F(c^{(j)},\\varepsilon^{(j)}) \\cdot \\lambda^{(j)}$",
+          "tag": "alg:dal"
+        },
+        {
+          "quote": "but rather we use the discrete functional gradient",
+          "tag": null
+        },
+        {
+          "quote": "+ \\int_\\Omega  [-\\Delta c(x,T) + \\alpha (c(x,T) - I) ]\\, v(x,T) dx,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The line search evaluates trial points Pi_E(eps - tau D), i.e. it certifies decrease along the direction -D, but the accepted step is then applied as eps + sigma*D, the opposite direction. The appendix identifies D with the discrete functional gradient of J and uses it 'to perform the control update in Algorithm 1', and the terminal condition of (4.1b) as stated is lambda(x,T) = -Delta c(T) + alpha(c(T)-I) = +grad_c J; with that adjoint the sensitivity computation gives dJ/deps = int partial_eps F * lambda = D, so the update is a gradient-ASCENT step and cannot inherit the Armijo decrease just certified. Under the opposite (standard) adjoint sign — the one the appendix's own displayed variation yields, since its terminal coefficient lambda(x,T) + [-Delta c(T) + alpha(c(T)-I)] = 0 forces lambda(x,T) = Delta c(T) - alpha(c(T)-I), contradicting the stated (4.1b) — D = -grad J, the update would descend, but the line search then tests the ascent direction and its backtracking while-loop never terminates. Under every consistent sign convention, Algorithm 1 as written is not the steepest-descent method it claims to be.",
+      "failure_location": {
+        "quote": "\\STATE $\\varepsilon^{(j+1)} \\gets \\Pi_E ( \\varepsilon^{(j)} + \\sigma^{(j+1)}\\ D^{(j)} )$",
+        "tag": "alg:dal"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Flip the sign of the control update to eps^{(j+1)} <- Pi_E(eps^{(j)} - sigma^{(j+1)} D^{(j)}) (equivalently, flip the adjoint terminal-condition sign in (4.1b)/(4.7)/appendix together with the trial directions so the certified and applied directions coincide) and reconcile the appendix display; a one-token local repair preserving every claim and reported experiment.",
+      "overall_effect": "Algorithm 1's steepest-descent/Armijo guarantee fails: as specified it either increases J each step or does not terminate; Algorithm 2 inherits the defect through its inner u-minimisation ('Algorithm 1 modified with (4.7)'). The stated optimality system itself remains a valid necessary-condition system under either sign convention.",
+      "primary_affected_tag": "alg:dal",
+      "target_type": "algorithm",
+      "title": "DAL control update moves along the direction opposite to the one its Armijo search certifies",
+      "why_classification": "A one-token sign correction restores a correct projected steepest-descent method; no substantive claim, guarantee or numerical result is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\STATE $\\tau^{(k+1)} \\gets \\tau^{(k)}/b$",
+          "tag": "alg:dal"
+        },
+        {
+          "quote": "\\STATE $\\sigma^{(j+1)} \\gets \\tau^{(k)}$",
+          "tag": "alg:dal"
+        }
+      ],
+      "failure_explanation": "In the ELSE (increasing) branch the loop is entered only after the Armijo inequality holds at sigma^{(j)}, and it keeps growing tau exactly while the inequality keeps holding; it exits at the first tau^(k) for which the inequality FAILS. The code then assigns sigma^{(j+1)} <- tau^{(k)} and updates with it, so the accepted step size is precisely one that violates the acceptance test the loop enforces; J(eps^{(j+1)}) can exceed J(eps^{(j)}). The last passing step size tau^{(k-1)} should be accepted instead (the shrinking branch is correct).",
+      "failure_location": {
+        "quote": "\\WHILE{ $J(\\Pi_E(\\varepsilon^{(j)} - \\tau^{(k)}\\, D^{(j)} )) \\le J(\\varepsilon^{(j)}) - c \\,\\tau^{(k)} |D^{(j)}|^2$ }",
+        "tag": "alg:dal"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Accept the last step size that satisfied the test (sigma^{(j+1)} <- tau^{(k-1)}) or restructure the loop so the returned tau is the largest one satisfying the Armijo condition; a local loop-bookkeeping repair.",
+      "overall_effect": "The two-way backtracking search does not deliver the stated sufficient-decrease guarantee ('to select the best descent step-size'); on the increasing branch the iteration may accept a step that increases J, independently of the sign defect of ISSUE-001.",
+      "primary_affected_tag": "alg:dal",
+      "target_type": "algorithm",
+      "title": "Increasing branch of the two-way line search returns a step that fails its own Armijo test",
+      "why_classification": "A contained bookkeeping fix of one loop restores the stated Armijo guarantee; no substantive claim or result is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "L(u,v,\\mu) = \\int_\\Omega |v(x)| + \\mu(x) \\cdot (v(x) - \\nabla u(x)) + \\frac{\\rho}{2} |v(x) - \\nabla u(x)|^2 + \\frac{\\alpha}{2}(u(x)- I(x))^2\\ dx.",
+          "tag": "eq:cost_tv_regular"
+        },
+        {
+          "quote": "if and only if it minimises point-wise the non negative integrand $ v \\mapsto \\frac{\\rho}{2} |v- \\nabla u + \\frac{\\mu}{\\rho}|^2 + |v|$",
+          "tag": null
+        },
+        {
+          "quote": "for any $v \\neq 0$ we can impose",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims the primal–dual regularisation produces a smooth functional. L in (4.10) still contains the term |v|, which is not Fréchet differentiable at v = 0, so L is not smooth on its stated domain H^1 x L^2 x L^2. The paper's own treatment confirms the nonsmoothness: the v-minimisation is carried out with the nonsmooth shrinkage formula, treating the kink term v/|v| separately for v = 0 and v != 0. What is true, and all the ADMM needs, is that the u- and mu-subproblems are smooth/linear; the claim that L itself is smooth is false.",
+      "failure_location": {
+        "quote": "In this way, we move from a minimum problem for $K$ to a saddle point problem for $L$, which is smooth.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Weaken the sentence to what is used: L is smooth in u and linear in mu, while the v-dependence remains nonsmooth and is resolved in closed form by shrinkage; local rewording, no mathematical loss.",
+      "overall_effect": "A false characterisation of the regularised formulation; no algorithmic step depends on it, since the v-subproblem is handled by the exact nonsmooth shrinkage.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Regularised functional wrongly claimed to be smooth",
+      "why_classification": "A local correction of an overstatement; the algorithms and all guarantees survive unchanged."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Finally, as in the proof of Theorem \\ref{thm:existence1}, it is immediate to show coercivity in the primal variables, ensuring that the minimum is attained in a weakly compact set.",
+          "tag": "thm:saddle_point"
+        },
+        {
+          "quote": "L(u,v,\\mu) = \\int_\\Omega |v(x)| + \\mu(x) \\cdot (v(x) - \\nabla u(x)) + \\frac{\\rho}{2} |v(x) - \\nabla u(x)|^2 + \\frac{\\alpha}{2}(u(x)- I(x))^2\\ dx.",
+          "tag": "eq:cost_tv_regular"
+        },
+        {
+          "quote": "In particular, the strong duality condition holds:",
+          "tag": "thm:saddle_point"
+        }
+      ],
+      "failure_explanation": "The proof's key claim, coercivity of L in the primal variables 'as in the proof of Theorem 3.1', is false: the integrand contains |v| and the proximal term (rho/2)|v - grad u + mu/rho|^2, both of at most linear growth in grad u; along sequences with v_n = grad u_n, where u_n are steep, ever-narrower ramps converging in L^2 to a discontinuous BV profile, L(u_n, grad u_n, mu) stays bounded while ||u_n||_{H^1} -> infinity, so L is not coercive on H^1 x L^2 and minimising sequences have no weakly convergent subsequence in H^1 x L^2. The statement itself is also false in general: the lower saddle inequality with mu unrestricted in L^2 forces v* = grad u* (otherwise sup_mu L(u*,v*,mu) = +infinity), and the upper inequality then forces u* to minimise the unregularised ROF functional K over H^1 with an L^2 dual certificate mu*; for generic data (e.g. continuous profiles with steep transitions, exactly the edge-preserving situation the model targets) the TV minimiser is a BV function with jumps, the infimum of K over H^1 is not attained, and no saddle point of L exists in the stated spaces.",
+      "failure_location": {
+        "quote": "There exists a saddle point for the functional $L : H^1(\\Omega) \\times L^2(\\Omega;\\mathbb{R}^2) \\times L^2(\\Omega;\\mathbb{R}^2) \\to \\R$ defined in \\eqref{eq:cost_tv_regular}.",
+        "tag": "thm:saddle_point"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either rebuild the formulation in a setting containing the TV minimiser (e.g. u in BV(Omega) with a matching dual space for v), re-proving existence and duality, or abandon the saddle-point existence claim and retain only the no-duality-gap value equality, re-justifying Algorithm 2 without attainment.",
+      "overall_effect": "The existence half of Theorem thm:saddle_point fails, removing the theoretical basis for the saddle-point formulation (4.8), for the 'no duality gap' argument used to justify Algorithm 2's stopping criterion, and for the claim that the algorithms converge to the unique primal solution and an optimal dual one; only the value equality of (4.6), read as inf-sup = sup-inf, remains provable.",
+      "primary_affected_tag": "thm:saddle_point",
+      "target_type": "formal_result",
+      "title": "Saddle-point existence theorem is false: no coercivity in H^1 x L^2 and TV minimisers need not lie in H^1",
+      "why_classification": "Every supported resolution either abandons the stated existence guarantee (the theorem's central content) or rebuilds the formulation in BV-type spaces with new existence and duality arguments; no local repair preserves the claim, and the intended edge-preserving regime is exactly where the counterexample lives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In general, the saddle point is not unique.",
+          "tag": null
+        },
+        {
+          "quote": "However, this does not pose an issue for the numerical algorithms, which will converge to the unique primal solution and to one of the optimal dual ones.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paragraph infers from the vanishing of the coupling term at the primal minimiser that every mu in L^2 makes (u*, v*, mu) a saddle point. The vanishing term only shows that every mu maximises L(u*, v*, .) (the dual-side inequality); a saddle point additionally requires the primal-side inequality L(u,v,mu) >= L(u*,v*,mu) for all (u,v), i.e. (u*,v*) must minimise L(.,.,mu), which holds only for dual optimisers mu satisfying -div mu + alpha(u*-I) = 0 with |mu| <= 1 and mu = -grad u*/|grad u*| where grad u* != 0. For example mu = 0 fails whenever inf_{u,v} L(u,v,0) < K(u*), which holds generically since min_v [rho/2 |v - g|^2 + |v|] < |g| for 0 < |g| <= 1/rho. The claim about the saddle set is therefore false, and the accompanying expectation that the algorithms converge to 'the unique primal solution and to one of the optimal dual ones' is unsupported.",
+      "failure_location": {
+        "quote": "the term $\\int_\\Omega \\mu \\cdot (v^*-\\nabla u^*)$ vanishes, so that any $\\mu \\in L^2(\\Omega; \\R^2)$ becomes feasible.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the argument by the correct characterisation: the dual component of a saddle must be a dual optimiser (satisfying the ROF adjoint/subgradient conditions), and restate the non-uniqueness remark for that set; a contained correction of the paragraph.",
+      "overall_effect": "The description of the saddle-point solution set of (4.9) and the expectations about Algorithm 2's dual iterates are wrong or unsupported; the primal-side claims are unaffected except through Theorem 4.1 (ISSUE-004).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that any mu is an optimal dual variable at the saddle point is false",
+      "why_classification": "A contained, routine correction of a characterisation; the algorithms' operation and the primal-side content survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Moreover, we set zero homogeneous Neumann boundary conditions on $\\partial \\Omega$.",
+          "tag": null
+        },
+        {
+          "quote": "A Dirichlet condition, for example, would prescribe a predefined colour on $\\partial \\Omega$, which would artificially increase the cost.",
+          "tag": null
+        },
+        {
+          "quote": "\\dot c_i(t) = \\frac{1}{N} \\sum_{j=1}^N \\phi\\bigl(r_{ij}^\\varepsilon(t)\\bigr) \\bigl(c_j(t)-c_i(t)\\bigr), \\quad t \\in (0,T],",
+          "tag": "eq:MAsystem"
+        }
+      ],
+      "failure_explanation": "In the variation with respect to c, the spatial integration by parts of the terminal term produces the boundary integral \\oint_{\\partial\\Omega} v(x,T) \\partial_n c(x,T) dS, which the displayed second identity silently omits. The homogeneous Neumann condition is imposed on the perturbation direction (Dirichlet data are explicitly rejected), and a normal condition on v does not annihilate a boundary integral carrying v itself; the term vanishes only if the state satisfies \\partial_n c(.,T) = 0 on the boundary, a condition the multi-agent dynamics (2.1) — a family of decoupled ODEs with no spatial derivatives — neither imposes nor preserves. As written, the derivation therefore does not establish the stated adjoint terminal condition for a.e. (x,t); the gap is confined to the continuum derivation, since the discrete scheme uses the symmetric Neumann finite-difference Laplacian, for which the discrete integration by parts is exact.",
+      "failure_location": {
+        "quote": "where we used integration by parts and the divergence theorem.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Complete the boundary argument: either restrict the admissible variations to those vanishing (or with vanishing normal derivative, applied consistently) on the boundary and verify the state respects the same condition, or retain and cancel the boundary term explicitly; a contained, standard completion that leaves the stated optimality system unchanged.",
+      "overall_effect": "The paper's only derivation of the continuous optimality system (4.1) is incomplete at the boundary; the defect is contained because the implemented discrete adjoint uses the exact symmetric Neumann discretisation, so Algorithm 1's adjoint step remains valid.",
+      "primary_affected_tag": "eq:opt_system",
+      "target_type": "formal_result",
+      "title": "Appendix derivation of the adjoint system drops an unaccounted boundary term",
+      "why_classification": "A local, routine completion of a boundary-integration step preserves every stated equation and the discrete scheme; no new architecture is needed."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2510.16154",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0e65a25c7ce5d3d8e0031d767c9cc9dbc1d9783214c3b658f7ae9eecf91bcc8b",
+  "status": "ok"
+}

@@ -1,0 +1,330 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dfrac{x-\\mu_x}{\\sigma_x}, & \\text{if } \\rho=\\rho_W,",
+          "tag": "eq:x_norm"
+        },
+        {
+          "quote": "where $D\\mathcal E_x^{-1}=I$ for $\\rho=\\gamma$, and $D\\mathcal E_x^{-1}=\\mathrm{diag}(\\sigma_x)$ for $\\rho=\\rho_W$.",
+          "tag": "alg:mf_training_encode_decode"
+        }
+      ],
+      "failure_explanation": "Writing D = diag(σ_x), the normalized covariance is D⁻¹CD⁻¹. Its correlation coefficients are exactly those of C, so pointwise standardization neither erases correlations nor whitens a correlated field. For a stationary periodic prior with constant pointwise variance, it is merely scalar rescaling. The corresponding decoder weight also does not, by itself, establish the claimed spectral whitening or high-frequency reweighting.",
+      "failure_location": {
+        "quote": "For an anisotropic reference $\\rho=\\gamma$, a unit-Gaussian (pointwise) normalizer erase the\ncorrelation structure and distort the intended trace-class $C$-geometry.\nIn contrast, for a discretization-level white reference $\\rho_W$, a unit-Gaussian normalizer acts as a whitening\nstep in the encoded coordinates and can mitigate the white-vs-trace-class mismatch.",
+        "tag": "rem:normalizer_choice"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Describe the operation as marginal standardization, remove the correlation-erasure and covariance-whitening assertions, and restrict conditioning claims to properties established for the actual diagonal scaling.",
+      "overall_effect": "The mathematical explanation of Encode-only preconditioning and the associated spectral interpretation of Encode–Decode are unsupported; the numerical measurements themselves are not disproved.",
+      "primary_affected_tag": "rem:normalizer_choice",
+      "target_type": "formal_result",
+      "title": "Pointwise standardization is incorrectly identified with covariance whitening",
+      "why_classification": "The algorithms can remain unchanged, but a substantive mathematical explanation must be withdrawn or replaced by a contained covariance-conditioning analysis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "w_{\\mathrm{tgt}}\n:=\nv-(t-r)\\,\\mathrm{JVP}_{(z,r,t)}\\bigl(w_\\theta;\\,(v,0,1)\\bigr),",
+          "tag": "eq:w_target_mf"
+        },
+        {
+          "quote": "\\mathcal L_\\mathrm{EO}(\\theta)\n:=\n\\mathbb E\\Bigl[\n\\bigl\\|w_\\theta(z_t,r,t;\\tilde y_{\\mathrm{obs}})-\\mathrm{sg}(w_{\\mathrm{tgt}})\\bigr\\|^2\n\\Bigr],",
+          "tag": "eq:mf_loss"
+        }
+      ],
+      "failure_explanation": "The target changes with θ through the JVP; stop-gradient changes differentiation, not its numerical value. Consequently, its conditional mean and conditional variance also depend on θ. For example, at r = 0, t = 1/2 with independent standard Gaussian endpoints and w_θ(z) = θz, the numerical risk is θ²/2 + 2(1−θ/2)², minimized at θ = 1, whereas the conditional mean of the target is zero. The displayed decomposition can hold separately for each θ, but it does not identify a fixed population minimizer or a θ-independent irreducible risk.",
+      "failure_location": {
+        "quote": "Since the loss is a mean-squared regression in the encoded coordinates, its population minimizer is the\nconditional mean\n\\begin{equation*}\nw^\\star(z_t,r,t;\\tilde y_{\\mathrm{obs}})\n=\n\\mathbb E\\left[w_{\\mathrm{tgt}}\\mid z_t,r,t,\\tilde y_{\\mathrm{obs}}\\right],",
+        "tag": "eq:eo_minimizer"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State the conditional-mean projection result for frozen target parameters. Treat self-consistent training as a fixed-point or semi-gradient problem, rather than identifying its solution with the ordinary minimizer of a fixed-target regression risk.",
+      "overall_effect": "The claimed population-optimality justification for the CEM interpretation of the training objectives is not established.",
+      "primary_affected_tag": "eq:eo_minimizer",
+      "target_type": "other",
+      "title": "The population-minimizer argument treats a parameter-dependent target as fixed",
+      "why_classification": "A frozen-target statement remains valid, but the asserted optimization characterization must be weakened or supported by a separate fixed-point analysis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:avg_velocity_lipschitz",
+        "cor:exists_lipschitz_onestep"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "z_t = (1-t)x + t\\xi, \\quad v(z_t,t)= \\xi - x,\\quad t\\in[0,1].",
+          "tag": "eq:linear_path"
+        },
+        {
+          "quote": "w_{r,t}\n:=&\\frac{1}{t-r}\\int_r^t v(z_\\tau,\\tau)\\mathrm{d}\\tau",
+          "tag": "eq:avg_velocity_def"
+        },
+        {
+          "quote": "\\mathcal{T}_\\theta(\\xi;y_{\\mathrm{obs}})\n:= \\xi - w_\\theta(\\xi,0,1;\\,y_{\\mathrm{obs}}),",
+          "tag": "eq:one_step_sampler"
+        }
+      ],
+      "failure_explanation": "Along the displayed straight path, v is the random constant ξ−x, so its pathwise average is also ξ−x. At t = 1, z₁ = ξ does not determine x, and this average is not a deterministic function of the network inputs. Simply taking its conditional mean gives w(ξ;0,1) = ξ−E[x|y], whose proposed sampler returns the posterior mean deterministically. A nontrivial posterior transport instead requires the conditional marginal velocity and averages along its characteristic flow; that construction is absent from the definition used by the theorem.",
+      "failure_location": {
+        "quote": "Assume the Gaussian-tail condition in Assumption~\\ref{assu:gaussian_tail_function_space}. The averaged velocity\n$w(\\cdot;0,1)$ is globally Lipschitz on $\\mathcal{H}$",
+        "tag": "thm:lipschitz_onestep_main"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Distinguish the sampled velocity ξ−x from b_t(z;y) = E[ξ−x|z_t=z,y]. Define the averaged field along characteristics of b, and derive both the one-step endpoint identity and the stochastic JVP training identity for that field.",
+      "overall_effect": "The deterministic averaged field to which the regularity results refer, and its relationship to posterior transport, have not been correctly constructed.",
+      "primary_affected_tag": "thm:lipschitz_onestep_main",
+      "target_type": "formal_result",
+      "title": "The pathwise average does not define the deterministic velocity used by the transport theorem",
+      "why_classification": "This requires a substantive but contained conditional-flow construction; the displayed training mechanism can be retained after its population object is correctly defined."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\Delta \\psi = u,& \\text{in }\\Omega,",
+          "tag": "eq:ns_vorticity"
+        },
+        {
+          "quote": "Let $k=(k_1,k_2)\\in\\mathbb{Z}^2$ be the wavevector. The covariance is specified via the spectral density\n\\[\n\\lambda_k=\\Big((2\\pi)^2|k|^2+\\kappa^2\\Big)^{-d},\n\\]",
+          "tag": null
+        },
+        {
+          "quote": "In practice, we truncate to $N_{\\mathrm{KL}}=64$ KL coefficients (real Fourier basis), ordered by increasing $|k|^2$.",
+          "tag": null
+        },
+        {
+          "quote": "\\hat\\psi(k)=\\frac{\\hat u(k)}{\\lambda_k},\\quad k\\neq 0,\\quad \\hat\\psi(0)=0,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A periodic solution of −Δψ = u requires the spatial mean of u to vanish. The stated Fourier prior includes k = 0 with positive variance κ^(−2d), and the leading-mode truncation does not remove it. Thus the initial vorticity has nonzero spatial mean almost surely. Setting the streamfunction's zero mode to zero fixes a gauge but cannot satisfy the missing Poisson equation at k = 0.",
+      "failure_location": {
+        "quote": "we consider the forward map $\\mathcal{G}(u_0)=u(\\cdot,T=0.2)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Specify a spatially mean-zero Navier–Stokes prior, remove the constant KL mode, enforce zero vorticity mode throughout the solver, and make the data-generation and MCMC models consistent with that restriction.",
+      "overall_effect": "The stated Navier–Stokes forward map is not defined for almost every draw from its specified prior. Ignoring the zero mode instead solves a different forward model, affecting the associated training data and posterior references.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The Navier–Stokes prior violates periodic Poisson compatibility",
+      "why_classification": "The repair is confined to one model, but it changes the stated Bayesian prior and requires the corresponding numerical reference problem to be made consistent."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\partial_\\tau u + \\mathbf b\\cdot\\nabla u = 0  &\\text{in }\\Omega\\times(0,\\infty),",
+          "tag": "eq:advection_pde"
+        },
+        {
+          "quote": "Under the KL parameterization, the prior becomes standard Gaussian,\n\\[\nh\\sim\\mathcal{N}(0,I_{N_{\\mathrm{KL}}}),\n\\]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The stated constant-velocity advection equation is linear in its initial condition, as is its upwind discretization. Composing that map with linear observations and KL synthesis gives a linear-Gaussian inverse problem. Its coefficient posterior is Gaussian and admits the same conditioning formula used for the identity benchmark. The categorical nonlinear description therefore incorrectly includes advection.",
+      "failure_location": {
+        "quote": "For the PDE-based inverse problems (Darcy flow, advection, reaction-diffusion, and Navier-Stokes),\nthe forward operator $\\mathcal G$ is nonlinear and is defined implicitly through a PDE solver.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Separate advection as a linear-Gaussian case and acknowledge its closed-form posterior, while describing any retained MCMC reference as an optional numerical approximation.",
+      "overall_effect": "The mathematical classification and nonlinear-problem rationale for using MCMC do not apply to the advection benchmark; MCMC remains a valid optional approximation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Advection is incorrectly classified as a nonlinear inverse problem",
+      "why_classification": "The existing Gaussian-conditioning calculation supplies the correction, and no substantive method or sampling guarantee needs to be lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Bigl(1+\\tfrac12\\nu\\lambda_k\\Delta \\tau\\Bigr)\\hat u^{n+1}(k)\n=\n\\Bigl(1-\\tfrac12\\nu\\lambda_k\\Delta \\tau\\Bigr)\\hat u^{n}(k)\n-\\Delta \\tau\\,\\widehat{(\\mathbf q\\cdot\\nabla u)}^{n}(k)\n+\\Delta \\tau\\,\\hat g(k),",
+          "tag": "eq:imex-cn-euler"
+        }
+      ],
+      "failure_explanation": "Explicit Euler is not stable on nonzero imaginary eigenvalues of spectral advection. Even the frozen-velocity linearization has amplification R = (1−ν|κ|²h/2−ih q·κ)/(1+ν|κ|²h/2), so |R|≤1 requires h(q·κ)²≤2ν|κ|². The stated convective CFL does not imply this viscosity-dependent condition. Treating diffusion implicitly therefore does not justify the proposed stability criterion.",
+      "failure_location": {
+        "quote": "Since diffusion is treated implicitly, stability is governed by the explicit advection.\nWe enforce a convective CFL condition of the form\n\\[\n\\Delta \\tau \\;\\lesssim\\; \\frac{\\mathrm{CFL}}{\\|\\mathbf q\\|_{\\infty}\\,2\\pi k_{\\max}},\n\\quad 0<\\mathrm{CFL}<1,\n\\]",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Derive and enforce a valid state- and viscosity-dependent restriction for the stated integrator, and verify the experimental time step against it; alternatively use an advection integrator with an appropriate stability region.",
+      "overall_effect": "The stated time-step rule does not establish stability of the Navier–Stokes forward solver over the claimed parameter and input regime.",
+      "primary_affected_tag": "eq:imex-cn-euler",
+      "target_type": "algorithm",
+      "title": "The convective CFL condition does not ensure stability of spectral CN–Euler stepping",
+      "why_classification": "A contained stability analysis or integrator replacement is required, but the inverse-problem framework need not be abandoned."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:lipschitz_onestep_main",
+        "lem:avg_velocity_lipschitz",
+        "cor:exists_lipschitz_onestep"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Although Theorem~\\ref{thm:dimfree_lip_velocity} is stated and proved in finite dimensions in \\cite{meng2025pathway},\nits Lipschitz bound involves constants that are independent of the ambient dimension.\nWe therefore interpret it as a function-space stability statement.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The source expressly identifies the invoked theorem as finite-dimensional. Dimension-independent Lipschitz constants do not construct a Hilbert-space velocity, establish convergence of finite-dimensional velocities or flows, or identify the limiting pushforward. Uniform Lipschitz bounds alone do not even ensure pointwise convergence, as constant maps taking values in successive orthonormal basis vectors demonstrate. No corresponding construction or limiting argument is supplied.",
+      "failure_location": {
+        "quote": "Under Assumption~\\ref{assu:gaussian_tail_function_space}, the Föllmer velocity field\n$v(t,\\cdot)$ associated with transporting $\\rho=\\mathcal N(0,C)$ to $\\pi(\\cdot\\mid y_{\\mathrm{obs}})$\nis globally Lipschitz",
+        "tag": "thm:dimfree_lip_velocity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must define the infinite-dimensional velocity and prove convergence or a direct Hilbert-space construction under the stated assumptions. Restricting the theorem to finite dimensions would relinquish the advertised function-space guarantee.",
+      "overall_effect": "The claimed function-space velocity theorem and the transport regularity results depending on it remain unproved.",
+      "primary_affected_tag": "thm:dimfree_lip_velocity",
+      "target_type": "formal_result",
+      "title": "A finite-dimensional velocity theorem is asserted in Hilbert space without a limit argument",
+      "why_classification": "The only established scope identified by the source is finite-dimensional; retaining the advertised regime requires a new function-space existence and limiting argument."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:lipschitz_onestep_main",
+        "cor:exists_lipschitz_onestep"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the Föllmer velocity field\n$v(t,\\cdot)$ associated with transporting $\\rho=\\mathcal N(0,C)$ to $\\pi(\\cdot\\mid y_{\\mathrm{obs}})$",
+          "tag": "thm:dimfree_lip_velocity"
+        },
+        {
+          "quote": "z_t = (1-t)x + t\\xi, \\quad v(z_t,t)= \\xi - x,\\quad t\\in[0,1].",
+          "tag": "eq:linear_path"
+        }
+      ],
+      "failure_explanation": "Even after distinguishing sampled and marginal velocities, the linear-coupling Mean Flow is not identified with the Föllmer dynamics in the cited theorem. For π = ρ = N(0,C), satisfying the assumption with B = C and U = 0, the linear interpolation has marginal velocity b_t(z) = (2t−1)z/((1−t)²+t²). Its Lipschitz constant at t = 0 is 1, so it cannot satisfy the invoked L₀t bound. A change of path, time parameter, or direction requires a separate argument that is not supplied.",
+      "failure_location": {
+        "quote": "Assume Theorem~\\ref{thm:dimfree_lip_velocity}. Then average velocity $w(\\cdot;r,t)$ for $0\\le r\\le t\\le 1$ is globally Lipschitz and",
+        "tag": "lem:avg_velocity_lipschitz"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must prove regularity for the conditional marginal velocity of the stated linear coupling, or establish an explicit transformation to the Föllmer dynamics and propagate all resulting factors through the transport argument.",
+      "overall_effect": "A valid Föllmer theorem would still not establish the stated regularity guarantee for the Mean Flows backbone actually trained in the paper.",
+      "primary_affected_tag": "lem:avg_velocity_lipschitz",
+      "target_type": "formal_result",
+      "title": "The Föllmer velocity bound is applied to a different interpolation dynamics",
+      "why_classification": "Without a new bridge or a matching velocity theorem, the regularity guarantee must be withdrawn for the advertised generative construction, independently of the finite-dimensional extension gap."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:lipschitz_onestep_main",
+        "cor:exists_lipschitz_onestep"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{t-r}\\int_r^t v(z_\\tau,\\tau)\\mathrm{d}\\tau",
+          "tag": "eq:avg_velocity_def"
+        }
+      ],
+      "failure_explanation": "The integrand is evaluated along a trajectory depending on the input or terminal state. Comparing two averages therefore requires a bound on the separation of those trajectories, not merely Lip(v_τ). For example, v(τ,z) = −aτz satisfies Lip(v_τ) = aτ, but the trajectory ending at z₁ = ξ gives w(ξ;0,1) = (1−e^(a/2))ξ. Its Lipschitz constant is e^(a/2)−1, larger than a/2. The displayed inference is valid for a pointwise time average, not for the transport average defined along characteristics.",
+      "failure_location": {
+        "quote": "\\mathrm{Lip}\\big(w(\\cdot;r,t)\\big)\n\\le \\frac{1}{t-r}\\int_r^t \\mathrm{Lip}\\big(v(\\tau,\\cdot)\\big)\\,d\\tau",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Use characteristic-flow estimates and Grönwall's inequality. For a legitimate velocity with Lip(v_τ)≤L₀τ, the usual bounds are Lip(T)≤exp(L₀/2) and Lip(w(·;r,t))≤(exp(L₀(t²−r²)/2)−1)/(t−r), with the appropriate endpoint convention.",
+      "overall_effect": "The bounds Lip(w(·;0,1))≤L₀/2 and Lip(T)≤1+L₀/2 do not follow from the velocity estimate.",
+      "primary_affected_tag": "lem:avg_velocity_lipschitz",
+      "target_type": "formal_result",
+      "title": "Averaging along trajectories omits the flow's sensitivity to its endpoint",
+      "why_classification": "A contained replacement argument preserves dimension-free global Lipschitz regularity, but not the stated constants."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{T}:\\mathcal{H}^{-s}\\to \\mathcal{H}^{-s}, \\quad \\mathcal{T}(\\xi)=C^{1/2}\\xi,",
+          "tag": null
+        },
+        {
+          "quote": "Let $C:\\mathcal{H}\\to \\mathcal{H}$ be self-adjoint, nonnegative, and trace-class with eigenpairs\n$Ce_k=\\lambda_k e_k$, $\\lambda_k\\ge0$, $\\sum_{k\\ge1}\\lambda_k<\\infty$.",
+          "tag": "prop:white_colored_singular"
+        }
+      ],
+      "failure_explanation": "Trace-class C is bounded, so C^(1/2) restricts to a globally Lipschitz map H→H. More strongly, the allowed choice λ_k = k^(−2s) gives ||C^(1/2)x||_H = ||x||_(H^(−s)), making the stated white-to-colored pushforward a Lipschitz map from the actual noise space into H. The fact that white noise is not an H-valued input law is a domain issue; it does not establish nonregularity of the transport or an obstruction caused by mutual singularity itself.",
+      "failure_location": {
+        "quote": "Thus $\\mathcal{T}$ maps $\\rho_{\\mathrm{W}}$-almost every input (which lies outside $\\mathcal{H}$) to an $\\mathcal{H}$-valued\noutput, and cannot be realized as a continuous or Lipschitz map $\\mathcal{H}\\to\\mathcal{H}$.",
+        "tag": "ex:direct_singular_map"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Replace the nonregularity conclusion by the precise typed-input statement that white noise is not a probability law on H. Explicitly acknowledge the bounded restriction and possible Lipschitz smoothing transports from a distribution space, and qualify the corresponding necessity claims.",
+      "overall_effect": "The singularity-to-nonregularity inference and the associated necessity claims are unsupported. The two mutual-singularity propositions and the displayed Gaussian pushforward remain valid.",
+      "primary_affected_tag": "ex:direct_singular_map",
+      "target_type": "formal_result",
+      "title": "Support singularity is incorrectly turned into a regularity obstruction for the smoothing map",
+      "why_classification": "The regularity conclusion must be replaced, but the pushforward and support-singularity results survive and provide a comparable, narrower domain-compatibility statement."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\STATE Form the interpolation state $z_t = (1-t)\\tilde x + t\\xi$.",
+          "tag": "alg:mf_training_encode_only"
+        },
+        {
+          "quote": "z_t=(1-t)\\tilde x+t\\xi,\n\\quad\nv=\\xi-\\tilde x.",
+          "tag": "eq:zt_and_v"
+        },
+        {
+          "quote": "We also consider an \\emph{Encode--Decode} variant (Algorithms~\\ref{alg:mf_training_encode_decode}--\\ref{alg:mf_sampling_encode_decode}),\nwhere the regression error is evaluated after decoding back to physical space.",
+          "tag": null
+        },
+        {
+          "quote": "\\STATE Encode reference: $\\tilde \\xi = \\mathcal{E}_x(\\xi)$.",
+          "tag": "alg:mf_sampling_encode_decode"
+        }
+      ],
+      "failure_explanation": "The main-text Encode–Decode loss uses the previously defined interpolation with ξ distributed as ρ in encoded coordinates. The appendix algorithm instead uses an encoded latent with law (E_x)#ρ. For a white reference this changes its covariance from I to diag(σ_x)⁻²; it also changes the interpolation and velocity target. Thus the procedure does not implement merely the stated J*J-weighted version of the Encode-only regression, and the experiments do not isolate that weighting.",
+      "failure_location": {
+        "quote": "\\STATE Encode latent: $\\tilde \\xi = \\mathcal{E}_x(\\xi)$.",
+        "tag": "alg:mf_training_encode_decode"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Use the same encoded latent law in both variants by removing the extra latent encoding in Encode–Decode training and sampling, then recompute the comparison; alternatively state that both the latent geometry and loss change and withdraw the weight-only attribution.",
+      "overall_effect": "The contract between the stated Encode–Decode objective and its implementation is inconsistent, and attributing the observed differences solely to decoded loss geometry is confounded.",
+      "primary_affected_tag": "alg:mf_training_encode_decode",
+      "target_type": "algorithm",
+      "title": "Encode–Decode changes the encoded reference law as well as the loss geometry",
+      "why_classification": "The repair requires reoptimization of the intended ablation or a substantive limitation of its interpretation, but no new global sampling architecture."
+    }
+  ],
+  "issues_found": 11,
+  "paper_id": "2603.14798",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0f6ec979e47d2519e2c412057c0f5825f3ea8b1152a13eeb5f936f507299fc73",
+  "status": "ok"
+}

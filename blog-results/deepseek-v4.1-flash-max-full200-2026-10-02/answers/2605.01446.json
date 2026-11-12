@@ -1,0 +1,122 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\tau_k \\le -\\rho$",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "\\max_{i \\in \\Iup} \\tau_i = \\tau_{i^*} \\;\\geq\\; -\\rho \\;\\geq\\; \\min_{j \\in \\Idown} \\tau_j = \\tau_{j^*}",
+          "tag": "eq:bias-bounds"
+        }
+      ],
+      "failure_explanation": "The stationarity equation has the signs of the lower and upper bound multipliers swapped. For a minimization with $0\\le u_i\\le C_i$, at a lower bound $u_i=0$ the derivative $G_i-s_i\\rho$ must be $\\ge0$, while at an upper bound $u_i=C_i$ it must be $\\le0$. The written equation $G_i-s_i\\rho=\\mu_i-\\lambda_i$ gives the opposite, contradicting the correct KKT table. Consequently, the bias bounds in eq:bias-bounds are reversed: the correct inequality is $\\max_{\\Iup}\\tau_i \\le -\\rho \\le \\min_{\\Idown}\\tau_i$.",
+      "failure_location": {
+        "quote": "G_i - s_i\\rho = \\mu_i - \\lambda_i, \\qquad i = 1,\\ldots,2N.",
+        "tag": "eq:kkt-stationarity"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Swap $\\lambda_i$ and $\\mu_i$ in the stationarity equation (equivalently write $G_i-s_i\\rho=\\lambda_i-\\mu_i$ with the stated definitions) and reverse the inequality in eq:bias-bounds.",
+      "overall_effect": "The KKT derivation is internally inconsistent; the bias interval in the no-free-support-vector case is stated backwards. The working-set algorithm still uses the correct table, so the main SMO update is not invalidated, but the stated KKT conditions and bias bounds are unreliable.",
+      "primary_affected_tag": "eq:kkt-stationarity",
+      "target_type": "other",
+      "title": "Incorrect sign in KKT stationarity and bias bounds",
+      "why_classification": "A local sign correction restores consistency with the already-correct table and preserves all substantive claims."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:asymmetry"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\tau_k \\le -\\rho$",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "i^* = \\argmax_{i \\in \\Iup}\\,\\tau_i, \\qquad j^* = \\argmin_{j \\in \\Idown}\\,\\tau_j",
+          "tag": "eq:mvp"
+        }
+      ],
+      "failure_explanation": "From the correct KKT table, all variables in $\\Iup$ satisfy $\\tau_i \\le -\\rho$ and all variables in $\\Idown$ satisfy $\\tau_j \\ge -\\rho$. Hence $\\max_{\\Iup}\\tau = \\tau_{i^*} \\le -\\rho \\le \\tau_{j^*} = \\min_{\\Idown}\\tau$, so the interval for $-\\rho$ is $[\\tau_{i^*}, \\tau_{j^*}]$, not $[\\tau_{j^*}, \\tau_{i^*}]$. The subsequent freeze criteria (eq:s1--eq:s4) are built on this reversed interval and therefore freeze variables that are not safely on the correct side of the KKT threshold. Lemma~\\ref{lem:asymmetry} inherits the wrong thresholds.",
+      "failure_location": {
+        "quote": "The optimal threshold $-\\rho$ lies in the interval $[\\tau_{j^*}, \\tau_{i^*}]$ (from~\\eqref{eq:mvp} and Table~\\ref{tab:kkt}).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the interval by $[\\tau_{i^*}, \\tau_{j^*}]$ and swap $\\tau_{i^*}$ and $\\tau_{j^*}$ in the four freeze criteria (eq:s1--eq:s4); update the rewritten equations in Lemma~\\ref{lem:asymmetry} accordingly.",
+      "overall_effect": "The shrinking heuristic's criteria are not justified by the KKT conditions; Lemma~\\ref{lem:asymmetry}'s rewritten inequalities use the wrong endpoints. The unshrinking step can still restore optimality, so final correctness is not necessarily lost, but the heuristic and its asymmetry lemma are mathematically misderived.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Reversed shrinking interval and freeze criteria",
+      "why_classification": "The repair is a local swap of the two endpoint thresholds; the qualitative gap-driven asymmetry survives and the final algorithm's correctness is protected by unshrinking."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$t = 1, 2, \\ldots, \\mathrm{maxiter}$}",
+          "tag": "alg:smo"
+        },
+        {
+          "quote": "\\State \\textbf{Reconstruction:} compute $F_k^{\\mathrm{full}}$ and $\\tau$ via \\eqref{eq:reconstruct}",
+          "tag": "alg:smo"
+        }
+      ],
+      "failure_explanation": "The pseudocode has only a single \\texttt{For} loop over iterations. The reconstruction and unshrinking check occur after that loop. When the full violation exceeds tolerance, the algorithm says to reset the active set and \"continue outer loop,\" but no outer loop exists. As written, it cannot resume SMO iterations after unshrinking; it would either terminate or leave the reset state unused, so the certified-optimality guarantee is not delivered.",
+      "failure_location": {
+        "quote": "Reset $\\Aactive \\leftarrow \\{1,\\ldots,N\\}$, $\\Afrozen \\leftarrow \\emptyset$; continue outer loop",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Wrap the SMO iteration loop and the reconstruction/unshrinking check inside an outer \\texttt{while} loop that repeats until the full KKT violation is within tolerance or maxiter is reached.",
+      "overall_effect": "The algorithm's stated unshrinking and certification procedure is not executable as written. It may return a non-optimal point when shrinking was too aggressive.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Missing outer loop for unshrinking in Algorithm 1",
+      "why_classification": "Adding the missing outer loop is a local control-flow fix that restores the intended guarantee without changing the mathematical update rules."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For $a = -1$ (odd symmetry), $\\Omega_s = \\tfrac{1}{2}(\\Omega - \\Omega^*)$ need not be positive semi-definite, so $\\eta_s < 0$ is possible.",
+          "tag": null
+        },
+        {
+          "quote": "$K(\\mathbf{x},\\mathbf{x}') = \\exp(-\\gamma\\|\\mathbf{x}-\\mathbf{x}'\\|^2)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The matrix $\\Omega^*$ with entries $K(x_k,-x_\\ell)$ is not generally PSD. For the RBF kernel, take $x_1=1$, $x_2=2$; then $\\Omega^* = [[e^{-4\\gamma}, e^{-9\\gamma}], [e^{-9\\gamma}, e^{-16\\gamma}]]$ has determinant $e^{-20\\gamma}-e^{-18\\gamma}<0$, so it is not PSD. Thus the stated justification for $\\Omega_s\\succeq0$ at $a=+1$ is false. Moreover, for standard sign-invariant kernels such as RBF, the odd projection kernel $\\Omega_s=\\frac12(\\Omega-\\Omega^*)$ is also PSD (it is the Gram matrix of the odd projection), so the claim that $\\eta_s<0$ may occur for $a=-1$ is false in the intended setting. The actual PSD property requires an involution-invariance hypothesis on the kernel, which is not stated.",
+      "failure_location": {
+        "quote": "For $a = +1$ (even symmetry), $\\Omega_s \\succeq 0$ follows from the fact that $\\Omega$ and $\\Omega^*$ are individually PSD.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "State the required kernel invariance $K(x,y)=K(-x,-y)$ and $K(x,-y)=K(-x,y)$, then prove $\\Omega_s$ is PSD for both $a=+1$ and $a=-1$ via the orthogonal projection onto even/odd functions (or provide a correct PSD proof for the intended kernel class).",
+      "overall_effect": "The convexity and convergence guarantees for the m2 extension are not correctly justified. The paper's claim that the convergence proof does not extend to $a=-1$ is also incorrect under the standard invariant-kernel assumption; conversely, the $a=+1$ PSD claim rests on a false premise.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Incorrect PSD claims for the symmetric-kernel variant (m2)",
+      "why_classification": "Correcting the m2 convexity analysis requires a new, contained argument (the projection/invariance condition) and changes the stated scope of convergence guarantees, but it does not affect the main m1 SMO derivation."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n02a",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

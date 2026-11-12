@@ -1,0 +1,164 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The fact that \\(\\hat{\\gamma}_{r_c}^{\\mathrm{PSWF}}(\\omega)\\\\) does not admit a closed-form expression outside the interval \\([ -c_s/r_c,\\, c_s/r_c ]\\) is unimportant in practice, since this region is never used.",
+          "tag": "tab:mollifiers"
+        },
+        {
+          "quote": "\\frac{c_s}{r_c} = \\omega_{\\max} = \\frac{2\\pi}{L} K_{\\max} = \\frac{\\pi m}{L}.",
+          "tag": "eq:csrc"
+        },
+        {
+          "quote": "\\STATE[$\\hat{\\bm{\\aii}}:=\\mathbf{C}\\,\\mathbf{D}\\,\\hat{\\bm{\\ai}}$] Diagonal scaling (omit $\\bm k=\\bm 0$):",
+          "tag": "alg:SE_Fourier"
+        }
+      ],
+      "failure_explanation": "The diagonal scaling of alg:SE_Fourier evaluates $\\hat M(\\bm k)=\\hat G(\\bm k)\\\\hat\\gamma_{r_c}^{c_s}(|\\bm\\omega(\\bm k)|)$ at every $\\bm k\\in\\mathcal I_{\\bm m}$, which is a cube. Its corner modes, e.g. $(m/2-1,m/2-1,m/2-1)$, have $|\\bm\\omega|=\\frac{2\\pi}{L}\\sqrt3\\,(m/2-1)>\\frac{\\pi m}{L}=c_s/r_c$ (for $m\\ge 6$), i.e. outside the band where the closed form eq:PSWF_mollifier_ft is valid. Hence out-of-band values of $\\hat\\gamma_{r_c}^{c_s}$ are required in practice; the numerical section indeed evaluates the mollifier 'at all available wavenumbers (also outside the bandlimit)'. The claim that only in-band modes are required is false for the cubic truncation (it would hold only for a ball truncation $|\\bm k|\\le m/2$).",
+      "failure_location": {
+        "quote": "We remark that \\eqref{eq:gammahatintegral} is included only for completeness; the integral representation \\eqref{eq:gammahatintegral} is never used in practice, since only Fourier modes within the band $[-c_s/r_c,\\, c_s/r_c]$ are required.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the two sentences to state that the closed form is used on the band and that out-of-band values, needed only at the $O(m^2)$ corner modes of the cubic truncation, are evaluated from the integral eq:gammahatintegral or bounded by the tail; alternatively truncate the Fourier sum to a ball $|\\bm k|\\le m/2$ so the band suffices. No other change is needed.",
+      "overall_effect": "The assertion that the mollifier's out-of-band Fourier transform 'is never used' (text after eq:gammahatintegral and caption of tab:mollifiers) is incorrect about the algorithm's operation: corner modes of $\\mathcal I_{\\bm m}$ lie outside the band. No quantitative conclusion changes, since the corner modes are exponentially small and the reference implementation evaluates them, but the claim is false as written.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Out-of-band mollifier values are required at corner modes of the cubic truncation",
+      "why_classification": "The false claim is a small overstatement affecting only the $O(m^2)$ corner modes, whose contribution is exponentially small; the numerical section already evaluates the mollifier outside the band for the reference solution. A one- or two-sentence correction preserves every claim, rate, and guarantee, so the repair is local and routine."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "C_* \\;:=\\; 1 \\;+\\; \\left(\\frac{\\omega_{\\max}}{\\omega_*}\\right)^{\\!2}\\, \\frac{c_s\\,\\lambda_0^{2}}{\\,2\\pi - c_s\\,\\lambda_0^{2}\\,}.",
+          "tag": "prop:PSWF_split_errors"
+        },
+        {
+          "quote": "1-\\mu_0(c) \\sim 4\\sqrt{\\pi c}\\,e^{-2c} \\qquad \\text{as } c\\to\\infty,",
+          "tag": "eq:fuchs"
+        },
+        {
+          "quote": "where $\\mu_0(c) = c/(2\\pi)\\,\\lambda_0^2$ is the first concentration eigenvalue associated with $\\psi_0^c$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "$C_* = 1 + (\\omega_{\\max}/\\omega_*)^2\\, c_s\\lambda_0^2/(2\\pi - c_s\\lambda_0^2)$, and $c_s\\lambda_0^2/(2\\pi-c_s\\lambda_0^2) = \\mu_0/(1-\\mu_0)$ with $\\mu_0 = c_s\\lambda_0^2/(2\\pi) \\to 1$ (Fuchs: $1-\\mu_0 \\sim 4\\sqrt{\\pi c_s}\\,e^{-2c_s}$). Hence $C_* \\sim e^{2c_s}/(4\\sqrt{\\pi c_s}) \\to \\infty$, not $1$, even when $\\omega_* \\approx \\omega_{\\max}$; the claim $C_* \\approx 1$ is false. The model eq:PSWF_model is nevertheless correct for the true error because every omitted mode has $|\\bm k| > K_{\\max}$, i.e. $\\omega > \\omega_{\\max} = c_s/r_c$, so only the tail of $\\hat\\gamma$ contributes; the in-band interval $[\\omega_*,\\omega_{\\max}]$ that $C_*$ measures is an artifact of the lattice-to-continuum slack and contains no omitted modes. As written, dropping $C_*$ is unjustified, and the rigorous bound prop:PSWF_split_errors is exponentially loose (only algebraic in $c_s$, overestimating the true error by $\\sim e^{2c_s}$), so it does not deliver the advertised exponential decay.",
+      "failure_location": {
+        "quote": "In practical settings, where the truncation parameter $\\Kmax$ is sufficiently large (so that $\\omega_* \\approx \\omega_{\\max}$), this factor satisfies $C_* \\approx 1$ and can therefore be neglected.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Justify dropping $C_*$ by a boundary-layer argument: all omitted modes satisfy $|\\bm k|>K_{\\max}$, hence $\\omega>\\omega_{\\max}=c_s/r_c$, so the error integral may be taken from above the band edge; bound the bulk by the tail integral (giving $C_*=1$) and the $O(K_{\\max}^2)$ boundary-layer modes separately (all out-of-band and exponentially small). The model eq:PSWF_model then follows with $C_*=1$ legitimately. A sharper rigorous replacement of prop:PSWF_split_errors requires this new, contained argument; the practical conclusions stand because the model is empirical and numerically validated.",
+      "overall_effect": "The derivation of the closed-form split-error model eq:PSWF_model rests on a false simplification; the rigorous bound prop:PSWF_split_errors is exponentially loose because the lattice-to-continuum integral dips into an in-band region containing no omitted modes, so the paper's claim of 'sharp' rigorous bounds with exponential decay is not delivered by the bound. The model itself, the balancing eq:cwcs_model_dimless, Algorithm alg:parameter, and all numerical conclusions remain correct, since the true error is exponentially small and matches the model.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that C_* is approximately 1 in the split-error model derivation",
+      "why_classification": "The false claim is quantitatively egregious (the neglected factor is $\\sim e^{2c_s}$, not $\\approx 1$), and repairing it requires a genuine, though contained, argument (recognizing that the in-band interval contains no omitted modes and treating the lattice boundary layer separately); it is not a typo-level fix. No headline practical result is lost — the model, parameter selection, and numerics all survive — but the advertised rigorous exponential bound must be re-derived, so the repair exceeds a routine local patch."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "eq:window_err_model"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The truncated window $\\varphi_t^{c_w}(\\bx)$ with Fourier transform given by $\\hat{\\varphi}^{c_w}(\\bomega)$ in $[-c_w/\\alpha,c_w/\\alpha]^3$ is what we will refer to as the PSWF window function",
+          "tag": null
+        },
+        {
+          "quote": "\\displaystyle\\alpha\\,\\lambda_0\\,\\frac{\\psi_0^{c_w}(\\alpha \\omega / c_w)}{\\psi_0^{c_w}(0)}, & \\omega\\in\\Big[-\\frac{c_w}{\\alpha},\\frac{c_w}{\\alpha}\\Big]\\\\[1.5ex] \\text{no closed form}, & \\text{otherwise}",
+          "tag": "tab:reference_windows"
+        },
+        {
+          "quote": "\\left|\\tfrac{2}{m}(k_i + m r_i)\\right| \\in [1,3],",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The product formula $\\hat\\varphi_t^{c_w}(\\bomega) = (\\alpha\\lambda_0/\\psi_0^{c_w}(0))^3 \\prod_i \\psi_0^{c_w}(\\alpha\\omega_i/c_w)$ is valid only for $|\\omega_i| \\le c_w/\\alpha$, i.e. $(2/m)|k_i| \\le 1$; the paper itself states there is 'no closed form' outside this band. For every genuine alias ($\\bm r \\ne 0$), some $(2/m)|k_i + m r_i| \\in (1,3]$ (the paper itself notes $|2(k_i+mr_i)/m| \\in [1,3]$), so the on-band identity $\\hat\\psi_0^{c_w} = \\lambda_0\\psi_0^{c_w}(\\cdot/c_w)$ is applied outside its hypothesis and the right-hand side of eq:interpol_est is not even well-defined under the paper's own convention, since $\\psi_0^{c_w}$ is only defined on $[-1,1]$. The same problem affects the mollifier factor $\\psi_0^{c_s}(2|\\bm k|/m)$ at corner modes of $\\mathcal I_{\\bm m}$ (arguments up to $\\sqrt3$). The exact identity lem:aliasing is unaffected, but the rigorous bound is unestablished as written.",
+      "failure_location": {
+        "quote": "Using $\\omega_i/\\omega_{\\max}=2k_i/m$, this ratio can be written as \\begin{align} \\frac{c_{\\bk+m\\bm{r}}^2(\\tilde{\\varphi}_t^{c_w})} {c_{\\bk}^2(\\tilde{\\varphi}_t^{c_w})} = \\frac{\\displaystyle\\prod_{i=1}^3 \\psi_0^{c_w}\\!\\Big(\\tfrac{2}{m}(k_i+m r_i)\\Big)^2} {\\displaystyle\\prod_{i=1}^3 \\psi_0^{c_w}\\!\\Big(\\tfrac{2}{m}k_i\\Big)^2}, \\end{align}",
+        "tag": "prop:interpol_est"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Make the aliasing bound rigorous by either (i) explicitly defining the extension $\\psi_0^{c_w}(s) := \\hat\\psi_0^{c_w}(c_w s)/\\lambda_0$ for all real $s$ (which makes the displayed product formula exact for every $\\bm k$) and proving the required monotonicity of $\\hat\\psi_0^{c_w}$ on $[c_w,3c_w]$, or (ii) bounding the true tail $|\\hat\\psi_0^{c_w}(u)|$ for $u\\in[c_w,3c_w]$ directly (e.g. by steepest descent or integration by parts) in terms of $\\lambda_0\\psi_0^{c_w}(1)$; then re-derive eq:interpol_est and the model eq:window_err_model on that basis.",
+      "overall_effect": "Proposition prop:interpol_est's bound is not established as stated and its right-hand side is undefined under the paper's convention. The closed-form aliasing model eq:window_err_model loses its rigorous basis (it remains numerically accurate, since the true alias coefficients $|\\hat\\psi_0^{c_w}(u)|$ for $u\\in[c_w,3c_w]$ are likewise $\\sim\\lambda_0\\psi_0^{c_w}(1)$), and with it the rigorous justification of the balancing eq:cwcs_model_dimless and of the window-error model inside Algorithm alg:parameter; the practical parameter selection and all numerical conclusions are empirical and unaffected.",
+      "primary_affected_tag": "prop:interpol_est",
+      "target_type": "formal_result",
+      "title": "Aliasing bound applies the band-limited PSWF window formula outside its band",
+      "why_classification": "The proposition as written is not well-defined under the paper's own 'no closed form' convention, and repairing it requires a contained but nontrivial argument (an explicit extension convention plus monotonicity/tail estimates for $\\hat\\psi_0^{c_w}$ beyond the band). The exact aliasing identity survives and the downstream model remains numerically correct, so no practical conclusion is lost, but the rigorous estimate must be reworked rather than patched by a typo-level fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\mu_0(c) = c/(2\\pi)\\,\\lambda_0^2$ is the first concentration eigenvalue associated with $\\psi_0^c$ and $\\|\\psi_0^c\\|_{L^2(-1,1)} = 1$.",
+          "tag": null
+        },
+        {
+          "quote": "1-\\mu_0(c) \\sim 4\\sqrt{\\pi c}\\,e^{-2c} \\qquad \\text{as } c\\to\\infty,",
+          "tag": "eq:fuchs"
+        }
+      ],
+      "failure_explanation": "With the paper's convention $\\hat\\psi_0^c(\\omega)=\\int_{-1}^1\\psi_0^c(x)e^{i\\omega x}dx$, Plancherel gives $\\|\\hat\\psi_0^c\\|^2_{L^2(\\R)} = 2\\pi$, and $\\mu_0(c)=c\\lambda_0^2/(2\\pi)$ is the fraction of that energy in $[-c,c]$; hence $\\int_{|u|>c}|\\hat\\psi_0^c|^2du = 2\\pi(1-\\mu_0(c))$, i.e. $1-\\mu_0 = \\frac{1}{2\\pi}\\|\\hat\\psi_0^c\\|^2_{L^2(|u|>c)}$. The displayed equation asserts $1-\\mu_0 = 2\\pi\\int_{|u|>c}|\\hat\\psi_0^c|^2 = \\|\\hat\\psi_0^c\\|^2_{L^2(|u|>c)}$, which is wrong by factors of $2\\pi$ in both equalities.",
+      "failure_location": {
+        "quote": "1-\\mu_0(c) = 2\\pi \\int_{\\R\\setminus [-c,c]} |\\widehat{\\psi}_0^c(\\omega)|^2\\,d\\omega = \\|\\widehat{\\psi}_0^c\\|^2_{L^2(\\R\\setminus [-c,c])},",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the display by the correct identity $1-\\mu_0(c) = \\frac{1}{2\\pi}\\|\\hat\\psi_0^c\\|^2_{L^2(\\R\\setminus[-c,c])}$ (equivalently $\\int_{\\R\\setminus[-c,c]}|\\hat\\psi_0^c|^2d\\omega = 2\\pi(1-\\mu_0(c))$). No other change is needed.",
+      "overall_effect": "Only the displayed identity in Appendix A is false; the subsequent Fuchs-based tail asymptotic ($\\|\\hat\\psi_0^c\\|_{L^2(\\R\\setminus[-c,c])} \\sim C_{\\mathrm F} c^{1/4} e^{-c}$) and all curve fits are unaffected, because the constant $C_{\\mathrm F}$ is stated to depend on the Fourier-transform convention and absorbs the factor.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Wrong 2π factors in the concentration-identity display (Appendix A)",
+      "why_classification": "A one-line correction of the displayed identity fixes it, and every downstream consequence (the Fuchs asymptotic and all fits) is already correct because the convention-dependent constant absorbs the factor; no claim, rate, or guarantee is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:dirsumerr_L2",
+        "prop:PSWF_split_errors"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For any $\\bx\\in Q_{\\bm{k}}$ one has $||\\bx|-|\\bm{k}||\\le\\sqrt{3}/2$. Monotonicity of $f$ then yields the stated bound.",
+          "tag": "lem:cubecover"
+        },
+        {
+          "quote": "Since $|\\hat M(\\bk)|^2$ is radial and nonincreasing in $|\\bk|$, the lattice-to-continuum estimate of Lemma~\\ref{lem:cubecover} (Appendix~\\ref{app:cubecover}) yields the bound",
+          "tag": "lemma:dirsumerr_L2"
+        }
+      ],
+      "failure_explanation": "The lemma is false as stated: take $f(x)=1$ for $x\\le\\sqrt2$ and $0$ otherwise (nonincreasing) and $K=1.4>\\sqrt3/2$. Then $\\sum_{|\\bm k|>K} f(|\\bm k|) = 12$ (the twelve vectors $(\\pm1,\\pm1,0)$ and permutations, with $|\\bm k|=\\sqrt2\\in(1.4,\\sqrt2]$), while $\\int_{|\\bm x|>K-\\sqrt3/2} f(|\\bm x|)d\\bm x = \\frac{4\\pi}{3}\\big((\\sqrt2)^3-(1.4-\\sqrt3/2)^3\\big) \\approx 11.21 < 12$. The proof is also invalid: from $||\\bm x|-|\\bm k||\\le\\sqrt3/2$ one gets $|\\bm k|\\le|\\bm x|+\\sqrt3/2$, and monotonicity then gives $f(|\\bm k|)\\ge f(|\\bm x|+\\sqrt3/2)$, not $f(|\\bm k|)\\le f(|\\bm x|)$; the cube argument actually yields the shifted bound $\\sum_{|\\bm k|>K} f(|\\bm k|) \\le \\int_{|\\bm x|>K-\\sqrt3/2} f(|\\bm x|-\\sqrt3/2)\\,d\\bm x$.",
+      "failure_location": {
+        "quote": "Let $f:[0,\\infty)\\to[0,\\infty)$ be nonincreasing. For $K>\\sqrt{3}/2$, \\begin{align} \\sum_{|\\bm{k}|>K} f(|\\bm{k}|) \\;\\le\\; \\int_{|\\bx|>K-\\sqrt{3}/2} f(|\\bx|)\\\\,d\\bx. \\end{align}",
+        "tag": "lem:cubecover"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace Lemma lem:cubecover by the valid estimate $\\sum_{|\\bm k|>K} f(|\\bm k|) \\le \\int_{|\\bm x|>K-\\sqrt3/2} f(|\\bm x|-\\sqrt3/2)\\d\\bm x$ (provable by the same cube argument), redo the lattice-to-continuum step in lemma:dirsumerr_L2 with the shifted weight — adjusting $\\omega_*$ and the prefactor and including the $\\pm m/2$ axis modes omitted for even $m$ — and propagate the adjusted constants through prop:PSWF_split_errors. No headline result is lost.",
+      "overall_effect": "Lemma lem:cubecover is false and its proof is invalid. The lattice-to-continuum step in the proof of lemma:dirsumerr_L2 therefore lacks a valid justification (which additionally omits the $\\pm m/2$ axis modes of the even-$m$ truncation), and prop:PSWF_split_errors inherits the gap. With the corrected shifted lattice estimate the same conclusions hold with slightly adjusted constants ($\\omega_*$ and the prefactor), so the error model, the parameter selection, and all numerical results are unaffected, but the two proofs must be redone.",
+      "primary_affected_tag": "lem:cubecover",
+      "target_type": "formal_result",
+      "title": "Lattice covering lemma is false and its proof is invalid",
+      "why_classification": "A labelled lemma is false with an explicit counterexample and an invalid proof, and the repair requires a new (correct) lattice estimate plus recomputation of constants in two downstream proofs; this is more than a routine local patch. The repair is contained and every substantive conclusion (exponential error decay of the model, parameter selection, numerical results) survives, so the issue does not rise to serious."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2602.16591",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "5a7eb2381d02244a14f856ec8d079a82235af947f81b4666b55d9a1bda2341cf",
+  "status": "ok"
+}

@@ -1,0 +1,166 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\berr_{\\A,\\b}(\\x) = \\frac{\\|\\A\\x-\\b\\|_2}{\\|\\A\\|_2\\|\\x\\|_2}.",
+          "tag": "l:berr-formula"
+        },
+        {
+          "quote": "The smallest eigenvalue $\\lambda_{\\min}$, which is nonnegative, is equal to the square of the backward error of the MINBERR solution, that is, $\\lambda_{\\min} =  (\\berr_{\\A,\\b}(\\x_k))^2$.",
+          "tag": null
+        },
+        {
+          "quote": "if this breaks down (i.e., $\\sigma_{\\min}(\\tilde\\T)=\\berr_{\\A,\\b}(\\x_k)<\\epsilon$), proceed to step 7.",
+          "tag": "alg:MINBERR"
+        }
+      ],
+      "failure_explanation": "The generalized Rayleigh quotient in (eq:GRQ) is ||AQ_k y - b||/||Q_k y||, which equals ||A||_2 times the backward error, not the backward error itself. Hence lambda_min = (||A||_2 berr)^2, sigma_min(T~_k) = ||A||_2 berr(x_k), and ||T~_k v||/||v|| = ||A||_2 berr(x^). The equalities in Lemma l:quotient (and the analogous ones in Proposition prop:minberrNE) are false unless ||A||_2 = 1, and the Cholesky/dqds tolerance tests in Algorithms alg:MINBERR and alg:MINBERRnonsym compare ||A||_2 berr against epsilon, so the Ensure clause berr < epsilon is not what is tested.",
+      "failure_location": {
+        "quote": "\\x_k = \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "State that A is normalized so that ||A||_2 = 1 (as in the proof of Theorem t:minberr), or replace sigma_min by sigma_min/||A||_2 and test sigma_min < epsilon ||A||_2 (e.g. using a Lanczos estimate of ||A||_2).",
+      "overall_effect": "The stated value of the computed backward error and the epsilon-stopping guarantee of both algorithms are off by the factor ||A||_2; the argmin/ratio statements (and Theorem thm:minberrcost's relative guarantee) are unaffected.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Implementation identifies sigma_min(T~_k) with the backward error, dropping the ||A||_2 normalization",
+      "why_classification": "A local rescaling restores every statement and guarantee with no change to the method or rates."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:minberrcost",
+        "prop:minberrNE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\y = \\frac{1}{\\alpha}\\v_{\\min}",
+          "tag": "l:quotient"
+        },
+        {
+          "quote": "$\\widehat\\x_k = \\frac{1}{\\alpha}\\Q \\v$ where",
+          "tag": "alg:MINBERR"
+        },
+        {
+          "quote": "= \\ \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+          "tag": "prop:minberrNE"
+        }
+      ],
+      "failure_explanation": "The eigenvector of (eq:MM) has the form [-1; y], and the congruence gives W[0; v_min] = [alpha; v_min] with alpha as defined. Parallelism [-1; y] ∝ [alpha; v_min] forces y = -v_min/alpha, not v_min/alpha; the proof's claims that W[0;v_min] is parallel to [1; y] and that the first element of (1/alpha^)W[0;v^] is -1 are inconsistent with each other and with (eq:MM). Concrete check (k=1): T_1 = [alpha_1; beta_2], v_min = 1, so the lemma gives x_1 = -b/alpha_1, whereas minimizing ||tAb - b||/||tb|| over t gives t = b^T A b/||Ab||^2... explicitly for A = diag(1,2), b = (1,1)/sqrt2 one gets t = +2/3 = +1/alpha_1 while the lemma yields -2/3, whose backward error is about 3, not sigma_min = 0.5. The same sign error is copied into Step 12 of both algorithms and into Proposition prop:minberrNE (whose proof defers to this lemma).",
+      "failure_location": {
+        "quote": "is given by $(\\sigma_{\\min}^2,\\frac1\\alpha\\v_{\\min})$, where $\\alpha =-\\frac{1}{\\|\\b\\|_2}\\left((\\T_k)_{1,1}(\\v_{\\min})_1 +(\\T_k)_{1,2}(\\v_{\\min})_2\\right)$",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Flip the sign (define alpha without the leading minus, or set x = -(1/alpha) Q_k v) in Lemma l:quotient, Proposition prop:minberrNE, and Step 12 of both algorithms, and correct the parallelism statements in the proofs.",
+      "overall_effect": "As written, the returned vector is the negative of the MINBERR/MINBERR-NE minimizer, so the output does not have the stated backward error and Theorem thm:minberrcost's guarantee on x^_k fails for the algorithm as printed.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Sign error in the recovered MINBERR iterate: y = v_min/alpha should be -v_min/alpha",
+      "why_classification": "A one-sign local correction restores all statements, guarantees, and complexity claims unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:minberrcost"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\sum_{j \\in S_{\\mathrm{high}}} c_j^2}{c_1^2} \\leq \\frac{16n \\ln(2/\\delta)}{\\pi \\delta^2}.",
+          "tag": "lemma:invit"
+        }
+      ],
+      "failure_explanation": "Laurent–Massart gives chi^2_D <= D + 2 sqrt(D t) + 2t with probability 1 - e^{-t}; with t = ln(2/delta) this is not <= n ln(2/delta) in general (e.g. the inequality n + 2sqrt(nt) + 2t <= nt fails whenever t is below roughly 2, i.e. for moderate delta), and the claim itself is false for delta near 1 (e.g. n = 10, delta = 0.9: P(chi^2_9 <= 7.98) < 0.55). Hence the probability-(1-delta) guarantee in Lemma lemma:invit, with the stated iteration count, is not established for all delta in (0,1).",
+      "failure_location": {
+        "quote": "so by~\\cite[Eqn.~(4.3)]{laurent2000adaptive} we see that with probability $1-\\delta/2$, we have $\\sum c_j^2 \\leq n \\ln(2/\\delta)$.",
+        "tag": "lemma:invit"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Apply the Laurent–Massart bound correctly (e.g. chi^2_D <= C n ln(2/delta) for an explicit constant C) and adjust the constant 32 in the iteration formula and the dependent constant in the algorithm accordingly.",
+      "overall_effect": "The explicit constant in the required number of inverse iterations, and thus the probability-(1-delta) success statement of Theorem thm:minberrcost, is unsupported as written; the O(log(k/delta)) order is unaffected.",
+      "primary_affected_tag": "lemma:invit",
+      "target_type": "formal_result",
+      "title": "Chi-square tail bound in the inverse-iteration lemma does not follow from the cited inequality",
+      "why_classification": "Only an explicit constant changes; the method, probability type, and complexity order survive via a routine recalculation."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\ell\\geq \\frac{1}{2} \\Big[ 1 + \\frac{\\ln\\left( \\frac{32n \\ln(2/\\delta)}{\\pi \\delta^2 \\Delta} \\right)}{\\ln(1 + \\Delta/2)} \\Big]$",
+          "tag": "lemma:invit"
+        },
+        {
+          "quote": "In particular, for a $1/2$-relative error ($\\Delta = 0.5$), we require $\\ell \\geq 2.23 \\ln(n/\\delta^2)$.",
+          "tag": null
+        },
+        {
+          "quote": "$\\ell<2.23 \\ln(k / \\delta^2)$",
+          "tag": "alg:MINBERR"
+        }
+      ],
+      "failure_explanation": "With Delta = 1/2 and n = k, the lemma requires ell >= 1/2 + (1/(2 ln 1.25)) ln(64 k ln(2/delta)/(pi delta^2)) = 1/2 + 2.2407[ln(k/delta^2) + ln(20.37) + ln ln(2/delta)], which exceeds 2.23 ln(k/delta^2) by an additive term of about 6 or more for every delta in (0,1) (and 2.23 < 2.2407 even for the leading coefficient). E.g. k = 10, delta = 0.1: the algorithm runs 15.4 iterations while the lemma demands about 25. Hence the stated loop bound in Algorithms alg:MINBERR and alg:MINBERRnonsym is not justified by Lemma lemma:invit, and the probability-(1-delta) guarantee of Theorem thm:minberrcost is not derived.",
+      "failure_location": {
+        "quote": "shows that $\\ell \\geq 2.23 \\ln(k / \\delta^2)$",
+        "tag": "thm:minberrcost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the loop bound by the value actually implied by Lemma lemma:invit (e.g. ell >= 2.25 ln(k/delta^2) + 8, after also fixing the chi-square constant), which keeps the O(k log(1/delta)) cost.",
+      "overall_effect": "The constant-factor guarantee with probability 1-delta in Theorem thm:minberrcost (and the Ensure clause of both algorithms) is unsupported for the printed iteration count; asymptotic complexity is unaffected.",
+      "primary_affected_tag": "thm:minberrcost",
+      "target_type": "formal_result",
+      "title": "Inverse-iteration count 2.23 ln(k/delta^2) does not satisfy the condition of Lemma lemma:invit",
+      "why_classification": "Correcting an explicit constant/additive term is a local routine repair preserving all rates and complexity claims."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\berr_{\\A,\\b}(\\x_k)\\ \\leq \\frac 3{k^2-1}.",
+          "tag": "t:minberr"
+        },
+        {
+          "quote": "Numerical evidence suggests that the minimax optimal constant~is~$2$.",
+          "tag": null
+        },
+        {
+          "quote": "\\berr_{\\A,\\b}(\\widehat\\x_k)\\leq \n(1+\\frac{1}{2})\\min_{\\x\\in \\Kc_{k}(\\A,\\b)}\\berr_{\\A,\\b}(\\x)",
+          "tag": "thm:minberrcost"
+        }
+      ],
+      "failure_explanation": "The only proven bound is 3/(k^2-1). With k = ceil(sqrt(2/epsilon)) one has k^2 >= 2/epsilon, giving only 3/(k^2-1) <= 3 epsilon/(2 - epsilon) > epsilon for every epsilon in (0,1); the claim implicitly uses the conjectured constant 2 (and even then needs k^2 >= 2/epsilon + 1) and ignores the factor 3/2 incurred by the approximate inverse iteration in Theorem thm:minberrcost. The guarantee asserted for this variant is therefore not established.",
+      "failure_location": {
+        "quote": "If we fix the number of iterations upfront (e.g., to be $\\lceil\\sqrt{2/\\epsilon}\\rceil$, which guarantees that backward error is bounded by $\\epsilon$)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Use k = ceil(sqrt(4.5/epsilon + 1)) (so that 1.5 * 3/(k^2-1) <= epsilon), or state the choice as conjectural.",
+      "overall_effect": "The stated parameter choice for the fixed-iteration variant does not deliver epsilon backward error from the paper's results; the O(1/sqrt(epsilon)) complexity claim is unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Fixed iteration count ceil(sqrt(2/epsilon)) does not guarantee epsilon backward error from the proven bound",
+      "why_classification": "Adjusting the constant inside the square root is a local fix preserving the method and its rate."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2604.16075",
+  "question_id": "Q1",
+  "run_name": "claude-fable-5.1-medium-2026-09-10-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e8809ffebe5951ca04910fb6d942792c2e647636a18f4a3772a38aab1b066ff9",
+  "status": "ok"
+}

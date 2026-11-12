@@ -1,0 +1,173 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the proposed method enjoys exact entropy dissipation and unconditional stability",
+          "tag": null
+        },
+        {
+          "quote": "the inner time in the dynamic formulation is discretized using a one-step forward Euler method, making the vector field $\\bu$ independent of the inner time",
+          "tag": null
+        },
+        {
+          "quote": "\\bv_i^{n+1} = \\bv_i^n - \\frac{\\tau}{N} \\sum_{j=1}^N A(\\bv_i^n-\\bv_j^n) [\\bu^{n+1}(\\bv_i^n) - \\bu^{n+1}(\\bv_j^n)]",
+          "tag": "update_v"
+        },
+        {
+          "quote": "the JKO-based method optimizes to learn $\\bu$, and the optimizer turns out to be the score",
+          "tag": null
+        },
+        {
+          "quote": "Discrete energy $\\frac{1}{N} \\sum_{i=1}^N |\\bv_i^{n}|^2$ is conserved up to $\\mathcal{O}(\\tau)$.",
+          "tag": "prop:added-4"
+        }
+      ],
+      "failure_explanation": "After the one-step forward Euler inner discretization, the loss (djko_p2) and the update (update_v) involve only the current particles $\\bv_i^n$. The learned field is the score of the current density, up to the null space, so the particle update is an explicit forward-Euler step, not an implicit one. Expanding (update_v) shows the energy increases each step by $\\frac{\\tau^2}{N}\\sum_i|U_i|^2$. No result gives stability uniformly in $\\tau$. Entropy decay (prop:added-4) holds only for the proxy $\\frac1N\\sum\\log f^n(\\bv_i^n)$, which uses a first-order Jacobian approximation, and only under exact minimization. The method instead uses SGD/Adamax on a neural network.",
+      "failure_location": {
+        "quote": "our method differs primarily in its design of an implicit scheme rather than an explicit one. As a result, our method is unconditionally stable and exact entropy-dissipative",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the claims to what is proved: conservation of mass and momentum, energy conservation up to $O(\\tau)$, and decay of the discrete entropy proxy under exact minimization. Drop the implicit/unconditional-stability claims, or supply a stability analysis of the fully discrete scheme.",
+      "overall_effect": "The advertised advantages over score-based explicit methods (implicitness, unconditional stability, exact entropy decay) are unsupported for the scheme actually implemented.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Implicitness and unconditional stability of the implemented scheme are claimed but not established",
+      "why_classification": "No formal result fails, but a central advertised property must be withdrawn or newly proved. That is more than a local wording fix, yet the paper's formal content survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\iint_{\\R^{2d}} \\Tilde{\\nabla}\\varphi(\\bv,\\bv_*) \\cdot \\psi(\\bv,\\bv_*) \\rd\\bv_* \\rd\\bv = - \\int_{\\R^d} \\varphi(\\bv) (\\Tilde{\\nabla} \\cdot \\psi)(\\bv)\\rd\\bv",
+          "tag": "new_div"
+        },
+        {
+          "quote": "\\frac{\\rd}{\\rd t} \\int_{\\R^d} \\varphi f \\rd\\bv = -\\frac{1}{2} \\iint_{\\R^{2d}} \\Tilde{\\nabla}\\varphi \\cdot \\Tilde{\\nabla} \\frac{\\delta \\mathcal{H}}{\\delta f} f f_{*} \\rd\\bv \\rd\\bv_*",
+          "tag": "0910"
+        },
+        {
+          "quote": "we see that $V$ corresponds to $\\tilde \\nabla \\frac{\\delta \\mathcal H}{\\delta f}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Using the stated duality (new_div), the weak form (0910) yields $\\partial_t f = \\frac12\\tilde\\nabla\\cdot(ff_*\\tilde\\nabla\\frac{\\delta H}{\\delta f})$, the opposite sign to (landau_weak3). With the stated sign, the equation would be entropy-increasing. The subsequent identification $V=\\tilde\\nabla\\frac{\\delta H}{\\delta f}$ inherits the error; it should be $V=-\\tilde\\nabla\\frac{\\delta H}{\\delta f}$.",
+      "failure_location": {
+        "quote": "\\partial_t f + \\frac{1}{2} \\Tilde{\\nabla} \\cdot \\left(f f_{*} \\Tilde{\\nabla} \\frac{\\delta \\mathcal{H}}{\\delta f} \\right) = 0",
+        "tag": "landau_weak3"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Flip the sign in (landau_weak3) and write $V=-\\tilde\\nabla\\frac{\\delta H}{\\delta f}$, i.e. $\\bu=-\\nabla\\phi$, which leaves (dL-new) unchanged.",
+      "overall_effect": "The formal gradient-flow identification is stated with the wrong orientation. The metric (dL-new) is unaffected because it is quadratic in $\\bu$.",
+      "primary_affected_tag": "landau_weak3",
+      "target_type": "other",
+      "title": "Sign error in the divergence form of the Landau equation and in the identification of V",
+      "why_classification": "A local sign correction restores consistency, and all downstream formulas survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Consequently, the total computational cost per epoch is significantly reduced to $\\mathcal{O}(N)$.",
+          "tag": null
+        },
+        {
+          "quote": "\\theta^{(k)}_q = \\theta^{(k)}_{q-1} - \\alpha^{(k)}_q \\frac{1}{B^2} \\sum_{i,j \\in C_q} \\nabla_{\\theta} \\ell_{i,j}(\\theta^{(k)}_{q-1})",
+          "tag": "algorithm_opt"
+        }
+      ],
+      "failure_explanation": "Each step sums over the $B^2$ pairs in $C_q$, so it costs $O(B^2)$, not $O(BN)$. With the stated $O(BN)$ per step, the $N/B$ steps of an epoch would cost $O(N^2)$, contradicting the claimed $O(N)$ per epoch. The correct epoch cost is $O(BN)$, which is linear in $N$ only for fixed $B$.",
+      "failure_location": {
+        "quote": "Thus the cost of one gradient descent decreases to $\\mathcal{O}(BN)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "State $O(B^2)$ per step and $O(BN)$ per epoch, which is $O(N)$ for fixed $B$.",
+      "overall_effect": "The complexity justification for the stochastic method is internally inconsistent.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Inconsistent per-step and per-epoch cost of the batched SGD",
+      "why_classification": "A local correction preserves the advertised linear-in-$N$ cost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ \\frac{\\alpha L^2 B}{2N} \\sum_{q=1}^{\\frac{N}{B}} \\left\\| \\theta_{k} - \\theta^{(k+1)}_{q-1} \\right\\|^2",
+          "tag": "thm_opt_conv"
+        },
+        {
+          "quote": "\\frac{\\alpha_k^2 N^2}{B^2} \\left( (3M+2) \\left\\| \\nabla_{\\theta} \\ell(\\theta^{(k)}_0) \\right\\|^2 + 3\\sigma^2 \\right)",
+          "tag": "sgd_lemma1"
+        },
+        {
+          "quote": "+ 6\\sigma^2 L^2 \\alpha^2 \\frac{N}{B^2}",
+          "tag": "thm_opt_conv"
+        }
+      ],
+      "failure_explanation": "Multiplying the coefficient $\\frac{\\alpha L^2B}{2N}$ by the Lemma sgd_lemma1 bound gives $\\frac{\\alpha^3L^2N}{2B}(\\cdots)$. The proof drops the factor $B$ and writes $\\frac{\\alpha^3L^2N}{2B^2}(\\cdots)$. Done correctly, the stepsize condition still suffices, but the variance term becomes $6\\sigma^2L^2\\alpha^2 N/B$, which is $B$ times larger than stated.",
+      "failure_location": {
+        "quote": "+ \\frac{\\alpha L^2}{2N} \\frac{\\alpha^2 N^2}{B^2} \\left( (3M+2) \\left\\| \\nabla_{\\theta} \\ell(\\theta_k) \\right\\|^2 + 3\\sigma^2 \\right)",
+        "tag": "thm_opt_conv"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Redo the combination step and replace $\\frac{N}{B^2}$ by $\\frac{N}{B}$ (and correspondingly $\\frac{3\\alpha^3\\sigma^2L^2N}{2B}$) in the proof and statement.",
+      "overall_effect": "The theorem's noise floor is understated by a factor $B$.",
+      "primary_affected_tag": "thm_opt_conv",
+      "target_type": "formal_result",
+      "title": "Factor B dropped when combining the lemmas; stated variance term too small",
+      "why_classification": "The fix is local, but it necessarily weakens the stated bound by a factor of the batch size, so content is lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm_opt_conv"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{N^2} \\sum_{i=1}^{N}\\sum_{j=1}^{N} \\underbrace",
+          "tag": "jko_loss"
+        },
+        {
+          "quote": "we first randomly select a batch of indices from $[N]$ and then update parameter $\\theta$ based on the gradient information within this batch",
+          "tag": null
+        },
+        {
+          "quote": "$\\ell_{i,j}(\\theta)$ is $L$-smooth, i.e.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The last inequality bounds $\\|\\nabla\\ell(\\theta_k)-\\nabla\\ell_{ij}(\\theta_{q-1})\\|$ by $L\\|\\theta_k-\\theta_{q-1}\\|$. But (A.2) controls only differences of the same $\\nabla\\ell_{ij}$, and $\\nabla\\ell\\neq\\nabla\\ell_{ij}$ even at equal arguments. In standard reshuffling one has $\\nabla\\ell(\\theta_k)=\\frac{1}{NB}\\sum_q\\sum_{C_q}\\nabla\\ell_{ij}(\\theta_k)$, but that fails here. An epoch uses only the $NB$ within-batch pairs out of $N^2$, and diagonal pairs are always included, so the estimator is biased. A non-vanishing term $\\frac{\\alpha}{2}\\|\\nabla\\ell(\\theta_k)-\\frac{1}{NB}\\sum_q\\sum_{C_q}\\nabla\\ell_{ij}(\\theta_k)\\|^2$ is missing.",
+      "failure_location": {
+        "quote": "\\nabla\\ell(\\theta_{k}) - \\nabla_{\\theta} \\ell_{i,j}(\\theta^{(k+1)}_{q-1}) \\|^2",
+        "tag": "sgd_lemma2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must bound the pair-subsampling bias (e.g., via (A.3) and the random partition). This yields a non-vanishing error floor or a different target objective, or else the algorithm must be changed so that its batch gradients are unbiased for $\\nabla\\ell$.",
+      "overall_effect": "The descent inequality, and hence the convergence-to-stationarity guarantee of thm_opt_conv for Algorithm algorithm_opt, is unsupported. The missing bias term does not vanish as $\\alpha\\to0$.",
+      "primary_affected_tag": "sgd_lemma2",
+      "target_type": "formal_result",
+      "title": "Invalid smoothness step: within-batch pair gradients do not average to the full gradient",
+      "why_classification": "Fixing the gap changes the guarantee type from convergence to a stationary point into convergence to a neighborhood, or to stationarity of a reweighted objective. It requires a new argument."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2409.12296",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "91c8b71b38392adb77e6b756cced52757c09fdabebe2a2f4891834723c7a9f5b",
+  "status": "ok"
+}

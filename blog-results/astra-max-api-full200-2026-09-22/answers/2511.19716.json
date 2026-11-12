@@ -1,0 +1,474 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bfw_{k+1} &= \\bfw_k - \\alpha_k \\bfM^{-1} g(\\bfw_k,\\bfxi_k)",
+          "tag": "alg:PSGD"
+        },
+        {
+          "quote": "Fix an SPD matrix $\\bfM$ and an open neighborhood $\\mathcal U\\subset\\mathbb R^d$.",
+          "tag": null
+        },
+        {
+          "quote": "if we define $\\bfs_k$ to be the sum of the squared gradients up until iteration $k$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The results analyze one fixed SPD matrix. The adaptive matrices described later depend on the gradient history, including the current gradient. Neither changing-metric terms nor the dependence between the preconditioner and the sampled gradient is analyzed. Fixed diagonal matrices are covered, but this does not establish the advertised adaptive-method guarantees.",
+      "failure_location": {
+        "quote": "The framework applies to both diagonal/adaptive and curvature-aware preconditioners",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the coverage claims to fixed or explicitly frozen SPD preconditioners. Retaining genuinely adaptive coverage requires additional assumptions and a variable-metric stochastic analysis.",
+      "overall_effect": "The claimed theoretical coverage of AdaGrad, Adam, RMSProp, and other genuinely adaptive preconditioners is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Fixed-metric analysis is advertised as covering adaptive preconditioners",
+      "why_classification": "The source-supported restriction excludes an expressly advertised regime; retaining that regime requires substantially new analysis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\citet{koren2022benign} showed that preconditioned SGD achieves a rate of $\\mathcal{O}(1/\\sqrt{k})$ for general stochastic convex optimization",
+          "tag": null
+        },
+        {
+          "quote": "with $\\beta>\\frac{1}{\\hat c\\,\\mu}$ and $\\gamma>0$ chosen so that $\\alpha_1\\le \\mu/(\\hat L K_G)$",
+          "tag": "2ndmainthm"
+        }
+      ],
+      "failure_explanation": "Smooth convexity alone does not provide a uniform stochastic O(1/k) guarantee. For example, noisy quadratic oracles with curvature proportional to k^{-1/2} and minimizers at two fixed, separated points cannot reliably distinguish those minimizers from k bounded-variance observations, leaving worst-case error of order k^{-1/2}. The paper's actual O(1/k) baseline requires a positive strong-convexity constant and corresponding stepsize conditions.",
+      "failure_location": {
+        "quote": "Classical convergence theory for SGD under noisy gradients typically guarantees a sublinear rate of \\( \\mathcal{O}(1/k) \\) under convexity and smoothness assumptions",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Qualify the O(1/k) statement by strong convexity and the applicable noise and diminishing-stepsize assumptions, distinguishing it from general convex stochastic rates.",
+      "overall_effect": "The introductory comparison overstates the rate available in the general smooth convex stochastic setting.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The introductory stochastic convex rate omits strong convexity",
+      "why_classification": "This requires a limited weakening of the background scope, but does not change the paper's already strongly convex baseline theorems."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "rmk:condNum",
+        "lem:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\nabla F$ is $\\bfM$-Lipschitz with constant $\\hat L>0$:",
+          "tag": "assumption:55"
+        },
+        {
+          "quote": "\\|\\nabla F(\\overline{\\bfw})-\\nabla F(\\bfw)\\|_{\\bfM^{-1}}\n  \\le \\hat L\\,\\|\\overline{\\bfw}-\\bfw\\|_{\\bfM}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A gradient Lipschitz bound controls the absolute values of Hessian eigenvalues, not merely their upper endpoints. With M=I and F(x)=-a x^2/2 for a>L, the sole Hessian eigenvalue is -a≤L, but the gradient's Lipschitz constant is a>L. The lemma does not assume convexity.",
+      "failure_location": {
+        "quote": "$\\iff$ all eigenvalues of $\\bfP^\\top\\nabla^2F(\\bfw)\\bfP$ are $\\le \\hat L$;",
+        "tag": "lemma:bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the one-sided condition by eigenvalues lying in [-L,L], or explicitly assume convexity in the one-sided characterization, and make the same correction in its repetitions.",
+      "overall_effect": "The stated general spectral equivalence and its repetitions are false for indefinite or negative curvature. The strongly convex applications do not require the false extension.",
+      "primary_affected_tag": "lemma:bound",
+      "target_type": "formal_result",
+      "title": "The Hessian characterization of gradient Lipschitz continuity is one-sided",
+      "why_classification": "This is a standard local spectral correction; the convergence results already assuming strong convexity retain their substantive guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb E\\!\\left[F(\\bfw_k)-F_\\ast\\right]\n\\;\\le\\;",
+          "tag": "eqn:1stOptGap"
+        },
+        {
+          "quote": "Substituting into the variance bound~\\eqref{eqn:varGrad} gives",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem bounds an expectation, not individual late-stage iterates. A scalar strongly convex quadratic with independent Gaussian additive gradient noise satisfies the global moment assumptions but has arbitrarily large stochastic excursions under a fixed stepsize. Thus neither the pathwise gap estimate nor its substitution into a conditional variance bound follows. An allowed positive K_V also lets conditional variance increase during those excursions.",
+      "failure_location": {
+        "quote": "In the late stage of training, we have\n$F(\\bw_k)-F_\\ast = \\mathcal O(\\overline\\alpha K)$ and $\\|\\nabla F(\\bw_k)\\|_{\\bfM^{-1}}^2 = \\mathcal O(\\overline\\alpha K)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "State expected or limsup expected bounds, retain the finite-time transient where needed, and average the conditional variance inequality before using the expected gradient bound.",
+      "overall_effect": "The asserted trajectorywise late-stage loss, gradient, and baseline-dominated variance estimates are unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Expected noise-floor bounds are promoted to trajectorywise bounds",
+      "why_classification": "The formal expected rates survive, but the stronger trajectorywise conclusions must be withdrawn."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\bw_k\\in\\mathcal N_r$, then $\\bw_{k+1}\\in\\mathcal N_{r_+}$ almost surely.",
+          "tag": "assumption:onestep"
+        }
+      ],
+      "failure_explanation": "The assumption permits the next iterate to enter N_{r_+}\\N_r. It then imposes no containment condition on the following update. Consequently it supports validity through the first exit from N_r, not perpetual containment in N_{r_+}. Small constant stepsizes alone do not repair this implication; bounded-noise quadratic recursions can eventually leave both neighborhoods.",
+      "failure_location": {
+        "quote": "The one-step containment assumption ensures that, for sufficiently small\nlearning rates, the iterates never leave this well-behaved region, so all local\nbounds remain valid along the trajectory.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the invariance assertion by the precise stopped-process statement: updates through the first exit from N_r lie in N_{r_+}. Any perpetual invariance guarantee needs a separate assumption or proof.",
+      "overall_effect": "The unconditional claim that all local bounds remain valid along the entire trajectory does not follow from the stated assumptions.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "One-step containment is incorrectly described as perpetual basin invariance",
+      "why_classification": "A limited but substantive weakening from whole-trajectory invariance to pre-exit validity is necessary."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:4thmainthm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb E\\!\\left[F(\\widetilde{\\bw}_{k+1})-F_\\ast\\mid\\mathcal F_k\\right]\n\\le\n\\bigl(1-\\rho\\,\\mathbf 1_{\\{k<\\tau\\}}\\bigr)\\bigl(F(\\widetilde{\\bw}_k)-F_\\ast\\bigr)\n+\\rho\\,C.",
+          "tag": "eq:cond-step"
+        },
+        {
+          "quote": "Multiply \\eqref{eq:stopped-one-step} by $\\mathbf 1_{\\Omega_\\infty}$ and take expectations;",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The event Ω∞ depends on future samples and is not F_k-measurable. An inequality for E[X|F_k] therefore cannot be converted into the same inequality for E[X|F_k,Ω∞]. Likewise, multiplying a conditional expectation by the future-event indicator does not justify the tower-property step in the diminishing-rate proof. Survival conditioning changes the gradient distribution, and the stated moment assumptions do not hold automatically under that changed law. Positive probability of Ω∞ is also not assured.",
+      "failure_location": {
+        "quote": "Restricting \\eqref{eq:cond-step} to $\\Omega_\\infty$ gives",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Derive recursions for killed moments E[(F(w_k)-F*)1_{τ>k}] using predictable survival indicators. If p=P(τ=∞)>0, these yield conditional bounds after division by p, with correspondingly enlarged constants. State the positivity requirement explicitly.",
+      "overall_effect": "Both local conditional convergence bounds, with their stated constants, are unproved independently of the exit-probability error.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "Conditioning on infinite survival invalidates the descent recursion",
+      "why_classification": "A contained stopped/killed-process argument preserves comparable rates, but the unmodified conditional constants cannot be retained."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "x_k \\;\\le\\; C + (1-\\rho)^{k-1}\\bigl(x_1 - C\\bigr)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Even a valid geometric upper bound implies only limsup≤C, not convergence to C. For F(x)=x^2/2, M=1, and g=x+ζ with bounded centered noise of variance K and |ζ|<r, survival can hold surely. For 0<α<1 the actual limiting expected gap is αK/[2(2-α)], whereas the theorem defines C=αK/2. These differ even when K is the exact variance.",
+      "failure_location": {
+        "quote": "and in particular $\\mathbb E[F(\\bw_k)-F_\\ast\\mid\\tau=\\infty]\\to C$ as $k\\to\\infty$.",
+        "tag": "thm:3rdmainthm"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the equality limit by the appropriate limsup upper bound and describe the displayed expression as an upper envelope, not an exact attained floor.",
+      "overall_effect": "The asserted exact limiting noise floor is false even when conditioning and basin containment pose no problem.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "An upper noise-floor bound is asserted to be the exact limiting loss",
+      "why_classification": "The exact-limit promise must be weakened, although a recognizably comparable upper noise-floor guarantee remains."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:4thmainthm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Define $Y_k:=F(\\widetilde{\\bw}_k)-F_\\ast - C$.",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbb E\\!\\left[Y_{k+1}\\mid\\mathcal F_k\\right]\n\\le (1-\\rho\\,\\mathbf 1_{\\{k<\\tau\\}})\\,Y_k,",
+          "tag": null
+        },
+        {
+          "quote": "Y_k\n  \\;-\\; m\\,\\alpha_k\\,\\mathbf 1_{\\{k<\\tau\\}}\\,Y_k",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Y_k can be negative, so multiplying it by a factor below one increases it; the displayed drift inequality does not imply the supermartingale property. The harmonic proof makes the same sign error. A counterexample is F(x)=x^2/2, g=x+ζ with independent ζ=±2, r=1, r_+=3, and all curvature/alignment constants and K_G equal to 1, with K=4. Starting at zero and using α=1/8 satisfies every fixed-step restriction, but long equal-sign noise runs force exit almost surely, while the claimed lower bound is 1. For the harmonic theorem, β=3 and γ=2 already cause certain exit on the first update.",
+      "failure_location": {
+        "quote": "so $(Y_{k\\wedge\\tau})_{k\\ge1}$ is a supermartingale.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Use a genuine compensated supermartingale that retains accumulated noise. Harmonic steps can yield an exit bound with an additional (L K/2)∑α_k² numerator term. Constant steps support a finite-horizon noise-budget bound; a nontrivial infinite-horizon guarantee requires additional pathwise invariance or noise-support restrictions.",
+      "overall_effect": "Both noise-independent infinite-horizon basin-stability bounds are false, including their advertised guarantee of certain survival when initialized at a minimizer.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "The shifted loss is not a supermartingale, invalidating basin stability",
+      "why_classification": "The central infinite-horizon guarantee fails even for a strongly convex quadratic with bounded noise. Repair necessarily loses that guarantee or excludes allowed persistent-noise behavior."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exist constants $\\mu\\in(0,1]$, $K_G\\ge0$, and $K\\ge0$",
+          "tag": "assumption:localNoise-PL"
+        },
+        {
+          "quote": "x_{k+1}\n  \\;\\le\\;\n  \\Bigl(1-\\frac{a}{\\gamma+k}\\Bigr)\\,x_k\n  \\;+\\; \\frac{b}{(\\gamma+k)^2},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The stated conditions do not ensure 1-a/(γ+k)≥0, which is needed for the claimed comparison with ν/(γ+k). Unlike the global assumptions, the local moment condition does not imply K_G≥μ². For example, μ=μ_PL=L=K=1, K_G=1/2, β=4, γ=1 are permitted and give a=4,b=8. The nonnegative scalar sequence x_1=x_2=0, x_3=8/9, followed by zeros, satisfies the displayed recursion but violates the claimed bound x_3≤(8/3)/4=2/3. This defect remains after fixing survival conditioning.",
+      "failure_location": {
+        "quote": "Because $\\beta>2/(\\mu\\hat\\mu_{\\mathrm{PL}})$, $a>1$, and the standard scalar lemma yields",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Additionally require α_1 μ μ_PL≤1, obtainable by increasing γ, and then apply the standard nonnegative-coefficient induction.",
+      "overall_effect": "The scalar recursion does not establish the stated all-iteration harmonic bound over the full advertised parameter range.",
+      "primary_affected_tag": "thm:4thmainthm",
+      "target_type": "formal_result",
+      "title": "The harmonic scalar comparison lacks a nonnegative-coefficient condition",
+      "why_classification": "A standard local stepsize condition restores the comparison without changing the harmonic rate, method, or noise regime."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Moreover, it is not guaranteed to be positive definite in nonconvex settings, which complicates its direct use as a preconditioner.",
+          "tag": null
+        },
+        {
+          "quote": "the damping needed to handle indefiniteness diminishes curvature gains while weakening noise attenuation.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The source specifies CG application to Hessian updates but gives no regularization rule or negative-curvature safeguard ensuring an SPD system. Merely mentioning damping later does not define such a rule. On an allowed indefinite matrix H=diag(1,-1) with right-hand side (1,1), standard CG from zero has a zero first curvature denominator and cannot execute the stated fixed iteration budget.",
+      "failure_location": {
+        "quote": "Matrix–free CG with a fixed iteration budget is used to apply Hessian or Gauss–Newton/Fisher",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Specify an SPD Hessian regularization, including a condition ensuring its damping exceeds the negative curvature, and apply CG to that matrix. Ensure the reported experimental implementation uses this safeguarded procedure.",
+      "overall_effect": "The Hessian-CG update is not well defined for the nonconvex curvature permitted by the paper, and its interpretation as an SPD preconditioner is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The Hessian-CG procedure lacks a definiteness safeguard",
+      "why_classification": "A contained regularization or safeguarding construction can produce a comparable method, but the current procedure cannot simply be executed on all permitted Hessians."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "First, for squared-residual losses, the Gauss–Newton/Fisher matrix is positive semidefinite, avoiding the negative-curvature directions introduced by second-derivative terms in the exact Hessian.",
+          "tag": null
+        },
+        {
+          "quote": "which is guaranteed to be SPD under mild regularity conditions.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Convex outer losses give a GGN matrix of the form ∑J_nᵀ A_n J_n with A_n positive semidefinite. This need not be positive definite: any common Jacobian null direction remains null. The analogous automatic Fisher definiteness claim also needs an identifiability/nondegeneracy condition. For a regular Gaussian model with mean θ_1+θ_2, both matrices are proportional to the singular all-ones 2×2 matrix.",
+      "failure_location": {
+        "quote": "This generalized Gauss-Newton matrix (GGN), which ignores second order information of $b_n$, is SPD when $a_n$ is convex even when the true Hessian is indefinite.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "State positive semidefiniteness, identify sufficient full-rank/identifiability conditions for strict definiteness, and require positive regularization when those conditions fail.",
+      "overall_effect": "The automatic invertibility and admissibility of these undamped curvature matrices as SPD metrics are not established, particularly in the flat and overparameterized setting emphasized by the paper.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Positive semidefiniteness is incorrectly promoted to strict definiteness",
+      "why_classification": "The automatic SPD promise must be replaced by additional nondegeneracy conditions or a regularized construction, while comparable curvature-aware methods remain available."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "loss functions of the form $\\ell(\\theta) =  \\sum_n a_n\\left(b_n\\left(\\mathbf{\\theta}\\right)\\right)$",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{F}(\\bfw) = \\mathbb{E}_{x, y} \\left[ \\nabla_\\bfw \\log p_\\bfw(y \\mid x) \\nabla_\\bfw \\log p_\\bfw(y \\mid x)^\\top \\right]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Exponential-family membership alone does not identify the GGN for an arbitrary loss decomposition with the Fisher matrix. For Bernoulli probability p=sigmoid(θ), take b(θ)=p and the outer loss to be cross-entropy. With observed label y=1, the GGN is (1-p)², while the model Fisher is p(1-p). They differ unless p=1/2. Using the natural parameter as the model output, or an appropriate model expectation, is an additional condition.",
+      "failure_location": {
+        "quote": "For models trained with exponential-family losses, the FIM coincides with the GGN~\\citep{martens_new_2020, schraudolph_fast_2002}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "State the identity only with the required natural-parameter loss decomposition and expectation convention, rather than for arbitrary exponential-family losses.",
+      "overall_effect": "The blanket identification of Fisher and GGN curvature is false for the generic decomposition introduced in the source.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The Fisher–GGN identity is claimed without its parameterization conditions",
+      "why_classification": "A limited but mathematically substantive restriction of the claimed identity is necessary; the usual least-squares Gaussian applications can remain."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The objective function $F\\colon \\mathbb{R}^d \\to \\mathbb{R}$ is strongly convex in that there exists a constant $c>0$",
+          "tag": "ass:1"
+        }
+      ],
+      "failure_explanation": "Strong convexity implies a unique minimizer here, but the converse is false. F(x)=x^4 has the unique minimizer zero and cannot satisfy the asserted quadratic lower bound for any positive strong-convexity constant.",
+      "failure_location": {
+        "quote": "From elementary optimization, this assumption is equivalent to $F$ having a unique minimizer $\\bfw^\\ast\\in\\mathbb{R}^d$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "State only that strong convexity implies existence and uniqueness of the minimizer.",
+      "overall_effect": "The prose gives a false characterization of the strong-convexity assumption.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unique minimization is not equivalent to strong convexity",
+      "why_classification": "Only the valid forward implication is needed subsequently, so the local correction leaves all convergence guarantees unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$F\\colon\\mathbb R^d\\!\\to\\!\\mathbb R$ is $\\bfM$-strongly convex",
+          "tag": "assumption:44"
+        },
+        {
+          "quote": "Then, by Assumption \\ref{assumption:44},",
+          "tag": null
+        },
+        {
+          "quote": "$\\nabla F$ is $\\bfM$-Lipschitz with constant $\\hat L>0$:",
+          "tag": "assumption:55"
+        }
+      ],
+      "failure_explanation": "The proof invokes a quadratic upper bound with L, but its stated assumption is strong convexity, which supplies a lower bound instead. Strongly convex functions such as x^2+x^4 need not have any global gradient Lipschitz constant. Assumption 55 is required for the claimed descent estimate.",
+      "failure_location": {
+        "quote": "Under Assumption \\ref{assumption:44}, the iterates of Eq. \\ref{alg:PSGD} satisfy the following inequality for all $k\\in \\mathbb{N}$:",
+        "tag": "lemma:1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "Add Assumption 55 to the lemma and invoke the established smoothness upper-bound lemma in its proof.",
+      "overall_effect": "The standalone lemma is unsupported under its stated hypotheses. Its later main-theorem applications already include the missing smoothness assumption.",
+      "primary_affected_tag": "lemma:1",
+      "target_type": "formal_result",
+      "title": "The one-step descent lemma lacks its smoothness hypothesis",
+      "why_classification": "The missing standard hypothesis is already present in the main applications, so a local repair preserves their claims and constants."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\langle \\nabla F(\\bw_k),\\, \\mathbb E_{\\bfxi_k}[g(\\bw_k,\\bfxi_k)] \\rangle_{\\bfM^{-1}}\n  &\\ge \\mu\\,\\|\\nabla F(\\bw_k)\\|_{\\bfM^{-1}}^2",
+          "tag": "eq:constmu"
+        },
+        {
+          "quote": "\\mathbb{E}_{\\bfxi_k}[||g(\\bfw_k,\\bfxi_k)||_{\\bfM^{-1}}^2] \\leq K_G ||\\nabla F(\\bfw_k)||_{\\bfM^{-1}}^2 + K",
+          "tag": "eq:9"
+        }
+      ],
+      "failure_explanation": "Neither curvature assumption supplies the alignment constant μ or the second-moment bound involving K_G and K. Both inequalities require Assumption 66, which is absent from the lemma. For the smooth strongly convex scalar quadratic, choosing g=-∇F gives an ascent step and directly violates the first claimed inequality.",
+      "failure_location": {
+        "quote": "Under Assumptions \\ref{assumption:44} and \\ref{assumption:55}, the iterates of Eq. \\ref{alg:PSGD} satisfy the following inequalities for all $k\\in\\mathbb{N}$:",
+        "tag": "lemma:2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-015",
+      "least_adequate_overall_repair": "Add Assumption 66 and cite its alignment and second-moment consequences at the two corresponding proof steps.",
+      "overall_effect": "The standalone stochastic descent lemma is false under its listed assumptions, although the main theorems explicitly include the needed moment conditions.",
+      "primary_affected_tag": "lemma:2",
+      "target_type": "formal_result",
+      "title": "The stochastic descent lemma lacks the stochastic moment assumptions",
+      "why_classification": "This is a local missing-hypothesis repair already satisfied by the principal applications."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "for a fixed learning rate bounded by $ \\frac{K_G}{\\hat{L}K_G}$",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "(1-\\overline\\alpha\\,\\hat c\\,\\mu)^{k-1}",
+          "tag": "eqn:1stOptGap"
+        }
+      ],
+      "failure_explanation": "In the unbiased bounded-variance case one may take μ=K_G=1, but the contraction still depends on the actual stepsize through 1-αc. The condition-number rate follows only after selecting α=1/L, not merely requiring α≤1/L. For a deterministic quadratic with Hessian diag(1,2), an initial point in the first eigendirection, and α=0.01, the gap contracts by 0.9801 per step, not by the claimed condition-number-scale factor 1/2.",
+      "failure_location": {
+        "quote": "at the rate of  $\\frac{\\hat{c}}{\\hat{L}}$.",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-016",
+      "least_adequate_overall_repair": "State the α-dependent contraction from the theorem, specializing to the condition-number rate only when the maximal admissible stepsize is actually chosen.",
+      "overall_effect": "The corollary's rate guarantee is false for arbitrarily small admissible fixed stepsizes.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "The corollary claims the maximal-step rate for every smaller fixed step",
+      "why_classification": "The uniform rate promise over the permitted stepsizes must be weakened; the discrepancy can be arbitrarily large as the stepsize tends to zero."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb E\\!\\left[F(\\bfw_k)-F_\\ast\\right]\n\\;\\le\\;\n\\frac{\\overline\\alpha\\,\\hat L\\,K}{2\\,\\hat c\\,\\mu}",
+          "tag": "eqn:1stOptGap"
+        }
+      ],
+      "failure_explanation": "A decreasing upper envelope establishes neither monotonicity of the actual expected gap nor strict crossing below its limiting bound. For F(w)=w²/2, g=w+ζ with centered variance K>0, and the admissible step α=1, the expected gap equals K/2=C after every update. Starting at the minimizer makes it increase from zero to C, and it never becomes strictly smaller than C thereafter. This persists even when the rate issue is removed by using the maximal step.",
+      "failure_location": {
+        "quote": "$ \\bbE[F(\\bfw_k)-F_\\ast]$ decreases to below $ \\frac{\\overline{\\alpha}\\hat{L}K}{2\\hat{c}\\mu}$",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-017",
+      "least_adequate_overall_repair": "State the geometric upper-envelope inequality and a limsup bound, without claiming monotonicity or strict finite-time passage below the floor.",
+      "overall_effect": "The corollary's actual monotone-descent and below-floor claims are stronger than the established expectation bound and are false.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "The corollary overstates the upper bound as monotone descent below the floor",
+      "why_classification": "The stated behavior of the actual sequence must be weakened, although the theorem's comparable upper-bound guarantee remains available."
+    }
+  ],
+  "issues_found": 17,
+  "paper_id": "2511.19716",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e917ba1144e6fa4c2415186c265b16ef399f1891d6a4e98601ba893f94692732",
+  "status": "ok"
+}

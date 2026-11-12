@@ -1,0 +1,194 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Given $f \\in C([0,1]^d)$, there exist affine maps",
+          "tag": "thm:main:mgdl"
+        },
+        {
+          "quote": "Theorem~\\ref{thm:main:mgdl} provides an affirmative answer for a class of fixed-width multigrade \\ReLU{} networks.",
+          "tag": null
+        },
+        {
+          "quote": "in which network parameters are learned from data rather than constructed analytically",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The abstract, introduction and Section 2 assert that grade-wise training (the MGDL optimization algorithm of Section 2.1) yields vanishing approximation error. Theorem thm:main:mgdl only proves that there EXIST affine maps (chosen analytically, with each layer carrying the identity so later grades can build on it) whose residuals vanish. Nothing is shown about the residuals produced by grade-wise loss minimization; indeed a greedy grade-1 minimizer can select a block that destroys input information, after which the constructed later grades are unavailable. The paper's own conclusion concedes the learned-parameter case is open.",
+      "failure_location": {
+        "quote": "To the best of our knowledge, this work provides the first rigorous theoretical guarantee that grade-wise training yields provable vanishing approximation error in deep networks.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Reword all such claims to state that the MGDL architecture admits a (constructive) choice of grade blocks with vanishing residuals, not that the training algorithm achieves it.",
+      "overall_effect": "Statements that grade-wise training is guaranteed to converge (abstract, Section 1, Section 2.1 'affirmative answer') are unsupported; only an approximation-theoretic existence result for the MGDL architecture is established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Prose claims a guarantee for grade-wise *training*, but only an existence/construction result is proved",
+      "why_classification": "The repair is a rewording but it withdraws the paper's headline promise about training; the formal results themselves are untouched."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "coro:mgdl:residual"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "There exist $n\\in\\N^+$ and affine maps \n$\\mathcal{A}_{i},\\, \\mathcal{A}_{i}^{\\mathrm{out}} \\in \\aff_{\\le 5d}$ for $i=1,2,\\cdots,n$",
+          "tag": "thm:main:mgdl:one:op"
+        }
+      ],
+      "failure_explanation": "Theorem thm:main:mgdl:one:op constructs maps A_1,...,A_n acting from the raw input x. In the second and later rounds of the proof of thm:main:mgdl, the new updates h_k for k>n_1 must be of the form A_k^out ∘ (ReLU∘A_k) ∘ ... ∘ (ReLU∘A_1) with A_1,...,A_{n_1} already fixed. The theorem as stated does not assert that such maps exist given an arbitrary frozen prefix; the argument implicitly needs the additional property (visible only in Figure fig:h:k) that every constructed layer passes the identity x through, so that later grades can act on x. This is not stated or proved.",
+      "failure_location": {
+        "quote": "Next, apply Theorem~\\ref{thm:main:mgdl:one:op} again to $f_{n_1+1}\\in C([0,1]^d)$.",
+        "tag": "thm:main:mgdl"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Strengthen thm:main:mgdl:one:op to: given a frozen prefix network whose output contains x as a sub-vector (and construct layers that preserve this), there exist new layers with the stated properties; then the recursion is valid.",
+      "overall_effect": "The iterative step of the main proof invokes the one-step theorem outside its stated form; the concatenation of rounds is unjustified as written.",
+      "primary_affected_tag": "thm:main:mgdl",
+      "target_type": "formal_result",
+      "title": "Theorem 3.1 is re-applied on top of frozen layers, which its statement does not cover",
+      "why_classification": "The needed identity-preservation is already built into the construction (Figure fig:h:k); the repair is a routine restatement with no loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "for any prescribed $\\varepsilon \\in \\bigl(0,\\tfrac{1}{1+2^{d}}\\bigr)$.",
+          "tag": "thm:main:mgdl:one:op"
+        },
+        {
+          "quote": "k_j = \\sum_{i=1}^j n_i,",
+          "tag": "thm:main:mgdl"
+        }
+      ],
+      "failure_explanation": "The explicit subsequence k_j = Σ n_i yields contraction by the factor 1-ε_0 where ε_0<1/(1+2^d) is the parameter fixed when the maps in thm:main:mgdl were built. The corollary is stated for arbitrary ε∈(0,1), and the residuals R_k are fixed before ε is chosen, so the advertised explicit construction is not provided for ε≥1/(1+2^d) (nor for any ε different from ε_0). Existence of such a subsequence for general ε follows only from the purely existential fact that ‖R_k‖∞→0, contrary to the text's emphasis.",
+      "failure_location": {
+        "quote": "Given $f\\in C([0,1]^d)$ and $\\eps\\in (0,1)$, there exists a subsequence $\\{k_j\\}_{j=1}^\\infty$, constructed explicitly from $f$ and $\\eps$,",
+        "tag": "coro:mgdl:residual"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Either restrict the corollary to the ε used in the construction, or note that for arbitrary ε∈(0,1) one may take k_j = Σ_{i≤mj} n_i with m chosen so that (1-ε_0)^m ≤ 1-ε.",
+      "overall_effect": "The claimed explicit constructive character of the corollary holds only for the construction parameter ε_0; the general-ε statement is supported only existentially.",
+      "primary_affected_tag": "coro:mgdl:residual",
+      "target_type": "formal_result",
+      "title": "Corollary asserts an explicit contraction subsequence for every ε∈(0,1), but the construction exists only for ε<1/(1+2^d) and for one fixed ε",
+      "why_classification": "A short local adjustment (grouping blocks or restricting ε) fully restores the claim with no loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:main:mgdl"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|f_{k+1}\\|_{L^p([0,1]^d)} < \\|f_k\\|_{L^p([0,1]^d)}\\ \\ \\mbox{for}\\ \\ k=1,2,\\dots,n.",
+          "tag": "thm:main:mgdl:one:op"
+        },
+        {
+          "quote": "If $M_g=0$, we simply define $T_\\eps g\\equiv 0$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For f≡0 the construction gives M_f=M_{-f}=0, hence n=n_{f,ε}+n_{-f,ε}=0, contradicting n∈N^+; moreover strict L^p decrease ‖f_2‖_p<‖f_1‖_p=0 is impossible. So the theorem is false in the degenerate case, and the proof of thm:main:mgdl, which applies it to f, does not cover f≡0 (the main theorem itself is still true for f≡0 via a trivial separate construction).",
+      "failure_location": {
+        "quote": "Let $f \\in C([0,1]^d)$ be given. There exist $n\\in\\N^+$ and affine maps",
+        "tag": "thm:main:mgdl:one:op"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the hypothesis f≢0 to thm:main:mgdl:one:op (note f_{n+1}≢0 whenever f≢0, so the recursion never hits the degenerate case) and treat f≡0 in thm:main:mgdl by a trivial explicit choice (e.g., constants 2^{-k}).",
+      "overall_effect": "Degenerate case f≡0 is excluded from thm:main:mgdl:one:op and left unproved in thm:main:mgdl.",
+      "primary_affected_tag": "thm:main:mgdl:one:op",
+      "target_type": "formal_result",
+      "title": "One-step theorem fails for f≡0 (n∈N^+ and strict L^p decrease impossible)",
+      "why_classification": "A degenerate-case hypothesis and a one-line separate construction restore every claim without loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Applying the positive $\\varepsilon$-contraction property to $g$ and $-g$ gives, for all $\\bm{x}\\in\\Omega$,",
+          "tag": "lem:positive:to:balanced:eps:contraction"
+        },
+        {
+          "quote": "Since both $a(\\bm{x})$ and $b(\\bm{x})$ lie between $0$ and $(1-\\varepsilon)\\|g\\|_{L^\\infty(\\Omega)}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The definition of a positive ε-contraction only gives ‖g^+−Tg‖∞ ≤ (1−ε)‖g^+‖∞; it does not give the lower bound 0 ≤ g^+−Tg that the proof uses to confine a(x), b(x) to [0,(1−ε)‖g‖]. Without it, a−b can reach 2(1−ε)‖g‖. Counterexample: fix x_0, θ(g)=sign(g(x_0)) (with θ=1 if g(x_0)=0), Tg := g^+ + (1−ε)‖g^+‖∞ θ(g). Then T is a positive ε-contraction on C(Ω), but for g with ‖g^+‖=‖g^-‖=1 and g(x_0)≠0, g−Sg = −(1−ε)θ(g)·2, so ‖g−Sg‖∞ = 2(1−ε)‖g‖∞ > (1−ε)‖g‖∞ when ε<1/2. The lemma is thus false as stated; it needs the hypothesis Tg ≤ g^+ pointwise (condition C1), which does hold for the operator T_ε actually used.",
+      "failure_location": {
+        "quote": "If $T$ is a positive $\\varepsilon$-contraction, then the symmetrized operator",
+        "tag": "lem:positive:to:balanced:eps:contraction"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add the hypothesis that T satisfies condition C1 (or 0 ≤ Tg ≤ g^+ pointwise) to the lemma statement.",
+      "overall_effect": "The lemma as a general statement is false; its application in thm:main:mgdl:one:op survives because T_ε satisfies C1.",
+      "primary_affected_tag": "lem:positive:to:balanced:eps:contraction",
+      "target_type": "formal_result",
+      "title": "Positive-to-balanced lemma is false without a pointwise domination hypothesis",
+      "why_classification": "A standard local hypothesis, already verified for the operator used, fixes the lemma with no loss elsewhere."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:main:mgdl:one:op",
+        "thm:main:mgdl",
+        "coro:mgdl:residual"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{d}\\sum_{i=1}^d \\psi(x_i).",
+          "tag": "def:dilated-cube-cutoff"
+        },
+        {
+          "quote": "\\Gamma_Q(\\bmx)=0 \\ \\text{for } \\bmx\\notin rQ.",
+          "tag": "def:dilated-cube-cutoff"
+        },
+        {
+          "quote": "Each such cutoff function can be implemented exactly by a shallow \\ReLU{} network.",
+          "tag": null
+        },
+        {
+          "quote": "$\\Psi_k$ corresponds to $4d$ \\ReLU{} units.",
+          "tag": null
+        },
+        {
+          "quote": "0 \\le \\sum_{i=1}^{n_{g,\\varepsilon}} \\Gamma_{Q_{g,\\varepsilon,i}}(\\bmx) \\le 2^d,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "ψ is a trapezoid equal to 1 on [−1,1] and 0 outside [−r,r]. For d≥2, Ψ(x)=(1/d)Σψ(x_i) is nonzero whenever ANY coordinate satisfies |x_i|<r (e.g. d=2, x=(c_1, far): Ψ=1/2), so Γ_Q is supported on an unbounded union of slabs, not on rQ, violating the definition's requirement Γ_Q=0 outside rQ. Consequently in the proof of lem:T:positive:eps:contraction: (a) T_ε g is nonzero at points outside ∪rQ_i, including points where g<0, so 0≤T_εg≤g^+ (C1) fails; (b) the overlap bound Σ_i Γ_{Q_i}(x) ≤ 2^d from lem:bounded:overlap:scaling does not apply since the slabs of many cubes can contain x. Hence T_ε is not a positive ε-contraction as constructed, and the case analyses in thm:main:mgdl:one:op ('h_k(x)=0 for x∈Ω_2', strict L^p decrease) collapse. Moreover, a genuinely compactly supported cutoff cannot be a single-hidden-layer ReLU network in d≥2 (finite sums of ridge functions with compact support vanish), so the advertised realization of Γ_Q by one ReLU layer of 4d units per grade is impossible; an extra ReLU (e.g. σ(Σψ(x_i)−(d−1))) in a subsequent layer is required. The argument is correct only for d=1.",
+      "failure_location": {
+        "quote": "then $\\Gamma_{Q_{g,\\varepsilon,i}}(\\bmx)=0$ for all $i$, and hence",
+        "tag": "lem:T:positive:eps:contraction"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace Γ_Q by a true cutoff such as σ(Σ_i ψ(2(x_i−c_i)/ℓ) − (d−1)) and restructure the network so each grade's layer computes the 4d trapezoid units for the current cube plus the thresholding unit for the previous cube (width 5d+1, identity carried), adjusting indexing so each grade still outputs one cutoff (possibly weakening strict L^p decrease at the very first grade or adding a preparatory grade).",
+      "overall_effect": "For d≥2 the one-step contraction, the pointwise domination and strict L^p monotonicity, and hence Theorem thm:main:mgdl and its corollary, are unproved; the width-5d single-layer-per-grade realization claim is false as stated.",
+      "primary_affected_tag": "lem:T:positive:eps:contraction",
+      "target_type": "formal_result",
+      "title": "Constructed cutoff Γ_Q = (1/d)Σψ(x_i) is not supported in rQ for d≥2, breaking condition C1 and the single-layer realization",
+      "why_classification": "The core construction must be rebuilt with an added layer/unit per cube and re-verified, but a recognizably comparable fixed-width result with the same contraction mechanism survives; no new global architecture is needed."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2601.16884",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "67061075635b14d5854f08591654f58bf5c522f0fc7b58deb21ee8ba1692777e",
+  "status": "ok"
+}

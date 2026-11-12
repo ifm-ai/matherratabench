@@ -1,0 +1,201 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:amb2D",
+        "thm:amb2D",
+        "cor:coeff_count"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For every possible value of $n_T$, let $x_{n_T} = (-1)^{\\abs{T}}$,\nFor all other indices $n$, set $x_n = 0$. \nNote that this construction is well defined.",
+          "tag": "lem:amb1D"
+        },
+        {
+          "quote": "are fractions in lowest terms with different denominators, so $n_{T_1} \\ne n_{T_2}$.",
+          "tag": "lem:amb1D"
+        }
+      ],
+      "failure_explanation": "The signal x has length N with indices 0..N-1, but n_T = N*sum_{t in T} 1/p_t is not necessarily < N. For N = 30 (the paper's running example size) and T = {1,2,3}, n_T = 15+10+6 = 31 >= 30, so x_{n_T} is not an entry of the signal. The well-definedness argument only shows the n_T are distinct as integers, not that they lie in range nor that they are distinct modulo N. The proof as written does not define a valid length-N signal whenever sum 1/p_t >= 1 (e.g. N = 30, 60, 210,...). Since Lemma amb2D and Theorem amb2D use this signal for arbitrary lengths D, they inherit the gap.",
+      "failure_location": {
+        "quote": "For each subset of indices $T \\subseteq \\set{1, \\ldots, \\omega}$, define $n_T = N\\sum_{t \\in T} \\frac{1}{p_t}$.",
+        "tag": "lem:amb1D"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Define x_{n_T mod N} and show the residues n_T mod N are distinct: n_{T_1} - n_{T_2} is N times a fraction whose lowest-terms denominator is prod_{t in T_1 Δ T_2} p_t > 1, so it is not an integer multiple of N. The DFT computation is unchanged since e^{-2πi n_T k/N} is N-periodic.",
+      "overall_effect": "The explicit ambiguity construction underlying the tightness/lower-bound results is ill-defined for lengths with sum of reciprocal prime factors >= 1; the lower-bound theorem and corollary rest on it.",
+      "primary_affected_tag": "lem:amb1D",
+      "target_type": "formal_result",
+      "title": "Construction in Lemma amb1D uses indices n_T that can exceed N-1",
+      "why_classification": "A short local modification (reduce indices mod N plus a two-line distinctness argument) fully restores the lemma and all dependents with no loss."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The proof of the following result is identical to \\Cref{lem:rep_in_time} and is omitted.",
+          "tag": null
+        },
+        {
+          "quote": "x_n = \\frac{1}{N}\\sum_{k=0}^{N-1} \\tilde{x}_k \\e{-2\\pi i nk/N}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Computing the inverse DFT of the length-dN signal ỹ formed by stacking d copies of x̃: y_n = (1/(dN)) Σ_k x̃_k η_{dN}^{-nk} Σ_{t=0}^{d-1} η_d^{-nt}. The inner sum is d·δ_{d|n}, so y_{dn'} = (1/N) Σ_k x̃_k η_N^{-n'k} = x_{n'}, not d x_{n'}. The 1/(dN) normalization of the inverse DFT cancels the factor d, so the proof is not 'identical' to Lemma rep_in_time. Example: N=1, x=[a], d=2 gives ỹ=[a,a], y=[a,0], so y_0 = a ≠ 2a. The subsequent derivation (eq:recto1Dlambda_new, Definition subsig) is in fact consistent with y_{dn}=x_n, so only the lemma statement is wrong.",
+      "failure_location": {
+        "quote": "Additionally, for all $0\\le n < N$,\n    $y_{dn} = dx_n$.",
+        "tag": "lem:rep_in_freq"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace y_{dn} = d x_n by y_{dn} = x_n and note the normalization difference from Lemma rep_in_time.",
+      "overall_effect": "The lemma as stated is false; downstream use only relies on the (correct) vanishing part, so no other result is invalidated.",
+      "primary_affected_tag": "lem:rep_in_freq",
+      "target_type": "formal_result",
+      "title": "Lemma rep_in_freq states y_{dn} = d x_n; correct value is x_n",
+      "why_classification": "One-line correction of an unused conclusion; all dependents already use the correct relation."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, set $m_j = j(k/d_1)^{-1}p \\bmod{N_1}$ for the row index,\nand set $n_j = h(l/d_2)^{-1}q \\bmod{N_2}$ for the column index.",
+          "tag": "lem:subsig"
+        }
+      ],
+      "failure_explanation": "gcd(k,N_1)=d_1 only guarantees gcd(k/d_1, N_1/d_1)=1, i.e. invertibility modulo D_1 = N_1/d_1, not modulo N_1. Counterexample: N_1 = 6, k = 4 gives d_1 = 2, k/d_1 = 2, and 2 has no inverse mod 6. Hence m_j as defined may not exist and the existence argument for solutions of eq:to_satisfy is not established as written.",
+      "failure_location": {
+        "quote": "Since $d_1 = \\gcd(k, N_1)$ and $d_2 = \\gcd(l, N_2)$, $k/d_1$ and $l/d_2$ must have multiplicative inverses modulo $N_1$ and $N_2$, respectively.",
+        "tag": "lem:subsig"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Take (k/d_1)^{-1} modulo D_1 and (l/d_2)^{-1} modulo D_2; then m_j(k/d_1) ≡ jp (mod D_1) implies m_j k ≡ jpd_1 (mod N_1), which is all the argument uses.",
+      "overall_effect": "The existence half of Lemma subsig (and hence the well-definedness remark after Lemma amb2D) has a gap, though the conclusion is true.",
+      "primary_affected_tag": "lem:subsig",
+      "target_type": "formal_result",
+      "title": "Lemma subsig asserts k/d_1 is invertible modulo N_1, which is false in general",
+      "why_classification": "Routine local fix of the modulus; the rest of the proof and all dependents survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Require a representative DFT coefficient $\\tilde{X}_{k, l}$ for each coefficient class",
+          "tag": "alg:2D"
+        },
+        {
+          "quote": "Line~\\ref{ln:2D_loop} iterates through representative frequencies $(k, l)$ of each DFT coefficient equivalence class.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Invert1D is called with the coefficients X̃_{λk,λl} for all divisors λ of D. For λ>1 these lie in other equivalence classes, whose supplied representative is generally not (λk,λl) itself, and knowing one coefficient of a class does not give the value of another without inverting. These values become available only after the loop has processed the class of (λk,λl) and executed the fill-in step. The algorithm prescribes no order on RepCoeffs (unlike Algorithm memo_2D, whose order is verified), so as written the call in Line 2to1 may reference undetermined data.",
+      "failure_location": {
+        "quote": "\\State ${\\bf x}^{(k, l)} \\gets \\Call{Invert1D}{\\set{\\tilde{X}_{\\lambda k, \\lambda l} : \\lambda \\divs D}}$ \\label{ln:2to1}",
+        "tag": "alg:2D"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Process representative frequencies in nondecreasing order of D (subgroup order); then all X̃_{λk,λl} for λ|D, λ>1 have been filled in by earlier iterations, since they lie in proper cyclic subgroups of ⟨(k,l)⟩ already processed.",
+      "overall_effect": "Algorithm 2D is not well defined for an arbitrary iteration order; its guarantee depends on an unstated ordering of classes.",
+      "primary_affected_tag": "alg:2D",
+      "target_type": "algorithm",
+      "title": "Algorithm 2D uses DFT coefficients not in its input and requires an unstated iteration order",
+      "why_classification": "Adding a one-line ordering requirement restores correctness with no loss of guarantee or complexity."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\ForAll{$(k, l) \\in \\Call{RepCoeffs}{N_1, N_2} : \\gcd(k, N_1) = N_1/D_1, \\gcd(l, N_2) = N_2/D_2$} \\label{ln:loop_memo2D}",
+          "tag": "alg:memo_2D"
+        },
+        {
+          "quote": "Since $D_1/p < D_1$, the $(pk, pl)$-subsignal was recovered at a previous iteration of the for loop in Line~\\ref{ln:outer}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The algorithm stores x^{(k,l)} only for (k,l) in RepCoeffs, and fills X̃ only at λ coprime to D. The ILP at Line ip needs the subsignal x^{(p_j k, p_j l)}, but (p_j k, p_j l) is generally not the chosen representative of its class, so this vector is never computed or stored by any earlier iteration. The correctness argument asserts 'the (pk,pl)-subsignal was recovered' at a previous iteration, conflating the class with the specific frequency. The needed vector is recoverable (via inverse DFT of the already-filled X̃_{λpk,λpl}, or by index permutation of the representative's subsignal), but the algorithm does not specify this step.",
+      "failure_location": {
+        "quote": "\\idmat{D/p_1} & \\cdots & \\idmat{D/p_1} & \\Block{4-1}{{\\bf x} = } & {\\bf x}^{(p_1k,p_1l)}",
+        "tag": "alg:memo_2D"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add a step computing x^{(p_j k,p_j l)} as the inverse DFT of (X̃_{λ p_j k, λ p_j l})_{0≤λ<D/p_j}, all of which are filled by earlier iterations under the stated order, or as the permutation x^{(p_jk,p_jl)}_j = x^{(k'',l'')}_{μ^{-1} j mod D/p_j} where (p_jk,p_jl)=μ(k'',l'').",
+      "overall_effect": "As written, the ILP right-hand sides in Algorithm memo_2D are undefined for non-representative frequencies (p_j k, p_j l); the correctness argument has a corresponding gap.",
+      "primary_affected_tag": "alg:memo_2D",
+      "target_type": "algorithm",
+      "title": "Algorithm memo_2D references subsignals x^{(p_j k, p_j l)} that it never computes",
+      "why_classification": "A short explicit conversion step (already implicit in the paper's FFT discussion) fixes the omission; guarantees and complexity are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $p \\ndivs N_1$, then $\\gcd(pk, N_1) = \\gcd(k, N_1)$.\nAdditionally, $p$ must divide $N_2$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "gcd(pk,N_1) = p·gcd(k,N_1) holds only when p divides D_1 = N_1/gcd(k,N_1). If p | N_1 but p ∤ D_1 (e.g. N_1 = 6, k = 3, D_1 = 2, p = 3 with 3 | D_2), then gcd(pk,N_1) = gcd(k,N_1) and the (pk,pl)-subsignal is recovered in the same outer iteration (earlier inner iteration), not a previous outer iteration as the argument claims. The case analysis as written does not cover this situation, so the verification of the dynamic-programming order is incomplete.",
+      "failure_location": {
+        "quote": "If $p \\divs N_1$, then $\\gcd(pk, N_1) = p\\gcd(k, N_1) = N_1/(D_1/p)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Split on p | D_1 versus p ∤ D_1 (in which case p | D_2 since p | D = lcm(D_1,D_2)); the two conclusions then follow exactly as written.",
+      "overall_effect": "The correctness argument for the iteration order of Algorithm memo_2D has an uncovered case; the algorithm's ordering is nonetheless valid.",
+      "primary_affected_tag": "alg:memo_2D",
+      "target_type": "algorithm",
+      "title": "Case split in memo_2D ordering proof uses p | N_1 instead of p | D_1",
+      "why_classification": "Replacing the case condition is a routine local repair that preserves the algorithm and its guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": " &  & 5\\phantom{\\textsuperscript{*}} & 16 & 1.22e05 & 100 &  3.01 & {--}\\\\",
+          "tag": null
+        },
+        {
+          "quote": "The $60 \\times 60$ matrix required $350 / 3600 \\approx 9.7\\%$ of DFT coefficients,",
+          "tag": null
+        },
+        {
+          "quote": "they were still inverted from a relatively smaller sampled spectrum than the $60 \\times 60$ matrices.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Table tab:rect lists 16 supplied DFT coefficients for the 11×13 case at M = 5 (the value required for 100% recovery), giving 16/143 ≈ 11.2%, not 8/143 ≈ 5.6%. With the tabulated count, the 11×13 matrices used a larger fraction of their spectrum than the 60×60 matrices (9.7%), so the stated conclusion that the 11×13 case was inverted from a relatively smaller sampled spectrum is not supported by the paper's own data.",
+      "failure_location": {
+        "quote": "whereas the $11 \\times 13$ matrix required $8 / 143 \\approx 5.6\\%$ of DFT coefficients for reliable inversion.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Use the tabulated 16 coefficients (11.2%) and revise or withdraw the statement that the 11×13 case used a relatively smaller fraction of the spectrum.",
+      "overall_effect": "The comparative claim about relative sampling efficiency of the two matrix sizes is unsupported/reversed; no formal result depends on it.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Sampled-fraction comparison for 11×13 vs 60×60 contradicts the reported coefficient count",
+      "why_classification": "Correcting one numerical comparison in the experimental discussion; no theorem, algorithm, or guarantee is affected."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2510.11949",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "029d5f1f6eba9f20a58493649f3903cdd4294653c70bc63ac2e6f7768fdc7ef5",
+  "status": "ok"
+}

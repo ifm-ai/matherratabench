@@ -1,0 +1,307 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:mm_cond",
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\epsilon_k \\in \\mathbb{R}^{m^2} corresponds to the noise associated with the $k$-th measurement",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The additive noise is allowed to be an arbitrary real vector, so the model does not ensure that every entry of \\(\\bm d_k\\) is nonnegative. Consequently, the real element-wise square root used throughout the objective and algorithms can be undefined.",
+      "failure_location": {
+        "quote": "\\min_{\\bm{z}} \\Phi(\\bm{z}) = \\frac{1}{2} \\sum_{k=1}^N \\left\\| |\\mathcal{F}(\\bm{Q}\\odot P_k \\bm{z})| - \\sqrt{\\bm{d}_k} \\right\\|_2^2",
+        "tag": "eqn:data_misfit"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Require nonnegative measured intensities, or specify a preprocessing/noise model that guarantees a real nonnegative vector before taking square roots.",
+      "overall_effect": "The objective, revised exit waves, and all guarantees based on them are not defined for part of the stated noise model.",
+      "primary_affected_tag": "eqn:data_misfit",
+      "target_type": "other",
+      "title": "Amplitude objective is undefined for potentially negative noisy data",
+      "why_classification": "A standard local data-domain hypothesis preserves the method, rates, and intended Poisson-noise experiments."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\mathcal{F}(\\bm{z}_k)\\|_2^2=m^2\\|\\bm{z}_k\\|_2^2\\quad\\text{and}\\quad\\|\\mathcal{F}^{-1}(\\bm{z}_k)\\|_2^2=\\frac{1}{m^2}\\|\\bm{z}_k\\|_2^2",
+          "tag": null
+        },
+        {
+          "quote": "\\Phi_k(\\bm{z}_k) &= \\frac{1}{2m^2} \\left\\||\\mathcal{F}(\\bm{Q}\\odot\\bm{z}_k)| -  \\sqrt{\\bm{d}_k}\\right\\|_2^2",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Under the paper's own nonunitary DFT convention, the exit-wave norm equals \\(1/m^2\\) times the Fourier-domain amplitude norm. Equations \\(\\eqref{eqn:data_misfit}\\) and \\(\\eqref{eqn:exit_misfit}\\) therefore do not define the same function \\(\\Phi\\) as claimed, although they have the same minimizers.",
+      "failure_location": {
+        "quote": "Following the terminology in~\\cite{rPIE} and invoking Parseval's theorem, the problem can equivalently be written as:",
+        "tag": "eqn:exit_misfit"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Insert the missing factor \\(1/m^2\\) in the Fourier-domain objective, or rescale the exit-wave objective and all associated gradients and bounds consistently.",
+      "overall_effect": "Objective values, gradients, residuals, and constants are inconsistently normalized between the original formulation and the subsequent analysis.",
+      "primary_affected_tag": "eqn:exit_misfit",
+      "target_type": "other",
+      "title": "Parseval equivalence omits the DFT normalization factor",
+      "why_classification": "This is a systematic but local normalization repair that preserves minimizers, algorithms, and asymptotic guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:convergence_iterative_surrogate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $\\theta(0)$ is undefined, we set $\\mathcal{R}_k(\\bm{z}_k)_r = \\mathcal{F}^{-1}\\left(\\sqrt{\\bm{d}_k}\\right)_r$ when $\\mathcal{F}(\\bm{Q}\\odot \\bm{z}_k)_r = 0$.",
+          "tag": "def:REW"
+        }
+      ],
+      "failure_explanation": "A zero occurs at a Fourier-domain coordinate, but the rule replaces the correspondingly indexed spatial-domain coordinate of the inverse transform. Since the inverse DFT mixes all Fourier coordinates, this is not equivalent to assigning a phase to the zero Fourier coefficient and need not produce a vector whose Fourier magnitudes are \\(\\sqrt{\\bm d_k}\\). The projection inequality and surrogate tangency used by the proposition therefore fail under the stated definition.",
+      "failure_location": {
+        "quote": "The quadratic surrogate $\\widetilde{\\Phi}\\left(\\bm{z} ; \\bm{z}^{(j)}\\right)$ that we constructed in~\\eqref{eqn:quadratic_surrogate} to approximate the original objective function $\\Phi(\\bm{z})$ in~\\eqref{eqn:exit_misfit} has the following properties:",
+        "tag": "prop:mm_cond"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Define a phase directly at each zero Fourier coefficient and then apply one inverse DFT to the complete Fourier-domain vector; the choice must also be reconciled with the later iteration-dependent convention.",
+      "overall_effect": "The revised-exit-wave representation, majorization, and the convergence arguments based on it are unreliable whenever a predicted Fourier coefficient is zero.",
+      "primary_affected_tag": "prop:mm_cond",
+      "target_type": "formal_result",
+      "title": "The zero-Fourier-coefficient rule does not define a valid revised exit wave",
+      "why_classification": "The repair is contained but requires replacing an operative construction and rechecking the zero-coefficient cases in several central proofs."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate",
+        "prop:automatic_stopping_criterion_selection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that this computation does not work when $\\mathcal{F}(\\bm{Q}\\odot \\bm{z}_k))_r=0$ at some index $r$.  This issue can be prevented by finding the gradient using the third statement of Proposition~\\ref{prop:mm_cond}.",
+          "tag": null
+        },
+        {
+          "quote": "\\operatorname{diag}\\left(\\frac{\\overline{\\mathcal{F}(\\bm{Q}\\odot\\bm{z}_k)}}{2|\\mathcal{F}(\\bm{Q}\\odot\\bm{z}_k)|}\\right)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a datum with positive amplitude, the scalar term \\(\\tfrac12(|x|-d)^2\\) is not differentiable at \\(x=0\\). Choosing a phase for the revised wave does not create a gradient of the original amplitude objective there. Thus the proposition's gradient equality, the displayed gradient formula, and subsequent stationarity and gradient-rate arguments are not valid at the zero coefficients that the paper explicitly permits.",
+      "failure_location": {
+        "quote": "The complex gradients of $\\Phi(\\bm{z})$ and $\\widetilde{\\Phi}\\left(\\bm{z} ; \\bm{z}^{(j)}\\right)$ agree at $\\bm{z}^{(j)}$:",
+        "tag": "prop:mm_cond"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either impose and preserve nonvanishing predicted Fourier coefficients or replace the gradient analysis with an appropriate nonsmooth stationarity framework.",
+      "overall_effect": "The paper's classical-gradient stationarity and convergence-rate guarantees do not cover iterates containing zero predicted Fourier coefficients.",
+      "primary_affected_tag": "prop:mm_cond",
+      "target_type": "formal_result",
+      "title": "Amplitude loss is nondifferentiable at zero predicted Fourier coefficients",
+      "why_classification": "Excluding zeros materially narrows the advertised regime, while retaining them requires new nonsmooth proof architecture for the central optimality and rate guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_iterative_surrogate",
+        "thm:convergence_rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\theta(\\mathcal{F}\\left(\\bm{Q}P_k\\bm{z}^{(j)}\\right)_r)=0$, the original definition is ill-defined, and we complement this definition with the following specification,",
+          "tag": "eqn:specification"
+        },
+        {
+          "quote": "\\mathcal{R}_k\\left(P_k\\bm{z}^{(j)}\\right)_r =\n\\begin{cases}\n\\mathcal{F}^{-1}\\left(\\sqrt{\\bm{d}_k}\\right)_r\\,, & \\text{if } j=0\\,, \\\\\n\\mathcal{R}_k\\left(P_k\\bm{z}^{(j-1)}\\right)_r\\,, & \\text{if } j\\geq 1\\,.\n\\end{cases}",
+          "tag": "eqn:specification"
+        }
+      ],
+      "failure_explanation": "The principal argument is well-defined and equal to zero for a positive real Fourier coefficient; it is undefined only when the coefficient itself is zero. The rule therefore overwrites valid phase-zero entries, potentially using the preceding iterate's revised wave. The resulting surrogate need not agree with the objective at its center, contrary to the proposition.",
+      "failure_location": {
+        "quote": "$\\Phi\\left(\\bm{z}^{(j)}\\right) = \\widetilde{\\Phi}\\left(\\bm{z}^{(j)} ; \\bm{z}^{(j)}\\right)$.",
+        "tag": "prop:mm_cond"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the trigger by a test for a zero Fourier coefficient and define the replacement in Fourier space consistently with Definition~\\ref{def:REW}.",
+      "overall_effect": "Surrogate tangency, gradient agreement, and the monotonicity proof can fail even at nonzero predicted Fourier coefficients lying on the positive real axis.",
+      "primary_affected_tag": "prop:mm_cond",
+      "target_type": "formal_result",
+      "title": "The supplementary phase rule is triggered at phase zero rather than signal zero",
+      "why_classification": "The correction is localized, but it changes an iteration-dependent construction explicitly used to prove the central surrogate properties and requires those proofs to be revalidated."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\item \\textbf{Optimality:} By Proposition~\\ref{prop:convergence_iterative_surrogate}, the inequality~\\eqref{eqn:proof_thm_2} achieves equality only when",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof establishes at most the forward implication from equality to stationarity and never proves the converse. The converse is false: with one scalar region, \\(Q=1\\), \\(d=1\\), and \\(z^{(0)}=2\\), exact surrogate minimization gives \\(z^{(1)}=1\\). Then \\(\\nabla\\Phi(z^{(1)})=0\\), while \\(\\Phi(z^{(1)})=0<1/2=\\Phi(z^{(0)})\\).",
+      "failure_location": {
+        "quote": "\\Phi\\left(\\bm{z}^{(j+1)}\\right)=\\Phi\\left(\\bm{z}^{(j)}\\right)\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0",
+        "tag": "thm:convergence_iterative_surrogate"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the biconditional by the one-way implication actually supported, subject also to resolving the differentiability issue at zero coefficients.",
+      "overall_effect": "The theorem's claimed characterization of stalled iterations by stationarity is false.",
+      "primary_affected_tag": "thm:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "Stationarity does not imply equality of consecutive objective values",
+      "why_classification": "A comparable monotonicity theorem survives, but the advertised equivalence and its optimality interpretation must be withdrawn."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, the choice $\\bm{z}=\\bm{z}^{(j)}-\\frac{1}{L}\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)$ yields: \n    \\begin{equation}\n        \\Phi\\left(\\bm{z}^{(j)}\\right)-\\Phi\\left(\\bm{z}^{(j+1)}\\right)\\geq\\frac{1}{L}\\left\\|\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\right\\|_2^2\\,.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The complex cross terms are mishandled when the proof converts the quadratic expansion into a gradient bound, producing too much guaranteed decrease. A direct counterexample is \\(N=1\\), \\(P=Q=1\\), \\(d=1\\), \\(z^{(0)}=2\\), and \\(n=0\\): the left side is \\(1\\), while the stated right side is \\((1/2)\\Phi(2)=1/4\\).",
+      "failure_location": {
+        "quote": "\\min_{0\\leq j\\leq n} \\left\\|\\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j)}\\right)\\right\\|_2^2\\leq\\frac{\\left\\|\\sum_{k=1}^N  P_k^\\top|\\bm{Q}|^2\\right\\|_\\infty}{2(n+1)}\\Phi\\left(\\bm{z}^{(0)}\\right)",
+        "tag": "thm:convergence_rate"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Redo the quadratic descent calculation with the real inner product and replace the constant by one justified by that calculation.",
+      "overall_effect": "The explicit sublinear bound is false, although an \\(O(1/n)\\) bound with a weaker constant may remain possible.",
+      "primary_affected_tag": "thm:convergence_rate",
+      "target_type": "formal_result",
+      "title": "The convergence-rate bound has an incorrect constant",
+      "why_classification": "The counterexample only defeats the numerical constant; a local algebraic correction can retain the same stationarity measure and sublinear order."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:coarse_grid_update",
+        "prop:automatic_regularization_selection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{W}_{\\bm{u}}^H = \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}",
+          "tag": "eqn:def_weights"
+        },
+        {
+          "quote": "Coarse probe: $\\bm{Q}_H \\leftarrow \\bm{I}_h^H\\left(\\bm{Q}\\right)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A coarse probe entry can vanish by phase cancellation even when its fine-bin intensity is positive. For example, a bin containing \\((1,-1,1,-1)\\) has \\(Q_H=0\\) and \\(I_h^H|Q|^2=1\\), hence \\(W_u^H=0\\) and \\(u_H=0\\). At the coarsest recursive update the denominator \\(u_H+|Q_H|^2\\) is then zero, so the algorithm evaluates \\(0/0\\).",
+      "failure_location": {
+        "quote": "$\\bm{z}^+_k \\leftarrow \\bm{z}_k^{(j)} + \\frac{\\overline{\\bm{Q}}}{\\bm{u} + |\\bm{Q}|^2}\\left(\\mathcal{R}_k\\left(\\bm{z}_k^{(j)}\\right) - \\bm{Q}\\bm{z}_k^{(j)}\\right)$.",
+        "tag": "alg:MGPS"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Introduce a strictly positive coarse regularization or a cancellation-safe coarse-probe construction, and then rederive the coarse update, descent result, and parameter-transfer rule.",
+      "overall_effect": "MGPS and therefore MGrPIE are not well-defined for ordinary complex probes whose values cancel under averaging; the claimed coarse update and automatic regularization guarantee also fail there.",
+      "primary_affected_tag": "alg:MGPS",
+      "target_type": "algorithm",
+      "title": "Phase cancellation makes the recursive multigrid solver singular",
+      "why_classification": "A contained redesign can plausibly preserve the multigrid architecture, but merely editing a degenerate case is insufficient because the chosen automatic regularization deliberately becomes zero."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{I}_h^H\\left(\\frac{1}{\\bm{u}+|\\bm{Q}|^2}\\right)&= \\frac{1}{\\bm{u}_H + |\\bm{Q}_H|^2}\\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "From the preceding definition, the right side simplifies to \\(1/\\bm I_h^H(\\bm u+|\\bm Q|^2)\\), whereas the left side is \\(\\bm I_h^H(1/(\\bm u+|\\bm Q|^2))\\). These are generally unequal when the fine-grid denominators vary within a bin. None of the cited replication lemmas permits a nonlinear reciprocal to commute with averaging.",
+      "failure_location": {
+        "quote": "\\max_{\\|\\bm{g_1}\\|_\\infty\\leq1}\\left|\\bm{e}_{H,k}(\\bm{I}_h^H\\bm{g_1})\\right|_r= \\max_{\\|\\bm{g_2}\\|_\\infty\\leq1} \\left|\\bm{I}_h^H\\bm{e}_k(\\bm{g_2})\\right|_r",
+        "tag": "prop:automatic_regularization_selection"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Redesign the coarse regularization using the relevant harmonic average, or weaken the claim to a valid inequality and analyze the resulting stability.",
+      "overall_effect": "The claimed equality of worst-case fine and coarse update magnitudes, and hence the advertised automatic transfer of regularization, is unsupported even away from singular coarse probes.",
+      "primary_affected_tag": "prop:automatic_regularization_selection",
+      "target_type": "formal_result",
+      "title": "Automatic regularization proof equates an average reciprocal with a reciprocal average",
+      "why_classification": "Repair requires changing or reanalyzing the coarse parameter rule, but it remains a contained part of the multigrid construction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=-4\\left(\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right)\\right)^*\\operatorname{diag}(\\bm{A})\\bm{I}_h^H\\left(\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)\\right)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The calculation shows that equality implies only \\(I_h^H\\nabla\\widetilde\\Phi_k=0\\). Average pooling has a nontrivial nullspace: for example, a fine-bin gradient \\((1,-1,0,0)\\) restricts to zero but is not itself zero.",
+      "failure_location": {
+        "quote": "Additionally, equality implies $\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k\\left(\\bm{z}_k'; \\bm{z}_k^{(j)}\\right)=0$.",
+        "tag": "prop:multigrid_convergence"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Delete the additional equality implication or replace it by the correct condition that the restricted gradient vanishes.",
+      "overall_effect": "The proposition's claimed strictness and stationarity characterization of the coarse correction are false, although its nonpositivity conclusion can remain valid.",
+      "primary_affected_tag": "prop:multigrid_convergence",
+      "target_type": "formal_result",
+      "title": "A zero restricted gradient does not imply a zero fine-grid gradient",
+      "why_classification": "The false clause is unused in the stated coarse-direction theorem and can be removed without changing the nonascent result."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "gives a descending direction of the surrogate model on the fine grid",
+          "tag": "thm:coarse_grid_update"
+        },
+        {
+          "quote": "Update fine-grid estimate: $\\widetilde{\\bm{z}}^{(j)}_{k} \\leftarrow \\bm{z}^{(j)}_k + \\bm{I}_H^h\\,\\bm{e}^{(j)}_{H,k}$.",
+          "tag": "alg:MGPS"
+        },
+        {
+          "quote": "Our method demonstrates that the surrogate model:\n\\begin{itemize}\n    \\item majorizes the original non-convex objective, yielding monotonic descent and sub-linear convergence guarantees;",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The formal multigrid result proves only that the coarse correction is a descent direction at one point. The algorithm takes that direction with unit step, without a line search or a bound ensuring actual decrease, and then performs sequential stochastic updates with changing surrogate centers. No theorem establishes monotonic descent or convergence for MGPS/MGrPIE; the monotonicity and rate theorems concern exact full surrogate minimization in \\(\\eqref{eqn:surrogate_minimization}\\), not the proposed stochastic multigrid algorithm.",
+      "failure_location": {
+        "quote": "These choices ensure the convergence of \\texttt{MGrPIE}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must prove a safe coarse step and then analyze the post-smoothed, sequential stochastic algorithm, or withdraw the MGrPIE convergence claim.",
+      "overall_effect": "The central advertised rigorous convergence guarantee for MGrPIE is unsupported; only a local direction property is formally attempted.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The paper overclaims convergence of MGrPIE from a direction-only result",
+      "why_classification": "The available resolution either needs new global convergence architecture for the actual algorithm or abandons a central advertised guarantee."
+    }
+  ],
+  "issues_found": 11,
+  "paper_id": "2504.10118",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e9a1fb619c786f644b01b96a3fc12b8566c68fb3b203771e6f1978a95647dfae",
+  "status": "ok"
+}

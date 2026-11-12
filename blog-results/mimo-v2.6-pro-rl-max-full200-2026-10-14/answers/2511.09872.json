@@ -1,0 +1,144 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\E\\left[|s_{\\tau_i}|^2|r_{\\tau_i}|^2 \\E\\left(\\left.\\frac{1}{\\|S_{\\tau}A_{\\tau}\\|_2^2}\\right|_{|s_{\\tau_i}|^2|r_{\\tau_i}|^2}\\right)\\right]",
+          "tag": "lem6"
+        }
+      ],
+      "failure_explanation": "The proof applies Lemma lem4 with X = |s_{\\tau_i}|^2|r_{\\tau_i}|^2 = f(\\tau_i) and Y = 1/\\|S_\\tau A_\\tau\\|_2^2 to write E(XY) = E[X\\,E(Y|X)], then silently replaces E(Y|X) with E(Y|\\tau_i). Since \\sigma(X) \\subseteq \\sigma(\\tau_i) and f need not be injective (two rows j \\ne j' can satisfy |s_j|^2|r_j|^2 = |s_{j'}|^2|r_{j'}|^2), one has E(Y|X) = E[E(Y|\\tau_i)|X] \\ne E(Y|\\tau_i) in general. The conclusion of the lemma is correct but this inference is invalid.",
+      "failure_location": {
+        "quote": "\\E\\left[|s_{\\tau_i}|^2|r_{\\tau_i}|^2 \\E\\left(\\left.\\frac{1}{\\|S_{\\tau}A_{\\tau}\\|_2^2}\\right|_{\\tau_i}\\right)\\right]",
+        "tag": "lem6"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the two-step conditioning with a direct tower-property argument: E[f(\\tau_i)Y] = E[E[f(\\tau_i)Y \\mid \\tau_i]] = E[f(\\tau_i)\\,E[Y \\mid \\tau_i]], yielding the same summation over j without invoking E(Y|X) = E(Y|\\tau_i).",
+      "overall_effect": "Lemma lem6's proof contains an invalid conditional-expectation step. The lemma's conclusion is nonetheless correct and feeds correctly into Theorem convRBSK once the gap is closed.",
+      "primary_affected_tag": "lem6",
+      "target_type": "formal_result",
+      "title": "Incorrect conditional-expectation identity in Lemma lem6 proof",
+      "why_classification": "The lemma's conclusion is correct and the fix replaces a single inference line with a standard tower-property application; every downstream guarantee survives unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "convRBSK",
+        "convRBSK_relaxed",
+        "convRBSK_relaxed_pave",
+        "convRBSK_sharper"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dim(\\mathcal{W}_{\\tau})=d-d_{\\tau}",
+          "tag": "lem7"
+        },
+        {
+          "quote": "\\xi &=& \\min_{\\tau\\sim\\bbb{P}} \\lambda_{\\min}\\left(W_{\\tau}^{\\T}A^{\\T} D^2AW_{\\tau}\\right)",
+          "tag": "convRBSK"
+        }
+      ],
+      "failure_explanation": "When d_\\tau = rank(A_\\tau) = d = rank(A), the subspace \\mathcal{W}_\\tau is {0}, so W_\\tau is an n x 0 matrix and W_\\tau^T A^T D^2 A W_\\tau is a 0 x 0 matrix. The quantity \\lambda_min of a 0 x 0 matrix is undefined. Consequently \\xi = \\min_{\\tau} \\xi_\\tau in Theorem convRBSK (and the analogous quantities in the dependent results) is ill-defined whenever a draw \\tau with positive probability satisfies d_\\tau = d.",
+      "failure_location": {
+        "quote": "\\xi_{\\tau}=\\lambda_{\\min}\\left( W_{\\tau}^{\\T}A^{\\T}D^{\\T}DAW_{\\tau} \\right)",
+        "tag": "lem7"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Define \\xi_\\tau = +\\infty (or 1) when d_\\tau = d, since x^{(k+1)} = x_\\star and the rate bound is trivially satisfied; equivalently, take the minimum only over draws with d_\\tau < d.",
+      "overall_effect": "The convergence-rate bound formulas in Theorem convRBSK, Corollary convRBSK_relaxed, Theorem convRBSK_relaxed_pave, and Theorem convRBSK_sharper are ill-defined whenever some batch-sampling draw yields a block whose row rank equals rank(A). (In that case the iteration converges in one step but the rate expression is still undefined.)",
+      "primary_affected_tag": "lem7",
+      "target_type": "formal_result",
+      "title": "\\xi_\\tau ill-defined when d_\\tau = d (degenerate zero-dimensional W_\\tau)",
+      "why_classification": "A standard convention for the degenerate 0 x 0 case or an explicit exclusion restores well-definedness. No bound's value changes in non-degenerate cases and no guarantee is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\max_{\\tau=(\\tau_1,\\ldots,\\tau_{i-1},\\tau_i=j, \\tau_{i+1},\\ldots,\\tau_q)} \\|S_{\\tau} A_{\\tau}\\|_2^2",
+          "tag": "lem6"
+        },
+        {
+          "quote": "&\\succeq& S^{\\T}B_S^{-1} \\widehat{P}S.",
+          "tag": "convRBSK_relaxed_pave"
+        }
+      ],
+      "failure_explanation": "Lemma lem6 defines \\beta^S_{i,j} as the max of \\|S_\\tau A_\\tau\\|_2^2 over draws \\tau with \\tau_i = j, where A_\\tau has q rows including repeats when |T_{I(j)}| < q. The proof of Theorem convRBSK_relaxed_pave claims \\beta^S_{i,j} = \\|S_{T_{I(j)}} A_{T_{I(j)}}\\|_2^2, ignoring the strict increase in \\|S_\\tau A_\\tau\\|_2^2 caused by repeated row indices. When some block T_t has |T_t| < q, the actual \\beta^S_{i,j} exceeds \\|S_{T_{I(j)}} A_{T_{I(j)}}\\|_2^2 (e.g., for T = {\\{1\\}}, q = 2 one has \\beta^S_{i,1} = 2\\|s_1 a_1\\|^2 but \\|S_{T_1} A_{T_1}\\|^2 = \\|s_1 a_1\\|^2). Hence B_S is understated, B_S^{-1} is overstated, and the claimed matrix inequality D^2 \\succeq S^T B_S^{-1} \\widehat{P} S used to derive the rate bound is not established. The proof's claim B_{S;i} = B_S for all i likewise fails to match Lemma lem6's B_{S;i}.",
+      "failure_location": {
+        "quote": "\\beta_{i,j}^S &=& \\|S_{T_{\\mathcal{I}(j)}}A_{T_{\\mathcal{I}(j)}}\\|_2^2,\\ \\forall j=1,\\ldots,m,",
+        "tag": "convRBSK_relaxed_pave"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Either (a) redefine B_S with entries equal to the correct \\beta^S_{i,j} from Lemma lem6 that account for repeated row indices (yielding a weaker but valid bound with the same formulaic structure), or (b) add the hypothesis |T_t| = q for all t so the current identification is correct.",
+      "overall_effect": "The convergence-rate bound in Theorem convRBSK_relaxed_pave is unestablished whenever row-paving blocks have unequal sizes (|T_t| < q for some t). The sharpness comparison in Remark remark:relaxTwo and the experimental comparisons using this bound are correspondingly unreliable.",
+      "primary_affected_tag": "convRBSK_relaxed_pave",
+      "target_type": "formal_result",
+      "title": "Incorrect identification of \\beta^S_{i,j} with block norm in Theorem convRBSK_relaxed_pave",
+      "why_classification": "The repair requires either redefining B_S (changing the bound's numerical value and weakening the advertised sharpness comparison) or restricting the hypothesis to equal-size blocks (narrowing scope). A recognizably comparable linear-convergence bound survives but more than a routine local fix is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\xi_{\\tau^{(k-1,j)}}\\|x^{(k,j)}-x_{\\star}\\|_2^2 \\geq \\left(\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\xi_{\\tau^{(k-1,j)}}\\right)\\left(\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\|x^{(k,j)}-x_{\\star}\\|_2^2\\right).",
+          "tag": "convRBSK_sharper"
+        }
+      ],
+      "failure_explanation": "The theorem's hypothesis states cov(\\xi_{\\tau^{(k-1)}}, \\|x^{(k)}-x_\\star\\|_2) \\geq 0 (non-squared norm), but the proof applies Lemma lem5 with y_i = \\|x^{(k,i)}-x_\\star\\|_2^2 (squared norm) in the key inequality (thm4Eq5). Lemma lem5 requires the sample covariance of \\xi and \\|x^{(k)}-x_\\star\\|_2^2 to be non-negative. cov(\\xi, \\|x-x_\\star\\|_2) \\geq 0 does not imply cov(\\xi, \\|x-x_\\star\\|_2^2) \\geq 0 in general (e.g., \\xi positively correlated with the norm but negatively correlated with its square). The proof therefore invokes Lemma lem5 outside its hypotheses.",
+      "failure_location": {
+        "quote": "\\cov\\left(\\xi_{\\tau^{(k-1)}},\\|x^{(k)}-x_{\\star}\\|_2\\right)\\geq 0",
+        "tag": "convRBSK_sharper"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Change the hypothesis from cov(\\xi_{\\tau^{(k-1)}}, \\|x^{(k)}-x_\\star\\|_2) \\geq 0 to cov(\\xi_{\\tau^{(k-1)}}, \\|x^{(k)}-x_\\star\\|_2^2) \\geq 0, matching what Lemma lem5 requires.",
+      "overall_effect": "The convergence-rate bound in Theorem convRBSK_sharper is unestablished because its stated hypothesis is insufficient for the proof's key covariance step.",
+      "primary_affected_tag": "convRBSK_sharper",
+      "target_type": "formal_result",
+      "title": "Covariance hypothesis stated for unsquared norm while proof needs squared norm",
+      "why_classification": "A one-line change to the hypothesis restores the proof step's validity with no change to the conclusion, rate, or method."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Taking expectation on both sides of (\\ref{thm4Eq8}) leads to the sharper estimate (\\ref{thm4Eq2}).",
+          "tag": "convRBSK_sharper"
+        },
+        {
+          "quote": "\\pr\\left(\\frac{1}{\\ell}\\sum_{j=1}^{\\ell}\\xi_{\\tau^{(k-1,j)}}-\\E(\\xi_{\\tau^{(k-1)}})\\geq -\\epsilon \\right)  &\\geq& 1-\\delta",
+          "tag": "convRBSK_sharper"
+        }
+      ],
+      "failure_explanation": "The quantity E(\\|x^{(k+1)}-x_\\star\\|_2^2) is deterministic (a property of the algorithm's distribution). Stating that it holds 'with probability at least 1-\\delta' is meaningless. The proof obtains (thm4Eq8) with probability \\geq 1-\\delta (via Hoeffding on the sample mean of \\xi) and then claims that 'taking expectation on both sides' yields (thm4Eq2). But an inequality holding only on an event of probability 1-\\delta cannot be converted to an expectation inequality by taking expectations: E[LHS] \\leq E[RHS] does not follow from LHS \\leq RHS holding with probability 1-\\delta. Moreover, the concentration step is unnecessary and adds an \\epsilon slack that weakens the bound: a direct argument applying the population covariance condition cov(\\xi_\\tau, \\|x^{(k)}-x_\\star\\|_2^2) \\geq 0 to (thm1Eq3) after taking full expectations yields the strictly sharper deterministic bound E(\\|x^{(k+1)}-x_\\star\\|_2^2) \\leq (1 - E[\\xi_\\tau]) E(\\|x^{(k)}-x_\\star\\|_2^2).",
+      "failure_location": {
+        "quote": "then, with probability at least $1-\\delta$, the mean squared error satisfies",
+        "tag": "convRBSK_sharper"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the concentration-based argument with a direct expectation argument: take full expectations of (thm1Eq3) and use the population covariance condition cov(\\xi_\\tau, \\|x^{(k)}-x_\\star\\|_2^2) \\geq 0 to obtain the deterministic bound E(\\|x^{(k+1)}-x_\\star\\|_2^2) \\leq (1 - E[\\xi_\\tau]) E(\\|x^{(k)}-x_\\star\\|_2^2), removing the concentration step, probability qualifier, and \\epsilon slack.",
+      "overall_effect": "The convergence-rate bound in Theorem convRBSK_sharper is unestablished as stated. The paper's advertised use of concentration inequalities to derive expected linear convergence rate bounds does not deliver a valid deterministic bound on the mean squared error.",
+      "primary_affected_tag": "convRBSK_sharper",
+      "target_type": "formal_result",
+      "title": "Concentration step yields nonsensical probability qualifier on deterministic MSE bound",
+      "why_classification": "The repair requires restructuring the proof (replacing the concentration argument with a direct expectation argument) and restating the conclusion (deterministic bound without probability qualifier and without \\epsilon). The covariance-based improvement over the min_\\tau bound and the linear convergence guarantee survive and are strengthened, but the proof architecture within this theorem must be replaced."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2511.09872",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "73f96c8b1573f56b57360efd52a5ed58fb02d8b49792678ac619b2bc2b98cb01",
+  "status": "ok"
+}

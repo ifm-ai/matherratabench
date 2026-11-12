@@ -1,0 +1,231 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State Compute weights $w_j \\leftarrow \\exp\\left(-\\frac{G(X_t^{(i)} + \\sqrt{\\tau} Z_j)}{\\eps}\\right)$",
+          "tag": null
+        },
+        {
+          "quote": "We choose the regularization parameter $\\eps=10^{-300}$ and use $S=1000$ Monte Carlo samples at each time step to estimate the drift term.",
+          "tag": null
+        },
+        {
+          "quote": "The regularization parameter is set to $\\eps=1e-299$, and the conditional expectations in \\eqref{beta} are approximated \nusing $S=100$ Monte Carlo samples.",
+          "tag": null
+        },
+        {
+          "quote": "The final mean vector: $\\bar{X}_T \\approx 0.00167204$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Monte Carlo drift estimator is a ratio of sums of weights exp(-G(·)/eps). With eps = 10^{-300} (Xin-She Yang 4, Ackley) and eps = 1e-299 (Double Hula Hoop), every weight underflows to 0 whenever the sampled objective value is positive (for the Ackley function g >= 0 with g(x) > 0 a.s., so all S weights are exactly 0), while samples near minimizers with negative objective values (Xin-She Yang has g(x*) = -1) overflow to infinity. The estimator is therefore 0/0 or infinity/infinity and undefined in any standard floating-point implementation, so the reported outputs (e.g., the final mean 0.00167204 and the 20-dimensional vector with g(bar X_T) ~ 0.085852) cannot be produced by the procedure as described.",
+      "failure_location": {
+        "quote": "The regularization parameter is set to $\\eps=10^{-300}$, and we use $S=800$ Monte Carlo samples for the drift estimation.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Re-run the three experiments with a representable regularization parameter (e.g., eps in the range used in the convergence plots, such as eps >= 10^{-5} for O(1)-sized objectives) and report the new outputs; the method and its theoretical guarantees are unchanged.",
+      "overall_effect": "The numerical experiments reported in the Xin-She Yang 4, 20D Ackley, and Double Hula Hoop examples are not reproducible as stated; the advertised empirical validation from these runs is unsupported. No theorem is affected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Reported Monte Carlo experiments set epsilon so small that the importance weights underflow/overflow and the drift estimator is numerically undefined",
+      "why_classification": "The fix is a routine re-parameterization and re-run with no new mathematics; every theorem and guarantee survives, and only the specific reported numbers are withdrawn."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{step $m = 0$ to $M-1$}",
+          "tag": "alg:particle_method"
+        },
+        {
+          "quote": "\\State Compute drift $\\hat{\\theta} \\leftarrow \\frac{E - X_t^{(i)}}{\\tau}$",
+          "tag": "alg:particle_method"
+        },
+        {
+          "quote": "Given a time step size $\\Delta t = 1/M$ for some integer $M>0$, we define the time grid $t_k = k \\Delta t$ for $k=0,1,\\ldots,M$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The closed-loop drift is (beta(s,X_s)-X_s)/(1-s), which is singular at s = 1. The pseudocode sets Delta t = T/(M-1) and loops m = 0,...,M-1, so at the last iteration t = (M-1)*Delta t = T and tau = T - t = 0, and the drift (E - X_t)/tau divides by zero; the algorithm as written is not executable at its final step. The scheme in the text uses Delta t = 1/M with t_k = k Delta t, k = 0,...,M, whose last drift evaluation is at t_{M-1} = 1 - 1/M and is well defined. The pseudocode also reuses a single set of samples Z_1,...,Z_S for all time steps and all particles, whereas the text's estimator resamples per step.",
+      "failure_location": {
+        "quote": "\\State $\\Delta t \\leftarrow T/(M-1)$",
+        "tag": "alg:particle_method"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Set Delta t = T/M in the algorithm (matching the text and the Euler-scheme display), so the last drift evaluation occurs at t_{M-1} = T - Delta t < T; optionally resample the Monte Carlo samples at each step.",
+      "overall_effect": "The stochastic control algorithm on R^d is ill-defined at its final time step as written; a reader implementing the pseudocode literally cannot run it to t = T.",
+      "primary_affected_tag": "alg:particle_method",
+      "target_type": "algorithm",
+      "title": "Algorithm alg:particle_method divides by zero at the final step: Delta t = T/(M-1) makes the last step occur at the singular time t = T",
+      "why_classification": "A one-character correction (Delta t = T/M) restores the scheme exactly as analyzed in the text; the method, conclusions, and advertised scope all survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$\n\\sup_{\\mathbf{x}} |e^N_{\\eps}(t, \\mathbf{x})| \\le \\int_t^1 \\sup_{\\mathbf{x}} |R^N_{\\eps}(s, \\mathbf{x})| ds \\le (1-t) \\cdot \\frac{L_{\\eps}}{2},\\quad t\\in[0,1].\n$$",
+          "tag": null
+        },
+        {
+          "quote": "Define the vector field $\\mathbf{b}(t, \\mathbf{x}) = (\\mathbf{b}_1, \\dots, \\mathbf{b}_N)$ where $\\mathbf{b}_i = -\\frac{1}{2\\eps} (\\partial_{x_i} v^N_{\\eps} + \\partial_{x_i} w^N_{\\eps})$.",
+          "tag": null
+        },
+        {
+          "quote": "The proof follows an approach as used in \\cite{germain2022rate} relies on projecting the Master Equation solution onto the finite-dimensional manifold and using the comparison principle for the HJB equation, is provided in Appendix \\ref{app:particle_convergence}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The error estimate |e^N_eps(t,x)| <= (1-t)L_eps/2 is obtained from the linearized equation d_t e + (1/2) sum Delta e + b . grad e = R^N on the unbounded domain [0,1] x R^{Nd} with terminal data e(1,.) = 0, where b = -(1/2eps)(grad v^N + grad w^N). The Feynman-Kac representation e(t,x) = -E[ int_t^1 R^N(s,X_s) ds ] (equivalently the maximum-principle bound) requires the drift b to be regular with at most linear growth and the solution e to have controlled (e.g., polynomial) growth; without growth control the backward heat equation on R^{Nd} with zero terminal data admits nonzero solutions, so the bound does not follow from the stated hypotheses. The paper establishes neither: no regularity or growth estimate for grad v^N appears anywhere (Assumption ass:smoothness covers only the mean-field value function V_eps, not the N-particle value function v^N), and even the classical C^{1,2} regularity of v^N needed to derive the error equation is not shown. The bound is very likely correct and completable by standard arguments (polynomial growth of the value functions plus a Lyapunov-corrected maximum principle, as in the cited germain2022rate), but as written the load-bearing final step of the paper's central quantitative rate is unjustified.",
+      "failure_location": {
+        "quote": "By the standard maximum principle (or comparison principle) for parabolic equations or a straightforward application of the Feynman-Kac formula, \nthe solution is bounded by the integral of the source term $R^N_{\\eps}$.",
+        "tag": "thm:value_convergence"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the missing a priori analysis: establish polynomial growth and joint continuity of grad v^N (and hence of b and e) on R^{Nd} from the Cole-Hopf representation and regularity of U, then justify the Feynman-Kac representation via a Lyapunov-corrected maximum principle; this is a contained argument that leaves the rate and statement intact.",
+      "overall_effect": "The proof of the O(1/N) particle-approximation rate (thm:value_convergence) is incomplete at its final step; thm:global_convergence, which chains the L_eps/(2N) bound with the regularization error, is unsupported by the current proof, though its statement is very likely recoverable by a standard completion.",
+      "primary_affected_tag": "thm:value_convergence",
+      "target_type": "formal_result",
+      "title": "thm:value_convergence: the O(1/N) estimate rests on a maximum-principle/Feynman-Kac application whose required growth and regularity hypotheses are never established",
+      "why_classification": "The central quantitative claim's proof needs a contained but nontrivial justification that is absent (growth/regularity of the linearized equation's coefficients on an unbounded domain); no loss of the result is expected, so the resolution avoids new global proof architecture, but it is more than a local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The expectation of the Wasserstein distance $\\E[\\mathcal W_2(\\mu^N_{\\mathbf{X}}, \\mu)]$ converges to zero as $N$  tends to infinity but with the rate depending on the dimension $d$ and the moments of $\\mu$.",
+          "tag": "rmk:sampling_error"
+        }
+      ],
+      "failure_explanation": "The actual Fournier-Guillin rates for p = 2 are E[W_2] = O(N^{-1/2}) for d < 4 (which is sharp in general, so a bound C_alpha N^{-1/2-alpha} for all alpha > 0 is false), and E[W_2] = O(N^{-1/2} (log N)^{1/2}) at the critical dimension d = 4 (so N^{-1/2-alpha} fails there as well, since sqrt(log N) is not O(N^{-alpha})); only the branch d > 4 with rate N^{-1/d} is correct. The case split is also miscentered: d = 4 is the critical case with a logarithmic correction, not part of the N^{-1/2}-type regime.",
+      "failure_location": {
+        "quote": "Assuming $\\mu$ has sufficiently many finite moments, Fournier and Guillin \\cite{fournier2015rate} established the following rates:\n$$\n\\E[\\mathcal W_2(\\mu^N_{\\mathbf{X}}, \\mu)] \\le  \\begin{cases}\nC_{\\alpha }N^{-1/2-\\alpha}, \\quad \\forall\\, \\alpha > 0, & \\text{if } d \\leq 4, \\\\\nC_2N^{-1/d}, & \\text{if } d > 4,\n\\end{cases}\n$$",
+        "tag": "rmk:sampling_error"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Correct the displayed cases to the Fournier-Guillin rates: E[W_2] <= C N^{-1/2} for d < 4, E[W_2] <= C N^{-1/2} sqrt(log N) for d = 4, and E[W_2] <= C_2 N^{-1/d} for d > 4.",
+      "overall_effect": "The standalone rate claim in the remark is wrong for d <= 4; no theorem or algorithm uses this rate, so nothing downstream is affected.",
+      "primary_affected_tag": "rmk:sampling_error",
+      "target_type": "other",
+      "title": "rmk:sampling_error misstates the Fournier-Guillin convergence rates of E[W_2(mu^N, mu)] for d <= 4",
+      "why_classification": "A side remark with no dependents; the correction is a direct restatement of the cited theorem with no effect on any other claim."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\begin{equation}\n    G(\\mu) = \\frac{1}{2} \\iint_{\\bR^{2d}} \\left(\\frac{|x-y|^2}{2}-\\ln(|x-y|)\\right) \\, d\\mu(x) \\, d\\mu(y).\n\\end{equation}",
+          "tag": null
+        },
+        {
+          "quote": "\\Phi(x)= - \\ln(|x|),",
+          "tag": null
+        },
+        {
+          "quote": "the conditional expectations in \\eqref{beta} are approximated \nusing $S=100$ Monte Carlo samples.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The evaluation formula sums Phi(x_i - x_j) over all i,j including i = j. For the logarithmic kernel Phi(x) = -ln|x| used in the 2D Newtonian Swarm and Double Hula Hoop examples, the diagonal term Phi(0) = +infinity appears, so G(mu^N) = +infinity for every empirical measure. Consequently the N-particle terminal cost U(x) = N G(mu^N) is +infinity, the Feynman-Kac weight exp(-U/eps) is identically 0, and the Monte Carlo estimator beta^i in eq:beta (as well as the algorithm's weights) is the undefined ratio 0/0 for these examples. The convergence theory (thm:value_convergence, thm:global_convergence) requires G to be finite on empirical measures, so as stated the method and its guarantees do not cover the paper's own flagship examples.",
+      "failure_location": {
+        "quote": "\\begin{equation}\n    G(\\mu^N) = \\frac{1}{N} \\sum_{i=1}^N F(x_i) + \\frac{1}{2N^2} \\sum_{i=1}^N \\sum_{j=1}^N \\Phi(x_i - x_j).\n    \\end{equation}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Adopt the standard self-energy convention (exclude the i = j terms, or define Phi(0) = 0 / use a regularized kernel), and restate the N-particle terminal cost accordingly with a remark that the modified discrete cost is the one analyzed; this is a limited modification that leaves a recognizably comparable method and example.",
+      "overall_effect": "The 2D Newtonian Swarm and Double Hula Hoop numerical studies, including the claimed O(1/N) convergence plot for the Newtonian energy, are not supported by the stated construction; the scope of the N-particle method as written excludes the singular interaction energies the paper highlights.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "For the paper's logarithmic-interaction examples, the empirical evaluation formula gives G(mu^N) = +infinity, so the N-particle cost, the Feynman-Kac weights, and the beta estimator are undefined as stated",
+      "why_classification": "The repair changes the definition of the discrete cost and requires re-checking that the examples fit the convergence theory; it is a contained construction change rather than a global rewrite, but the advertised examples are excluded as stated."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\beta^i(t_k, X_{t_k}^i) \\approx \\frac{\\sum_{l=1}^S \\exp\\left(-\\frac{1  }{\\eps} \\left( F(Y_{i,l}) \n    + \\frac{1}{2N} \\sum_{j=1}^N \\Phi(Y_{i,l} - Y_{j,l})\n    + \\frac{1}{2N} \\sum_{j\\neq i} \\Phi(Y_{j,l} - Y_{i,l})\n     \\right) \\right) Y_{i,l}}{\\sum_{l=1}^S \n     \\exp\\left(-\\frac{1}{\\eps} \\left( F(Y_{i,l}) \n     + \\frac{1}{2N} \\sum_{j=1}^N \\Phi(Y_{i,l} - Y_{j,l}) \n     + \\frac{1}{2N} \\sum_{j\\neq i} \\Phi (Y_{j,l} - Y_{i,l})\n     \\right) \\right)}",
+          "tag": null
+        },
+        {
+          "quote": "\\exp\\left(-\\frac{N}{\\eps}G( \\frac{1}{N} \\sum_{j=1}^N\\delta_{\\{\\sqrt{1-t_k} \\xi_{j,l}+X_{t_k}^j\\}})\\right)",
+          "tag": "beta"
+        }
+      ],
+      "failure_explanation": "For G(mu) = int F d mu + (1/2) double-int Phi(x-y) d mu d mu, the full terminal cost in eq:beta is U(Y_l) = sum_j F(Y_{j,l}) + (1/(2N)) sum_{j,k} Phi(Y_{j,l} - Y_{k,l}). The displayed 'simplification' keeps only F(Y_{i,l}) + (1/(2N)) sum_j Phi(Y_{i,l}-Y_{j,l}) + (1/(2N)) sum_{j != i} Phi(Y_{j,l}-Y_{i,l}), omitting the (-i) self-energy sum_{j != i} F(Y_{j,l}) + (1/(2N)) sum_{j != i, k != i} Phi(Y_{j,l}-Y_{k,l}). The stated justification, 'the independence of noises', is invalid: the omitted factor exp(-C_{-i,l}/eps) depends on the shared samples {Y_{j,l}}_{j != i} and acts as a non-canceling weight inside the ratio, so the simplified estimator does not equal beta^i; with the 1/eps amplification the weights tilt toward a different measure. (The same display also contains the j = i term Phi(0), which is +infinity for the logarithmic kernel, see ISSUE-005.) The correct estimator is the full-cost one already displayed in eq:beta.",
+      "failure_location": {
+        "quote": "Then for each particle $i$, the independence of noises gives us the following simplified computation for $\\beta^i$:",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Delete the erroneous simplification or replace it with the full-cost weight already given in eq:beta (equivalently, state that the simplification is valid only under a modified sampling scheme in which the samples {Y_{j,l}}_{j != i} are held fixed across l).",
+      "overall_effect": "A reader implementing the advertised simplified weights for interaction energies computes a drift that is not the one justified by the theory; the error does not propagate to any theorem because the paper's own algorithm uses the full functional, but the displayed identity is false as stated.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "The 'simplified' beta estimator for integral functionals drops the (-i) self-energy and is not equal to the beta estimator of eq:beta",
+      "why_classification": "The correct estimator is already present in the paper (eq:beta); replacing or deleting the false display is a short local repair that preserves every theorem, rate, and the advertised method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\textbf{Input:} Particles $N$, Horizon $T$, Steps $M$, Reg. $\\eps$, Samples $S$, Iterations $L$.",
+          "tag": "algorithm:mean-field"
+        },
+        {
+          "quote": "\\State Update $X_{t+\\Delta t}^{(i)} \\leftarrow X_t^{(i)} + \\hat{\\theta}_i \\Delta t + \\sqrt{\\Delta t} Z^{(i)}$",
+          "tag": "algorithm:mean-field"
+        }
+      ],
+      "failure_explanation": "The drift step is executed only 'if tau > delta', but delta is never defined anywhere (the Input line lists only N, T, M, eps, S, L), and the following update uses theta-hat_i unconditionally. Whenever tau <= delta - in particular at the final step, where t = (M-1) Delta t = T - Delta t and tau = Delta t, whose comparison with the undefined delta cannot even be evaluated - the drift theta-hat_i is undefined or stale, so the algorithm is not well defined as written.",
+      "failure_location": {
+        "quote": "\\State Compute drift $\\hat{\\theta}_i \\leftarrow \\frac{1}{\\tau} \\left( \\frac{\\sum w_{i,j} Y_{i,j}}{\\sum w_{i,j}} - X_t^{(i)} \\right)$ (if $\\tau > \\delta$)",
+        "tag": "algorithm:mean-field"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Define the threshold delta (or drop the parenthetical condition and set the drift to 0 when tau = 0), so that the update step is defined at every grid point.",
+      "overall_effect": "The mean-field algorithm is ill-defined at the final time step(s) as written; a literal implementation may crash or reuse a stale drift.",
+      "primary_affected_tag": "algorithm:mean-field",
+      "target_type": "algorithm",
+      "title": "Algorithm algorithm:mean-field conditions the drift computation on an undefined threshold delta and then uses the drift unconditionally",
+      "why_classification": "A local definitional fix (specify delta or remove the condition) makes the procedure well defined; the method and its advertised scope are unaffected."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2601.01248",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "2e0dc5a1b1022fe148ff3d932499137e629ddbfa4da37497228cd4c61b1dd23f",
+  "status": "ok"
+}

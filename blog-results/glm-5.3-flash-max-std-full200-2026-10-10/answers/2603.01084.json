@@ -1,0 +1,429 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:collocation",
+        "thm:giesl_reduction"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The pair $(A, Q^{1/2})$ is detectable, where $Q = \\nabla^2 q(0)$.",
+          "tag": "ass:standing"
+        },
+        {
+          "quote": "is a convex semidefinite program that prevents the trivial solution while enforcing consistency with linearized optimal control theory.",
+          "tag": "thm:collocation"
+        },
+        {
+          "quote": "Since $A$ is assumed stable (all eigenvalues have negative real parts) and $(A, Q^{1/2})$ is detectable, the Lyapunov equation has a unique positive definite solution $P \\succ 0$.",
+          "tag": "thm:giesl_reduction"
+        }
+      ],
+      "failure_explanation": "Detectability of (A, Q^{1/2}) guarantees only a positive semidefinite stabilizing ARE/Lyapunov solution; P ≻ 0 requires observability. Counterexample inside Assumption 1: ẋ = −x + u, D = 1, q(x) = x⁴ (so Q = ∇²q(0) = 0, q > 0 for x ≠ 0, A = −1 stable, (A, 0) detectable). The stabilizing ARE solution is P = 0, so the Hessian constraint ∇²V̂(0) = 0 does not exclude V ≡ 0: p = 0 satisfies every constraint of the SDP in Theorem thm:collocation and minimizes ‖p‖², so the claimed prevention of the trivial solution is false in this regime. Likewise part 3 of Theorem thm:giesl_reduction claims the Lyapunov equation then has a 'unique positive definite solution P ≻ 0', which is false (unique solution P = 0).",
+      "failure_location": {
+        "quote": "Since $P \\succ 0$ (positive definite for stabilizable systems under Assumption~\\ref{ass:standing}), the constraint explicitly excludes $V \\equiv 0$.",
+        "tag": "rem:riccati_significance"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Strengthen Assumption 1 (e.g., require (A, Q^{1/2}) observable, equivalently Q ≻ 0 locally); then P ≻ 0 holds, the constraint excludes V ≡ 0, and all affected statements hold unchanged. The paper's own examples satisfy this.",
+      "overall_effect": "The paper's central anti-triviality mechanism is not guaranteed under the standing assumptions: for admissible systems with singular Q the SDP can return V ≡ 0, invalidating the prevention claims in the remark, Theorem thm:collocation, the Section-4 prose ('eliminates trivial solutions since P ≻ 0') and the comparison table.",
+      "primary_affected_tag": "rem:riccati_significance",
+      "target_type": "formal_result",
+      "title": "Detectability does not imply P ≻ 0; trivial-solution prevention fails in admissible degenerate cases",
+      "why_classification": "Adding one standard local hypothesis restores every affected claim with a local edit; method, conclusions, rates, and the paper's demonstrated scope all survive on the nondegenerate class."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:control_suboptimality"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "so $\\hat{V}(x) \\geq V^*(x) - \\epsilon \\cdot T(x)$ follows from standard perturbation arguments.",
+          "tag": "thm:suboptimality"
+        },
+        {
+          "quote": "J(x(0); \\hat{u}) = \\int_0^T \\left(q + \\frac{1}{2}\\hat{u}^\\top D \\hat{u}\\right) dt \\leq \\hat{V}(x(0)) - \\hat{V}(x(T)) + \\epsilon T.",
+          "tag": "thm:suboptimality"
+        },
+        {
+          "quote": "note that if $\\hat{V}$ is a supersolution (i.e., satisfies the HJB inequality), then $\\hat{V}(x) \\geq V^*(x)$, giving the tighter bound \\eqref{eq:control_suboptimality}.",
+          "tag": "cor:control_suboptimality"
+        }
+      ],
+      "failure_explanation": "The lower bound 0 ≤ V̂ − V* is never derived: the proof's 'lower bound' paragraph concedes only V̂ ≥ V* − εT, contradicting the stated 0 ≤ V̂ − V*. The 'upper bound' rearrangement is also sign-reversed: integrating dV̂/dt ≥ −(running cost) − ε gives ∫cost ≥ V̂(x₀) − V̂(x(T)) − εT, i.e., a lower bound on J (equivalently an upper bound on V̂), not the asserted upper bound on J. Moreover the claimed direction is false: along any trajectory, dW/dt + running cost = R_W + ½‖u + D⁻¹gᵀ∇W‖²_D ≥ R_W ≥ −ε, so a function satisfying the HJB inequality, V̂ ≥ 0, V̂(0) = 0 and boundary dominance lies BELOW V* (up to εT plus a tail term), the opposite of the claim. Counterexample: ẋ = u, q = x², D = 1, Ω = [−L, L], V* = x²/√2, V̂ = V* − δx²(L² − x²) with δ > 0 small: R_V̂ ≥ −ε (ε = O(δ)), boundary equality holds, V̂ ≥ 0, V̂(0) = 0, the closed loop stays in Ω, yet V̂(x) − V*(x) = −δx²(L² − x²) < 0 for 0 < |x| < L. The corollary's tighter bound additionally rests on the false assertion that supersolutions satisfy V̂ ≥ V*, and the one-sided hypothesis R ≥ −ε gives no upper bound on ∫R along trajectories, so no ε-suboptimality bound for the controller is derivable.",
+      "failure_location": {
+        "quote": "0 \\leq \\hat{V}(x) - V^*(x) \\leq \\epsilon \\cdot T(x),",
+        "tag": "thm:suboptimality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must reverse the stated comparison (the hypotheses yield only V̂ ≤ V* + ε·T(x) plus a tail term), drop the false lower bound, and either abandon the control-suboptimality Corollary or re-prove it under a new two-sided residual bound (e.g., |R| ≤ ε along closed-loop trajectories), which the paper's LMI collocation does not provide.",
+      "overall_effect": "The suboptimality certificate (Theorem thm:suboptimality and Corollary cor:control_suboptimality, advertised in the abstract, contributions, Section 4 and the conclusion) is invalid; the provable comparison under the stated hypotheses has the opposite direction, and the corollary's control-suboptimality bound would require a two-sided residual hypothesis the SDP collocation does not deliver.",
+      "primary_affected_tag": "thm:suboptimality",
+      "target_type": "formal_result",
+      "title": "Suboptimality theorem claims a two-sided bound in the wrong direction; proof contains a sign-flipped rearrangement",
+      "why_classification": "Every supported resolution abandons the advertised two-sided suboptimality guarantee and its control-suboptimality corollary; retaining any ε-suboptimality certificate for the computed controller needs a different hypothesis regime and new certificate machinery, i.e., major loss of an advertised guarantee type."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:control_suboptimality"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "so $\\hat{V}(x) \\geq V^*(x) - \\epsilon \\cdot T(x)$ follows from standard perturbation arguments.",
+          "tag": "thm:suboptimality"
+        },
+        {
+          "quote": "Rearranging:\n\\[\nJ(x(0); \\hat{u}) = \\int_0^T \\left(q + \\frac{1}{2}\\hat{u}^\\top D \\hat{u}\\right) dt \\leq \\hat{V}(x(0)) - \\hat{V}(x(T)) + \\epsilon T.\n\\]",
+          "tag": "thm:suboptimality"
+        },
+        {
+          "quote": "note that if $\\hat{V}$ is a supersolution (i.e., satisfies the HJB inequality), then $\\hat{V}(x) \\geq V^*(x)$, giving the tighter bound \\eqref{eq:control_suboptimality}.",
+          "tag": "cor:control_suboptimality"
+        }
+      ],
+      "failure_explanation": "The lower bound 0 ≤ V̂ − V* does not follow from the hypotheses and is false. (i) The proof's own 'lower bound' paragraph derives only the weaker 'V̂ ≥ V* − εT', which contradicts the stated conclusion; no argument for V̂ ≥ V* is given. (ii) The 'Upper bound' integration is sign-reversed: from dV̂/dt ≥ −(running cost) − ε, correct rearrangement yields ∫cost ≥ V̂(x₀) − V̂(x(T)) − εT (a lower bound on the cost, i.e., an upper bound on V̂), not the displayed '≤' upper bound on J. (iii) In fact the true comparison runs the other way: along any trajectory, dV̂/dt + running cost = R(x(t)) + ½‖u + D⁻¹gᵀ∇V̂‖²_D ≥ R ≥ −ε, so integrating along the optimal trajectory gives V̂(x) ≤ V*(x) + ε·T(x) plus a tail term — i.e., functions satisfying the HJB inequality lie BELOW the value function, not above. Concrete counterexample to the statement: ẋ = u, q = x², D = 1, Ω = [−L, L], V*(x) = x²/√2, and V̂ = V* − δ·x²(L² − x²) with small δ > 0: V̂ = V* on ∂Ω (hypothesis 1), the closed loop ẋ = −V̂′ stays in Ω (hypothesis 2), V̂ ≥ 0, V̂(0) = 0 (hypothesis 3), and R ≥ −ε with ε = O(δ); yet V̂(x) − V*(x) = −δx²(L² − x²) < 0 for 0 < |x| < L, so 0 ≤ V̂ − V* fails while all hypotheses hold. The corollary's derivation additionally invokes the false claim that supersolutions satisfy V̂ ≥ V*.",
+      "failure_location": {
+        "quote": "0 \\leq \\hat{V}(x) - V^*(x) \\leq \\epsilon \\cdot T(x),",
+        "tag": "thm:suboptimality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the claimed two-sided bound by the correct one-sided comparison V̂ ≤ V* + ε·T (plus a tail term), drop or re-hypothesize the corollary (an upper bound on R along closed-loop trajectories, which the paper's one-sided LMI collocation does not provide), and remove the false supersolution-comparison claim; the certified-suboptimality guarantee for the computed controller as advertised cannot be retained without a new argument.",
+      "overall_effect": "The suboptimality bound and the control-suboptimality corollary (and the abstract/intro/conclusion claims of 'suboptimality bounds' and 'rigorous optimality guarantees') are invalid; what is actually provable under these hypotheses is the opposite one-sided estimate V̂ ≤ V* + ε·T plus a tail term, and no ε-suboptimality certificate for the computed controller follows from the paper's hypotheses.",
+      "primary_affected_tag": "thm:suboptimality",
+      "target_type": "formal_result",
+      "title": "Suboptimality bound stated in the wrong direction; proof contains a sign-flipped rearrangement",
+      "why_classification": "The repair abandons a substantive advertised guarantee: the claimed inequality direction is wrong, and the control-suboptimality certificate (a headline contribution) cannot be established under any hypothesis the paper's method delivers; no comparable version of the stated result survives without new architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Taking $\\alpha = \\sqrt{c_2/c_1}$ and $\\beta = c_3/(2c_2)$ gives the result.",
+          "tag": "thm:stability"
+        },
+        {
+          "quote": "Near the origin, $q(x) = \\frac{1}{2}x^\\top Q x + O(\\|x\\|^3)$ with $Q \\succeq 0$.",
+          "tag": "thm:stability"
+        }
+      ],
+      "failure_explanation": "The proof's only decay estimate gives β = c₃/(2c₂) with c₃ determined by the growth of q (c₃ ≲ ½λmin(Q)) and c₂ ≈ ½λmax(P); no step links this to λmin(P)/λmax(P), and no such inequality holds generally. Counterexample satisfying every hypothesis: the linear system ẋ₁ = −0.1x₁, ẋ₂ = −0.2x₂ + u₂ (A = diag(−0.1, −0.2), B = (0,1)ᵀ, D = 1, Q = 2I₂) with V̂(x) = ½xᵀPx, P = diag(10, 1.2285) the stabilizing ARE solution. The HJB equality holds identically (hence the inequality), ∇²V̂(0) = P ≻ 0, and the equilibrium constraints hold; yet the closed loop has slowest eigenvalue −0.1, so no exponential rate β ≥ λmin(P)/λmax(P) ≈ 0.123 is valid. (The provable asymptotic rate is governed by λmin(Q + PBD⁻¹BᵀP)/(2λmax(P)), here exactly 0.1.)",
+      "failure_location": {
+        "quote": "The convergence rate $\\beta$ satisfies $\\beta \\geq \\lambda_{\\min}(P) / \\lambda_{\\max}(P)$ asymptotically near the origin.",
+        "tag": "thm:stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the rate statement by the bound supported by the quadratic expansion, e.g., asymptotic rate β = λmin(Q + PBD⁻¹BᵀP)/(2λmax(P)) (consistent with the closed-loop spectrum), a contained correction retaining an explicit rate certificate.",
+      "overall_effect": "The quantitative convergence-rate promise of Theorem thm:stability (echoed in the abstract and the numerical discussion) is unsupported and false in general; the rate cannot be bounded below by λmin(P)/λmax(P) in terms of P alone.",
+      "primary_affected_tag": "thm:stability",
+      "target_type": "formal_result",
+      "title": "Stated convergence-rate bound β ≥ λmin(P)/λmax(P) is false",
+      "why_classification": "Fixing it withdraws the specific promised rate formula (which can be much too optimistic when control authority is weak) but a comparable explicit rate statement is obtainable by a local correction; no new proof architecture is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The HJB inequality \\eqref{eq:hjb} with $q(x) > 0$ for $x \\neq 0$ implies:",
+          "tag": "thm:stability"
+        },
+        {
+          "quote": "\\frac{d\\hat{V}}{dt} \\geq -\\left(q(x) + \\frac{1}{2}\\hat{u}^\\top D \\hat{u}\\right) - \\epsilon.",
+          "tag": "thm:suboptimality"
+        }
+      ],
+      "failure_explanation": "The hypothesis is the HJB inequality ∇V̂ᵀf − ½∇V̂ᵀgD⁻¹gᵀ∇V̂ + q ≥ 0, i.e., ∇V̂ᵀf ≥ ½∇V̂ᵀgD⁻¹gᵀ∇V̂ − q. Along the closed loop this yields dV̂/dt = ∇V̂ᵀf − ∇V̂ᵀgD⁻¹gᵀ∇V̂ ≥ −q − ½∇V̂ᵀgD⁻¹gᵀ∇V̂, the opposite of the displayed '≤' chain. The stated decrease dV̂/dt ≤ −q follows only for solutions of the HJB equality (R ≡ 0), which the SDP solutions are not; indeed the paper's own computation in Theorem thm:suboptimality derives the correct '≥' direction from the same hypothesis, so the step contradicts the source itself. Hence no Lyapunov decrease is established and the exponential-decay derivation collapses.",
+      "failure_location": {
+        "quote": "&\\leq -q(x) - \\frac{1}{2}\\nabla \\hat{V}^\\top g D^{-1} g^\\top \\nabla \\hat{V} \\\\\n&\\leq -q(x).",
+        "tag": "thm:stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace Steps 2–3 by the standard indirect-Lyapunov argument: the closed-loop linearization A − BD⁻¹BᵀP is Hurwitz because P is the stabilizing ARE solution, so the closed-loop equilibrium is locally exponentially stable; this short replacement preserves the theorem's existence conclusion.",
+      "overall_effect": "The Lyapunov-decay proof of Theorem thm:stability is invalid; the theorem's exponential-stability conclusion is left unproved (the conclusion itself remains true via the Riccati constraint, but the paper's argument does not establish it).",
+      "primary_affected_tag": "thm:stability",
+      "target_type": "formal_result",
+      "title": "Stability proof's Lyapunov-decrease step reverses the HJB inequality",
+      "why_classification": "A routine standard replacement argument (Lyapunov's indirect method) restores the theorem's existence conclusion with no loss; only the paper's proof route, not any stated guarantee, must be replaced."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The state cost satisfies $q(0) = 0$ and $q(x) > 0$ for $x \\neq 0$.",
+          "tag": "ass:standing"
+        },
+        {
+          "quote": "The pair $(A, Q^{1/2})$ is detectable, where $Q = \\nabla^2 q(0)$.",
+          "tag": "ass:standing"
+        }
+      ],
+      "failure_explanation": "The asserted lemma is false under the paper's own assumptions: detectability permits directions along which q vanishes to order higher than two. Example within the standing assumptions: A = diag(1, −1), B = e₁, D = 1, q(x) = x₁² + x₂⁴, so Q = diag(2, 0), q(0) = 0, q > 0 for x ≠ 0, the pair is stabilizable, and (A, Q^{1/2}) is detectable (the unobservable direction e₂ is stable). Yet q(0, x₂) = x₂⁴ < c₃x₂² for every c₃ > 0 near the origin, so the constant c₃ needed for the exponential-decay step does not exist and the derivation dV̂/dt ≤ −(c₃/c₂)V̂ fails for admissible systems.",
+      "failure_location": {
+        "quote": "For stabilizable/detectable pairs, we have $q(x) \\geq c_3 \\\\|x\\\\|^2$ for some $c_3 > 0$ near the origin.",
+        "tag": "thm:stability"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Drop the false lemma and prove local exponential stability from the Riccati constraint via the closed-loop linearization (A − BD⁻¹BᵀP Hurwitz), as in the bypass above; a standard, short replacement.",
+      "overall_effect": "The exponential-decay derivation in Theorem thm:stability is unsound for admissible systems whose state cost is flat to second order in some direction; the theorem's conclusion is left unproved by this route.",
+      "primary_affected_tag": "thm:stability",
+      "target_type": "formal_result",
+      "title": "Stability proof's decay step invokes a false quadratic-growth lemma for q",
+      "why_classification": "The defective step is removable by a standard replacement argument that preserves the theorem's existence conclusion; no new construction or loss of substance is required."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Taking $\\alpha = \\sqrt{c_2/c_1}$ and $\\beta = c_3/(2c_2)$ gives the result.",
+          "tag": "thm:stability"
+        },
+        {
+          "quote": "For stabilizable/detectable pairs, we have $q(x) \\geq c_3 \\|x\\|^2$ for some $c_3 > 0$ near the origin.",
+          "tag": "thm:stability"
+        }
+      ],
+      "failure_explanation": "The theorem asserts a lower bound on the exponential rate in terms of P alone. The proof never connects β = c₃/(2c₂) to λmin(P)/λmax(P) (c₃ comes from the growth of q, not from P), and the claimed bound is false: for the linear-quadratic system ẋ₁ = −0.1x₁, ẋ₂ = −0.2x₂ + u₂ with B = (0,1)ᵀ, D = 1, Q = 2I, all hypotheses of the theorem hold (V̂ = ½xᵀPx satisfies the HJB equality, ∇²V̂(0) = P ≻ 0 with P = diag(10, 1.2285) the stabilizing ARE solution), yet the closed loop has slowest eigenvalue −0.1, so the largest valid rate is 0.1 < λmin(P)/λmax(P) ≈ 0.123. The provable asymptotic rate involves λmin(Q + PBD⁻¹BᵀP)/(2λmax(P)), not λmin(P)/λmax(P).",
+      "failure_location": {
+        "quote": "The convergence rate $\\beta$ satisfies $\\beta \\geq \\lambda_{\\min}(P) / \\lambda_{\\max}(P)$ asymptotically near the origin.",
+        "tag": "thm:stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the rate claim by the asymptotic bound supported by the quadratic expansion of the closed loop, β = λmin(Q + PBD⁻¹BᵀP)/(2λmax(P)) (matching the closed-loop spectrum); this is a local correction that keeps an explicit rate statement.",
+      "overall_effect": "The theorem's advertised quantitative convergence-rate guarantee is invalid as stated; only a weaker, differently parameterized rate bound is available.",
+      "primary_affected_tag": "thm:stability",
+      "target_type": "formal_result",
+      "title": "Stated rate lower bound β ≥ λmin(P)/λmax(P) is false",
+      "why_classification": "Fixing it necessarily withdraws the promised rate formula in terms of P alone and substitutes a weaker (generally smaller) explicit bound — a limited weakening of a quantitative guarantee, more than a routine edit but far from a structural change."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "let $V^* \\in H^s(\\Omega)$ (Sobolev space of order $s$) with $s > n/2$.",
+          "tag": "thm:convergence"
+        },
+        {
+          "quote": "Specifically, for the Gaussian kernel on bounded domains, $\\mathcal{H}_\\kappa$ embeds continuously into $H^s(\\Omega)$ for all $s \\geq 0$.",
+          "tag": "thm:convergence"
+        },
+        {
+          "quote": "The Gaussian kernel generates an RKHS $\\mathcal{H}_\\kappa$ that is norm-equivalent to certain Sobolev spaces.",
+          "tag": "thm:convergence"
+        }
+      ],
+      "failure_explanation": "The theorem is stated for every V* ∈ H^s(Ω), but Step 2 invokes the O(h^s) estimate only 'For V* ∈ H^s(Ω) ∩ H_κ', i.e., it assumes membership in the native space of the Gaussian kernel, which is not implied by V* ∈ H^s (the Gaussian native space consists of real-analytic functions and is a proper subset of every H^s; a generic finitely smooth V* is not in it). Step 1's justification is also wrong: the native space of the Gaussian kernel is not 'norm-equivalent' to any Sobolev space; only the one-way continuous embedding H_κ ↪ H^s holds. Hence the chain ‖∇(V*−V̂)‖_{L²} ≤ C‖V*−V̂‖_{H¹} ≤ C'‖V*−V̂‖_{H_κ} is vacuous for generic admissible V*, and the claimed rate O(M^{−(s−1)/n}) is unestablished under the stated hypothesis.",
+      "failure_location": {
+        "quote": "For $V^* \\in H^s(\\Omega) \\cap \\mathcal{H}_\\kappa$, the best approximation from $\\mathcal{H}_M = \\text{span}\\{\\kappa(\\cdot, x_i)\\}_{i=1}^M$ satisfies:",
+        "tag": "thm:convergence"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Restate the theorem with the hypothesis V* ∈ H_κ (native space of the Gaussian kernel), or switch to a Sobolev-native-space kernel (e.g., Matérn with smoothness τ ≥ s+1) and re-derive the derivative estimate; either is a contained but genuinely new approximation argument.",
+      "overall_effect": "The convergence-rate guarantee claimed in the abstract, contributions, and Theorem thm:convergence is not established for value functions of mere Sobolev regularity; it is supported only under a far stronger (analytic/native-space) hypothesis.",
+      "primary_affected_tag": "thm:convergence",
+      "target_type": "formal_result",
+      "title": "Convergence-rate theorem's proof requires native-space membership absent from its hypothesis",
+      "why_classification": "A recognizably comparable rate statement survives, but only after adding a materially stronger hypothesis (or changing the kernel) and supplying a nontrivial, contained replacement argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "choosing $Q = 2$ yields the Riccati solution (from Corollary~\\ref{cor:scalar_riccati}):",
+          "tag": null
+        },
+        {
+          "quote": "The convergence rate $\\beta$ satisfies $\\beta \\geq \\lambda_{\\min}(P) / \\lambda_{\\max}(P)$ asymptotically near the origin.",
+          "tag": "thm:stability"
+        }
+      ],
+      "failure_explanation": "The prose asserts that enforcing ∇²V(0) = P guarantees exponential stability with convergence rate at least λmin(P). No result in the paper derives such a bound — Theorem thm:stability claims only the different (and itself incorrect) β ≥ λmin(P)/λmax(P) — and the claim is numerically violated by the paper's own 1D example: there A = B = D = 1 and P = 1 + √3 ≈ 2.732, so the closed-loop linearization is ẋ = (1 − P)x with exponential decay rate ≈ 1.73, strictly below the asserted lower bound λmin(P) ≈ 2.73 (and λmin(P) is not even a rate-scale quantity).",
+      "failure_location": {
+        "quote": "guarantees exponential stability with convergence rate at least $\\lambda_{\\min}(P)$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Delete or correct the sentence so that the local rate is attributed to the closed-loop linearization spectrum; a one-sentence fix preserving all formal content.",
+      "overall_effect": "A concrete quantitative stabilization guarantee is claimed in prose that neither the formal results nor the reported experiments support.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Prose claims exponential convergence 'rate at least λmin(P)', contradicted by the paper's own 1D example",
+      "why_classification": "Removing or correcting the overclaim loses no proven content; every theorem-level guarantee is unaffected."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The state cost satisfies $q(0) = 0$ and $q(x) > 0$ for $x \\neq 0$.",
+          "tag": "ass:standing"
+        },
+        {
+          "quote": "where $f(x) = x + x^3$ represents a nonlinear drift term with an unstable equilibrium at the origin.",
+          "tag": "eq:scalar_system"
+        },
+        {
+          "quote": "which ensures that the HJB equality holds identically.",
+          "tag": "eq:state_cost"
+        },
+        {
+          "quote": "We construct an exact optimal solution with value function",
+          "tag": "eq:2d_value"
+        }
+      ],
+      "failure_explanation": "Substituting the paper's own V*(x) = x² + 0.25x⁴ (V*' = 2x + x³) and f(x) = x + x³ into eq:state_cost gives q(x) = ½(2x+x³)² − (2x+x³)(x+x³) = −x⁴ − ½x⁶, which is strictly negative for x ≠ 0, violating Assumption 1 (q(x) > 0 for x ≠ 0). With this negative running cost the infinite-horizon cost is unbounded below (u ≡ 0 drives the state to infinity in finite time and ∫q dt = −∞), so V* = x² + 0.25x⁴ is not the optimal value function and u* = −V*' is not an optimal control; the claimed 'exact optimal solution' and HJB-consistency validation for the 1D example are unfounded. Moreover the constructed q has ∇²q(0) = 0, while the experiment imposes Q = 2 in the Riccati constraint (∇²V(0) = 2.732 ≠ V*''(0) = 2), so the imposed constraint is inconsistent with the claimed exact solution — consistent with the reported O(1) value/control errors. The 2D example repeats the same defective construction (the implied cost is q = −½‖x‖⁴(2 + ‖x‖²) < 0) and never specifies q at all.",
+      "failure_location": {
+        "quote": "q(x) = \\frac{1}{2}\\left(\\frac{\\partial V^*}{\\partial x}\\right)^2 - \\frac{\\partial V^*}{\\partial x}f(x),",
+        "tag": "eq:state_cost"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Redesign the examples with a legitimate pair (positive running cost q, matching value function) — e.g., pick a positive q and compute its value function, or pick V* with ½|V*'|² ≥ V*'f — and rerun the comparisons; the SDP machinery itself is unchanged, so the redesign is contained to the example setup and the reported numbers.",
+      "overall_effect": "The claimed validation of the method against an 'exact optimal solution' in both polynomial examples is unfounded: the reported value/control 'errors' compare against functions that are not value functions/optimal controls, and the Q used in the Riccati constraint contradicts the constructed cost; only the empirical stabilization observations remain meaningful.",
+      "primary_affected_tag": "eq:state_cost",
+      "target_type": "other",
+      "title": "Numerical 1D/2D 'exact optimal solution' examples use a running cost violating the paper's own assumptions",
+      "why_classification": "The defect invalidates the optimality-validation claims of two numerical sections and requires constructing new admissible cost pairs, but the method, its SDP formulation, and the stabilization demonstrations survive; no new proof architecture is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with tolerance $10^{-4}$ and Riccati--Hessian relaxation $\\varepsilon = 0.5$.",
+          "tag": null
+        },
+        {
+          "quote": "\\|\\nabla^2 V(0)-P\\|_F \\approx 1.0.",
+          "tag": null
+        },
+        {
+          "quote": "The constraint is satisfied to machine precision in 1D, within $10^{-1}$ Frobenius norm in 2D, and within tolerance $\\varepsilon = 0.5$ for the Van der Pol system---sufficient for ensuring exponential stabilization.",
+          "tag": null
+        },
+        {
+          "quote": "The Hessian matching is less precise than in 1D due to increased dimensionality, but remains within acceptable tolerance for stabilization.",
+          "tag": "sec:2d_example"
+        }
+      ],
+      "failure_explanation": "The prose claims the computed 2D and Van der Pol solutions enforce and 'confirm' the Riccati Hessian constraint and that exponential stabilization is thereby guaranteed. The paper's own numbers contradict this: the 2D run reports ‖∇²V(0) − P‖_F ≈ 5.67×10⁻¹ while the summary asserts satisfaction 'within 10⁻¹ Frobenius norm'; the Van der Pol run states a relaxation ε = 0.5 yet reports ‖∇²V(0) − P‖_F ≈ 1.0, twice the stated relaxation, while claiming it 'confirms correct enforcement'. The paper's formal guarantee (Theorem thm:stability) requires the exact constraint ∇²V̂(0) = P; no theoretical result covers relaxed or violated constraints, so the attribution of 'theoretical guarantees'/exponential stabilization to these computed controllers is unsupported and contradicted by the reported residuals.",
+      "failure_location": {
+        "quote": "These confirm correct enforcement of the Riccati curvature and the exclusion of the trivial solution.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Restate the experiments as using relaxed constraints with honestly reported residuals, remove the 'correct enforcement'/'confirmation' and 'guaranteed stabilization' attributions, and, to retain any guarantee, add an analysis quantifying how large a Hessian mismatch preserves local exponential stability — a contained robustness argument.",
+      "overall_effect": "The claimed verification of the paper's central constraint in the 2D and Van der Pol experiments, and the attribution of theoretical stability guarantees to those computed controllers, are unsupported; the experiments validate neither the formulated SDP nor the stated stability theory in the reported form.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Numerical sections claim Riccati-constraint enforcement and stability guarantees contradicted by reported residuals",
+      "why_classification": "The repair requires weakening the claimed verification/guarantee for the experiments plus a limited (nontrivial but bounded) robustness analysis; the method itself and the formal results are not restructured."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dot{x}_1 = x_2, \\qquad \\dot{x}_2 = -x_1 + \\mu (1 - x_1^2) x_2 + u,",
+          "tag": "eq:vdp_dynamics"
+        },
+        {
+          "quote": "scales efficiently from one- to two-dimensional and nonlinear nonpolynomial systems.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims the Van der Pol experiment demonstrates the method on 'nonpolynomial dynamics' and hence 'beyond polynomial systems'. The tested dynamics ẋ₁ = x₂, ẋ₂ = −x₁ + µ(1 − x₁²)x₂ + u are polynomial in (x₁, x₂) (degree 3), as the source's own polynomial-kernel examples are; the paper therefore provides no evidence for the claimed generalization to nonpolynomial systems. What is nonpolynomial in the experiment is the computed value function, not the dynamics the claim is about.",
+      "failure_location": {
+        "quote": "The Van der Pol results confirm that the kernel-based LMI formulation generalizes beyond polynomial systems.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Correct the prose to 'nonlinear polynomial dynamics' (or add a genuine nonpolynomial experiment); a wording-level fix with no mathematical loss.",
+      "overall_effect": "The advertised scope ('scales efficiently ... to nonlinear nonpolynomial systems', conclusion; summary point 5) is broader than anything the paper tests or establishes.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed validation on 'nonpolynomial dynamics' contradicts the polynomial Van der Pol system tested",
+      "why_classification": "A purely descriptive overclaim; removing it preserves every theorem, guarantee, and experiment."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "P = 1 + \\sqrt{1 + 2} = 1 + \\sqrt{3} \\approx 2.732.",
+          "tag": "eq:riccati_solution"
+        },
+        {
+          "quote": "The convergence rate $\\beta$ satisfies $\\beta \\geq \\lambda_{\\min}(P) / \\lambda_{\\max}(P)$ asymptotically near the origin.",
+          "tag": "thm:stability"
+        }
+      ],
+      "failure_explanation": "The prose claims the Riccati Hessian constraint 'guarantees exponential stability with convergence rate at least λmin(P)'. No theorem in the paper establishes a rate in terms of λmin(P) alone; the only rate statement (Theorem thm:stability) asserts a different bound, and it is false. The paper's own 1D example refutes the prose claim: with A = B = D = 1 and P = 1 + √3 ≈ 2.732, the closed-loop linearization is ẋ = (1 − P)x, whose exponential decay rate is ≈ 1.73, strictly below the claimed λmin(P) ≈ 2.73 (in the g ≡ 0 stable case the true rate is governed by the spectrum of A and can be arbitrarily far below λmin(P)).",
+      "failure_location": {
+        "quote": "guarantees exponential stability with convergence rate at least $\\lambda_{\\min}(P)$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Delete or correct the sentence (state that the local rate is governed by the closed-loop linearization); a one-line prose fix with no loss of formal content.",
+      "overall_effect": "A quantitative guarantee about stabilization rates is claimed that the paper's theory does not provide and its own experiment contradicts.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Section-4 prose asserts a convergence rate (at least λmin(P)) that the paper's own example violates",
+      "why_classification": "Local wording correction; no formal or numerical result depends on this specific prose claim."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dot{x}_1 = x_2, \\qquad \\dot{x}_2 = -x_1 + \\mu (1 - x_1^2) x_2 + u,",
+          "tag": "eq:vdp_dynamics"
+        },
+        {
+          "quote": "scales efficiently from one- to two-dimensional and nonlinear nonpolynomial systems.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims the Van der Pol experiment demonstrates the method on nonpolynomial dynamics and thereby 'beyond polynomial systems'. The tested dynamics (eq:vdp_dynamics) are polynomial in the state: ẋ₁ = x₂, ẋ₂ = −x₁ + µ(1 − x₁²)x₂ + u. What is nonpolynomial is the computed value function, not the dynamics; the paper contains no experiment with nonpolynomial f or g, so the claimed scope extension is unsupported.",
+      "failure_location": {
+        "quote": "The Van der Pol results confirm that the kernel-based LMI formulation generalizes beyond polynomial systems.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "Reword the summary and conclusion to claim generalization to nonlinear (polynomial) systems; a local editorial fix retaining all substantive content.",
+      "overall_effect": "The paper's advertised coverage ('nonlinear, nonpolynomial systems' in the Van der Pol section and the conclusion) exceeds what was demonstrated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Summary and conclusion claim validation on 'nonpolynomial dynamics' although the tested Van der Pol system is polynomial",
+      "why_classification": "Deleting or correcting the overclaim preserves every mathematical result and all reported experiments; no repair burden beyond rewording."
+    }
+  ],
+  "issues_found": 14,
+  "paper_id": "2603.01084",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "ae1bd8b81e57f8cdcc0b3f2717fbddf2f6278b8b00cfe06a2537efea483c8066",
+  "status": "ok"
+}

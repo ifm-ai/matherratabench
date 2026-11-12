@@ -1,0 +1,212 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\eta_j = \\frac{\\Delta U_{\\max,j}}{\\varepsilon + \\Delta U_{\\max,j}},",
+          "tag": "def:eta"
+        },
+        {
+          "quote": "Since $\\eta_j$ equals the ratio\nof the maximum update to itself, $\\eta_j = 1$ whenever any cell in the\nneighborhood has a nonzero update, and $\\eta_j = 0$ only when all updates\nare at machine precision.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With positive $\\varepsilon$, the formula gives $0<\\eta_j<1$ for every finite positive update, and $\\eta_j\\approx \\Delta U_{\\max,j}/\\varepsilon$ rather than approximately one when the update is much smaller than $\\varepsilon$. It is exactly zero only for an exactly zero update, not for every update described as being at machine precision. The later assertion that the maximum is divided by itself omits $\\varepsilon$.",
+      "failure_location": {
+        "quote": "By construction, $\\eta_j = 0$ if and only if all updates in $M_j$\nare at machine precision, and $\\eta_j \\approx 1$ whenever any cell in $M_j$\nhas a nonzero update.",
+        "tag": "def:eta"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Qualify all binary-activation statements by the regimes $\\Delta U_{\\max,j}=0$ and $\\Delta U_{\\max,j}\\gg\\varepsilon$, and retain the actual transition for updates comparable to or smaller than $\\varepsilon$.",
+      "overall_effect": "Claims that activation is exactly binary, independent of update magnitude or timestep, and always nearly full for any nonzero update require the unstated condition $\\Delta U_{\\max,j}\\gg\\varepsilon$.",
+      "primary_affected_tag": "def:eta",
+      "target_type": "other",
+      "title": "The normalized indicator is not binary for every nonzero update",
+      "why_classification": "The formula itself is well defined and the zero-update property survives; accurate local qualifications repair the affected descriptions without changing the method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Given parameters $p \\ge 1$ and $\\tau > 0$, we define the smooth shut-off function\n\\begin{equation}\n  s_j = h(\\eta_j) = \\frac{\\eta_j^p}{\\eta_j^p + \\tau^p}.\n\\end{equation}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a noninteger real exponent, such as $p=3/2$, the factor $\\eta^p$ is not $C^\\infty$ at $\\eta=0$; sufficiently high derivatives fail to exist or remain finite. Thus the stated parameter range does not imply the claimed smoothness on the closed interval.",
+      "failure_location": {
+        "quote": "$h \\in C^\\infty[0,1]$ for $p \\ge 1$ (smoothness),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict $p$ to positive integers, or replace the $C^\\infty$ claim by the finite regularity valid for the selected real exponent.",
+      "overall_effect": "The advertised all-orders smoothness is false for part of the allowed parameter range.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The shut-off function is not smooth to all orders for arbitrary real p",
+      "why_classification": "A short local restriction on $p$ preserves the method and all principal guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:TVD-UMSRD"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Q_i^n = (1 - a\\lambda_i) Q_i^{n-1} + a\\lambda_i Q_{i-1}^{n-1}.",
+          "tag": "prop:TVD-Q-update"
+        }
+      ],
+      "failure_explanation": "A general row-stochastic linear map need not be total-variation diminishing, so expressing each updated value as a convex combination is not by itself the stated version of Harten's TVD criterion. For this particular bidiagonal update the conclusion can instead be proved directly from $d_i^n=(1-a\\lambda_i)d_i^{n-1}+a\\lambda_{i-1}d_{i-1}^{n-1}$ and summation, but that necessary argument is absent.",
+      "failure_location": {
+        "quote": "We apply Harten's lemma \\cite{harten1983lax}: a consistent, conservative\nscheme of the form $Q_i^n = \\sum_k a_{i,k} Q_k^{n-1}$ with $a_{i,k} \\ge 0$\nand $\\sum_k a_{i,k} = 1$ satisfies $TV(Q^n) \\le TV(Q^{n-1})$.",
+        "tag": "prop:TVD-Q-update"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the row-stochastic argument by the direct difference estimate for this upwind stencil, including the index shift showing that the coefficient sum in the global variation bound is one.",
+      "overall_effect": "As written, the merged-mesh TVD step and the theorem's proof chain rely on an invalidly broad inference.",
+      "primary_affected_tag": "prop:TVD-Q-update",
+      "target_type": "formal_result",
+      "title": "Row-wise convexity does not justify the cited TVD inference",
+      "why_classification": "The proposition is recoverable by a short standard calculation using equations already present, without changing its hypotheses or conclusion."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Neighborhood finite volume update on the merged mesh: $Q^{n,-1} \\mapsto Q^n$.",
+          "tag": "thm:TVD-UMSRD"
+        },
+        {
+          "quote": "$U^*_i \\leftarrow U^n_i - \\dfrac{\\Delta t}{V_i} \\displaystyle\\sum_{f \\in \\partial i} F_{i,f}$",
+          "tag": "alg:added-1"
+        },
+        {
+          "quote": "The local CFL number at\nthe small cell is $a\\Delta t / (\\alpha h) = \\nu/\\alpha \\gg 1$.",
+          "tag": null
+        },
+        {
+          "quote": "UM-SRD\ntherefore applies essentially full SRD redistribution on the very first\nstep where instability could develop.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem's proof pre-merges and then performs a CFL-stable finite-volume update on the merged mesh. The defined UM-SRD method and Algorithm 1 instead first update each original cell using its own volume, so under $a\\Delta t/h\\le1$ the small cell has local CFL $\\nu/\\alpha$, which can exceed one. None of the three inequalities in the theorem's proof controls that original-mesh update. Moreover, the implemented $s_j=1/(1+\\tau^p)$ is strictly below one when active, so a residual fraction $1-s_j$ of an amplification proportional to $\\nu/\\alpha$ remains and cannot yield an arbitrary-$\\alpha$ TVD guarantee merely because $s_j$ is close to one.",
+      "failure_location": {
+        "quote": "Under the assumptions above (1D, one small cell with $\\alpha < 1/2$, merging left, first-order upwind, CFL $a \\Delta t / h \\le 1$), the UM-SRD time-stepping operator is TVD on the original mesh:",
+        "tag": "thm:TVD-UMSRD"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must define one consistent premerge/update/redistribution algorithm and prove TVD for that actual operator under the advertised full-cell CFL, including control uniform in $\\alpha$ when $s_j<1$.",
+      "overall_effect": "The principal TVD theorem, the claimed non-oscillatory guarantee for the implemented scheme, and the advertised stabilization near arbitrarily small cut cells under a full-cell timestep are not established.",
+      "primary_affected_tag": "thm:TVD-UMSRD",
+      "target_type": "formal_result",
+      "title": "The TVD proof analyzes a different update from the defined algorithm",
+      "why_classification": "The proof applies to different time staging than the executable method, and restoring the advertised full-timestep, arbitrary-small-cell stability requires new stability analysis or a material redesign or restriction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:srd-steady",
+        "cor:steady-accumulation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat{Q}^* = \\frac{h \\cdot U^n_{j-1} + \\alpha h \\cdot U^n_j}{h + \\alpha h}\n            = (1-\\alpha)U^n_{j-1} + \\alpha U^n_j.",
+          "tag": "prop:srd-steady"
+        },
+        {
+          "quote": "$U_{j-1} = U_j = \\hat{Q}^* = (1 \\cdot 1.5 + 0.2 \\cdot 2.5)/(1 + 0.2)\n= 1.6\\overline{6}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed quotient equals $(V_{j-1}+\\alpha V_j)/(1+\\alpha)$, not $(1-\\alpha)V_{j-1}+\\alpha V_j$. The later numerical example itself uses the correct denominator and therefore contradicts the formal formulas. The perturbation components and the exact steady-state redistribution formula consequently have incorrect coefficients.",
+      "failure_location": {
+        "quote": "[S_j V]_{j-1} = [S_j V]_j\n  = \\frac{h\\,V_{j-1} + \\alpha h\\, V_j}{h + \\alpha h}\n  = (1-\\alpha)V_{j-1} + \\alpha V_j.",
+        "tag": "prop:local-consistency"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the coefficients throughout by $1/(1+\\alpha)$ and $\\alpha/(1+\\alpha)$ and recompute the component differences and steady-state expressions.",
+      "overall_effect": "Exact formulas in the consistency proof and steady-state results are wrong, although the $\\mathcal O(h)$ perturbation estimate can survive with corrected bounded coefficients.",
+      "primary_affected_tag": "prop:local-consistency",
+      "target_type": "formal_result",
+      "title": "The two-cell neighborhood average has incorrect coefficients",
+      "why_classification": "The correction is local and preserves the order estimate, though it must be propagated through several quantitative formulas."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tau^{n,\\mathrm{base}} = B(u^n) - u^{n+1}.",
+          "tag": "prop:local-consistency"
+        },
+        {
+          "quote": "A fully\nrigorous global error estimate for the composite operator is beyond the\nscope of this work;",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper defines $\\tau$ as an undivided one-step defect. Under $\\Delta t=\\mathcal O(h)$, a first-order globally accurate time-stepping method normally has one-step defect $\\mathcal O(h^2)$, not merely $\\mathcal O(h)$. An $\\mathcal O(h)$ perturbation at each of $\\mathcal O(1/h)$ steps does not imply a vanishing global error without an additional localized-error or cancellation argument. The proof establishes only the displayed one-step bound, not the corollary's first-order accuracy conclusion.",
+      "failure_location": {
+        "quote": "Nevertheless,\nthe local truncation error of UM-SRD satisfies\n\\begin{equation}\n  \\tau^{n,\\mathrm{UM}} - \\tau^{n,\\mathrm{base}} = \\mathcal{O}(h),\n\\end{equation}\nwhich is the same order as the base first-order scheme, so UM-SRD with\nthe normalized indicator is still first-order accurate.",
+        "tag": "cor:normalized-accuracy"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either prove a sufficiently small defect in the relevant norm and propagate it through a stability estimate, or withdraw the formal first-order-accuracy conclusion and present the convergence only as numerical evidence.",
+      "overall_effect": "Rigorous first-order accuracy for the normalized implementation and prose claims that its truncation error is of the same order as the base scheme are unsupported.",
+      "primary_affected_tag": "cor:normalized-accuracy",
+      "target_type": "formal_result",
+      "title": "An O(h) one-step perturbation does not prove first-order accuracy",
+      "why_classification": "The least source-supported resolution withdraws a formal accuracy guarantee; proving it would require the global or localized error analysis the paper expressly omits."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:steady-accumulation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "U^*_j = U^n_j - \\frac{\\nu}{\\alpha}(U^n_j - U^n_{j-1}),",
+          "tag": null
+        },
+        {
+          "quote": "Thus, if\n$U^n_{j-1} \\neq U^n_j$, then $U^{n+1} \\neq U^n$ even though\nthe finite-volume update is zero.",
+          "tag": "prop:srd-steady"
+        },
+        {
+          "quote": "We initialize $U_{j-1} = 1.5$,\n$U_j = 2.5$, and $U_i = 0$ elsewhere, and apply the redistribution\noperators directly with $U^* = U$ (zero finite-volume update) for 100\niterations. This isolates the redistribution step from advection",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For positive-speed first-order upwind advection, $U_i^*=U_i^n$ implies $U_i^n-U_{i-1}^n=0$ in every cell, hence a steady state is spatially constant on the connected mesh and necessarily has $U_{j-1}^n=U_j^n$. The proposition's nonconstant case is therefore incompatible with its hypothesis. Experiment 6 manually suppresses the finite-volume update for a nonconstant profile and is not a steady state of the stated base scheme. In addition, the accumulation corollary omits the smoothing bias between the weighted exact values and each distinct point value.",
+      "failure_location": {
+        "quote": "Let $U^n$ be a steady state for the base finite-volume scheme, i.e.,\n$U^*_i = U^n_i$ for all $i$.",
+        "tag": "prop:srd-steady"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the model by a scheme admitting nonconstant equilibria and verify zero discrete residual there, or weaken the result to the artificial statement that redistribution changes an arbitrary nonconstant vector when the finite-volume stage is externally skipped.",
+      "overall_effect": "The claimed demonstration that ordinary SRD destroys steady states in the analyzed model, its accumulation corollary, and the corresponding numerical validation do not apply to any nonconstant steady state of that model.",
+      "primary_affected_tag": "prop:srd-steady",
+      "target_type": "formal_result",
+      "title": "The claimed nonconstant steady states cannot occur for the stated advection scheme",
+      "why_classification": "Within the paper's model the advertised phenomenon is impossible; preserving it requires a different balance-law setting and new analysis, while the available repair abandons the steady-state claim."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2605.04863",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7818cd4cd642c55846288cd8538a55a3a2f19a519b1a0153dbaf44ab1fba0b17",
+  "status": "ok"
+}

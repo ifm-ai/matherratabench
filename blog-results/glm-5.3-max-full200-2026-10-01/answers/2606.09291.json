@@ -1,0 +1,209 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\rho \\coloneqq 1-2\\tau c + 2\\sqrt{\\eta}(1+\\sqrt{1-c\\tau}) + 2\\tau^2 L^2 +2\\eta\\left(1+\\sqrt{1-c\\tau}\\right)^2\\leq 1-2\\tau c+ 2\\tau^2L^2 + 4\\sqrt{\\eta}+8\\eta$",
+          "tag": "thm:error"
+        },
+        {
+          "quote": "and, for every $\\tau\\in(0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently small so that $4\\sqrt n+8\\eta<\\frac{c^2}{2L^2}$, it holds that $\\rho<1$.",
+          "tag": "thm:error"
+        }
+      ],
+      "failure_explanation": "rho<1 requires the drift $2\\tau c-2\\tau^2L^2$ to exceed $4\\sqrt{\\eta}+8\\eta$. On $\\tau\\in(0,\\frac{c}{2L^2})$ the drift takes values in $(0,\\frac{c^2}{2L^2})$ and tends to 0 as $\\tau\\to0$, while the displayed hypothesis only bounds $4\\sqrt{\\eta}+8\\eta$ by the interval supremum $\\frac{c^2}{2L^2}$. Hence for small $\\tau$ the proof's own bound gives $\\rho>1$ (e.g. $c=L=1$, $\\eta=10^{-2}$: $4\\sqrt{\\eta}+8\\eta=0.48<0.5$, yet $\\tau=10^{-2}$ gives $\\rho\\le 1-0.02+0.0002+0.48=1.4602>1$). The final inference of the proof is therefore invalid: the tau-independent threshold on eta is insufficient for every tau in the stated interval.",
+      "failure_location": {
+        "quote": "for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently small so that $4\\sqrt{\\eta}+8\\eta<\\frac{c^2}{2L^2}$, it holds",
+        "tag": "thm:error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the eta-condition by the tau-dependent requirement $4\\sqrt{\\eta}+8\\eta<2\\tau c-2\\tau^2L^2$ (equivalently, assert that for each admissible eta there exists $\\tau\\in(0,\\frac{c}{2L^2})$ with $\\rho<1$); the rest of the proof is unchanged.",
+      "overall_effect": "The linear convergence guarantee of Theorem thm:error is unreliable as stated: for step sizes small relative to $\\sqrt{\\eta}$ the claimed contraction does not follow (the proof's own contraction factor exceeds 1).",
+      "primary_affected_tag": "thm:error",
+      "target_type": "formal_result",
+      "title": "Theorem thm:error: the stated eta-smallness condition does not imply contraction for all admissible step sizes",
+      "why_classification": "A local strengthening of one hypothesis preserves the theorem's conclusion, rate, and advertised scope; no new argument, construction, or loss of content is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:complexity_gradient_estimation",
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "=&\\sum_{\\ell=1}^L \\frac{1}{M_{\\ell}}\\sum_{m=1}^{M_\\ell} Y^{(m)}_{\\ell}-Y^{(m)}_{\\ell-1}",
+          "tag": "eq:ml_estimator_denominator"
+        },
+        {
+          "quote": "as well as the convention that $X^{(m)}_0=0$ and $Y^{(m)}_0=0$.",
+          "tag": "eq:delta-notation"
+        },
+        {
+          "quote": "Furthermore, for $\\ell \\in \\set{1,\\dots,L}$, the elements of $\\{\\bsxi^{(m,\\ell)}\\}_{m=1}^{M_\\ell}$ are independent and identically distributed, and these sequences are mutually independent and identically distributed across $\\ell$.",
+          "tag": null
+        },
+        {
+          "quote": "$Y_\\ell \\coloneqq \\exp(\\theta \\Phi(y_\\ell))$",
+          "tag": "eq:definition_Xell_Yell"
+        }
+      ],
+      "failure_explanation": "Although $Y_\\ell=\\exp(\\theta\\Phi(y_\\ell))\\ge 1$ pointwise, $\\mathbb{E}^{\\mathrm{ML}}[Y_L]$ is a sum of level differences $Y^{(m)}_\\ell-Y^{(m)}_{\\ell-1}$ built from independent per-level sample sets; these differences are sign-indefinite, so the realized estimator can fall below 1, be arbitrarily close to 0, or be negative with positive probability (0 lies in the interior of its support as soon as the level fluctuations of $\\exp(\\theta\\Phi)$ are large enough, e.g. for the large risk-aversion parameters the paper targets). The proof divides by $\\mathbb{E}^{\\mathrm{ML}}[Y_L]^2$ and needs it $\\ge 1$ pathwise to bound the ratio; this premise is false, so the bound (eq:mse-gradient-estimate-1) is unestablished. In fact, for non-degenerate $Y$ the second moment of the ratio estimator can be infinite (the density of $\\mathbb{E}^{\\mathrm{ML}}[Y_L]$ is positive at 0, so $\\mathbb{E}[\\|\\mathbb{E}^{\\mathrm{ML}}[X_L]\\|^2/\\mathbb{E}^{\\mathrm{ML}}[Y_L]^2]$ diverges) while the right-hand side is finite, so the statement itself fails in general.",
+      "failure_location": {
+        "quote": "where we used that $\\EE^{\\textrm{ML}} \\left[Y_L\\right] > 1$.",
+        "tag": "proposition:bound_mean_square_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Modify the estimator so the denominator is deterministically bounded away from zero (e.g. replace $\\mathbb{E}^{\\mathrm{ML}}[Y_L]$ by $\\max(\\mathbb{E}^{\\mathrm{ML}}[Y_L],\\delta)$ with $\\delta\\in(0,1]$, exploiting $\\mathbb{E}[Y]\\ge 1$), bound the additional clamping bias via Chebyshev/weak-error estimates, and re-derive the proposition; the rates in the theorem and corollary are then preserved.",
+      "overall_effect": "The MSE bound for the multilevel gradient estimator is unproven and generally false, so the complexity Theorem thm:complexity_gradient_estimation (existence of a hierarchy achieving $\\varepsilon^2$ accuracy at the stated cost) and Corollary cor:complexity-result, which are built on it, become unreliable. Moreover, the accuracy condition (eq:conditionmeansquareerror) assumed in Theorem thm:error is unattainable for the unmodified ratio estimator (its MSE can be infinite), rendering that theorem vacuous for the method as defined.",
+      "primary_affected_tag": "proposition:bound_mean_square_error",
+      "target_type": "formal_result",
+      "title": "Proposition bound_mean_square_error rests on the false claim that the MLMC denominator estimator exceeds 1",
+      "why_classification": "A complete repair exists but requires changing the estimator construction and re-proving the proposition and its dependents (a contained new construction and lemma, no new proof architecture, no loss of rates), which exceeds a routine local fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "we need to perform $K \\coloneqq \\bigg\\lceil\\left|\\frac{2\\log \\varepsilon}{\\log \\rho}\\right|\\bigg\\rceil$ iterations to achieve an {\\em expected} accuracy $\\varepsilon > 0$.",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "$\\mathbb{E}\\left[ \\eta \\|\\mathcal{R}_{\\tau}(u_k)\\|_U^2\\right]\\lesssim_{\\eta,\\tau} \\mathbb{E}\\left[\\|u-u_k\\|_U^2\\right] \\lesssim_{\\eta,\\tau} \\rho^k \\eqqcolon e_k$",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "$\\sum_{k=1}^K e^{-2-\\frac{\\gamma-\\beta}{\\alpha}}_k\\quad &\\beta<\\gamma$",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "the $\\varepsilon^2$-accuracy of the MLMC gradient estimator",
+          "tag": "thm:complexity_gradient_estimation"
+        }
+      ],
+      "failure_explanation": "The idealized condition makes the gradient-MSE target at iteration $k$ equal to $\\delta_k\\asymp e_k=\\rho^k$, a squared quantity (it bounds $\\eta\\,\\mathbb{E}\\|\\mathcal{R}_\\tau(u_k)\\|^2\\lesssim\\mathbb{E}\\|u^\\star-u_k\\|^2$). Since Theorem thm:complexity_gradient_estimation gives cost $\\delta^{-1}$ ($\\delta^{-1}|\\log\\delta|^2$, $\\delta^{-1-(\\gamma-\\beta)/\\alpha}$) to reach MSE $\\le\\delta$, the per-iteration cost is $\\asymp e_k^{-1}$ (etc.), not $e_k^{-2}$ (etc.) as summed in the proof. Moreover, with the proof's own $K=\\lceil|2\\log\\varepsilon/\\log\\rho|\\rceil$ one gets $e_K=\\rho^K\\cong\\varepsilon^2$, not $\\varepsilon$. These two slips cancel for $\\beta>\\gamma$ and $\\beta=\\gamma$ (giving the correct $\\varepsilon^{-2}$, $\\varepsilon^{-2}|\\log\\varepsilon|^2$) but not for $\\beta<\\gamma$: the derivation yields total cost $\\varepsilon^{-2-2(\\gamma-\\beta)/\\alpha}$, whereas the corollary claims $\\varepsilon^{-2-(\\gamma-\\beta)/\\alpha}$.",
+      "failure_location": {
+        "quote": "The claim then follows since $e_K\\cong\\varepsilon$.",
+        "tag": "cor:complexity-result"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Redo the bookkeeping with per-iteration cost $e_k^{-1-(\\gamma-\\beta)/\\alpha}$ (etc.) and $e_K\\cong\\varepsilon^2$, restating the corollary as $\\varepsilon^{-2}$, $\\varepsilon^{-2}|\\log\\varepsilon|^2$, $\\varepsilon^{-2-2(\\gamma-\\beta)/\\alpha}$, and correspondingly restricting the 'same asymptotic complexity as MLMC forward problems' claim to $\\beta\\ge\\gamma$.",
+      "overall_effect": "The complexity guarantee of the corollary in the regime $\\beta<\\gamma$ is not established and, under the accuracy convention implied by the proof's own choice of $K$, is false (the correct bound is worse by a factor $\\varepsilon^{-(\\gamma-\\beta)/\\alpha}$); the claim that the idealized algorithm matches forward-MLMC complexity in all regimes is unsupported.",
+      "primary_affected_tag": "cor:complexity-result",
+      "target_type": "formal_result",
+      "title": "Corollary cor:complexity-result miscomputes the total cost (wrong per-iteration exponents and wrong identification of $e_K$)",
+      "why_classification": "The repair is a contained re-derivation with no new proof architecture, but the stated rate in the $\\beta<\\gamma$ regime must worsen (exponent $2+(\\gamma-\\beta)/\\alpha$ becomes $2+2(\\gamma-\\beta)/\\alpha$), a limited weakening that leaves a recognizably comparable result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "v_{k, \\ell}^2 \\coloneqq \\sum_{m=1}^{M_{k, \\ell}} \\big\\|\\Delta X_{\\ell}^{(m,k)} - \\EE^{\\text{MC}}_{k}[\\Delta X_\\ell] \\big\\|_U^2",
+          "tag": "eq:sec-order-sum"
+        },
+        {
+          "quote": "\\texttt{if } k \\neq 0 \\colon \\, L_k \\leftarrow \\eqref{eq:optimal-level} \\quad \\{M_{k,\\ell}\\}_{\\ell=1}^{L_k} \\leftarrow \\eqref {eq:optimal-batch-size}",
+          "tag": "alg:mlsgd"
+        },
+        {
+          "quote": "L_{k-1} + 1, & \\text{ if } \\widehat{\\mathrm{err}}^{\\text{num}}_k > \\varepsilon_k^2/2",
+          "tag": "eq:optimal-level"
+        },
+        {
+          "quote": "\\sqrt{\\frac{v_{k-1,\\ell}^2}{(M_{k - 1, \\ell} - 1) \\, \\mathcal{C}_{k - 1, \\ell}}}",
+          "tag": "eq:optimal-batch-size"
+        }
+      ],
+      "failure_explanation": "Algorithm 1 determines $L_k$ and $\\{M_{k,\\ell}\\}$ at the start of iteration $k$, before GradientEstimate draws iteration-$k$ samples. Yet (eq:optimal-batch-size) uses $v_{k,\\ell'}$ — the second-order power sums of iteration $k$'s batch as defined in (eq:sec-order-sum) — inside the sum while using $v_{k-1,\\ell}$ in the first factor, and the level rule (eq:optimal-level) tests $\\widehat{\\mathrm{err}}^{\\text{num}}_k$, which is defined through iteration-$k$ MC means (eq:squared-bias-estimate-mlmc). None of these quantities exists at the moment it is needed, and when $L_k=L_{k-1}+1$ the required statistics on the new level do not exist from any earlier iteration. The adaptive selection is therefore not well-defined as specified.",
+      "failure_location": {
+        "quote": "\\sum_{\\ell'=1}^{L_{k}} \\sqrt{\\frac{v_{k,\\ell'}^2 \\, \\mathcal{C}_{k-1, \\ell'}}{M_{k - 1, \\ell'} - 1}}",
+        "tag": "eq:optimal-batch-size"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Consistently use previous-iteration (or pilot-batch) statistics, i.e. $v_{k-1,\\ell'}$ and $\\widehat{\\mathrm{err}}^{\\text{num}}_{k-1}$ in the selection formulas, and specify a pilot sample batch for newly added levels.",
+      "overall_effect": "The adaptive sampling and refinement logic of Algorithm 1 — the mechanism by which it claims to dynamically balance discretization and sampling errors — cannot be executed as written.",
+      "primary_affected_tag": "eq:optimal-batch-size",
+      "target_type": "algorithm",
+      "title": "Adaptive batch/level selection references statistics that do not exist at decision time",
+      "why_classification": "A local index/convention correction plus a standard pilot-sample convention makes the algorithm well-defined without changing the method, its guarantees, or any rate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\leq \\widetilde{C}_Y(\\theta) h_{\\ell}^\\alpha,",
+          "tag": "eq:weakerror"
+        },
+        {
+          "quote": "L_{k-1} + 1, & \\text{ if } \\widehat{\\mathrm{err}}^{\\text{num}}_k > \\varepsilon_k^2/2",
+          "tag": "eq:optimal-level"
+        }
+      ],
+      "failure_explanation": "With weak error $\\asymp h^\\alpha$, one has $\\mathbb{E}[\\Delta Y_\\ell]\\asymp c\\,((h_{\\ell-1}/h_\\ell)^\\alpha-1)h_\\ell^\\alpha$ and remaining squared bias at level $L$ $\\asymp c^2h_L^{2\\alpha} = (\\mathbb{E}[\\Delta Y_\\ell])^2\\,(h_L/h_\\ell)^{2\\alpha}/((h_{\\ell-1}/h_\\ell)^\\alpha-1)^2$: the factor $(h_L/h_\\ell)^{2\\alpha}$ must appear in the numerator (equivalently $(h_\\ell/h_L)^{2\\alpha}$ in the denominator). The displayed formula instead divides by $(h_L/h_\\ell)^{2\\alpha}$, so each level-$\\ell$ term overestimates the squared bias by $(h_\\ell/h_L)^{4\\alpha}$; the maximum over $\\ell=2,\\dots,L$ is then dominated by the coarsest level and grows without bound as $L$ increases. The formula is thus not an estimate of the squared bias, and the refinement criterion (eq:optimal-level) based on it would trigger essentially unconditionally.",
+      "failure_location": {
+        "quote": "(((h_{\\ell-1} / h_\\ell)^{\\widehat{\\alpha}} - 1) (h_L/h_\\ell)^{\\widehat{\\alpha}})^2",
+        "tag": "eq:squared-bias-estimate-mlmc"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Invert the ratio in the denominator, replacing $(h_L/h_\\ell)^{\\widehat\\alpha}$ by $(h_\\ell/h_L)^{\\widehat\\alpha}$ (the standard Giles-type bias estimate, under which every level yields $\\asymp c^2h_L^{2\\alpha}$).",
+      "overall_effect": "The level-selection rule of Algorithm 1 and the claimed on-the-fly control of the discretization error are broken as specified; the refinement behavior reported in the numerical section could not arise from the formula as written.",
+      "primary_affected_tag": "eq:squared-bias-estimate-mlmc",
+      "target_type": "algorithm",
+      "title": "MLMC bias estimator has the level ratio inverted",
+      "why_classification": "A single forced correction restores the intended estimator and all guarantees with no loss of mathematical content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "A \\equiv B \\pmod{P_{s_{k,\\ell}}} \\quad \\text{for all} \\quad A, B \\in \\mathcal{P}_{s_{k,\\ell}}(x) = \\pi_{s_{k,\\ell}}(x)",
+          "tag": "eq:congruent-processes"
+        },
+        {
+          "quote": "a set of processes $\\mathcal{P}_{s_{k,\\ell}}(x)$ of size $\\abs{\\mathcal{P}_{s_{k,\\ell}}(x)} \\equiv P_{s_{k,\\ell}}$",
+          "tag": null
+        },
+        {
+          "quote": "Since $x = 0$ is also assigned in the world communicator to $\\pi_0(0) = \\set{0}$",
+          "tag": null
+        },
+        {
+          "quote": "The index $s_{k,\\ell}=0$ represents the MPI world communicator with size $P_0 = P$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The claimed containment $\\pi_0(x)\\subseteq\\pi_s(x)$ (which is what makes the selection in SelectSubdomain communication-free) is not implied by the displayed condition (eq:congruent-processes): mutual congruence mod $P_s$ of the elements of $\\pi_s(x)$ holds for any set of the form $\\{cP_s+r\\}$ regardless of $r$, so the world-communicator owner of $x$ need not lie in $\\pi_s(x)$ (e.g. $P=16$, $s=2$, $\\pi_2(x)=\\{0,4,8,12\\}$ satisfies the condition, but an owner $1\\notin\\pi_2(x)$ would make SelectSubdomain fail with 'x not found'). What is needed is a cross-structure alignment of the world owner with the level-$s$ rank modulo $P_s$. Moreover, the definition $|\\pi_s(x)|\\equiv P_s$ is contradicted by the source's own example: $P_0=P=16$ but $\\pi_0(0)=\\{0\\}$ has size 1 (in the block-communicator structure the size is $P/P_s=2^s$, which coincides with $P_s$ only in the illustrated case $P=16$, $s=2$).",
+      "failure_location": {
+        "quote": "Hence, we enforce $\\pi_0(x) \\subseteq \\pi_{s_{k,\\ell}}(x)$ for all nodal points $x \\in \\mathcal{D}$ by the congruence condition",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "State and enforce the cross-structure congruence (the world owner of $x$ is congruent mod $P_s$ to the level-$s$ rank of $x$, achievable by suitable recursive coordinate bisection process assignment) and correct the cardinality claim to $|\\pi_s(x)|=P/P_s$.",
+      "overall_effect": "The guarantee that the data selection in PairwiseUpdate/SelectSubdomain requires no communication — part of the claimed parallelization contribution with 'minimal communication overhead' — is not established by the stated condition, and the formalization of the process assignment is internally inconsistent.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Congruence condition does not establish communication-free selection, and the process-set size claim is self-contradictory",
+      "why_classification": "A local restatement of the correct alignment condition and cardinality repairs the formalization; the parallelization scheme and all other claims survive unchanged."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2606.09291",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n03-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f995bc2781848745f7a0e9dc1ec709b3b392f7fb87821723f10dd174128e1d3c",
+  "status": "ok"
+}

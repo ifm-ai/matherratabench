@@ -1,0 +1,215 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The mean of the entries of $AD^{-k}$ in the corresponding cycles $j$ gives us the $n$ unknown unique entries of the $k^{th}$ circulant component matrix $R_{k}$ i.e. $R_{k}(j,0)$, where $j=0,1 \\dots n-1$.",
+          "tag": "thm:added-2"
+        },
+        {
+          "quote": "Note that the unique entries of $R_k$ in its first column, are evaluated using this corresponding column of $W\\Tilde{A}$ i.e. $R_k\\hat{e}_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}$, as in step-4 of this algorithm.",
+          "tag": null
+        },
+        {
+          "quote": "Thus arranging the cycles of matrix $A$ into columns of $\\Tilde{A}$ and applying Fast Fourier Transform (FFT) on its columns i.e. $W\\Tilde{A}$ provides us all the circulant components of the matrix",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the appendix's arrangement (column j of Ã = cycle j of A read in row order, D(q,q)=ω^q, W(p,q)=n^{-1/2}ω^{-pq}) and U = WÃ, the Fourier coefficient of cycle j at frequency k is (WÃ)(k,j) = √n·ω^{-kj}·R_k(j,0). Hence component R_k's n unique entries lie along the k-th ROW of U with positive phases: R_k(q,0) = ω^{kq}U(k,q)/√n (the Fourier rewrite of Theorem thm:added-2's cycle-mean formula). Step 4 instead computes R[j] = D^{-j}U(:,j), whose q-th entry is ω^{-jq}U(q,j) = √n·ω^{-2jq}·R_j(q,0): the transposed data (it mixes the j-th entries of all components R_m, m=0..n-1), with conjugated phases and a missing 1/√n normalization. Counterexample: n = 2, A = diag(1, ω), whose exact decomposition is A = 0 + 1·D, i.e. R_0 = 0, R_1 = I. Then Ã = [[1,0],[ω,0]], U = [[0,0],[√2,0]], and the algorithm returns R[0] = (0,√2)^T and R[1] = (0,0)^T, whereas the true first columns are (0,0)^T and (1,0)^T.",
+      "failure_location": {
+        "quote": "\\State \\( R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)} \\)",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct Step 4 to R[j](q) = ω^{jq}U(j,q)/√n (equivalently, arrange the cycles as rows of Ã so component j appears along column j of U, keeping the D^{-j} phases); the exactness and the O(n² log n) cost are then preserved.",
+      "overall_effect": "Algorithm 2 fails its stated contract (the returned R[j] are not the circulant components of Theorem th:circulant_decomposition); Algorithm 3, which builds Ã and ΔA from these outputs, inherits corrupted components, so the CD-based multiplication procedure and the advertised O(n² log n) evaluation of all components are not established as written. Theorem thm:added-2 itself remains correct.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "Algorithm 2 extracts circulant components from the wrong slice of the FFT with wrong phases and scale",
+      "why_classification": "Repairing requires re-deriving which slice of U and which phase/scale factors recover R_k (a contained, nontrivial re-indexing with a convention choice), but the method, its exactness and its complexity guarantee all survive; no new proof architecture is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\hspace{10pt} \\( \\Delta A {\\tilde{B}} \\gets \\text{IFFT}\\left( \\sum_{t \\in In_B} ((\\text{FFT}(\\Delta A) L_B[t])  C^t )\\right) \\)",
+          "tag": "algo:cd_matrix_multiplication"
+        },
+        {
+          "quote": "\\State \\( L[j] \\gets \\Lambda_j\\)",
+          "tag": "algo:circulant_decomposition_fft"
+        },
+        {
+          "quote": "W\\bm l_k \\circ W(D^k\\bm b) = W \\bm l_k \\circ WD^kW^{*}W\\bm b =  W\\bm l_k \\circ C^kW\\bm b",
+          "tag": null
+        },
+        {
+          "quote": "$AB \\approx M = \\sum_{i'} A_{i'}B+ \\sum_{k'} \\Delta AB_{k'}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With FFT(B) = WB, the first Step-5 line accumulates IFFT(Σ_t Λ_t C^t WB) = Σ_t (W*Λ_tW) D^t B, i.e. B multiplied by circulants built from the raw cycle diagonals L_A[t] = Λ_t — not ÃB = Σ_{t∈In_A} R_tD^t B. The cycle-truncation Σ_{t∈S}Λ_tC^t coincides with the circulant truncation Σ_{t∈S}R_tD^t only when S contains all n components; for the k ≪ n selected indices they differ (n=2, A=[[1,2],[3,4]], S={1}: Λ_1C = [[0,2],[3,0]] but R_1D = [[-1.5,-0.5],[0.5,1.5]]). The second line has the same defect: it returns Σ_t ΔA Λ^B_t C^t instead of ΔA·B̃ = Σ_t ΔA R^B_t D^t, and it also omits the √n factor that the prose's own Hadamard-structure evaluation (multiply columnwise by √n·diag of the FFT of R_t's first column, then a single inverse FFT) requires. The pseudocode therefore does not compute the M of eq:first_order_expansion that the surrounding text says it completes.",
+      "failure_location": {
+        "quote": "\\State \\hspace{10pt} \\( {\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right)) \\)",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Rewrite both Step-5 lines to implement the prose's transformed-domain operator: per selected t, apply √n·diag(FFT(first column of R_t)) Hadamard-wise to the columns of C^t·FFT(B) (and the analogous operator built from FFT of the first columns for the ΔA·B̃ term), summing in the transformed domain with a single final inverse FFT; contained correction, complexity preserved.",
+      "overall_effect": "Algorithm 3's output is not the first-order approximation ÃB + ΔAB̃ it claims to output; the CD-based multiplication procedure and the O(n² log n) first-order guarantee it is supposed to deliver are invalid as written.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "Algorithm 3's Step 5 multiplies by circulants built from raw cycle diagonals Λ_t instead of the circulant components R_tD^t",
+      "why_classification": "The fix rewrites two pseudocode lines using the correct Fourier-domain operator structure already derived in the paper's prose; no new lemma or architecture is needed and the method's guarantees survive, but the repair is a real reconstruction of the step, not a forced one-token correction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Similarly, let $\\Tilde{F}(B)$ denote the truncated Fourier transform of $B$ using the $k$ dominant frequencies.",
+          "tag": null
+        },
+        {
+          "quote": "\\Ensure $\\mathbf{A}_{\\text{approx}} \\in \\mathbb{C}^{n \\times n}$ (matrix with top-$k$ entries per row)",
+          "tag": "alg:topk"
+        }
+      ],
+      "failure_explanation": "B̃ = WB has one row per frequency and one column per original column of B, so each column of B̃ is the spectrum of one column of B. Truncating B 'using the k dominant frequencies' therefore means keeping the k largest entries of each column of B̃. Algorithm alg:topk is defined to keep the k largest entries of each ROW (per frequency, across columns), and alg:mul_topk applies it to B̃ unchanged; the constructed B̃_approx is thus a different sparsity pattern than the stated dominant-frequency truncation, and the residue ΔB in the returned splitting M = (1/n)(Ã_approx B̃ + ΔA B̃_approx) is not the one the displayed first-order formula specifies.",
+      "failure_location": {
+        "quote": "\\State $\\tilde{B}_{\\text{approx}}\\gets \\text{Algorithm} \\ref{alg:topk}(\\tilde{B},k,p)$",
+        "tag": "alg:mul_topk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Perform the top-k selection per column of B̃ (e.g. transpose, apply alg:topk, transpose back); purely local reorientation, the first-order identity M − AB = −(1/n)ΔAΔB still holds for the corrected pattern.",
+      "overall_effect": "The implemented FFT-sparsification does not realize the construction described in the text; the stated top-k-frequencies interpretation of the sparsified-multiplication results is not what the algorithm computes.",
+      "primary_affected_tag": "alg:mul_topk",
+      "target_type": "algorithm",
+      "title": "alg:mul_topk truncates B̃ along rows (per frequency) instead of per column (dominant frequencies of each column of B)",
+      "why_classification": "A short, local reorientation of the selection step restores the advertised construction; the approximation guarantee and all substantive claims survive with no new argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)",
+          "tag": "th:concentrationprob"
+        },
+        {
+          "quote": "So the function has the Lipschitz constant $2 \\norm{D_1^2}_F \\norm{D_2^2}_2$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The corollary only bounds the lower tail P[S ≤ E[S] − t] ≤ exp(−(n−2)t²/(96‖D₁‖⁴_F‖D₂‖⁴₂)) with L = 2‖D₁‖²_F‖D₂‖²₂. Reading 'S ≈ E[S] with very high probability' requires the bound to be small at t of order E[S] = ‖D₁‖_F‖D₂‖_F/√n, i.e. (n−2)E[S]² ≫ 24L², a flatness condition on the spectra. L²/n → 0 alone does not imply it: for D₁ = D₂ = diag(1,0,…,0), L = 2 so L²/n → 0, yet S = ‖D₁QD₂‖²_F = |q₀₀|² has E[S] = 1/n and does not concentrate around its mean (the bound at t = E[S] is ≈ exp(−1/(96n)) ≈ 1, i.e. vacuous). The asserted sufficient condition is therefore false as stated.",
+      "failure_location": {
+        "quote": "Thus from \\eqref{concentration}, we have ${\\norm{D_1 Q D_2}^2_F} \\approx \\mathbf{E}[\\norm{D_1 Q D_2}^2_F]$ with very high probability when $L^2/n \\to 0$. ",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Weaken the claim to the condition the bound supports — relative concentration requires (n−2)E[S]² ≫ 96‖D₁‖⁴_F‖D₂‖⁴₂, which holds for flat spectra (‖D‖²_F ~ n‖D‖²₂) and fails for spiky ones — or delete the sufficiency claim; local edit, the corollary itself is unaffected.",
+      "overall_effect": "The claimed regime in which ‖D₁QD₂‖²_F concentrates is incorrect; the sentence is the justification invoked for the variance-vanishing premise in th:estimated_relative_error, so that premise loses its cited support in the claimed generality.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Prose claims concentration of ||D1QD2||_F^2 whenever L^2/n → 0; the stated bound does not support this",
+      "why_classification": "A local weakening/replacement of the stated condition preserves every substantive use (the corollary and the lemma stand); no new argument beyond the standard reading of the already-derived bound is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& \\approx \\frac{9}{16}\\text{for } n \\gg 1 \\label{eq:uniform_distributions_norms5}",
+          "tag": "th:uniform_distribution_norms"
+        },
+        {
+          "quote": "Thus, $\\eqref{eq:uniform_distributions_norms5}$ results in $\\mathbf{E}[\\|AB\\|_F^2]\\approx\\frac{9}{16}\\mathbf{E}[\\|A\\|_F^2].\\mathbf{E}[\\|B\\|_F^2]$. When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": "th:uniform_distribution_norms"
+        }
+      ],
+      "failure_explanation": "The proof establishes only E‖AB‖²_F ≈ (9/16)·E‖A‖²_F·E‖B‖²_F for n ≫ 1 (the exact ratio is (9n+7)/(16n)). The stated conclusion E‖AB‖_F = (3/4)‖A‖_F‖B‖_F is an exact equality between an expectation and a random right-hand side — ill-typed as written — and the step from the second moment to E of the square root requires concentration of ‖AB‖_F (or an explicit conditioning on ‖A‖F, ‖B‖F) that is never provided; the relation is only asymptotic (it already fails at n = 1, where E‖AB‖F = a²/4 while the claimed form is a different expression).",
+      "failure_location": {
+        "quote": "For two random matrices $A$ and $B$ with entries $\\sim$ $U(0,a)$, $\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$.",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restate the theorem with '≈' and 'for n ≫ 1', reading the right-hand side conditionally on the realized norms (with a concentration caveat); purely local restatement, no content lost beyond the exact-equality phrasing.",
+      "overall_effect": "The theorem as stated (exact, unconditional, all n) is not established; only the asymptotic RMS relation conditional on concentrated norms is available, which is what Proposition th:estimated_relative_error's Case-2 informally uses.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Theorem on E||AB||_F for U(0,a) entries asserts an exact equality; only an asymptotic second-moment ratio is derived",
+      "why_classification": "A local restatement plus a standard concentration remark reproduces the intended (3/4)-constant result; no new architecture and no loss of the paper's guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Now using the fact that for Haar distributed matrices we have $\\mathbf{E}[|Q_{i,j}|^4]  = \\frac{2}{n(n+1)}$ and $\\mathbf{E}[|Q_{i,j}|^2 |Q_{k,l}|^2]  = \\frac{1}{n(n+1)}$. ",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "$\\text{Var}(S) = \\mathbf{E}[S^2] - \\mathbf{E}[S]^2 = \\frac{1}{n(n+1)} \\left( \\beta_1 \\beta_2 - \\frac{\\alpha_1^2 \\alpha_2^2}{n} \\right)$.    ",
+          "tag": "lem:added-2"
+        }
+      ],
+      "failure_explanation": "The proof uses E[|q_ij|⁴] = 2/(n(n+1)) and, for all (i,j) ≠ (k,l), E[|q_ij|²|q_kl|²] = 1/(n(n+1)). The second claim is false: the Haar cross-moment depends on index coincidences (for Haar U(n) it equals (1+δ_ikδ_jl)/(n²−1); for the real orthogonal group even E[q⁴] = 3/(n(n+2)) ≠ 2/(n(n+1))). Counterexample: D_1 = D_2 = I gives S = ‖Q‖²_F = n almost surely, so E[S²] = n², but the lemma yields (n²+n⁴)/(n²+n) = n(n²+1)/(n+1) ≠ n² (10/3 vs 4 at n = 2). Lemma lem:added-2, built on this E[S²], then gives Var(S) = n(1−n)/(n+1) < 0 for n ≥ 2, an impossibility, and the subsequent Taylor-series computation of E[√S] inherits the error.",
+      "failure_location": {
+        "quote": "We have $\\mathbf{E}[S^2] = \\frac{1}{n(n+1)} (\\beta_1 \\beta_2 + \\alpha_1^2 \\alpha_2^2).$",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Recompute E[S²] and Var(S) with the correct Weingarten/character formulas for Haar matrices (which introduce additional index-coincidence terms beyond β₁β₂ + α₁²α₂²) and redo the Taylor step; a contained, standard computation.",
+      "overall_effect": "Both appendix lemmas and the delta-method computation of E[‖AB‖_F] are invalid; the appendix's quantitative variance/concentration support for the error analysis is unreliable (the unlabelled Taylor-series derivation downstream also fails).",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Appendix Haar-moment lemma is false: E[S^2] formula fails at D_1 = D_2 = I and yields a negative variance",
+      "why_classification": "Both stated formulas are false (negative variance counterexample) and require a genuine, though standard and contained, recalculation of the moments plus a re-run of the delta-method step; no global re-architecture and no abandonment of a main claim, but more than a local fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Using the above,\n\\begin{equation*}\n   \\mathbf{E}\\left[\\frac{\\norm{\\Delta A .\\Delta B}_F}{\\norm{AB}_F}\\right] \\approx  \\frac{\\mathbf{E}[\\norm{\\Delta A .\\Delta B}_F]}{\\mathbf{E}[\\norm{AB}_F]}\n\\end{equation*}",
+          "tag": "th:estimated_relative_error"
+        },
+        {
+          "quote": "While the expectation $\\mathbf{E}[\\norm{\\Delta A .\\Delta B}_F]$ in the numerator can be approximated by that of a normal distribution as the entries of the residue matrices are equally likely to be of either signs, the denominator can be approximated by two cases of matrices that may have entries with either a mean zero as in \\cref{th:expected_norm_square}, or unsigned entries as in \\cref{th:uniform_distribution_norms}.",
+          "tag": "th:estimated_relative_error"
+        }
+      ],
+      "failure_explanation": "The proof never establishes its two premises. (i) 'Var[||AB||_F] and Var[||ΔAΔB||_F] → 0 for large n' is false as stated (these norms and their variances grow with n; only relative fluctuations could vanish), and the cited concentration result th:concentrationprob is proven for Haar-distributed singular vectors — a model that does not apply to the residues ΔA, ΔB of truncated SVD/CD/FFT decompositions, whose concentration is never established. (ii) The numerator E[||ΔAΔB||_F], which determines the constants c in both cases, is never computed ('can be approximated by that of a normal distribution' with no derivation, constant, or rate); nor is the interchange E[‖ΔAΔB‖F/‖AB‖F] ≈ E‖ΔAΔB‖F/E‖AB‖F justified for these ensembles. Hence neither a priori estimate is actually derived.",
+      "failure_location": {
+        "quote": "We know that $Var[\\norm{AB}_F]$ and $Var[\\norm{\\Delta A.\\Delta B}_F]$ $\\to 0$ for large $n$ and a random distribution of the entries (as in \\cref{th:concentrationprob}, for example).",
+        "tag": "th:estimated_relative_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Either carry out the missing analysis (concentration of ‖AB‖_F and ‖ΔAΔB‖_F for the actual residue ensembles, plus the constant c) or explicitly downgrade the proposition to a heuristic validated by the experiments; the empirical results of the paper survive either resolution.",
+      "overall_effect": "The paper's only formal support for predicting relative errors a priori (advertised in the abstract and used in §3 and §5) is unsupported; the constants c ≈ 1 of both cases are asserted rather than derived. The numerical observations do not depend on the proposition.",
+      "primary_affected_tag": "th:estimated_relative_error",
+      "target_type": "formal_result",
+      "title": "Proposition's a priori error estimates are not derived: false variance premise and missing numerator",
+      "why_classification": "A complete resolution requires a contained (nontrivial) concentration/moment argument or a limited weakening of the proposition to an explicitly empirical claim; no global re-architecture is needed and the experimental claims survive, so this is above minor but short of serious."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

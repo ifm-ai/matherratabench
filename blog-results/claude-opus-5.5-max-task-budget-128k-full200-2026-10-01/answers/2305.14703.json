@@ -1,0 +1,191 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a (nonzero mean) Gaussian distribution with the identity covariance, i.e., $u_0 \\sim \\mathcal{N}(m, \\mathbf{I})$",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "Hence, the parameterization~\\eqref{eqn:cov} for $\\Sigma_{\\theta}$ in the Gaussian noise setting is optimal in the sense that $H_p(u_{t-1}|u_t) = H_{q_{\\theta}}(u_{t-1}|u_t)$.",
+          "tag": null
+        },
+        {
+          "quote": "obtained from corrupting the output $u$ by an additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$",
+          "tag": null
+        },
+        {
+          "quote": "learns a Gaussian distribution $\\mathcal{N}(u; m(a), \\Sigma(a))$",
+          "tag": null
+        },
+        {
+          "quote": "The model is trained on the noisy data set with $\\sigma=0.0005$.",
+          "tag": null
+        },
+        {
+          "quote": "Note that $\\Sigma_{\\theta}(t, u_t, a)$ in~\\eqref{eqn:cov} is indeed not parameterized by $\\theta$ and is independent of $u_t$ and $a$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Prop. 2 and the claim that integrating out u_0 gives reverse covariance beta_t I both require Cov(u_0)=I. The paper's noise model is u_0|a ~ N(u(a), Sigma(a)) with Sigma(a) unknown; the experiments use sigma^2 I with sigma in {0.01, 0.05, 0.0005, 0.001}. From the forward chain, Cov(u_t|a) = S_t := alphabar_t Sigma + (1 - alphabar_t) I. The true reverse kernel p(u_{t-1}|u_t,a) is then Gaussian with covariance beta_t S_{t-1} S_t^{-1}. This equals beta_t I only when Sigma = I, and it tends to the noise-free value (1 - alphabar_{t-1}) beta_t / (1 - alphabar_t) as sigma -> 0. Also H_p(u_t) differs from H_p(u_{t-1}), so Prop. 2's conclusion fails. The fixed covariance beta_t I, independent of a, is therefore neither optimal nor able to match the true reverse kernels in the stated regime. The claim that the model learns N(m(a), Sigma(a)) is unsupported.",
+      "failure_location": {
+        "quote": "\\beta_t \\mathbf{I} & \\mbox{Observations with additive Gaussian noise.}",
+        "tag": "eqn:cov"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the optimality statement to unit-covariance noise, or present beta_t I as a heuristic. Alternatively, replace it by the exact Gaussian-data reverse covariance beta_t S_{t-1} S_t^{-1} (which needs Sigma(a)) or by a learned covariance Sigma_theta(t,u_t,a), and re-justify noise recovery.",
+      "overall_effect": "The theoretical basis for the Gaussian-noise covariance choice is lost. So is the basis for the claims that PDNO learns N(m(a), Sigma(a)) and recovers the noise magnitude and confidence intervals, for every noise level actually used. Only empirical evidence remains.",
+      "primary_affected_tag": "eqn:cov",
+      "target_type": "algorithm",
+      "title": "Reverse covariance beta_t I for noisy data is justified by Prop. 2 outside its identity-covariance hypothesis",
+      "why_classification": "The method still runs, but the advertised justification for noisy-data UQ fails in the regime used. Restoring it needs a contained new construction (learned or Sigma-dependent variance) or a limited weakening to a heuristic. No global re-architecture is required."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$1$ if noise-free; $100$ if noisy",
+          "tag": "tab:params-test2"
+        },
+        {
+          "quote": "$1$ if noise-free; $500$ if noisy",
+          "tag": "tab:params-test1"
+        },
+        {
+          "quote": "0.0046 & $5.08$e$-07$",
+          "tag": "tab:darcy_error"
+        },
+        {
+          "quote": "$0.0047$ & $5.47$e$-04$",
+          "tag": "tab:burgers"
+        },
+        {
+          "quote": "to check whether the estimated standard deviation is approximately zero",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The noise-free experiments (Tests 2-4) use N_s = 1. The sample std of a single sample is identically 0 (or undefined with Bessel's correction), yet the tables report nonzero MSTD values such as 5.08e-07 and 5.47e-04. These numbers cannot come from the stated definition. In addition, dividing the std norm by N_s makes MSTD decay like 1/N_s even for a genuinely uncertain model, so it does not measure the spread of u|a. The promised diagnostic that the estimated std is approximately zero cannot be carried out with one sample.",
+      "failure_location": {
+        "quote": "\\frac{\\|\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s}) \\|_2}{N_s}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redefine MSTD without the 1/N_s factor (for example, the average norm of the sample std) and require N_s >= 2 for it. Withdraw, or recompute with N_s >= 2, the MSTD entries and the zero-std diagnostic obtained with N_s = 1.",
+      "overall_effect": "The MSTD columns of all three result tables and the noise-free uncertainty diagnostic are unsupported. The uncertainty-quantification evidence in the benchmarks becomes unreliable; the MRLE comparisons are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "MSTD uncertainty metric is ill-defined/inconsistent with N_s = 1 and scales as 1/N_s",
+      "why_classification": "A local redefinition fixes the metric, but the reported uncertainty numbers must be withdrawn or regenerated. This is a limited loss of the uncertainty evidence while the main accuracy results survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a Dirac distribution at a point $u_0$, i.e., $u_0 \\sim \\delta_{u_0}$",
+          "tag": "prop:added-1"
+        },
+        {
+          "quote": "I(u_0; u_{t-1}) = H_p(u_{t-1}) - H_p(u_{t-1} | u_0),",
+          "tag": "prop:added-1"
+        },
+        {
+          "quote": "\\dfrac{1 - \\bar{\\alpha}_{t-1}}{1 - \\bar{\\alpha}_t}\\beta_t \\mathbf{I}",
+          "tag": "eqn:cov"
+        },
+        {
+          "quote": "L_0(\\theta; a) &= \\mathbb{E}_{p(u_1 | a)}\\left[-\\log q_{\\theta}(u_0|u_1, a) \\right]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With u_0 deterministic, the t = 1 case involves H_p(u_0|u_1) and H_p(u_0|u_0). These are differential (conditional) entropies of a variable with no Lebesgue density, so they are undefined (formally -infinity). The proof's identity I(u_0;u_{t-1}) = H_p(u_{t-1}) - H_p(u_{t-1}|u_0) becomes (-inf) - (-inf) at t = 1. The argument is valid only for t >= 2. The same degeneracy appears in the matched covariance: since alphabar_0 = 1, Sigma_theta(1,.) = 0, so q_theta(u_0|u_1,a) is degenerate and L_0 is not a well-defined negative log-density.",
+      "failure_location": {
+        "quote": "H_p(u_{t-1}|u_t) = H_p(u_t|u_{t-1}) + H_p(u_{t-1} | u_0) - H_p(u_t | u_0) \\,,\\; \\qquad t = 1, \\ldots, T\\,.",
+        "tag": "prop:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "State Prop. 1 for t = 2,...,T and treat the final step separately, for example by outputting the mean or using a positive or clipped variance with a separately defined L_0.",
+      "overall_effect": "Prop. 1 and the noise-free covariance optimality claim are ill-posed at the final step t = 1. For t >= 2 they remain valid.",
+      "primary_affected_tag": "prop:added-1",
+      "target_type": "formal_result",
+      "title": "Prop. 1 asserted at t = 1 where entropies of the Dirac-distributed u_0 are undefined",
+      "why_classification": "This is a degenerate boundary case. Restricting the range of t and handling one step separately is local and routine, and leaves the method and its conclusions intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the Gaussian distribution $\\mathcal{N}(m, \\mathbf{I})$ has the maximum entropy among all distributions",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "\\text{Cov}(u_t) = \\beta_t \\text{Cov}(u_{t-1}) + (1 - \\beta_t)\\text{Cov}(\\epsilon_t) = \\mathbf{I}.",
+          "tag": "prop:added-2"
+        }
+      ],
+      "failure_explanation": "The maximum-entropy property gives only an upper bound H(u_t) <= H(N(.,I)), and equal covariances do not imply equal entropies. The needed fact is that every u_t is Gaussian, which holds because u_0 is Gaussian and the transitions are linear-Gaussian, but the proof never states it. The covariance recursion is also written with beta_t and 1 - beta_t interchanged. The proposition's statement itself remains true.",
+      "failure_location": {
+        "quote": "Therefore, $H_p(u_t) = H_p(u_{t-1})$ for all $t = 1, \\cdots, T$",
+        "tag": "prop:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Note that u_t is Gaussian with covariance I for all t, so its entropy equals that of N(.,I). Correct the recursion to Cov(u_t) = (1 - beta_t) Cov(u_{t-1}) + beta_t I.",
+      "overall_effect": "The proof of Prop. 2 is incomplete as written, but its conclusion holds.",
+      "primary_affected_tag": "prop:added-2",
+      "target_type": "formal_result",
+      "title": "Prop. 2 proof infers equal entropies from equal covariance via a max-entropy argument",
+      "why_classification": "A one-sentence, standard observation closes the gap. The statement and its use are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "H_p(u_T) + \\sum_{t=1}^T H_p(u_{t-1} | u_t)",
+          "tag": null
+        },
+        {
+          "quote": "Since $q_{\\theta}(u_T)$ is assumed to be a standard Gaussian",
+          "tag": null
+        },
+        {
+          "quote": "p(u_t | u_0) = \\mathcal{N}(u_t; \\sqrt{\\bar{\\alpha}_t}u_0, (1 - \\bar{\\alpha}_t)\\mathbf{I})",
+          "tag": "eqn:ut_given_u0"
+        },
+        {
+          "quote": "where $\\epsilon_{\\theta}(t, u_t, a)$ is a neural network function that approximates the the standard Gaussian $\\epsilon_t$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed chain only equates the entropy of q_theta with that of p, using matched reverse-kernel covariances. Equal entropies do not give q_theta = p or the exact likelihood. The data likelihood is the cross-entropy E_p[-log q_theta] = H(p) + KL(p||q_theta), and the KL term depends on the learned means, i.e. on how well epsilon_theta approximates epsilon_t, which the argument never addresses. Even the entropy equality fails in the noise-free case: H_{q_theta}(u_T) = H(N(0,I)), whereas H_p(u_T) = H(N(sqrt(alphabar_T) u_0, (1 - alphabar_T) I)), and these differ unless alphabar_T = 0.",
+      "failure_location": {
+        "quote": "the learned parametric model $q_{\\theta}$ achieves the exact likelihood under the true model $p$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the claim with what is actually shown: the reverse-kernel covariances, and hence conditional entropies, match for the stated cases and t >= 2. Drop 'exact likelihood' unless a separate argument bounds KL(p||q_theta) through the accuracy of epsilon_theta.",
+      "overall_effect": "The stated guarantee that the learned model attains the true likelihood, in both the noise-free and Gaussian-noise settings, is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that q_theta achieves the exact likelihood rests only on entropy matching",
+      "why_classification": "The repair is a rewording, but it withdraws a substantive likelihood guarantee and keeps only a much weaker entropy-matching statement. No new architecture is needed."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2305.14703",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e417f6e97606e57c1bddcad5ccc77b48f42186a7406fb76629c7aa30c1d3514b",
+  "status": "ok"
+}

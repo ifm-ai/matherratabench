@@ -1,0 +1,161 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\overset{\\step{1}}{\\leq}& \\EEE[ B_t + \\|\\s_{t-1}\\|^2 - 2\\gamma_t \\mu (1+\\tau_t)^2 \\|\\s_{t-1}\\|^2 ]",
+          "tag": "lemma:sum:tail"
+        }
+      ],
+      "failure_explanation": "The step replaces $(1-\\alpha_t)\\|s_{t-1}\\|^2$ by $\\|s_{t-1}\\|^2 - 2\\gamma_t\\mu(1+\\tau_t)^2\\|s_{t-1}\\|^2$, which requires $\\alpha_t \\geq 2\\gamma_t\\mu(1+\\tau_t)^2$. The cited fact gives $\\gamma_t \\leq \\frac{2\\alpha_t}{\\mu(1+\\tau_t)^2}$, which yields only $\\alpha_t \\geq \\frac{\\gamma_t\\mu(1+\\tau_t)^2}{2}$ — a factor of 4 weaker than the inequality used. The step as written is therefore invalid.",
+      "failure_location": {
+        "quote": "step \\step{1} uses the fact that $\\gamma_{t}\\leq \\frac{\\alpha_t}{ \\mu (1+\\tau_t^2)} \\leq \\frac{2 \\alpha_t}{ \\mu (1+\\tau_t)^2}$",
+        "tag": "lemma:sum:tail"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the coefficient $2\\gamma_t\\mu(1+\\tau_t)^2$ with $\\frac{\\gamma_t\\mu(1+\\tau_t)^2}{2}$ in the recursion and adjust the constants in steps 2–4 and in the subsequent telescoping division; the conclusion holds with a modified constant $C_w$ and the rate is unchanged.",
+      "overall_effect": "Lemma lemma:sum:tail is unproven as written, making its weighted tracking-error bound unreliable; every OptEMA-M result depending on it from Lemma lemma:G:bound through Theorem the:it:EMA:M is affected.",
+      "primary_affected_tag": "lemma:sum:tail",
+      "target_type": "formal_result",
+      "title": "Factor-of-4 error in tracking-error recursion step",
+      "why_classification": "The fix is a local constant correction that preserves every substantive claim, rate, and guarantee without new lemmas or reoptimization."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M",
+        "lemma:lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "step \\step{2} uses Inequality (\\ref{eq:bound:g_t}).",
+          "tag": "lemma:G:bound"
+        },
+        {
+          "quote": "\\EEE[\\|\\g_t\\|^2] ~\\leq~ \\ts \\EEE[2\\|\\g_t - \\nabla f(\\x_t)\\|^2+ 2\\|\\nabla f(\\x_t)\\|^2] ~\\leq~ \\ts 2\\sigma^2 + 4 L \\EEE[ f(\\x_t) - f_* ]",
+          "tag": "lemma:G:bound"
+        },
+        {
+          "quote": "&\\overset{\\step{2}}{\\leq}&  \\ts \\EEE[\\big( \\hat{f}_1 + c_3  +  \\tfrac{c_1 + 2 c_2}{\\alpha^2} \\big) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))]",
+          "tag": "lemma:G:bound:2"
+        }
+      ],
+      "failure_explanation": "Step 2 substitutes $\\sum\\|g_t\\|^2 \\leq 4T(\\sigma^2 + L\\max\\hat{f}_t)$ inside $\\ln$ and inside $\\mathbb{E}$, but the cited inequality only gives $\\mathbb{E}[\\|g_t\\|^2] \\leq 2\\sigma^2 + 4L\\mathbb{E}[\\hat{f}_t]$ in expectation. The subsequent substitution with $A_t = 4\\sigma^2 + 4L\\mathbb{E}[\\hat{f}_t]$ further replaces $\\mathbb{E}[\\max_t\\hat{f}_t]$ with $\\max_t\\mathbb{E}[\\hat{f}_t]$, reversing Jensen's inequality for max. The same two-step error appears in Lemma lemma:G:bound:2.",
+      "failure_location": {
+        "quote": "&\\overset{\\step{2}}{\\leq}&  \\ts \\EEE[ \\left( \\hat{f}_1 + c_1 C_w + \\tfrac{4 c_2}{\\mu} \\right) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))]",
+        "tag": "lemma:G:bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Apply Jensen's inequality to obtain $\\mathbb{E}[\\ln(e + \\sum\\|g_t\\|^2)] \\leq \\ln(e + T\\max_t\\mathbb{E}[\\|g_t\\|^2]) \\leq \\ln(e + T\\max_t A_t)$ and use expected bounds throughout in both Lemma lemma:G:bound and Lemma lemma:G:bound:2; the conclusions and rates are preserved with the same constants.",
+      "overall_effect": "The logarithmic boundedness lemmas for objectives and stochastic gradients are unproven as written for both OptEMA-M and OptEMA-V; all results relying on these bounds are affected.",
+      "primary_affected_tag": "lemma:G:bound",
+      "target_type": "formal_result",
+      "title": "Expected bounds substituted as pathwise bounds in boundedness lemmas",
+      "why_classification": "Inserting Jensen's inequality at the right place is a short, local, routine repair that preserves every claim and guarantee without new lemmas or reoptimization."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\EEE[\\|\\nabla f(\\x_t;\\xi_t)\\|^2]\\leq C_g \\ln(e+t)$",
+          "tag": "lemma:G:bound"
+        }
+      ],
+      "failure_explanation": "The proof bounds $\\tau_T = \\max_{i\\le T}\\|g_i\\|$ by $\\sqrt{C_g\\ln(e+T)}$ as if it held pathwise, but Lemma lemma:G:bound only gives $\\mathbb{E}[\\|g_t\\|^2] \\le C_g\\ln(e+t)$ in expectation. Even in expectation, $\\mathbb{E}[\\tau_T] \\le \\sigma\\sqrt{T} + O(\\sqrt{\\ln(e+T)})$ under the bounded-variance assumption, so the claimed bound is false and the true expected bound has unavoidable $\\sigma\\sqrt{T}$ growth.",
+      "failure_location": {
+        "quote": "step \\step{3} uses $\\tau_T \\le \\sqrt{C_g} \\sqrt{ \\ln(e+T)}$.",
+        "tag": "lemma:M:sum:s"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair preserves the advertised rate for $\\sigma>0$; at minimum, a repair must bound $\\mathbb{E}[\\tau_T]$ explicitly and reoptimize the entire downstream analysis to handle the $\\sigma\\sqrt{T}$ growth, or restrict the convergence guarantee to the zero-noise regime.",
+      "overall_effect": "The constant $C_s$ in Lemma lemma:M:sum:s must grow at least as $\\sigma\\sqrt{T}$ for $\\sigma>0$, making the noise-adaptive rate in Theorem the:it:EMA:M vacuous in the stochastic regime. The zero-noise rate ($\\sigma=0$) survives because $\\tau_T$ is then bounded pathwise by the deterministic objective gap.",
+      "primary_affected_tag": "lemma:M:sum:s",
+      "target_type": "formal_result",
+      "title": "False pathwise bound on maximum gradient norm",
+      "why_classification": "Every supported resolution loses the noise-adaptive rate for $\\sigma>0$: the constant $C_s$ necessarily grows as $\\sigma\\sqrt{T}$ under the stated bounded-variance assumption, which makes the convergence bound diverge. No comparable version of the stochastic rate guarantee survives."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "& \\leq & 3  \\left(C_g + C_f +\\sigma^2 \\right) \\ln(e+t),",
+          "tag": "lemma:M:sum:s"
+        }
+      ],
+      "failure_explanation": "The summation-by-parts step produces $\\mathbb{E}[\\max_t\\|s_t\\|^2]$, but the proof bounds it using eq:bound:sss which gives only $\\mathbb{E}[\\|s_t\\|^2] \\le 3(C_g+C_f+\\sigma^2)\\ln(e+t)$ for each fixed $t$. Since $\\mathbb{E}[\\max_t\\|s_t\\|^2] \\geq \\max_t\\mathbb{E}[\\|s_t\\|^2]$, the pointwise bound does not control the expectation of the maximum. A valid bound via $\\max_t\\|s_t\\|^2 \\leq \\|s_0\\|^2 + \\sum_t B_t$ gives $\\mathbb{E}[\\max\\|s_t\\|^2] = O((1+\\sigma\\sqrt{T})\\ln(e+T))$, which is $T$-dependent rather than the claimed $O(\\ln(e+T))$.",
+      "failure_location": {
+        "quote": "step \\step{2} uses Inequalities (\\ref{eq:bound:sum:B}) and (\\ref{eq:bound:sss})",
+        "tag": "lemma:M:sum:s"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair preserves the constant-$C_s$ bound; at minimum, a repair must bound $\\mathbb{E}[\\max_t\\|s_t\\|^2]$ with a non-circular argument (e.g., via $\\|s_0\\|^2 + \\mathbb{E}[\\sum B_t]$) and reoptimize the downstream analysis to handle the resulting $T$-dependence of $C_s$.",
+      "overall_effect": "The constant $C_s$ in Lemma lemma:M:sum:s is $T$-dependent rather than constant, making the noise-adaptive rate in Theorem the:it:EMA:M unreliable for $\\sigma>0$.",
+      "primary_affected_tag": "lemma:M:sum:s",
+      "target_type": "formal_result",
+      "title": "Invalid bounding of maximum tracking error by pointwise bound",
+      "why_classification": "The only immediately available valid bound introduces $T$-dependence in $C_s$ through $\\mathbb{E}[\\sum B_t]$, which makes the convergence rate diverge for $\\sigma>0$. Preserving constant $C_s$ would require fundamentally new argument; no comparable version of the noise-adaptive rate survives."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lemma:lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "step \\step{2} uses $\\tfrac{1}{\\a} - \\tfrac{1}{\\b} = \\tfrac{\\b\\odot \\b - \\a\\odot \\a}{\\a\\odot \\b \\odot (\\a+\\b)}$ for all $\\a,\\b>\\zero$",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        },
+        {
+          "quote": "&\\overset{\\step{3}}{\\leq }& \\ts \\varpi_t \\|\\nabla f(\\x_t)\\|^2 +   \\frac{\\theta^2}{4 \\varpi_t } \\|\\m_t\\|^2  \\cdot \\beta_t^2 \\cdot  \\tfrac{1}{\\varepsilon^6} \\cdot  4 \\tau_t^4",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        }
+      ],
+      "failure_explanation": "The identity $\\frac{1}{a}-\\frac{1}{b}=\\frac{b^2-a^2}{ab(a+b)}$ is applied with $a=\\varepsilon+\\sqrt{v_t}$, $b=\\varepsilon+\\sqrt{v_{t-1}}$, but the numerator $b^2-a^2=(\\varepsilon+\\sqrt{v_{t-1}})^2-(\\varepsilon+\\sqrt{v_t})^2$ is replaced by $v_{t-1}-v_t$, omitting the $2\\varepsilon(\\sqrt{v_{t-1}}-\\sqrt{v_t})$ term. The displayed expression equals $\\|\\Delta_t\\|^2$ multiplied by $(\\frac{\\sqrt{v_{t-1,i}}+\\sqrt{v_{t,i}}}{2\\varepsilon+\\sqrt{v_{t,i}}+\\sqrt{v_{t-1,i}}})^2 \\le 1$, so the step underestimates $\\|\\Delta_t\\|^2$. For small $\\tau_t$ the claimed bound $\\|\\Delta_t\\|^2 \\le \\frac{4\\beta_t^2\\tau_t^4}{\\varepsilon^6}$ is strictly smaller than the true $\\|\\Delta_t\\|^2 \\approx \\frac{\\beta_t\\tau_t^2}{\\varepsilon^4}$, so the inequality is false.",
+      "failure_location": {
+        "quote": "&\\overset{\\step{2}}{=}& \\ts \\varpi_t \\|\\nabla f(\\x_t)\\|^2 +  \\frac{\\theta^2}{4 \\varpi_t } \\|\\m_t\\|^2 \\cdot \\| \\tfrac{\\v_{t-1}  - \\v_t}{ ( \\varepsilon + \\sqrt{\\v_t}) \\odot (\\varepsilon + \\sqrt{\\v_{t-1}}) \\odot (  \\varepsilon + \\sqrt{\\v_t} + \\varepsilon + \\sqrt{\\v_{t-1}} )  }\\|^2",
+        "tag": "lemma:OptEMA:V:suff:dec"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair preserves the claimed rate; at minimum, a repair must replace the false bound on $\\|\\Delta_t\\|^2$ with a valid one and reoptimize the downstream summation analysis to handle the correct (larger) denominator-change term, or redesign the $\\beta_t$ schedule to make the error summable.",
+      "overall_effect": "The one-step descent inequality for OptEMA-V is unproven, making the entire OptEMA-V convergence analysis (Lemma lemma:G:bound:2, Lemma lamma:bound:sum:nabla, Theorem the:it:EMA:V) unreliable.",
+      "primary_affected_tag": "lemma:OptEMA:V:suff:dec",
+      "target_type": "formal_result",
+      "title": "Incorrect algebraic identity underestimates denominator-change term in OptEMA-V descent",
+      "why_classification": "The false bound on $\\|\\Delta_t\\|^2$ is anti-conservative (underestimates a positive error term in an upper bound), and the valid bound $\\|\\Delta_t\\|^2 \\le \\frac{2\\beta_t\\tau_t^2}{\\varepsilon^4}$ does not yield a convergent sum for the error terms. Every resolution requires fundamentally new proof architecture or redesign of the algorithm parameterization; no comparable version of the OptEMA-V rate survives."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2603.09923",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7b0dd08a3822424a13d5abe6787b30dbd3aaca288887f32f89d091821f7ea682",
+  "status": "ok"
+}

@@ -1,0 +1,171 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Accordingly, we abbreviate $\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$, and denote by $\\Phi := \\Phi_{0,1}$ the flow map evaluated at final time $t = 1$.",
+          "tag": null
+        },
+        {
+          "quote": "allowing efficient computation of samples from $\\Phi_* \\nu$ by sampling $Z \\sim \\nu$ and solving the ODE backward in time with $z$, a realization of $Z$, to obtain $x = \\Phi^{-1}(z)$",
+          "tag": null
+        },
+        {
+          "quote": "This expression is central to likelihood-based training, as it avoids explicit computation of the Jacobian determinant.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the paper's own conventions (Phi_t = Phi_{0,t} is the forward flow, Phi = Phi_{0,1}, and mu = Phi_*nu), change of variables plus Liouville's formula give log f_{Phi_*nu}(y) = log f_nu(Phi^{-1}(y)) - ∫_0^1 div v(Phi_t(Phi^{-1}(y)),t) dt: the divergence integral enters with a MINUS sign and along the trajectory ending at y (started at Phi^{-1}(y)). The printed identity has a plus sign and integrates along the forward trajectory started at y. Concrete counterexample: d=1, v(x,t)=ax with a>0. Then Phi(z)=e^a z and f_{Phi_*nu}(y) = e^{-a} f_nu(e^{-a} y), so the true log-density is log f_nu(e^{-a}y) - a, whereas the printed formula yields log f_nu(e^{-a}y) + ∫_0^1 a dt = log f_nu(e^{-a}y) + a.",
+      "failure_location": {
+        "quote": "\\log f_{\\Phi_*\\nu}(y) = \\log f_\\nu(\\Phi^{-1}(y)) + \\int_0^1 \\operatorname{div}_y v(\\Phi_t(y), t) \\, dt,",
+        "tag": "eq:liouville_log_det"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the display by log f_{Phi_*nu}(y) = log f_nu(Phi^{-1}(y)) - ∫_0^1 div v(Phi_t(Phi^{-1}(y)),t) dt (the standard FFJORD form), and correct the adjacent sampling sentence (samples from Phi_*nu are Phi(z), obtained by solving the ODE forward).",
+      "overall_effect": "The displayed identity motivating the likelihood objective (neural_ode_log_likelihood) is false as written; evaluated as printed it miscomputes the model log-density by a sign-flipped log-Jacobian along the wrong trajectory. No subsequent proof uses the identity (the analysis in Theorem thm:learnability_target_class and Lemma lem:sub_gaussian uses change of variables with |det D Phi^{-1}| directly), so all formal results are unaffected; only the training-formula discussion in Section 2.3 is wrong.",
+      "primary_affected_tag": "eq:liouville_log_det",
+      "target_type": "other",
+      "title": "Liouville log-density identity has wrong sign and wrong flow argument",
+      "why_classification": "A forced one-line correction to a displayed identity that is never invoked in any proof; every theorem, constant, and guarantee survives unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:concentration_bound"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\varepsilon_n^{\\mathrm{gen}} := \\sup_{\\theta \\in \\Theta_n} \\left| \\mathbb{E}_{X \\sim \\mu}[-\\log(f_{\\mu_\\theta}(X))] - \\widehat{L}_n(\\mu_\\theta, \\chi_n) \\right|",
+          "tag": null
+        },
+        {
+          "quote": "Z_{\\theta, n} := \\mathbb{E}_{X \\sim \\mu} \\left[ -\\log(f_{\\mu_\\theta}(X)) \\right] - \\widehat{L}_n(\\mu_\\theta, \\chi_n),",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The generalization error is defined with a supremum over |Z_{theta,n}|, and McDiarmid is later applied to f = sup_theta |f_theta|, but the first equality of the proof identifies E[eps^gen] with E[sup_theta Z_{theta,n}], dropping the absolute value. Since the centered process takes negative values, sup|Z| >= sup Z with strict inequality in general, so the equality is false. Bounding E sup|Z| through Dudley's entropy integral requires applying it to both Z and -Z (the sub-Gaussian bound is symmetric), which costs an additional factor 2. The derivable conclusion is therefore E[eps^gen] <= 96 q bar L / sqrt(n), not the stated 48 L W^2 bar L / sqrt(n).",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\varepsilon_{n}^{\\mathrm{gen}} \\right] \n&= \\mathbb{E}\\left[\\sup_{\\theta \\in \\Theta} Z_{\\theta,n}\\right] \n\\leq \\frac{12 \\bar{L}}{\\sqrt{n}} \\int_0^\\infty \\sqrt{ \\log N(\\varepsilon, d_\\Theta, \\mathcal{H}) } \\, d\\varepsilon",
+        "tag": "thm:dudley"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Apply Dudley's integral to Z and to -Z (or use E sup|Z| <= E sup Z + E sup(-Z)) and restate the bound with the doubled constant (96 q bar L/sqrt(n)), propagating the adjusted constant through thm:concentration_bound and the main theorem's thresholds.",
+      "overall_effect": "The constant 48 in the statement of thm:dudley is not established; thm:concentration_bound, whose centering term 48 L W^2 bar L/sqrt(n) is justified only via Theorem thm:dudley, inherits the unsupported constant, as do the threshold calibrations in the proof of thm:learnability_sparse_grid.",
+      "primary_affected_tag": "thm:dudley",
+      "target_type": "formal_result",
+      "title": "Dudley bound drops the absolute value in the generalization error",
+      "why_classification": "Only constant factors change; every convergence statement, threshold existence claim, and the final PAC guarantee survive with the adjusted constants, and the repair is a standard one-line symmetrization."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:concentration_bound"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}\\left[\\varepsilon_{n}^{\\mathrm{gen}} \\right] \\leq 48 LW^2 \\frac{\\bar{L}_{d,\\kappa,L_\\nu}(L,W)}{\\sqrt{n}}.",
+          "tag": "thm:dudley"
+        },
+        {
+          "quote": "\\mathbb{P}\\left(\\varepsilon_{n}^{\\mathrm{gen}} - 48 LW^2 \\frac{\\bar{L}}{\\sqrt{n}} > \\varepsilon \\right) \\leq \\exp\\left(-\\frac{1}{4} \\cdot \\frac{\\varepsilon^2 n}{D_{d,\\kappa,L_\\nu}(L,W)^2} \\right),",
+          "tag": "thm:concentration_bound"
+        }
+      ],
+      "failure_explanation": "The proof derives E[eps^gen] <= 48 q bar L / sqrt(n) and then invokes q <= 2LW^2 to 'complete the proof' of the stated bound 48 L W^2 bar L / sqrt(n). But q <= 2LW^2 yields only 48 q <= 96 L W^2, so the stated constant is too small by a factor 2; the inference 48q <= 48LW^2 is invalid. For the architecture (d+1, W, ..., W, d) the exact count is q = (L-1)W(W+1) + 2(d+1)W + d, which exceeds LW^2 in regimes such as L > W - 2d - 1 (e.g., L=10, W=3, d=2 gives q=128 > 90 = LW^2), so the statement is not even rescued by q <= LW^2 in general.",
+      "failure_location": {
+        "quote": "\\leq \\frac{48 q \\bar{L}}{\\sqrt{n}}.\n\\end{align*}\nUsing the parameter bound $q  \\leq 2LW^2$ completes the proof.",
+        "tag": "thm:dudley"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the theorem with constant 96 L W^2 (or with 48 q) in place of 48 L W^2 and propagate the adjusted constant through thm:concentration_bound and the thresholds in the main theorem.",
+      "overall_effect": "Independently of the absolute-value slip, the constant in thm:dudley's statement is unsupported; the centering constant in thm:concentration_bound, which quotes the 48 L W^2 bar L/sqrt(n) bound, is likewise unsupported and must be enlarged.",
+      "primary_affected_tag": "thm:dudley",
+      "target_type": "formal_result",
+      "title": "Final step of Dudley bound mis-infers the 48LW^2 constant from q <= 2LW^2",
+      "why_classification": "The repair is a forced constant change with no loss of mathematical content, no change to the method, and no effect on any convergence or PAC conclusion."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, for any architecture parameters $L_n, W_n \\in \\mathbb{N}$ and $\\varepsilon > 0$, it is possible to choose a threshold $m(n)$ for the number of quadrature points (i.e., a sparsity level $\\ell(n)$ large enough) such that",
+          "tag": "thm:learnability_sparse_grid"
+        },
+        {
+          "quote": "\\left(1 + \\sqrt{d} \\, e^{\\sqrt{d} \\sqrt{q} \\operatorname{Lip}_1^\\Theta}\\right)",
+          "tag": "thm:learnability_sparse_grid"
+        },
+        {
+          "quote": "\\operatorname{Lip}_1^\\Theta(L,W,d) \\leq \\left[4W^2 C(L,W,d)\\right]^{4L} \\leq  (2W)^{2^{2L + 2}} (d+1)^{2^{2L}},",
+          "tag": "rmk:lip_const_bound"
+        },
+        {
+          "quote": "such that for all sample sizes $n,m \\geq n(\\varepsilon,\\delta), m(\\varepsilon,\\delta)$, the total error of the",
+          "tag": "thm:learnability_sparse_grid"
+        },
+        {
+          "quote": "W_n = \\left\\lfloor \\log \\log n \\right\\rfloor \\quad \\text{and} \\quad  L_n = \\left\\lfloor \\frac{1}{2} \\log_2 \\log_{c_d W_n} \\log (n^{\\beta}) - 3 \\right\\rfloor,",
+          "tag": "thm:learnability_sparse_grid"
+        }
+      ],
+      "failure_explanation": "The quadrature error is controlled by (eq:main_thm_sg_error_bd), whose left-hand side carries the prefactor (1 + sqrt(d) e^{sqrt(d) sqrt(q) Lip_1^Theta}) evaluated at the growing architecture (L_n, W_n). Since L_n, W_n -> infinity and Lip_1^Theta(L_n,W_n,d) -> infinity (rmk:lip_const_bound), this prefactor diverges as n -> infinity, so the threshold m(n) that makes the quadrature term <= eps/2 necessarily grows with n. The proof therefore only establishes the PAC bound for pairs (n, m) with m >= m(n), an n-dependent threshold. The theorem (and the PAC definition (defn:pac_learnability) it claims to instantiate) asserts a single fixed threshold m(eps,delta) := m(n(eps,delta)) that works simultaneously for ALL n >= n(eps,delta); for fixed m and n -> infinity the prefactor keeps growing, so (eq:main_thm_sg_error_bd) eventually fails and the final inference is invalid. No argument in the source controls ||Phi^{hat theta_n}||_{C^1} uniformly in n (e.g., via a complexity-penalized ERM), so the uniform-in-n quadrature control needed for the stated guarantee is missing.",
+      "failure_location": {
+        "quote": "and a threshold $m(\\varepsilon, \\delta) := m(n(\\varepsilon, \\delta))$ on the number of quadrature points such that \\eqref{eq:main_thm_sg_error_bd} holds, for all $n \\geq n(\\varepsilon,\\delta)$ and all $m \\geq m(\\varepsilon,\\delta)$, the total error of the integration scheme satisfies",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate the theorem (and instantiate the PAC notion accordingly) as: for all n >= n(eps,delta) and all m >= m(n,eps,delta); the existing proof then goes through verbatim. Recovering the stated independent-threshold version would require a genuinely new ingredient, such as complexity regularization of the ERM to bound ||Phi^{hat theta_n}||_{C^1} uniformly in n.",
+      "overall_effect": "The paper's main result is established only with the number of quadrature points adapted to the sample size (m >= m(n,eps,delta), with m(n,eps,delta) -> infinity). The advertised guarantee with independent thresholds - any m above a fixed threshold, simultaneously for all large n, as formalized in (defn:pac_learnability) - is unproven, so the conclusion 'PAC-learnable in the sense of (defn:pac_learnability)' does not follow as stated; the abstract-level consistency claim survives only in the coupled form.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Quadrature-point threshold must grow with n; the stated independent-threshold PAC guarantee is not established",
+      "why_classification": "The supported resolution is a contained quantifier weakening: no new proof architecture is needed, no rate is lost (no rates are stated), and a recognizably comparable PAC-consistency result (adaptive network capacity with adaptive quadrature resolution, matching the abstract) survives; but the formal guarantee changes from independent to coupled thresholds, which is more than a local or constant-level repair."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\mu \\| \\mu_{\\hat{\\theta}_n}) \\leq \\varepsilon_n^{\\mathrm{model}} + 2 \\varepsilon_n^{\\mathrm{gen}}, \\label{empirical_error_decomp}",
+          "tag": null
+        },
+        {
+          "quote": "\\varepsilon_n^{\\mathrm{model}} \\leq \\frac{\\varepsilon^2}{16 \\|\\qoi\\|_\\infty^2} \\label{eq:main_thm_model_error_bd}",
+          "tag": "thm:learnability_sparse_grid"
+        },
+        {
+          "quote": "48 L_n W_n^2 \\cdot \\frac{\\bar{L}_{d,\\kappa,L_\\nu}(L_n,W_n)}{\\sqrt{n}} \n\\leq \\frac{\\varepsilon^2}{32 \\|\\qoi\\|_\\infty^2},",
+          "tag": "thm:learnability_sparse_grid"
+        }
+      ],
+      "failure_explanation": "The decomposition established in the paper is KL(mu || mu_{hat theta_n}) <= eps^model + 2 eps^gen (empirical_error_decomp), but the main proof invokes it as KL <= eps^model + eps^gen (main_thm_emp_error_decomp), silently dropping the factor 2. The subsequent probability chain is calibrated to the wrong decomposition: from eps^model + 2 eps^gen > eps^2/(8||qoi||^2) and eps^model <= eps^2/(16||qoi||^2) one only gets eps^gen > eps^2/(32||qoi||^2), not the eps^2/(16||qoi||^2) used; the expectation shift (eq:main_thm_exp_gen_err_bd) and the final exponent constant 4096 are correspondingly miscalibrated.",
+      "failure_location": {
+        "quote": "\\KL(\\mu\\| \\Phi^{\\hat{\\theta}_n}_* \\nu) \\leq \\varepsilon_n^{\\mathrm{model}} + \\varepsilon_n^{\\mathrm{gen}}. \\label{main_thm_emp_error_decomp}",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Reinstate the factor 2 from (empirical_error_decomp) and recalibrate the thresholds: e.g., require eps^model <= eps^2/(32||qoi||^2), control eps^gen at level eps^2/(32||qoi||^2) with expectation bound <= eps^2/(64||qoi||^2), and enlarge the final constant accordingly.",
+      "overall_effect": "Internal constants of the main theorem's proof are wrong (thresholds 16 -> 32, 32 -> 64, and the final exponent constant 4096 must be enlarged). The theorem statement is unaffected once the constants are recalibrated.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Main proof drops the factor 2 in the empirical error decomposition",
+      "why_classification": "The correction is a forced constant adjustment; no inference structure, guarantee, rate, or scope changes, and all conclusions survive verbatim with the corrected constants."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2507.01533",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s2",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4061c0fabc84b846272339b854b6a82a9cfd5d1ef91d57be1f2279301753237e",
+  "status": "ok"
+}

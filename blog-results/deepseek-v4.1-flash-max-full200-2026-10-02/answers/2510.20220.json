@@ -1,0 +1,239 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "AFF-Fair-SMW achieved fairness levels comparable to existing baselines while offering substantial runtime advantages.",
+          "tag": null
+        },
+        {
+          "quote": "However, Figure \\ref{fg - GermanRunTime} reveals that AFF-Fair-SMW incurred the highest overall runtime, while the remaining algorithms exhibited similar performance.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The abstract claims a twice-as-fast runtime improvement and twice as much balance, but the paper's own conclusion only claims comparable balance, and the German experiment reports AFF-Fair-SMW as the slowest overall. The advertised balance and universal runtime advantages are not supported by the reported results.",
+      "failure_location": {
+        "quote": "We achieve an improvement in computation time that is twice as fast as the state-of-the-art, and also flexible enough to achieve twice as much balance.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Revise the abstract to claim only the supported comparable balance and dataset-dependent runtime improvements.",
+      "overall_effect": "Overstates the method's empirical fairness and runtime guarantees.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Abstract overclaims twice the balance and universal speedup",
+      "why_classification": "The repair is prose-only, but it withdraws an advertised guarantee (twice the balance), so it is more than a local typo."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{H^TH =I} \\text{Tr} (H^T L_{\\mathrm{sym}} H)",
+          "tag": null
+        },
+        {
+          "quote": "Since $\\sum_{i=1}^n H_{i\\ell} = |\\bm{C}_\\ell|$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The equivalence requires H_{i\\ell} to be a 0/1 cluster indicator and the column sum to equal the cluster size. But H is the orthonormal spectral embedding, so f_i H_{i\\ell} need not count intersections and sum_i H_{i\\ell} need not equal |C_\\ell|. Thus F^T H=0 is not equivalent to exact group balance.",
+      "failure_location": {
+        "quote": "\\Leftrightarrow \\sum_{i=1}^n  \\left ( f_i^{(s)} - \\frac{|\\bm{V}_s|}{n} \\right ) H_{i\\ell} &= 0 \\quad \\text{ for } s \\in [h].",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restate the lemma for a discrete indicator matrix H, and separately state that F^T H=0 is only a spectral relaxation for the orthonormal embedding.",
+      "overall_effect": "The fairness constraint F^T H=0 and the optimization problem mainobj are not justified as exact fairness constraints; at best they are a relaxation.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Fairness equivalence lemma treats embedding H as a cluster indicator",
+      "why_classification": "The central formal claim that the linear constraint enforces group balance fails; the paper's fairness guarantee would need to be weakened to a relaxation."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $Z \\in \\mathbb{R}^{n \\times (n-h+1)}$ denote an orthonormal basis for the null space of $F^T$.",
+          "tag": null
+        },
+        {
+          "quote": "Notice that \\eqref{SMW2} is equivalent to \\eqref{SMW1} in the sense that the maximizer $H$ is the same.",
+          "tag": "SMW2"
+        }
+      ],
+      "failure_explanation": "Z is a rectangular orthonormal basis, so Z^T Z=I but Z is not invertible and Z^T is not Z^{-1}. Moreover (Z^T G Z)^{-1} is not generally Z^T G^{-1} Z. Therefore the claimed equivalence between the constrained maximization with G and the constrained minimization with G^{-1} is invalid.",
+      "failure_location": {
+        "quote": "using the fact that $Z^T=Z^{-1}$ we can reformulate this problem as follows",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, re-derive the constrained optimization without using Z^{-1} and establish the correct equivalence or use a correct generalized eigenvalue formulation.",
+      "overall_effect": "The Fair-SMW reformulation is not justified; the algorithm may solve a different optimization problem than the stated fair spectral clustering problem.",
+      "primary_affected_tag": "SMW2",
+      "target_type": "other",
+      "title": "SMW derivation uses a false inverse identity for rectangular Z",
+      "why_classification": "The root derivation of the entire Fair-SMW method is invalid, so the central algorithmic formulation loses its theoretical basis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{H} \\left( \\frac{1}{2}\\text{Tr}(H^T G^{-1} H) - \\frac{\\mu}{2} \\text{Tr}(H^T F F^T H) \\right) = \\min_{H} \\frac{1}{2}\\text{Tr}\\left(H^T \\left( G^{-1} - \\mu F F^T \\right) H \\right)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The reduced subproblem from the stated augmented Lagrangian has matrix G^{-1}-\\mu FF^T, but the next labelled problem uses G^{-1}+\\mu FF^T. The plus sign is not derived and changes the matrix whose inverse is used in the SMW identity.",
+      "failure_location": {
+        "quote": "\\min_{H^TH =I} \\text{Tr} [H^T (G^{-1} +\\mu FF^T) H]",
+        "tag": "SMW3"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use a consistent augmented Lagrangian sign (standard plus penalty) and update the gradient and block system accordingly.",
+      "overall_effect": "The derivation of the matrix inverted by SMW is inconsistent with the stated Lagrangian, so the SMW step is not justified as written.",
+      "primary_affected_tag": "SMW3",
+      "target_type": "other",
+      "title": "Sign flip in augmented Lagrangian derivation of SMW3",
+      "why_classification": "The correction is local and the intended plus-sign matrix is clear from the subsequent SMW formula."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$P = F(F^T GF)^{-1}F^T G \\quad \\text{and} \\quad U =G-GP$.",
+          "tag": null
+        },
+        {
+          "quote": "\\State Construct the fairness-adjusted matrix $U_{\\text{sym}} = G_{\\mathrm{sym}} - M (F^T M)^{-1} F^T G_{\\mathrm{sym}}$",
+          "tag": "alg:smw-cluster"
+        }
+      ],
+      "failure_explanation": "With M=G^{-1}F the algorithm forms G - G^{-1}F(F^T G^{-1}F)^{-1}F^T G, whereas the derived SMW matrix is G - G F(F^T G F)^{-1}F^T G. The algorithm therefore does not implement the stated Fair-SMW construction.",
+      "failure_location": {
+        "quote": "\\State Compute the projection matrix $M = G_{\\mathrm{sym}}^{-1} F$",
+        "tag": "alg:smw-cluster"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace M=G_{\\mathrm{sym}}^{-1}F by M=G_{\\mathrm{sym}}F (or equivalently use the displayed U expression with F^T G_{\\mathrm{sym}} F).",
+      "overall_effect": "The executable algorithm alg:smw-cluster is not the Fair-SMW method derived in the paper.",
+      "primary_affected_tag": "alg:smw-cluster",
+      "target_type": "algorithm",
+      "title": "Fair-SMW algorithm computes wrong matrix in projection step",
+      "why_classification": "The error is a one-line correction in the algorithm and the intended construction is visible from the preceding definition."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left|\\dfrac{x^T\\frac{1}{2}(D^{-1}W+WD^{-1})x}{x^Tx}\\right|=\\left|\\dfrac{x^TD^{-1}Wx}{x^Tx}\\right|\\leq 1.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof bounds the numerical range of the non-symmetric matrix D^{-1}W by its spectral radius, which is invalid. For a star graph with 16 vertices, the symmetric part of G_rw has a negative eigenvalue below -2, so x^T G_rw x can be negative. Thus G_rw is not generalized positive definite.",
+      "failure_location": {
+        "quote": "$G_{rw}$ has real eigenvalues and is generalized positive definite. That is $\\bm{x}^T G_{rw}\\bm{x} >0$",
+        "tag": "thm:added-4"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Use a different shift or restrict to graphs for which the symmetric part of G_rw is positive definite; this changes the RW variant.",
+      "overall_effect": "The positivity assumption needed for the RW variant and the SMW inversion is false, so the RW-Fair-SMW variant lacks its stated justification.",
+      "primary_affected_tag": "thm:added-4",
+      "target_type": "formal_result",
+      "title": "G_rw is not generalized positive definite",
+      "why_classification": "The theorem is false and the advertised RW variant may fail its positivity/invertibility hypothesis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "F^T D^{-1} = F^T D^{-1} F (F^T F)^{-1} F^T",
+          "tag": "eq:identity"
+        }
+      ],
+      "failure_explanation": "The identity used to simplify the projection is false for general F and D. For example, with F=(1,-1)^T and D=diag(1,2), the left side is [1,-1/2] while the right side is [0.75,-0.75]. Thus the subsequent symmetry argument for U_rw does not follow.",
+      "failure_location": {
+        "quote": "The eigenvalues of $U_{\\text{rw}} = G_{\\text{rw}}(I-F(F^T G_{\\text{rw}}F)^{-1}F^T G_{\\text{rw}})$ are real.",
+        "tag": "thm:added-5"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Provide a correct proof of realness or restrict the theorem to cases where the identity holds.",
+      "overall_effect": "The real-eigenvalue claim for the RW variant is left unsupported by the given proof.",
+      "primary_affected_tag": "thm:added-5",
+      "target_type": "formal_result",
+      "title": "Proof of real eigenvalues for U_rw uses false identity",
+      "why_classification": "The proof has a false nontrivial identity; repairing it requires a new argument, but the statement itself is not shown false."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "U &= (G_{\\text{sym}} + \\mu F F^T)^{-1}",
+          "tag": null
+        },
+        {
+          "quote": "Let  $A_{\\text{sym}}F=0$ and $G_{\\text{sym}} = A_{\\text{sym}}+2I$ then",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof starts from the wrong expression for U (the inverse of G+\\mu FF^T rather than the SMW inverse or its limit). More importantly, A_sym F=0 does not imply G_rw F=2F or G_aff F=nF, so the claimed similar simplification for G_rw and G_aff is false in general.",
+      "failure_location": {
+        "quote": "A similar statement holds for $G_{\\textup{rw}}$ and $G_{\\textup{aff}}$.",
+        "tag": "thm:added-6"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Correct the first line of the proof and restrict the theorem to G_sym, or add appropriate hypotheses for the other variants.",
+      "overall_effect": "The appendix result does not correctly justify the G_sym simplification and its extension to the other G variants is unsupported.",
+      "primary_affected_tag": "thm:added-6",
+      "target_type": "formal_result",
+      "title": "Appendix theorem misstates U and extends simplification incorrectly",
+      "why_classification": "The G_sym part is locally repairable, but the stated extension to two other variants is false and must be removed or rehypothesized."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& \\leq \\frac{\\sum_{i,j} W_{ij}(\\bm{y}_i^2 + \\bm{y}_j^2)}{\\sum_j \\bm{y}_j^2 d_j} \\quad \\text{(By Lemma \\ref{lem:diff-square})}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof establishes only the upper bound ≤2. Equality can fail, for example for non-bipartite graphs whose largest normalized Laplacian eigenvalue is strictly less than 2. Thus the stated supremum equality is false.",
+      "failure_location": {
+        "quote": "\\sup_{\\bm{y} \\ne \\bm{0}} \\frac{\\bm{y}^T(D-W)\\bm{y}}{\\bm{y}^T D \\bm{y}} = 2",
+        "tag": "thm:added-7"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Replace the equality by the upper bound sup ≤ 2 or state that the quadratic form is bounded by 2.",
+      "overall_effect": "Only the upper bound is used elsewhere, so the downstream eigenvalue interval arguments are not invalidated; the equality claim itself is false.",
+      "primary_affected_tag": "thm:added-7",
+      "target_type": "formal_result",
+      "title": "Theorem states equality 2 for normalized Laplacian supremum but proof only gives upper bound",
+      "why_classification": "A short local correction restores a true statement and no substantive downstream claim depends on the false equality."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2510.20220",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n03b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7838ff1ebb2ad510c37241685362756b5cee8236d0d2169e81cb3c0265b11f0c",
+  "status": "ok"
+}

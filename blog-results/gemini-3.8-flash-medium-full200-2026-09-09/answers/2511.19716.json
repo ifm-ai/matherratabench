@@ -1,0 +1,62 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Restricting \\eqref{eq:cond-step} to $\\Omega_\\infty$ gives\n\\[\n\\mathbb E\\!\\left[F(\\bw_{k+1})-F_\\ast\\mid\\mathcal F_k,\\Omega_\\infty\\right]\n\\le\n(1-\\rho)\\bigl(F(\\bw_k)-F_\\ast\\bigr)\n+\\rho\\,C.\n\\]",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbb{P}(\\tau=\\infty)\n  \\;\\ge\\;\n  \\max\\!\\left\\{0,\\;\n   1 - \\frac{F(\\bw_1)-F_\\ast}{\\tfrac{\\alpha_{\\rm QG}}{2}\\,r^2}\n  \\right\\}.",
+          "tag": "thm:3rdmainthm"
+        }
+      ],
+      "failure_explanation": "The proof of Theorem 3 contains two fatal reasoning failures. First, to establish the basin-stability lower bound, the proof defines Y_k = F(\\widetilde{\\bw}_k) - F_* - C and asserts that (Y_{k \\wedge \\tau}) is a supermartingale because E[Y_{k+1} | F_k] <= (1 - \\rho) Y_k <= Y_k on {k < \\tau}. However, the inequality (1 - \\rho) Y_k <= Y_k requires Y_k >= 0, which fails whenever F(\\widetilde{\\bw}_k) - F_* < C. When the iterates approach the minimizer, Y_k is negative and E[Y_{k+1} | F_k] - Y_k can be strictly positive, so Y_k is not a supermartingale and optional stopping cannot be applied. Indeed, for constant step size SGD with non-degenerate noise, iterates exit any bounded domain almost surely (P(\\tau = \\infty) = 0), contradicting the claimed positive lower bound. Second, the conditional convergence rate conditions on \\Omega_\\infty = {\\tau = \\infty}, which is an event in the tail sigma-algebra. Conditioning on non-exit biases the gradient noise, so E[g_k | F_k, \\Omega_\\infty] is not the unconditioned expectation and Assumption 6 no longer applies.",
+      "failure_location": {
+        "quote": "\\mathbb E\\!\\left[Y_{k+1}\\mid\\mathcal F_k\\right]\n\\le (1-\\rho\\,\\mathbf 1_{\\{k<\\tau\\}})\\,Y_k,\n\nso $(Y_{k\\wedge\\tau})_{k\\ge1}$ is a supermartingale.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the infinite-horizon non-exit guarantee with a finite-horizon exit probability bound, account for the negative values of Y_k in the drift analysis, and reformulate the convergence guarantee without conditioning on the future event {\\tau = \\infty}.",
+      "overall_effect": "Both main conclusions of Theorem 3—the geometric convergence rate conditional on non-exit and the basin-stability lower bound—are invalid.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "Invalid supermartingale and conditional convergence reasoning in Theorem 3",
+      "why_classification": "The basin-stability lower bound is mathematically false for fixed step size SGD with persistent noise, and the conditional convergence statement is unsupported; resolving these failures requires an entirely new proof architecture and weakens the scope from an infinite-horizon guarantee to a finite-horizon or high-probability exit bound."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Set $\\widetilde C := \\frac{\\hat L K}{2\\,\\hat\\mu_{\\mathrm{PL}}\\,\\mu}\\,\\alpha_1$ and\n$Y_k := F(\\widetilde{\\bw}_k)-F_\\ast - \\widetilde C$. From \\eqref{eq:stopped-one-step} and $\\alpha_k\\le\\alpha_1$,\n\\[\n  \\mathbb E\\!\\left[Y_{k+1}\\mid\\mathcal F_k\\right]\n  \\;\\le\\;\n  Y_k\n  \\;-\\; m\\,\\alpha_k\\,\\mathbf 1_{\\{k<\\tau\\}}\\,Y_k\n  \\;+\\;\\bigl(c\\,\\alpha_k^2 - m\\,\\alpha_k\\,\\widetilde C\\bigr)\\mathbf 1_{\\{k<\\tau\\}}\n  \\;\\le\\; Y_k,\n\\]\nso $(Y_{k\\wedge\\tau})_{k\\ge1}$ is a supermartingale",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof of Theorem 4 fails in two independent places. First, the derivation of the rate inequality multiplies the conditional expectation inequality (17) by 1_{\\Omega_\\infty} and equates E[E[S_{k+1} | F_k] 1_{\\Omega_\\infty}] with E[S_{k+1} 1_{\\Omega_\\infty}]. This step is mathematically invalid because \\Omega_\\infty = {\\tau = \\infty} is not F_k-measurable; the tower property does not allow taking 1_{\\Omega_\\infty} inside the F_k-conditional expectation. Second, the stability proof asserts that Y_k = F(\\widetilde{\\bw}_k) - F_* - \\widetilde C satisfies E[Y_{k+1} | F_k] <= Y_k, claiming (Y_{k \\wedge \\tau}) is a supermartingale. This requires -m \\alpha_k Y_k <= 0, which fails whenever F(\\widetilde{\\bw}_k) - F_* < \\widetilde C; near the minimizer, Y_k is negative, making -m \\alpha_k Y_k positive and invalidating the supermartingale property and the subsequent optional stopping argument.",
+      "failure_location": {
+        "quote": "Multiply \\eqref{eq:stopped-one-step} by $\\mathbf 1_{\\Omega_\\infty}$ and take expectations; since $\\mathbf 1_{\\Omega_\\infty}\\mathbf 1_{\\{k<\\tau\\}}=\\mathbf 1_{\\Omega_\\infty}$,\n\\[\n  \\mathbb E\\!\\left[S_{k+1}\\mathbf 1_{\\Omega_\\infty}\\right]\n  \\;\\le\\;\n  \\mathbb E\\!\\left[(1-m\\alpha_k)S_k\\mathbf 1_{\\Omega_\\infty}\\right] \\;+\\; c\\,\\alpha_k^2\\,\\mathbb E[\\mathbf 1_{\\Omega_\\infty}].\n\\]",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must analyze the unconditioned stopped process F(\\widetilde{\\bw}_k) - F_* using martingale maximal inequalities (such as Robbins-Siegmund or Freedman's inequality) rather than conditioning on {\\tau = \\infty} or asserting an invalid supermartingale property for shifted processes that take negative values.",
+      "overall_effect": "Both the diminishing learning rate convergence bound conditional on non-exit and the basin-stability lower bound in Theorem 4 are mathematically unsupported.",
+      "primary_affected_tag": "thm:4thmainthm",
+      "target_type": "formal_result",
+      "title": "Invalid supermartingale drift and future conditioning in Theorem 4",
+      "why_classification": "Both formal claims of Theorem 4 rely on invalid probabilistic steps (interchanging conditional expectation with a future event and an invalid supermartingale drift); fixing them requires constructing an entirely new non-exit and convergence proof architecture."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2511.19716",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e917ba1144e6fa4c2415186c265b16ef399f1891d6a4e98601ba893f94692732",
+  "status": "ok"
+}

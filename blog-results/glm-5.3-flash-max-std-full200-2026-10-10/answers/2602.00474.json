@@ -1,0 +1,82 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume the oracle noise along the iterates satisfies the uniform conditional second-moment bound",
+          "tag": "lem:optionB_stability"
+        },
+        {
+          "quote": "Under Algorithm \\ref{alg:main_psa} with the recursion $v_{t+1} = \\Pihat\\Bigl((1-\\alpha_t)v_t + \\alpha_t\\,\\widehat T(v_t)\\Bigr)$ and $\\alpha_t=\\alpha/(t+1)$",
+          "tag": "lem:optionB_stability"
+        },
+        {
+          "quote": "\\bigl\\|(1-\\alpha_t)e_t+\\alpha_t\\Pi(Pe_t)\\bigr\\|_{\\mathrm q}\n\\le (1-\\alpha_t)\\|e_t\\|_{\\mathrm q}+\\alpha_t\\gamma\\|e_t\\|_{\\mathrm q}",
+          "tag": "lem:optionB_stability"
+        }
+      ],
+      "failure_explanation": "The lemma's stated hypotheses are only the uniform conditional second-moment bound \\E[||T̂(v_t)−(r+Pv_t)||_∞^2|F_t]≤σ² and the stepsize α_t=α/(t+1), with no constraint on α. Its written proof needs two conditions that are never assumed: (i) conditional unbiasedness \\E[ξ_{t+1}|F_t]=0, asserted 'by the oracle condition' but not implied by a second-moment bound, and used to cancel the martingale cross term in the second-moment expansion; and (ii) 0≤α_t≤1, needed for the triangle-inequality step \\|(1−α_t)e_t+α_tΠPe_t\\|_q ≤ (1−α_t)‖e_t‖_q+α_tγ‖e_t‖_q, which is unjustified when α>1 (the coefficient 1−α_t is then negative). The lemma also invokes \\|Π̂x\\|_∞≤2‖x\\|_∞ without stating the simplex property of b̂ it rests on. As written, the stated conclusion sup_t \\E‖v_t−v*‖_q²≤C_stab is not established by the given argument.",
+      "failure_location": {
+        "quote": "By the oracle condition, \\(\\E[\\xi_{t+1}\\mid\\cF_t]=0\\) and \\(\\E\\big[\\|\\xi_{t+1}\\|_\\infty^2\\mid\\cF_t\\big]\\le \\sigma^2\\).",
+        "tag": "lem:optionB_stability"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add to the lemma's hypotheses the two standard conditions its proof actually uses — conditional unbiasedness \\E[Π̂T(v_t)|F_t]=Π̂(r+Pv_t) (satisfied by the generative oracle of Algorithm alg:main_psa) and 0<α_t≤1 (e.g. t_0=1 with α≤1, as in Lemma lem:projSA_stability_template) — and cite Lemma lem:b_simplex for the ℓ∞ bound on Π̂; the written proof then goes through verbatim.",
+      "overall_effect": "Lemma lem:optionB_stability's stability and bounded-iterates guarantees are unsupported as written. The lemma is not cited by any downstream labelled result, so no other result is invalidated.",
+      "primary_affected_tag": "lem:optionB_stability",
+      "target_type": "formal_result",
+      "title": "Stability lemma's proof relies on unstated oracle unbiasedness and stepsize range",
+      "why_classification": "A local, routine repair (adding two standard conditions that the paper's own oracle and sibling lemma already satisfy) completes the argument; conclusion, rate, and advertised scope are unchanged, so this is minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:end_to_end_v",
+        "cor:main_end_to_end_v",
+        "thm:main_sa_rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume the conditions of Lemma~\\ref{lem:projSA_stability_template} hold and that\n\\(\\alpha_t=\\alpha/(t+t_0)\\) with \\(t_0\\ge \\max\\{\\alpha,1\\}\\).",
+          "tag": "thm:projSA_rate_template"
+        },
+        {
+          "quote": "\\begin{proof}\nApply Theorem~\\ref{thm:projSA_rate_template} with $K=t_0$.\n\\end{proof}",
+          "tag": "cor:optionB_rate"
+        },
+        {
+          "quote": "\\sum_{t=0}^{T-1}(t+t_0)^{2a-2}\n\\le\n\\int_{t_0-1}^{T+t_0} x^{2a-2}\\,dx\n=\n\\frac{(T+t_0)^{2a-1}-(t_0-1)^{2a-1}}{2a-1}",
+          "tag": "thm:projSA_rate_template"
+        },
+        {
+          "quote": "Assume the SA stepsizes are $\\alpha_t=\\alpha/(t+t_0)$ with $t_0\\ge \\alpha$ and $a=\\alpha(1-\\widehat\\gamma)>1/2$.",
+          "tag": "cor:end_to_end_v"
+        }
+      ],
+      "failure_explanation": "Corollary cor:optionB_rate assumes only t_0 ≥ α and a=α(1−γ̂)>1/2, then proves itself by the one-line invocation 'Apply Theorem thm:projSA_rate_template'. The cited theorem, however, requires t_0 ≥ max{α,1}; when α<1 and t_0∈[α,1) — admissible under the corollary's stated hypotheses (e.g. α=0.9, γ̂ small enough that a>1/2) — the invocation violates the theorem's hypothesis. On that slice the theorem's key potential-function step, bounding Σ(t+t_0)^{2a−2} by ∫_{t_0−1}^{T+t_0} x^{2a−2}dx = ((T+t_0)^{2a−1}−(t_0−1)^{2a−1})/(2a−1), is ill-defined since (t_0−1)<0 is raised to the non-integer exponent 2a−1∈(0,1). The corollary's stated bound is therefore not established by its proof for admissible parameters.",
+      "failure_location": {
+        "quote": "\\alpha_t=\\frac{\\alpha}{t+t_0},\n\\qquad $t_0\\ge \\alpha$,",
+        "tag": "cor:optionB_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State t_0 ≥ max{α,1} (the condition already carried by the cited Theorem thm:projSA_rate_template) in Corollaries cor:optionB_rate and cor:end_to_end_v; this imposes no cost since t_0 is a free parameter, and every rate and query-complexity conclusion survives verbatim.",
+      "overall_effect": "The O(T^{-1/2}) rate to v̂* and the end-to-end query-complexity guarantee (Corollaries cor:optionB_rate and cor:end_to_end_v, and their informal counterparts Lemma/thm:main_sa_rate and cor:main_end_to_end_v) are unproven for the admissible parameter regime t_0∈[α,1); the guarantees themselves remain plausible and are restored by carrying the missing condition.",
+      "primary_affected_tag": "cor:optionB_rate",
+      "target_type": "formal_result",
+      "title": "SA rate corollary invokes the rate theorem outside its stepsize hypothesis",
+      "why_classification": "A one-word strengthening of the corollaries' hypotheses (t_0 ≥ 1) makes the cited theorem apply verbatim; the rate, constants, and end-to-end guarantee all survive, so the repair is a routine local hypothesis fix with no mathematical loss."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2602.00474",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "972379f0da0ee4de13a10747348296e76d7000e64b93e768397abb525d521a6d",
+  "status": "ok"
+}

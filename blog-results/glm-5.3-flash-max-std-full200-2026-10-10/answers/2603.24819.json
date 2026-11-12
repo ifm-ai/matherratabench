@@ -1,0 +1,210 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Crucially, boundary conditions are seamlessly integrated into this formulation.",
+          "tag": null
+        },
+        {
+          "quote": "U_\\theta\\, n_t + F(U_\\theta)\\cdot n_x",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The residual $R_\\theta(D_k)=\\int_{\\partial D_k}(U_\\theta n_t + F(U_\\theta)\\cdot n_x)dS$ involves only the network's own state and flux; no prescribed boundary datum enters the loss. Two networks with different (wrong) boundary traces but internally balanced fluxes yield identical residuals on boundary-touching volumes, so evaluating $R_\\theta(D_k)$ cannot enforce, e.g., a prescribed inflow state. The claimed enforcement mechanism does not exist in the defined loss, and no experiment prescribes boundary data.",
+      "failure_location": {
+        "quote": "When a boundary face of a control volume $D_k$ coincides with the physical boundary of the domain $\\Omega_x$, the flux integration across this face directly enforces the prescribed boundary conditions naturally through the evaluation of $R_\\theta(D_k)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Delete or qualify the sentence, and if boundary-data problems are intended, add an explicit boundary-data loss term; all formal results, the algorithm, and the reported experiments are otherwise unaffected.",
+      "overall_effect": "The advertised capability that boundary conditions are 'seamlessly integrated' into the weak conservation loss is false as described; problems requiring prescribed boundary data are not covered by the formulation. No formal result or algorithm step depends on this claim.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that boundary conditions are enforced by the flux residuals is unsupported",
+      "why_classification": "A local deletion or rewording of one unsupported sentence preserves every formal result, the algorithm, and all reported guarantees."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "E_R(U_\\theta) \\leq \\sqrt{|\\Omega \\times (0,T)|} \\cdot \\left( \\sqrt{L_{\\mathrm{cons}}(\\theta)} + \\sqrt{L_{\\mathrm{ent}}(\\theta)} \\right).",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\mathcal{R}_{k,\\varphi}(U_\\theta) = \\int_0^T \\int_\\Omega \\left( |U_\\theta - k|\\partial_t \\varphi + \\text{sgn}(U_\\theta - k)(F(U_\\theta) - F(k))\\cdot \\nabla_x \\varphi \\right) dx\\, dt.",
+          "tag": null
+        },
+        {
+          "quote": "only violations of this inequality are penalized, through a one-sided volume-weighted quadratic loss:",
+          "tag": null
+        },
+        {
+          "quote": "Recognizing that $\\sum |D_i| = |\\Omega \\times (0,T)|$ and substituting the definitions of $L_{\\mathrm{cons}}(\\theta)$ and $L_{\\mathrm{ent}}(\\theta)$ defined in Section 3, we obtain the upper bound for any $\\varphi \\in \\mathcal{A}$.",
+          "tag": null
+        },
+        {
+          "quote": "We therefore sample control volumes with variable sizes",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof's central step is false. (i) $\\mathcal{R}_{k,\\varphi}$ is built from the Kružkov pair $(|U_\\theta-k|, \\text{sgn}(U_\\theta-k)(F(U_\\theta)-F(k)))$, whereas $L_{\\mathrm{ent}}$ penalizes boundary integrals of the physical pair $(\\eta,q)$ one-sidedly; these are different residuals, so 'corresponding exactly' is wrong. (ii) Integrating $\\mathcal{R}_{k,\\varphi}$ by parts over a cell yields $\\varphi$-weighted boundary terms plus an interior term $-\\int_{D_i}\\varphi(\\partial_t|U_\\theta-k|+\\nabla\\cdot q_k(U_\\theta))$, i.e. the strong residual of $U_\\theta$, which the boundary-flux losses do not control; for smooth $U_\\theta$ the unweighted cell-boundary terms cancel in the sum over a partition, so $\\sum_i|R_{\\mathrm{cons}}(D_i)|$ cannot bound the residual (e.g. oscillatory interior residuals with vanishing cell means are invisible to the losses but contribute to $E_R$). (iii) The losses are means $(1/N_D)\\sum$ over dynamically sampled overlapping volumes, not a partition, so $\\sum_i|D_i|\\neq|\\Omega\\times(0,T)|$, and the Cauchy–Schwarz step produces a factor $\\sqrt{N_D}$ that the stated bound omits; the one-sided loss also bounds only $E_\\theta^+$, not $|R_{\\mathrm{ent}}(D_i,k)|$. (iv) The statement is false as written: for $U_\\theta=u$ the exact entropy solution of the Burgers Riemann shock problem, $R_\\theta\\equiv0$ and $E_\\theta\\le0$ on every control volume, hence $L_{\\mathrm{cons}}=L_{\\mathrm{ent}}=0$, while $E_R(u)$ equals the positive entropy dissipation at the shock, so the claimed bound reads $E_R(u)\\le 0$.",
+      "failure_location": {
+        "quote": "Applying the divergence theorem on each $D_i$, the continuous residual translates into boundary flux integrals, corresponding exactly to the local conservation residual $R_{\\mathrm{cons}}(D_i)$ and entropy residual $R_{\\mathrm{ent}}(D_i, k)$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must redefine the losses as two-sided Kružkov-type residual controls over a genuine partition with a consistent normalization (sums, not means) and prove a new cell-level estimate bounding the interior strong residual contribution to $E_R$ — i.e. new proof architecture for the whole convergence section, or abandonment of the stated rate.",
+      "overall_effect": "The paper's only link between the trained losses and the dual-norm truncation error fails; Step 3 of Theorem thm:added-2 collapses with it, so the advertised explicit $L^1$ convergence rate and the abstract/introduction/conclusion claims of a 'rigorous convergence analysis' and a 'first explicit $L^1$ convergence rate' are unsupported.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Lemma 1's reduction of the Kruzhkov residual to the control-volume losses is invalid",
+      "why_classification": "The stated inequality is false even for the exact entropy solution, and the losses as defined are structurally incapable of bounding $E_R$; every supported resolution requires a new construction and a different, weaker theorem, so the paper's central theoretical result does not survive in comparable form."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "E_R(U_\\theta) = \\sup_{k \\in \\mathbb{R}, \\varphi \\in \\mathcal{A}} \\mathcal{R}_{k,\\varphi}(U_\\theta),",
+          "tag": null
+        },
+        {
+          "quote": "\\mathcal{A} = \\left\\{ \\varphi \\in C_c^\\infty(\\Omega \\times (0,T)) : \\varphi \\ge 0, \\|\\partial_t \\varphi\\|_{L^\\infty} + \\|\\nabla_x \\varphi\\|_{L^\\infty} \\le 1 \\right\\}.",
+          "tag": null
+        },
+        {
+          "quote": "\\item $v$ is bounded and measurable;",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "With $E_R(v)=\\sup_{k,\\varphi}\\mathcal{R}_{k,\\varphi}(v)$ taken over signed residuals with $\\varphi\\ge0$, the stated estimate is false. Counterexample: Burgers with $u_0=\\mathbf{1}_{x>0}$ and $v$ the self-similar expansion shock ($v=0$ for $x<t/2$, $v=1$ for $x>t/2$). Then $v$ is a weak solution, bounded, with $TV(v(\\cdot,t))=1$, so it satisfies the theorem's only hypotheses. For every $k\\notin(0,1)$ the residual vanishes identically ($|v-k|$ is affine on the jump states), and for $k\\in(0,1)$ it equals $-(1/4)\\int_0^T\\varphi(t/2,t)dt\\le0$; since $\\varphi\\equiv0\\in\\mathcal{A}$, $E_R(v)=0$. The bound then gives $\\|v(T)-u(T)\\|_{L^1}\\le0$, but the exact solution is a rarefaction and the $L^1$ error is positive (equal to $1/8+1/8=1/4$ on $(-1,1)$ at $T=1$). The cited Bouchut–Perthame estimate requires a two-sided (absolute-value) residual, which the paper's definition of $E_R$ does not provide.",
+      "failure_location": {
+        "quote": "\\|v(\\cdot, T) - u(\\cdot, T)\\|_{L^1(\\Omega)} \\leq \\|v(\\cdot, 0) - u_0\\|_{L^1(\\Omega)} + C \\sqrt{TV(u_0) \\cdot \\sup_{t \\in [0,T]} TV(v(\\cdot, t)) \\cdot \\sqrt{E_R(v)}},",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Redefine $E_R$ as the two-sided quantity of Bouchut–Perthame, e.g. $\\sup_{k,\\varphi}|\\mathcal{R}_{k,\\varphi}(v)|$ (or allow sign-changing admissible test functions); the stated estimate then coincides with the cited theorem. A contained definitional repair.",
+      "overall_effect": "The $L^1$ error estimate underlying the entire convergence analysis is false as stated: approximate solutions that violate entropy (the very case the entropy loss is meant to exclude) are assigned $E_R=0$, so Theorem thm:added-2, which applies this estimate with $v=U_\\theta$, loses its foundation independently of Lemma lem:added-1.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Stated Bouchut–Perthame estimate is false for the one-sided residual (expansion shocks undetected)",
+      "why_classification": "A local, standard correction of the residual's definition restores a true estimate of the same strength for this theorem itself; no new proof architecture is needed for thm:added-1 as stated."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\item The TVD regularization guarantees $\\sup_{t \\in [0,T]} TV(U_\\theta(\\cdot, t)) \\leq M$ for some constant $M$;",
+          "tag": "thm:added-2"
+        },
+        {
+          "quote": "To guarantee this condition, we introduce a TVD regularization term:",
+          "tag": null
+        },
+        {
+          "quote": "L_{\\mathrm{TVD}}(\\theta) \\approx \\max_{j=1,\\dots,N_t} \\sum_{k=1}^{N_x-1} |U_\\theta(x_{k+1}, t_j) - U_\\theta(x_k, t_j)|,",
+          "tag": null
+        },
+        {
+          "quote": "Consequently, as $L_{\\mathrm{cons}}(\\theta) \\to 0$ and $L_{\\mathrm{ent}}(\\theta) \\to 0$ simultaneously, $U_\\theta$ converges to the unique physically admissible entropy solution $u$ in $L^1(\\Omega)$.",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "Step 2 asserts that the TVD regularization 'ensures' a uniform bound $\\sup_t TV(U_\\theta)\\le M$, but $L_{\\mathrm{TVD}}$ is only a soft penalty inside the training objective (weight 1, competing with $L_{\\mathrm{cons}}$ and $L_{\\mathrm{ent}}$) and is even evaluated by a stochastic sampling rule that does not compute the supremum; no mechanism or argument in the source enforces any $\\theta$-uniform $M$. For each fixed $\\theta$ such an $M(\\theta)$ exists trivially, but then $K_{\\mathrm{opt}}=C\\sqrt{TV(u_0)M(\\theta)}\\,|\\Omega\\times(0,T)|^{1/4}$ depends on $\\theta$, contradicting the stated independence, and the convergence conclusion (losses $\\to0$ $\\Rightarrow$ $L^1$ convergence) fails, since along a minimizing sequence the TV bounds may grow without any controlling mechanism.",
+      "failure_location": {
+        "quote": "The TVD regularization term ensures the existence of a constant $M$ such that",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate hypothesis 2 as an explicit uniform-in-$\\theta$ assumption on the trained parameters (or prove an a priori TV bound for the penalized problem); the theorem then holds conditionally with the same rate and structure. A contained weakening.",
+      "overall_effect": "The advertised guarantee — minimizing the WE-PINN loss yields $L^1$ convergence at rate $1/4$ — is unsupported: the theorem is conditional on a uniform-in-$\\theta$ TV bound that nothing in the method establishes, so the chain from 'minimize the loss' to 'converge to the entropy solution' has an unproven link, independently of the failure of Lemma lem:added-1.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "Main convergence theorem assumes a uniform TV bound that the TVD penalty does not deliver",
+      "why_classification": "The resolution is a limited restatement that leaves a recognizably comparable conditional result; no new global proof architecture is needed, but the advertised unconditional guarantee type is given up."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "WE-PINNs & 8.07e-03 & 5.79e-02 & 7.95e-01 & 4.98e-03 & 3.35e-02 & 5.00e-01 & 4.32e-03 & 3.16e-02 & 4.649e-01 \\\\",
+          "tag": "tab:burger_riemann_errors"
+        },
+        {
+          "quote": "& WE-PINNs & 1.776e-03 & 6.041e-03 & 2.826e-02 & 3.481e-03 & 8.159e-03 & 2.905e-02 & 3.741e-03 & 7.258e-03 & 2.920e-02 \\\\",
+          "tag": "tab:swe_riemann_errors"
+        },
+        {
+          "quote": "\\|U_\\theta(\\cdot, 0) - u_0\\|_{L^1(\\Omega)} = 0.",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "The hard temporal ansatz $U_\\theta=(1-\\tau)U_0+\\tau\\mathcal{N}_\\theta$ with $\\tau(0)=0$ forces $U_\\theta(\\cdot,0)=u_0$ exactly, so every WE-PINNs relative error at $t=0.0$ must be identically zero; Step 1 of Theorem thm:added-2 relies on precisely this. Yet every table reports nonzero WE-PINNs errors at $t=0.0$ (e.g. $E_{L^1}=8.07\\times10^{-3}$ and $E_{L^\\infty}=7.95\\times10^{-1}$ for the Burgers Riemann problem; $E_{L^1}=1.776\\times10^{-3}$ for the dam-break depth). Hence the reported runs cannot implement the construction on which the theory relies: either the ansatz was not used, or the tabulated quantities are not the defined errors. The paper's theoretical setting and its own experimental evidence are mutually inconsistent.",
+      "failure_location": {
+        "quote": "This construction guarantees $U_\\theta(x,0) \\equiv U_0(x)$, eliminating the initial condition error term from the convergence analysis.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct or annotate the $t=0.0$ columns, or document that the ansatz was not enforced; in the latter case carry the (small) measured initial-error term through the convergence estimate. Contained repair.",
+      "overall_effect": "The claimed elimination of the initial-condition error — the premise of Step 1 of Theorem thm:added-2 and of the advertised 'no initial condition error' feature — is not realized in the reported experiments, so the experiments do not instantiate the theoretical setting and the initial-error term re-enters the convergence claim in practice.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Reported errors at t = 0 are nonzero, contradicting the exactly enforced initial condition",
+      "why_classification": "The repair is local (correct/annotate the tables or add one bounded initial-error term), but a substantive theory–experiment consistency promise is withdrawn, which is more than a routine typo fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In all cases, the entropy functions are convex and the corresponding entropy fluxes satisfy the compatibility condition with the physical flux, ensuring consistency with the entropy inequality.",
+          "tag": null
+        },
+        {
+          "quote": "\\nabla_U q^{(j)}(U) = \\nabla_U \\eta(U)\\,\\nabla_U F^{(j)}(U), \\qquad j=1,\\dots,d.",
+          "tag": null
+        },
+        {
+          "quote": "hu^2 + \\frac{1}{2} g h^2",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the 1D shallow-water system with $U=(h,m)$, $\\eta=m^2/(2h)+gh^2/2$ (convex), compatibility $\\nabla_U q=\\nabla_U\\eta\\,\\nabla_U F$ forces $q=u(\\eta+\\tfrac12 gh^2)=\\tfrac12 hu^3+gh^2u$ (the physical energy flux $u(E+p)$). The stated $q=\\eta u=\\tfrac12 hu^3+\\tfrac12 gh^2u$ has gradient $(gm/2-m^3/h^3,\\; gm/2+3m^2/(2h^2))$, which differs from the required $(gm-m^3/h^3,\\; gh+3m^2/(2h^2))$ in both components. Hence $(\\eta,q)$ as given is not an entropy pair for the shallow-water equations, the appendix's blanket compatibility claim is false (the Burgers and Euler pairs given are correct), and the entropy loss $L_{\\mathrm{ent}}$ used for the shallow-water experiments penalizes an inequality that is not the entropy condition.",
+      "failure_location": {
+        "quote": "q(U) = \\eta(U)\\,\\mathbf{u},",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the shallow-water flux by the compatible one $q=u(\\eta+\\tfrac12 gh^2)$ (componentwise $u(E+p)$ in 2D) and re-validate the shallow-water experiments, whose entropy enforcement was performed with the wrong pair.",
+      "overall_effect": "The entropy-admissibility mechanism is mis-specified for the shallow water experiments: the residual $E_\\theta$ and the loss $L_{\\mathrm{ent}}$ penalize a quantity that is not an entropy inequality, so the claimed integral-form entropy admissibility for the SWE tests (and the appendix's consistency guarantee) fails for that model.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Shallow-water entropy flux stated in Appendix C is not compatible with the physical flux",
+      "why_classification": "The fix of the pair is one line, but the SWE experiments' admissibility mechanism and their interpretation depend on the wrong pair, so a contained re-validation is required; the method and the other two models are unaffected."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2603.24819",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "693e11400d8e8c9b7da21ad4ea16f4554e73c427eb19da05eee866ed9b1db33d",
+  "status": "ok"
+}

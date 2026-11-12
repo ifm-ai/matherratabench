@@ -1,0 +1,259 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "R_\\theta(D_k) = \\int_{\\partial D_k} \\left( U_\\theta\\, n_t + F(U_\\theta)\\cdot n_x \\right)\\, dS.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The residual evaluates the network's own flux $F(U_\\theta)$ on the boundary. Setting $R_\\theta(D_k)=0$ enforces a flux balance, not equality to a prescribed boundary flux or state. Unless the boundary condition is already built into the ansatz or is exactly no-flux/periodic, this does not enforce prescribed boundary conditions.",
+      "failure_location": {
+        "quote": "When a boundary face of a control volume $D_k$ coincides with the physical boundary of the domain $\\Omega_x$, the flux integration across this face directly enforces the prescribed boundary conditions naturally through the evaluation of $R_\\theta(D_k)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add an explicit boundary penalty comparing the boundary flux/state to the prescribed data, or restrict the claim to boundary conditions already imposed by the ansatz.",
+      "overall_effect": "The claimed seamless integration of boundary conditions into the weak residual is unsupported; numerical experiments with non-periodic boundaries may not enforce the intended boundary data.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Boundary conditions are not enforced by the weak residual",
+      "why_classification": "The defect is a false guarantee about the method's boundary treatment; a local boundary-penalty modification can repair it without changing the core formulation."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "L_{\\mathrm{ent}}(\\theta) = \\frac{1}{N_D} \\sum_{k=1}^{N_D} \\frac{\\big(\\max\\{0,\\,E_\\theta(D_k)\\}\\big)^2}{|D_k|}.",
+          "tag": null
+        },
+        {
+          "quote": "\\eta(u) = \\frac{u^2}{2}, \\qquad q(u) = \\frac{u^3}{3},",
+          "tag": null
+        },
+        {
+          "quote": "E_R(U_\\theta) = \\sup_{k \\in \\mathbb{R}, \\varphi \\in \\mathcal{A}} \\mathcal{R}_{k,\\varphi}(U_\\theta)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For general scalar conservation laws, entropy admissibility requires the Kruzkov entropies $|u-k|$ for all $k$, not just one fixed convex entropy pair. The loss uses a single pair, while the convergence analysis uses $E_R$ over all $k$. Therefore $L_{\\mathrm{ent}}=0$ does not imply the Kruzkov inequalities needed by the Bouchut-Perthame estimate.",
+      "failure_location": {
+        "quote": "To enforce physical admissibility and select the entropy-consistent solution, an additional constraint based on the entropy inequality \\eqref{eq:entropy_inequality} is incorporated into the loss functional.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the single-entropy loss by a supremum over Kruzkov entropies $|u-k|$ (or restrict the theorem to cases where one entropy pair is sufficient).",
+      "overall_effect": "The entropy loss does not support the claimed selection of the unique entropy solution in the scalar convergence theorem.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Entropy loss uses a single entropy pair, insufficient for scalar uniqueness",
+      "why_classification": "Repairing this gap requires changing the entropy loss to enforce all relevant Kruzkov entropies, a substantive algorithmic and theoretical change."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "L_{\\mathrm{TVD}}(\\theta) = \\sup_{t \\in [0,T]} \\int_{\\Omega} |\\nabla_x U_\\theta(x,t)| \\, dx.",
+          "tag": null
+        },
+        {
+          "quote": "where the weighting parameters are simply set to $\\lambda_1 = 1$, $\\lambda_2 = 1$, and $\\lambda_{\\mathrm{TVD}} = 1$.",
+          "tag": null
+        },
+        {
+          "quote": "L_{\\mathrm{TVD}}(\\theta) \\approx \\max_{j=1,\\dots,N_t} \\sum_{k=1}^{N_x-1} |U_\\theta(x_{k+1}, t_j) - U_\\theta(x_k, t_j)|,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A finite penalty term with weight $1$ does not impose a hard bound on $\\sup_t TV(U_\\theta)$. Minimizing $L_{\\mathrm{TVD}}$ does not ensure $\\sup_t TV(U_\\theta) \\le M$ for a fixed constant $M$. The stochastic approximation over randomly drawn points is also not an upper bound for the supremum. Hence the TV hypothesis of Theorem thm:added-2 is not guaranteed by the method.",
+      "failure_location": {
+        "quote": "To guarantee this condition, we introduce a TVD regularization term:",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Either add a hard TV constraint or use a TV-bounded network architecture, or state the TV bound as an explicit assumption rather than a guarantee.",
+      "overall_effect": "The convergence theorem relies on a uniform TV bound that the proposed training procedure does not establish.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "TVD penalty does not guarantee a uniform total-variation bound",
+      "why_classification": "The theorem is conditional, but the paper advertises the TVD penalty as guaranteeing the condition; repairing the gap requires a nontrivial constraint or a weakened claim."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{R}_{k,\\varphi}(U_\\theta) = \\int_0^T \\int_\\Omega \\left( |U_\\theta - k|\\partial_t \\varphi + \\text{sgn}(U_\\theta - k)(F(U_\\theta) - F(k))\\cdot \\nabla_x \\varphi \\right) dx\\, dt.",
+          "tag": null
+        },
+        {
+          "quote": "\\int_{\\partial D} \\left(\\eta(U)\\,n_t + q(U)\\cdot n_x\\right)dS \\leq 0, \\qquad \\forall\\, D \\subset \\Omega_{x,t}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the Kruzkov entropy pair, the entropy inequality gives $\\mathcal{R}_{k,\\varphi}(U_\\theta) \\ge 0$ when $U_\\theta$ satisfies the entropy inequality, while a violation such as an expansion shock gives $\\mathcal{R}_{k,\\varphi}(U_\\theta) \\le 0$. Thus $E_R=\\sup \\mathcal{R}_{k,\\varphi}$ is not a nonnegative measure of entropy violation; it can be negative and it fails to penalize violations. The use of $\\sqrt{E_R}$ in Theorem thm:added-2 is therefore invalid.",
+      "failure_location": {
+        "quote": "E_R(U_\\theta) = \\sup_{k \\in \\mathbb{R}, \\varphi \\in \\mathcal{A}} \\mathcal{R}_{k,\\varphi}(U_\\theta)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Define $E_R$ as the supremum of the negative part (or absolute value) of the Kruzkov residual, e.g. $\\sup (-\\mathcal{R}_{k,\\varphi})$, and use it consistently.",
+      "overall_effect": "The central error quantity in the convergence analysis is not well-defined as a nonnegative error and does not measure the defects it is supposed to control.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Weak truncation error E_R has the wrong sign and can be negative",
+      "why_classification": "The sign error invalidates the main convergence argument and the interpretation of $E_R$ as an error measure."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "L_{\\mathrm{ent}}(\\theta) = \\frac{1}{N_D} \\sum_{k=1}^{N_D} \\frac{\\big(\\max\\{0,\\,E_\\theta(D_k)\\}\\big)^2}{|D_k|}.",
+          "tag": null
+        },
+        {
+          "quote": "Applying the divergence theorem on each $D_i$, the continuous residual translates into boundary flux integrals, corresponding exactly to the local conservation residual $R_{\\mathrm{cons}}(D_i)$ and entropy residual $R_{\\mathrm{ent}}(D_i, k)$.",
+          "tag": "lem:added-1"
+        }
+      ],
+      "failure_explanation": "The proof ignores that the test function $\\varphi$ is not constant on the boundaries of $D_i$, so the boundary terms are weighted by $\\varphi$ and are not the unweighted local residuals. Moreover, $L_{\\mathrm{ent}}$ uses a single fixed entropy pair, whereas $E_R$ uses Kruzkov entropies for all $k$. Finally, $L_{\\mathrm{cons}}$ controls cell averages of the strong residual, not its dual norm; oscillatory residuals with zero cell averages can give $L_{\\mathrm{cons}}=0$ while $E_R>0$. Thus the stated bound is false.",
+      "failure_location": {
+        "quote": "E_R(U_\\theta) \\leq \\sqrt{|\\Omega \\times (0,T)|} \\cdot \\left( \\sqrt{L_{\\mathrm{cons}}(\\theta)} + \\sqrt{L_{\\mathrm{ent}}(\\theta)} \\right).",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "A correct bound would need to control the dual norm directly, for example by using a dual-norm loss, by summing over all Kruzkov entropies, and by correctly accounting for test-function weighting.",
+      "overall_effect": "The main convergence theorem's key link between the discrete losses and the $L^1$ error is unsupported.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Lemma 1 does not bound the Kruzkov weak truncation error by the losses",
+      "why_classification": "The false lemma is the central bridge in the convergence proof; repairing it requires a new argument or a different loss formulation."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|v(\\cdot, T) - u(\\cdot, T)\\|_{L^1(\\Omega)} \\leq \\|v(\\cdot, 0) - u_0\\|_{L^1(\\Omega)} + C \\sqrt{TV(u_0) \\cdot \\sup_{t \\in [0,T]} TV(v(\\cdot, t)) \\cdot \\sqrt{E_R(v)}},",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The proof's second inequality treats the Bouchut-Perthame estimate as if it were $C\\sqrt{TV\\cdot M\\cdot E_R}$, but Theorem thm:added-1 as stated has an extra inner square root on $E_R$. From the stated theorem and Lemma 1, one would get an $L^{1/8}$ bound, not the displayed $L^{1/4}$. Thus the proof is invalid unless Theorem thm:added-1 is corrected.",
+      "failure_location": {
+        "quote": "\\leq C \\sqrt{TV(u_0) M} \\cdot \\left[ |\\Omega \\times (0,T)|^{1/2} \\left( \\sqrt{L_{\\mathrm{cons}}(\\theta)} + \\sqrt{L_{\\mathrm{ent}}(\\theta)} \\right) \\right]^{1/2}.",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Correct either the Bouchut-Perthame estimate or the substitution in the proof so that the stated $L^{1/4}$ rate follows consistently.",
+      "overall_effect": "The proof of the main convergence theorem does not establish the stated $L^1$ rate.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "Main convergence proof misapplies the Bouchut-Perthame estimate",
+      "why_classification": "The main convergence theorem's proof fails at its central estimate, and the advertised rate is not justified."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For any partition $\\{D_i\\}_{i=1}^{N_D}$ of $\\Omega \\times (0,T)$, the continuous weak truncation error is bounded by the volume-weighted network losses:",
+          "tag": "lem:added-1"
+        }
+      ],
+      "failure_explanation": "Lemma 1 requires the control volumes to form a partition of the whole space-time domain. The algorithm samples subdomains dynamically at multiple scales, which are not a partition and may overlap or leave gaps. Therefore the losses used in Theorem thm:added-2 are not the ones bounded by Lemma 1.",
+      "failure_location": {
+        "quote": "\\State Sample space--time subdomains $\\{D_k\\}_{k=1}^{N_D}$ at multiple scales.",
+        "tag": "alg:weak_entropy_pinn"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Make the sampling produce a partition of the domain, or extend the convergence analysis to the dynamically sampled control volumes.",
+      "overall_effect": "The convergence guarantee does not cover the proposed training procedure as implemented.",
+      "primary_affected_tag": "alg:weak_entropy_pinn",
+      "target_type": "algorithm",
+      "title": "Convergence analysis assumes a partition, but the algorithm samples subdomains",
+      "why_classification": "The mismatch between the algorithm and the theoretical setup is substantive, but a sampling modification or an extension of the lemma could repair it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nabla_U q^{(j)}(U) = \\nabla_U \\eta(U)\\,\\nabla_U F^{(j)}(U), \\qquad j=1,\\dots,d.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the shallow water energy entropy, the correct entropy flux is $q = \\mathbf{u}(\\eta + \\frac12 g h^2)$, not $\\eta \\mathbf{u}$. With the given $q$, the compatibility condition fails; for example, in 1D the required $q_h$ is $-u^3 + g h u$, while $q=\\eta u$ gives $-u^3 + \\frac12 g h u$. Thus the entropy loss for the shallow water system is not the correct entropy inequality.",
+      "failure_location": {
+        "quote": "\\eta(U) = \\frac{1}{2} h |\\mathbf{u}|^2 + \\frac{1}{2} g h^2, \\qquad q(U) = \\eta(U)\\,\\mathbf{u},",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Replace the shallow water entropy flux by $q = \\mathbf{u}(\\eta + \\frac12 g h^2)$.",
+      "overall_effect": "The shallow water entropy admissibility claim and the corresponding numerical experiments are unreliable.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Incorrect entropy flux for shallow water equations",
+      "why_classification": "This is a clear mathematical error in an entropy pair, but it is a local correction and does not affect the scalar convergence theorem."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "U_\\theta(x,t) = (1 - \\tau(t)) U_0(x) + \\tau(t) \\mathcal{N}_\\theta(x,t)",
+          "tag": null
+        },
+        {
+          "quote": "This construction guarantees $U_\\theta(x,0) \\equiv U_0(x)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At $t=0$, the exact entropy solution equals the initial condition, and the temporal ansatz enforces $U_\\theta(x,0)=U_0(x)$. Hence all relative errors at $t=0$ should be zero. The tables report nonzero errors for WE-PINNs at $t=0$ in several experiments.",
+      "failure_location": {
+        "quote": "WE-PINNs & 8.07e-03 & 5.79e-02 & 7.95e-01",
+        "tag": "tab:burger_riemann_errors"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Recompute the $t=0$ errors or correct the initial-condition enforcement/table entries.",
+      "overall_effect": "The numerical validation tables are inconsistent with the method's exact initial condition enforcement; similar nonzero $t=0$ entries appear in other Burgers and shallow-water tables.",
+      "primary_affected_tag": "tab:burger_riemann_errors",
+      "target_type": "other",
+      "title": "Reported errors at t=0 contradict exact initial condition enforcement",
+      "why_classification": "This is a local numerical reporting inconsistency that can be fixed by recomputing or correcting the affected table entries."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2603.24819",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n02a",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "693e11400d8e8c9b7da21ad4ea16f4554e73c427eb19da05eee866ed9b1db33d",
+  "status": "ok"
+}

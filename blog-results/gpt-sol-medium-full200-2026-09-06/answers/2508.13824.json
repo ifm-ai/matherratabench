@@ -1,0 +1,218 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:p_ode_exact"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "therefore $\\mathbf{q}_{n}(0) \\neq \\mathbf{u}_{n}$ in the general case $\\mathbf{F} \\not\\equiv 0$.",
+          "tag": "lemma:p_ode_exact:remark:rado_l"
+        },
+        {
+          "quote": "\\sum\\limits_{q = 0}^{N}\\Big[\\kappa_{pq}\\hat{\\mathbf{q}}_{n, q} - {\\Delta t}_{n} \\mu_{pq}\\mathbf{F}(\\hat{\\mathbf{q}}_{n, q}, t(\\tau_{q}))\\Big] = \n\\psi_{p}\\mathbf{u}_{n},",
+          "tag": "eq:ivp_ode_weak_rewr_dst"
+        }
+      ],
+      "failure_explanation": "The source first defines the predictor by Galerkin orthogonality together with the strong condition q_n(0)=u_n, but the algebraic system subsequently called the predictor is the upwind-DG boundary formulation and generally has q_n(0)≠u_n, as the source itself later calculates. Thus the displayed weak problem and the implemented predictor are not equivalent; imposing all of the displayed conditions generally overdetermines the polynomial.",
+      "failure_location": {
+        "quote": "\\int\\limits_{0}^{1}\\varphi_{p}(\\tau)\\left[\\frac{d\\mathbf{q}_{n}(\\tau)}{d\\tau} - {\\Delta t}_{n}\\mathbf{F}(\\mathbf{q}_{n}(\\tau), t(\\tau))\\right] = 0,\\quad\n\\mathbf{q}_{n}(0) = \\mathbf{u}_{n}.",
+        "tag": "eq:ivp_ode_weak"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the strong initial-value formulation by the correct DG weak boundary equation containing the numerical trace u_n, and recheck the exactness lemma against that equation.",
+      "overall_effect": "The derivation of the predictor from the claimed weak problem and the proof of exactness in lemma:p_ode_exact are invalid as written, although the later algebraic system can still define a method independently.",
+      "primary_affected_tag": "eq:ivp_ode_weak",
+      "target_type": "algorithm",
+      "title": "The stated weak problem imposes an initial condition that its derived DG predictor does not satisfy",
+      "why_classification": "The intended upwind-DG equation is already encoded by eq:ivp_ode_weak_rewr_dst, so a local correction of the weak formulation preserves the method and its advertised scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mu_{pq} = \\int\\limits_{0}^{1} \\varphi_{p}(\\tau)\\varphi_{q}(\\tau)d\\tau \\equiv w_{p} \\delta_{pq},",
+          "tag": "eq:kappa_mu_defs"
+        },
+        {
+          "quote": "\\sum\\limits_{q = 0}^{N}a_{pq} \\psi_{q} = w_{p},\\quad\n\\sum\\limits_{q = 0}^{N}\\left[\\kappa^{-1}\\right]_{pq}\\psi_{q} = 1,",
+          "tag": "eq:ader_int_prop"
+        }
+      ],
+      "failure_explanation": "From a=κ^{-1}μ and diagonal μ, the displayed sum is Σ_r(κ^{-1})_{pr}w_rψ_r. It does not become w_p merely from κ^{-1}ψ=1; the weights cannot be moved through κ^{-1}. The source supplies no argument for the additional identity needed to establish this part of the lemma.",
+      "failure_location": {
+        "quote": "\\sum\\limits_{q = 0}^{N} a_{pq} \\psi_{q} = \\sum\\limits_{q = 0}^{N} [\\kappa^{-1}\\cdot\\mu]_{pq} \\psi_{q}\n= \\sum\\limits_{q = 0}^{N}\\sum\\limits_{r = 0}^{N} \\left[\\kappa^{-1}\\right]_{pr} w_{r} \\delta_{rq} \\psi_{q} = w_{p},",
+        "tag": "lemma:ader_int_prop"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Provide a separate derivation of κw=μψ (or an equivalent quadrature/basis identity), or remove the unsupported first relation.",
+      "overall_effect": "The first parameter relation in lemma:ader_int_prop is unsupported. The principal later identities use other parts of the lemma, so no labelled downstream result is necessarily lost.",
+      "primary_affected_tag": "lemma:ader_int_prop",
+      "target_type": "formal_result",
+      "title": "A parameter identity is asserted through an invalid matrix calculation",
+      "why_classification": "The affected identity is auxiliary and apparently unused in the main convergence and stability arguments; deleting it is a complete local resolution with no loss of the principal guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The $r = 0$ in $C(N)$ corresponds to the relation: $\\sum_{q = 0}^{N} a_{pq} = \\tau_{p}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the first printed row, the sum is 1/3+(√3−1)/2, which is not the printed abscissa 1/2−√3/6. The second row likewise fails the required row-sum identity. Hence the table cannot be the coefficients a=κ^{-1}μ of the method developed in the paper.",
+      "failure_location": {
+        "quote": "\\begin{array}{c|cc}\n\\frac{1}{2}-\\frac{\\sqrt{3}}{6} & \\frac{1}{3} & -\\frac{1-\\sqrt{3}}{2}\\\\\n\\frac{1}{2}+\\frac{\\sqrt{3}}{6} & \\frac{1-\\sqrt{3}}{2} & \\frac{1}{3}\\\\\n\\hline\n& \\frac{1}{2} & \\frac{1}{2}\n\\end{array}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Recompute the displayed coefficients from a=κ^{-1}μ and replace the table, or remove the explicit tables and direct implementations to the defining matrix formula.",
+      "overall_effect": "Using the explicit N=1 table would implement a different and internally inconsistent RK method, even though the matrix definitions elsewhere still specify the intended method.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The displayed N=1 Butcher table contradicts the method's row-sum condition",
+      "why_classification": "The erroneous table is dispensable and the source already provides a complete coefficient construction, so removing it preserves every theoretical guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "coroll:order_ader_dg_nodes",
+        "coroll:rk_is_not_coll"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "B(L): &\\ \\sum\\limits_{q = 0}^{N} w_{q}\\tau_{q}^{r} = \\frac{1}{r+1},\\quad 0 \\leq r < L,",
+          "tag": "eq:simp_cond"
+        },
+        {
+          "quote": "$C(N)$ (\\ref{eq:simp_cond}) is satisfied for the IRK-GL-ADER-DG method.",
+          "tag": "lemma:cn_cond"
+        },
+        {
+          "quote": "$D(N)$ (\\ref{eq:simp_cond}) is satisfied for the IRK-GL-ADER-DG method.",
+          "tag": "lemma:dn_cond"
+        }
+      ],
+      "failure_explanation": "The simplifying-condition theorem yields attainment of order at least 2N+1 from B(2N+2), C(N), and D(N). It does not by itself show that order 2N+2 fails. The paper supplies no valid upper-bound argument at this point; failure of C(N+1), even if proved, would not generally imply failure of all order-2N+2 conditions.",
+      "failure_location": {
+        "quote": "The famous Butcher's theorem predicts the implication:\n\\begin{equation}\nB(2N+2)\\, \\wedge\\, C(N)\\, \\wedge\\, D(N)\\ \\Rightarrow\\ p_{\\rm RK} = 2N+1,",
+        "tag": "theorem:order_rk"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add a genuine upper-bound argument, for example by correctly deriving the stability function, proving that its first unmatched exponential coefficient is nonzero, and using that any RK order must also hold on the linear test equation.",
+      "overall_effect": "The exact node order, the claim that it is one below Gauss collocation, and the stated non-collocation consequence are not established by this proof. Only an order-at-least-2N+1 conclusion follows here.",
+      "primary_affected_tag": "theorem:order_rk",
+      "target_type": "formal_result",
+      "title": "Simplifying conditions prove only a lower order bound, not exact order 2N+1",
+      "why_classification": "The claimed value is plausible and can be retained, but proving exactness rather than a lower bound requires an additional nontrivial argument and coordination with the stability-function analysis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:local_sol_order_L_inf",
+        "coroll:local_sol_order_qpoints",
+        "theorem:local_sol_order_L_p"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\mathbf{F}(\\mathbf{u}, t)$ is a sufficiently smooth function, then",
+          "tag": "lemma:local_sol_order_L_inf"
+        },
+        {
+          "quote": "\\max\\limits_{t\\in\\Omega_{n}}\\left|\\frac{d^{N+1}\\tilde{\\mathbf{u}}(t)}{dt^{N+1}}\\right|",
+          "tag": "lemma:local_sol_order_L_inf"
+        }
+      ],
+      "failure_explanation": "The formal statement has no smoothness assumption, while the proof explicitly assumes sufficient smoothness and uses an (N+1)st derivative of the exact solution. The paper's introductory C1 assumption does not provide this derivative for arbitrary N.",
+      "failure_location": {
+        "quote": "The local solution $\\mathbf{q}_{n}$ (\\ref{eq:local_sol}) of the ADER-DG method has an approximation order $p = N+1$ in $\\mathcal{L}_{\\infty}$-norm on each discretization domain $\\Omega_{n}$:",
+        "tag": "lemma:local_sol_order_L_inf"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add explicit regularity and uniform-boundedness assumptions sufficient for the required derivatives and constants on the full integration interval.",
+      "overall_effect": "The advertised local and assembled N+1 convergence rates are not valid under the stated general hypotheses.",
+      "primary_affected_tag": "lemma:local_sol_order_L_inf",
+      "target_type": "formal_result",
+      "title": "The local-solution estimate omits the regularity hypotheses its proof requires",
+      "why_classification": "A standard local smoothness hypothesis restores the intended regime without changing the method, rate, or proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:local_sol_order_L_inf",
+        "coroll:local_sol_order_qpoints",
+        "theorem:local_sol_order_L_p"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat{\\mathbf{q}}_{n, p} = \\mathbf{u}_{n} + {\\Delta t}_{n}\\sum\\limits_{q = 0}^{N} a_{pq}\\mathbf{F}(\\hat{\\mathbf{q}}_{n, q}, t(\\tau_{q})),",
+          "tag": "eq:snae_lstdg"
+        },
+        {
+          "quote": "The local solution $q_{n}$ (\\ref{eq:local_sol}) is the exact solution of the ODE\n\\begin{equation}\\label{eq:p_ode}\n\\frac{du}{dt} = f(t),\\quad f(t)\\in\\mathcal{P}_{L}(\\mathcal{R}),\\quad L < N.\n\\end{equation}",
+          "tag": "lemma:p_ode_exact"
+        }
+      ],
+      "failure_explanation": "Although q_n is written in a Lagrange basis, its coefficients are nonlinear DG/RK stage values, not the samples of the exact solution tilde u at the interpolation nodes. Therefore the classical interpolation remainder does not bound q_n−tilde u. Exactness for ODEs with polynomial forcing does not extend this interpolation estimate to a general nonlinear right-hand side.",
+      "failure_location": {
+        "quote": "The error estimate for the Lagrange interpolation polynomial can be presented in the form:\n\\begin{equation}\n\\left|\\mathbf{q}_{n}(t) - \\tilde{\\mathbf{u}}(t)\\right| \\leq \n\\frac{{\\Delta t}_{n}^{N+1}}{(N+1)!}\\max\\limits_{t\\in\\Omega_{n}}\\left|\\frac{d^{N+1}\\tilde{\\mathbf{u}}(t)}{dt^{N+1}}\\right| \\equiv B_{n} {\\Delta t}_{n}^{N+1},\n\\end{equation}",
+        "tag": "lemma:local_sol_order_L_inf"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Prove a stage-error or DG projection estimate showing that the computed coefficients differ from exact solution samples by O(h^{N+1}), then combine it with a legitimate interpolation estimate and uniform stability bounds.",
+      "overall_effect": "The central proof of the N+1 subgrid/local-solution rate fails, so all norm estimates and the nodal-stage rate derived from it are unsupported.",
+      "primary_affected_tag": "lemma:local_sol_order_L_inf",
+      "target_type": "formal_result",
+      "title": "The DG polynomial is treated as an interpolant of the exact local solution without justification",
+      "why_classification": "The rate may survive, but it requires a new contained convergence argument for the nonlinear stage equations rather than a routine algebraic correction."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-3",
+        "theorem:l2_stab_rk",
+        "coroll:ader_dg_stabs"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore $\\mathrm{rank}(a - \\mathbf{1}\\mathbf{w}^{T}) = N$. Therefore the numerator of $R(z)$ is a polynomial $P_{N, N+1}(z)$ of degree $N-1$.",
+          "tag": "theorem:pade_approx"
+        },
+        {
+          "quote": "It follows that $R(z)$ is the $(N, N+1)$-Pad\\'{e} approximation $R_{N, N+1}(z)$ of $\\exp(z)$.",
+          "tag": "theorem:pade_approx"
+        }
+      ],
+      "failure_explanation": "For an invertible (N+1)-by-(N+1) matrix a, det(I−za) has degree N+1, not N. If a−1w^T has rank N, its determinant polynomial has degree at most N, not N−1. Moreover, numerator and denominator degrees alone do not identify a rational function as the Padé approximant; the required order of agreement with exp(z) must also be proved. Thus the conclusion does not follow from the displayed argument.",
+      "failure_location": {
+        "quote": "The matrix $a = \\kappa^{-1}\\cdot\\mu$ in the denominator is invertible and $\\mathrm{rank}(a) = N+1$. The denominator of $R(z)$ is a polynomial $R_{N, N+1}(z)$ of degree $N$.",
+        "tag": "theorem:pade_approx"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Use determinant identities to obtain degrees N and N+1 correctly, establish agreement with exp(z) through degree 2N+1 from valid order conditions, invoke uniqueness of the [N/N+1] Padé approximant, and verify the leading residual or derive R(∞)=0 directly.",
+      "overall_effect": "The claimed explicit stability function and the paper's given proof of L-stability are unsupported. Consequently the L-stability component of the final combined stability corollary is unreliable.",
+      "primary_affected_tag": "theorem:pade_approx",
+      "target_type": "formal_result",
+      "title": "The Padé stability-function proof reverses determinant degrees and never establishes Padé matching",
+      "why_classification": "The conclusion can plausibly be recovered with a contained but nontrivial reconstruction of the rational stability-function argument; the existing rank calculation is insufficient and has incorrect degree conclusions."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2508.13824",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3e175dd2e259a3e49b58cc7560cd52a083f3c7164ec3322e77f97936ff6880de",
+  "status": "ok"
+}

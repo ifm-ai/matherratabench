@@ -1,0 +1,186 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\alpha_k = 0$     & $\\Iup$ only          & $\\tau_k \\le -\\rho$ \\\\",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "with $\\lambda_i u_i = 0$ and $\\mu_i(u_i - C_{k(i)}) = 0$ such that",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With $\\lambda_i$ the multiplier of $u_i\\ge 0$ and $\\mu_i$ that of $u_i\\le C_{k(i)}$, stationarity of the minimization Lagrangian gives $G_i - s_i\\rho = \\lambda_i - \\mu_i$, not $\\mu_i-\\lambda_i$. Applying complementary slackness to the displayed equation yields, e.g., for $\\alpha_k=0$: $G_k-\\rho=-\\lambda_k\\le0$, i.e. $\\tau_k\\ge-\\rho$, the reverse of every inequality in Table tab:kkt. The table (and all later use of it) is consistent with the correct sign, so the displayed premise and the derived characterization are mutually inconsistent.",
+      "failure_location": {
+        "quote": "G_i - s_i\\rho = \\mu_i - \\lambda_i, \\qquad i = 1,\\ldots,2N.",
+        "tag": "eq:kkt-stationarity"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace $\\mu_i-\\lambda_i$ by $\\lambda_i-\\mu_i$ in eq:kkt-stationarity (or equivalently redefine the multipliers), so that complementary slackness yields the table as printed.",
+      "overall_effect": "The stated derivation of Table tab:kkt is invalid as written; the table itself, the MVP rule, and the algorithm are unaffected because they match the correct KKT conditions.",
+      "primary_affected_tag": "eq:kkt-stationarity",
+      "target_type": "other",
+      "title": "Sign error in the stationarity condition contradicts the KKT table derived from it",
+      "why_classification": "A one-symbol local correction restores the derivation; no downstream result changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\alpha_k = 0$     & $\\Iup$ only          & $\\tau_k \\le -\\rho$ \\\\",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "$[\\tau_{j^*}, \\tau_{i^*}]$ (from~\\eqref{eq:mvp} and Table~\\ref{tab:kkt}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "By Table tab:kkt, at an optimal point every $i\\in\\Iup$ satisfies $\\tau_i\\le-\\rho$ and every $j\\in\\Idown$ satisfies $\\tau_j\\ge-\\rho$, so $\\max_{\\Iup}\\tau_i\\le-\\rho\\le\\min_{\\Idown}\\tau_j$. Equation eq:bias-bounds asserts the reverse chain $\\tau_{i^*}\\ge-\\rho\\ge\\tau_{j^*}$, which at exact optimality (where $\\Delta\\le0$) is false unless $\\tau_{i^*}=\\tau_{j^*}$. Likewise, the shrinking section claims $-\\rho\\in[\\tau_{j^*},\\tau_{i^*}]$ 'from' the KKT table at a non-optimal iterate, which the table does not imply (the current iterate's $\\tau$ values need not bracket the optimal multiplier).",
+      "failure_location": {
+        "quote": "\\;\\geq\\; -\\rho \\;\\geq\\;",
+        "tag": "eq:bias-bounds"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State $\\tau_{i^*}\\le-\\rho\\le\\tau_{j^*}$ at ($\\varepsilon_{tol}$-)optimality, and present the shrinking interval as a heuristic estimate rather than a KKT consequence.",
+      "overall_effect": "The stated justification of the midpoint bias fallback and of the shrinking interval is incorrect; the midpoint estimate eq:bias-midpoint itself is unaffected (symmetric in the two endpoints), and shrinking remains a heuristic protected by unshrinking.",
+      "primary_affected_tag": "eq:bias-bounds",
+      "target_type": "other",
+      "title": "Bounds on the optimal threshold $-\\rho$ stated with reversed inequalities",
+      "why_classification": "Correcting the inequality direction and the wording is local; the algorithmic choices and all guarantees survive unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\text{freeze if } \\tau_{N+k} > \\tau_{i^*},",
+          "tag": "eq:s3"
+        },
+        {
+          "quote": "\\text{freeze if } \\tau_k > \\tau_{i^*},",
+          "tag": "eq:s2"
+        },
+        {
+          "quote": "$\\alpha^*$-variables at zero tend to freeze early (large",
+          "tag": null
+        },
+        {
+          "quote": "(Lemma~\\ref{lem:asymmetry}) provides a practical convergence",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Criteria eq:s1–eq:s4 are exactly symmetric when each variable is measured by its own score: an $\\Idown$-only variable ($\\alpha_k=C_k$ or $\\alpha_k^*=0$) freezes iff its own $\\tau$ exceeds $\\tau_{i^*}$, and an $\\Iup$-only variable freezes iff its own $\\tau$ is below $\\tau_{j^*}$. The lemma rewrites the $\\alpha^*$ criteria in terms of $\\tau_k$ using the identity $\\tau_{N+k}=\\tau_k+2y_k\\varepsilon/100$, and then compares thresholds for different variables in different states; the shift $2y_k\\varepsilon/100$ is a pure change of variables and carries no information about which variables freeze more readily. In data terms both freezing conditions are the mirror statements $f(\\mathbf{x}_k)<y_k(1+\\varepsilon/100)$ vs. $f(\\mathbf{x}_k)>y_k(1-\\varepsilon/100)$ (with $b\\approx\\tau_{i^*}\\approx\\tau_{j^*}$). The displayed equivalences eq:s3-rewritten/eq:s4-rewritten are correct, but the stated conclusions ('easier'/'harder' to freeze, 'both effects grow with $y_k$', early freezing of $\\alpha^*$ giving faster iterations) are not established; the same rewriting with $2\\varepsilon$ would 'prove' an asymmetry for standard SVR.",
+      "failure_location": {
+        "quote": "variables $\\alpha_k^* = 0$ are \\emph{easier} to freeze (effective threshold",
+        "tag": "lem:asymmetry"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Withdraw the asymmetry interpretation: retain eq:s3-rewritten/eq:s4-rewritten only as a change of variables, note that the criteria are symmetric in each variable's own score, and remove the acceleration claims in the abstract, Section 9, and Conclusion.",
+      "overall_effect": "The lemma's substantive claim, the abstract's statement that the shrinking heuristic is 'shown to introduce an asymmetry', the Section 9 'Effect of shrinking' paragraph, and the Conclusion's claim of 'practical convergence acceleration' from this asymmetry are unsupported. The shrinking heuristic and solver correctness are not affected.",
+      "primary_affected_tag": "lem:asymmetry",
+      "target_type": "formal_result",
+      "title": "Claimed shrinking asymmetry between $\\alpha$ and $\\alpha^*$ is an artifact of the reference variable, not a real effect",
+      "why_classification": "No dependent formal result fails and the algorithm is unchanged, but the lemma's advertised qualitative content and a headline claim of the paper must be withdrawn rather than merely reworded."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Free variables ($0 < u_i < C_{k(i)}$) are never frozen.",
+          "tag": null
+        },
+        {
+          "quote": "remove from $\\Aactive$, stop updating $\\tau_k$ and $\\tau_{N+k}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Shrinking operates on training points $k$, each carrying two dual variables $\\alpha_k$ and $\\alpha_k^*$, but the counter test refers to a single 'applicable criterion'. When both variables are at bounds (e.g. $\\alpha_k=\\alpha_k^*=0$) two criteria eq:s1 and eq:s3 apply and it is unspecified whether both must hold; when one variable is free and the other is at a bound meeting its criterion, freezing $k$ removes the free variable from $\\Aactive$, contradicting the stated invariant that free variables are never frozen. As written the procedure is not well defined and may exclude a free (possibly KKT-violating) variable until the next reconstruction.",
+      "failure_location": {
+        "quote": "applicable criterion among~\\eqref{eq:s1}--\\eqref{eq:s4} is met,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Specify that $k$ is frozen only if both $\\alpha_k$ and $\\alpha_k^*$ are at bounds and each satisfies its respective criterion among eq:s1–eq:s4 (with counters tracked accordingly).",
+      "overall_effect": "The shrinking step of Algorithm alg:smo is ambiguous; a natural reading freezes free variables, degrading progress between reconstructions (correctness is preserved only through the unshrinking check).",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Per-training-point freezing rule is under-specified and can freeze free variables",
+      "why_classification": "A short clarifying rule resolves the ambiguity; no guarantee or rate is lost since unshrinking already certifies optimality."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State \\textbf{Reconstruction:} compute $F_k^{\\mathrm{full}}$ and",
+          "tag": "alg:smo"
+        },
+        {
+          "quote": "update $\\tau$ from~\\eqref{eq:reconstruct}, and continue.  Otherwise, the",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In Algorithm alg:smo the reconstruction and full-violation check are placed after the single \\For loop over $t$ has terminated. The instruction 'continue outer loop' has no enclosing loop to resume, so when $\\Delta^{\\mathrm{full}}>\\varepsilon_{\\mathrm{tol}}$ the pseudocode resets $\\Aactive$ but then falls through to the bias computation and returns a solution that is not certified optimal; also counters are not reset. The intended control flow (re-enter optimization on the full set until $\\Delta^{\\mathrm{full}}\\le\\varepsilon_{\\mathrm{tol}}$ or maxiter) is described in Section 7.3 but not realized by the pseudocode.",
+      "failure_location": {
+        "quote": "continue outer loop",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Wrap the iteration and reconstruction in an outer repeat loop that exits only when $\\Delta^{\\mathrm{full}}\\le\\varepsilon_{\\mathrm{tol}}$ (or the iteration budget is exhausted), resetting counters on unshrink.",
+      "overall_effect": "The algorithm as written does not deliver its stated guarantee of returning an $\\varepsilon_{\\mathrm{tol}}$-optimal (certified) solution when shrinking has frozen a violating variable.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Unshrinking step refers to a non-existent outer loop",
+      "why_classification": "A routine restructuring of pseudocode already described in prose restores the guarantee; no mathematical content is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "need not be positive semi-definite, so $\\eta_s < 0$ is possible.",
+          "tag": null
+        },
+        {
+          "quote": "where $\\Omega^*_{k\\ell} = K(\\mathbf{x}_k, -\\mathbf{x}_\\ell)$.",
+          "tag": null
+        },
+        {
+          "quote": "semi-definite, so the formal convergence proof does not extend to this",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "$\\Omega^*_{k\\ell}=K(\\mathbf{x}_k,-\\mathbf{x}_\\ell)$ is a cross-kernel matrix between $\\{\\mathbf{x}_k\\}$ and $\\{-\\mathbf{x}_\\ell\\}$, not a Gram matrix, and is not PSD in general: for RBF with $x_1=1,x_2=-1$ in one dimension, $\\Omega^*=[[e^{-4\\gamma},1],[1,e^{-4\\gamma}]]$ has negative determinant. So the stated reason for $\\Omega_s\\succeq0$ when $a=+1$ is false (the conclusion holds for sign-invariant kernels because $K_s(x,x')=\\tfrac14\\langle\\varphi(x)+\\varphi(-x),\\varphi(x')+\\varphi(-x')\\rangle$). By the same identity with a minus sign, $\\Omega_s$ for $a=-1$ is also PSD for the RBF (and any $K(-x,-x')=K(x,x')$, $K(-x,x')=K(x,-x')$) kernel, so the claims that $\\eta_s<0$ 'is possible' and that the convergence proof 'does not extend' to $a=-1$ are unsupported for the kernels considered.",
+      "failure_location": {
+        "quote": "follows from the fact that $\\Omega$ and $\\Omega^*$ are individually PSD.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the argument with the feature-map identity $K_s(x,x')=\\tfrac14\\langle\\varphi(x)+a\\varphi(-x),\\varphi(x')+a\\varphi(-x')\\rangle$ for sign-invariant $K$, concluding $\\Omega_s\\succeq0$ for both $a=\\pm1$ and extending the convergence statement accordingly (or restrict the non-PSD caveat to kernels lacking sign invariance).",
+      "overall_effect": "The PSD/convergence discussion for m2 rests on an invalid argument and misstates the $a=-1$ regime; the algorithm's fallback is merely unnecessary, so no computed result is wrong.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Incorrect PSD reasoning for the symmetric kernel ($\\Omega^*$ is not PSD; $a=-1$ case misjudged)",
+      "why_classification": "A short standard argument fixes the justification and only strengthens the paper's claims; nothing depending on it fails."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

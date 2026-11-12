@@ -1,0 +1,99 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{C}^{P, M(i)}(F_{i}^{\\pi, \\theta}) = Y_{t_{i}}^{\\pi, \\theta} + \\Delta_i \\ \\mathcal{C}^{P}\\big(f_{i}^{\\pi, \\theta} \\big),",
+          "tag": "rmk: stepwise-kernels-smooth"
+        },
+        {
+          "quote": "\\mathbb{E} \\big(\\norm{D f_{i}^{\\pi, \\theta}}_{\\mathbb{H}_{t_{i}}}^{2}\\big) \\leq 2\\norm{\\partial_{(y,z)}^1 f}_{\\infty}^{2} \\big\\{ \\mathbb{E} \\big(\\norm{D Y_{t_{i}}^{\\pi, \\theta}}_{\\mathbb{H}_{t_{i}}}^{2}\\big) + \\mathbb{E} \\big(\\norm{D \\scalar{Z}_{i}^{\\pi, \\theta}}_{\\mathbb{H}_{t_{i}}}^{2}\\big) \\big\\}.",
+          "tag": "lem:malliavin-energy"
+        }
+      ],
+      "failure_explanation": "The backward identity satisfied by the implemented recursion is $Y^{\\pi,\\theta}_{t_{i-1}} + \\int_{t_{i-1}}^{t_i}Z^{\\pi,\\theta}dB = \\mathcal C^{\\theta(i)}(F^{\\pi,\\theta}_i)$, which by Remark rmk:stepwise-kernels-smooth equals $Y^{\\pi,\\theta}_{t_i} + \\Delta_i\\mathcal C^{P}(f^{\\pi,\\theta}_i)$, not $Y^{\\pi,\\theta}_{t_i} + \\Delta_i f^{\\pi,\\theta}_i$ as the proof states. The Malliavin derivative of the projection therefore brings the residual $\\Delta_i D_s[f^{\\pi,\\theta}_i - \\mathcal C^{P}(f^{\\pi,\\theta}_i)]$ into the differentiated equation, which the proof never accounts for; the chain-rule estimate \\eqref{eq:Df-chain-rule-bound} is applied to a generator term that does not appear in the identity being differentiated.",
+      "failure_location": {
+        "quote": "Differentiating in the Malliavin sense the equation\n    \\begin{gather*}\n        Y_{t_{i-1}}^{\\pi, \\theta} + \\int_{t_{i-1}}^{t_{i}} Z_{r}^{\\pi, \\theta} dB_{r} = Y_{t_{i}}^{\\pi, \\theta} + \\Delta_i f_{i}^{\\pi, \\theta} ,\n    \\end{gather*}",
+        "tag": "lem:malliavin-energy"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Differentiate the correct identity $Y^{\\pi,\\theta}_{t_{i-1}} + \\int_{t_{i-1}}^{t_i}Z^{\\pi,\\theta}dB = \\mathcal C^{P,M(i)}(F^{\\pi,\\theta}_i)$ and use the Malliavin commutation $D\\mathcal C^{P}(f) = \\mathcal C^{P-1}(Df)$ (Lemma \\ref{proposition inequality chaos truncation} (ii)) together with the contraction property of the chaos projection to bound $E\\|D\\mathcal C^{P}(f^{\\pi,\\theta}_i)\\|^2 \\le E\\|D f^{\\pi,\\theta}_i\\|^2$; the same recursion then yields \\eqref{eq:energy-estimates-Malliavin-Y-Z} and \\eqref{eq:energy-estimates-malliavin-f} unchanged.",
+      "overall_effect": "The energy estimates \\eqref{eq:energy-estimates-Malliavin-Y-Z} and \\eqref{eq:energy-estimates-malliavin-f}, and through them the $\\mathbb E(\\|D\\xi\\|^2)/(P+1)$ term of Theorem thm:added-4, are not established by the displayed proof; the lemma's conclusion is nevertheless recoverable, so no formal statement is definitively false, but the proof as written is invalid.",
+      "primary_affected_tag": "lem:malliavin-energy",
+      "target_type": "formal_result",
+      "title": "Malliavin-energy lemma proved by differentiating an identity the implemented scheme does not satisfy",
+      "why_classification": "A short local substitution (differentiate the identity involving $\\mathcal C^{P}(f^{\\pi,\\theta}_i)$ instead of $f^{\\pi,\\theta}_i$) together with the contraction $\\|\\mathcal C^{P-1}Df\\|\\le\\|Df\\|$ already proved in the paper repairs the proof; the lemma's statement, its constant, and all downstream uses remain intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-5"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Through this section we make use of the following notation and assumptions. Let $\\pi \\subset [0,T]$ be a partition such that $\\max_{i} \\Delta_i / \\Delta_{i+1} \\leq L$. Let $\\theta = (P,M) \\in \\mathbb{N}^{2}$. Let Assumption \\ref{assumption 1} be satisfied.",
+          "tag": null
+        },
+        {
+          "quote": "\\item $\\xi \\in L^{2}(\\mathcal{F}_{T})$.",
+          "tag": "assumption 1"
+        },
+        {
+          "quote": "\\item $\\xi \\in \\mathbb{D}_{T}^{2,q}$, and there exists $\\mu >0$",
+          "tag": "main assumption convergence rate"
+        },
+        {
+          "quote": "C \\Bigg( \\abs{\\pi}  + \\mathbb{E}\\big( \\abs{\\xi - \\mathcal{C}^{\\theta}(\\xi)}^2) + \\frac{\\mathbb{E}(\\norm{D \\xi}_{\\mathbb{H}_{T}}^{2})}{P+1} \\Bigg)",
+          "tag": "thm:added-4"
+        }
+      ],
+      "failure_explanation": "The preamble to Section 4.3 imposes only 'Assumption \\ref{assumption 1}' (Lipschitz generator, $\\xi \\in L^2$) plus mesh regularity, and Theorems \\ref{thm:added-4} and \\ref{thm:added-5} assert bounds containing $C\\abs{\\pi}$ and $\\mathbb E(\\norm{D\\xi}_{\\mathbb H_T}^{2})/(P+1)$. However, the $O(\\abs{\\pi})$ term comes from Theorem \\ref{Theorem main convergence rate}, which is proved only under Assumption \\ref{main assumption convergence rate} ($\\xi \\in \\mathbb D^{2,q}_T$ with Hölder regularity of $D\\xi$, $f \\in C^{1:2}_{b,(y,z)}$ and $f$ Hölder-$1/2$ in $t$), and the chaos-truncation terms require $\\xi \\in \\mathbb D^{1,2}_T$ and $f \\in C^{1:1}_{b,(y,z)}$ (Lemma \\ref{lem:malliavin-energy}). Under Assumption \\ref{assumption 1} alone the Malliavin derivative $D\\xi$ need not exist and the rate $C\\abs{\\pi}$ is not available, so the theorems as stated are not established by the paper's results.",
+      "failure_location": {
+        "quote": "There exists a constant $C$, independent of $\\pi$, $P$ and $M$, such that",
+        "tag": "thm:added-4"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State Theorems \\ref{thm:added-4} and \\ref{thm:added-5} under the Malliavin-regularity hypotheses actually used in their derivation (Assumption \\ref{main assumption convergence rate} for the $\\abs{\\pi}$-rate, $f \\in C^{1:1}_{b,(y,z)}$ for the energy estimates, and $\\xi \\in \\mathscr{A}^{P}_{T}$ for the $M$-truncation term), i.e. add the missing hypotheses to the theorem statements so that they match the arguments.",
+      "overall_effect": "Both main error estimates (Theorems thm:added-4 and thm:added-5) overstate their scope: for merely Lipschitz data with square-integrable terminal condition the asserted bound is neither meaningful ($\\mathbb E\\norm{D\\xi}_{\\mathbb H_T}^2$ may be undefined/infinite) nor derivable from the proofs, which silently use the regularity of Assumption \\ref{main assumption convergence rate}.",
+      "primary_affected_tag": "thm:added-4",
+      "target_type": "formal_result",
+      "title": "Main error theorems claim rates for data satisfying only Assumption 1, while their derivation requires Malliavin regularity",
+      "why_classification": "The repair is a hypothesis-level restriction: with the standard Malliavin regularity added, the same rates and the same algorithmic guarantees survive, so a recognizably comparable theorem remains; no new proof architecture is needed, but the advertised 'arbitrary square-integrable terminal condition' regime must be excluded from the quantitative statement."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\item $\\xi \\in L^{2}(\\mathcal{F}_{T})$.",
+          "tag": "assumption 1"
+        }
+      ],
+      "failure_explanation": "The remark asserts that Assumption \\ref{assumption 1} implies $\\xi \\in L^4$ and hence $\\mathbf V_m(\\xi) < \\infty$. Assumption \\ref{assumption 1}(iii) only requires $\\xi \\in L^{2}(\\mathcal F_T)$, which does not imply $\\mathbb E(|\\xi|^4) < \\infty$: for example $\\xi = g(B_T)$ with $g(x)=|x|^{-\\alpha}\\mathbf 1_{\\{\\abs{x}\\le 1\\}}$ and $\\tfrac14<\\alpha<\\tfrac12$ is square-integrable but has $\\mathbb E\\abs{\\xi}^{4}=\\infty$, and then $a!\\,\\overline{\\mathbb V}(\\xi\\, H_a^{(m,0)})$ need not be finite, so $\\mathbf V_m(\\xi)=\\infty$ is possible. Thus the finiteness claimed in the remark is not guaranteed by the stated hypotheses.",
+      "failure_location": {
+        "quote": "Under Assumption \\ref{assumption 1}, the random variable $\\xi$ has absolute moments of fourth order, and hence $\\mathbf{V}_{m}(\\xi)$ can be proven to be finite.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add an explicit integrability requirement (e.g. $\\xi \\in L^{4}(\\mathcal F_T)$, or directly $\\mathbf V_m(\\xi)<\\infty$) to the hypotheses of Theorem \\ref{thm:added-5} and delete or weaken the prose claim in the remark.",
+      "overall_effect": "The claim that $\\mathbf V_m(\\xi)$ is finite under Assumption \\ref{assumption 1} is false in general; consequently the right-hand side of the estimate in Theorem \\ref{thm:added-5} need not be finite for admissible data, and the Monte-Carlo error bound loses its content unless extra integrability of $\\xi$ is assumed.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Fourth moments of the terminal condition claimed under a square-integrability assumption",
+      "why_classification": "Adding a standard local condition ($\\xi \\in L^4$) restores the claim and all guarantees of the theorems remain intact with the same rates; only an incorrect explanatory remark must be retracted."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2512.16418",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c6a18d282b1a13a2f91a80bae3f1e4f3b8e06376fd7cd6296e00653e83268ff9",
+  "status": "ok"
+}

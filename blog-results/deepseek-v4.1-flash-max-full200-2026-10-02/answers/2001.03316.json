@@ -1,0 +1,193 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$\\nabla \\tfw  ~ := ~ \\sum_i p_{m_i(\\bs{w})} \\nabla f_{m_i(\\bs{w})}(\\bs{w})$$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The expected MKL update is defined as the vector field \\sum_i p_{m_i(w)}(w)\\nabla f_{m_i(w)}(w). At points where the ordering of the losses f_i(w) changes, the index m_i(w) swaps and the vector field generally jumps unless the corresponding gradients coincide. Such a discontinuous vector field is not the gradient of any scalar function globally, so the claimed surrogate loss \\tilde F does not exist as asserted.",
+      "failure_location": {
+        "quote": "indeed if needed this surrogate loss can be found (upto a constant shift) from the above gradient.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Remove or qualify the global surrogate-loss claim and treat \\nabla\\tilde F only as the expected update vector field, or define a piecewise objective and explicitly analyze its non-differentiable boundaries.",
+      "overall_effect": "The paper's interpretation of MKL as minimizing a global non-convex surrogate loss, and the language of local minima/non-convex landscape, is not supported by a well-defined scalar objective.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed global surrogate loss need not exist",
+      "why_classification": "The defect is conceptual and affects the framing of the landscape analysis, but most formal results directly use the expected-update vector field, so the main algorithmic bounds are not automatically invalidated."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$\\nabla \\tfw  ~ := ~ \\sum_i p_{m_i(\\bs{w})} \\nabla f_{m_i(\\bs{w})}(\\bs{w})$$",
+          "tag": null
+        },
+        {
+          "quote": "Now at $\\bar{w}$, we have $\\nabla \\widetilde{F}(\\bar{\\w}) = 0$.",
+          "tag": "lemma:vector"
+        }
+      ],
+      "failure_explanation": "At a stationary point \\bar w of the expected MKL update, the correct equation is \\sum_i p_i(\\bar w)\\nabla f_i(\\bar w)=0. The proof instead writes the equation with p_i(w_C), where w_C is an auxiliary far-away point. This replacement is not justified and the equation is not equivalent to stationarity at \\bar w, so the subsequent bound on \\|\\bar w-w^*\\| does not follow.",
+      "failure_location": {
+        "quote": "\\sum_{i\\notin \\mathbb{O}} p_i(\\w_C) \\nabla f_i(\\bar{\\w}) &= - \\sum_{j \\in \\mathbb{O}}  p_j(\\w_C) \\nabla f_j(\\bar{\\w})",
+        "tag": "lemma:vector"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redo the stationary-point analysis using p_i(\\bar w) throughout, and provide a valid argument that the resulting weighted-average bound implies \\bar w\\in B_r(w^*).",
+      "overall_effect": "The central outlier guarantee that MKL reaches the clean ball B_r(w^*) is unsupported by the given proof, and the worst-case statement that all stationary points avoid bad local minima is not established.",
+      "primary_affected_tag": "lemma:vector",
+      "target_type": "formal_result",
+      "title": "Lemma vector proof uses wrong probabilities in stationarity equation",
+      "why_classification": "This lemma is the main tool for the outlier-robustness claim; the proof's core stationarity equation is invalid, and repairing it requires a new argument rather than a local edit."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$\\norm{\\sum_{i\\notin\\mathbb{O}}   \\nabla f_i(\\wsgd)} \\leq (1 - \\epsilon) n L \\norm{\\wsgd - \\ws}$$",
+          "tag": "lemma:sgdbound"
+        },
+        {
+          "quote": "$$\\norm{ \\sum_{i\\in\\mathcal{O}} \\nabla f_i(\\wsgd)} \\leq \\epsilon  G(\\wsgd)$$",
+          "tag": "lemma:sgdbound"
+        }
+      ],
+      "failure_explanation": "The proof only establishes upper bounds on the two sums whose norms are equal. Equality of the sums does not imply that either sum equals the minimum of the two upper bounds. The claimed inequality \\epsilon G \\le (1-\\epsilon)L\\|\\bar w_{SGD}-w^*\\| is false; for scalar squared losses with one outlier it fails by the factor (1-\\epsilon).",
+      "failure_location": {
+        "quote": "$$\\norm{ \\sum_{i\\in\\mathcal{O}} \\nabla f_i(\\wsgd)} = \\min\\left(\\epsilon n  G(\\wsgd), (1 - \\epsilon) n L \\norm{\\wsgd - \\ws}\\right)$$",
+        "tag": "lemma:sgdbound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the false lower bound by a correct bound on \\|\\bar w_{SGD}-w^*\\| and propagate the resulting constants through Theorem relativebounds.",
+      "overall_effect": "The lower bound on the SGD stationary point's distance from w^* is not available, so the proof that MKL is closer than SGD in Theorem relativebounds is invalid.",
+      "primary_affected_tag": "lemma:sgdbound",
+      "target_type": "formal_result",
+      "title": "SGD distance lower bound is false",
+      "why_classification": "The lemma as stated is false, but a comparable corrected lower bound is likely obtainable and the main relative-comparison result may survive with adjusted constants."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "m \\norm{ \\wsm - \\ws} &\\leq \\sum_{i\\in\\mathcal{O}}p_i(\\wsm) \\norm{ \\wsm - \\ws} G(\\wsgd) \\notag \\\\\n m \\norm{ \\wsm - \\ws} &\\leq \\epsilon^k G(\\wsgd)",
+          "tag": "lemma:m2lboundstrongconvexity"
+        },
+        {
+          "quote": "In presence of outliers, the surrogate loss can have multiple local minima that are far from $\\ws$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof bounds the probability of selecting an outlier at \\bar w_{MKL} by \\epsilon^k. This is only true when the good samples have lower loss than all outliers at \\bar w_{MKL}, i.e. when \\bar w_{MKL}\\in B_r(w^*). The lemma statement allows any first-order stationary point, and the paper itself notes that spurious local minima far from w^* can exist. Thus the bound is not justified for the stated quantifier.",
+      "failure_location": {
+        "quote": "\\norm{\\wsm -\\ws}  \\leq \\dfrac{\\epsilon^k G}{\\lambda}",
+        "tag": "lemma:m2lboundstrongconvexity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the missing hypothesis \\bar w_{MKL}\\in B_r(w^*) to the lemma and use it explicitly in the proof.",
+      "overall_effect": "The bound on MKL's distance from w^* is not valid for arbitrary stationary points; only the conditional version with \\bar w_{MKL}\\in B_r(w^*) is supported.",
+      "primary_affected_tag": "lemma:m2lboundstrongconvexity",
+      "target_type": "formal_result",
+      "title": "MKL stationary-point bound omits the clean-ball hypothesis",
+      "why_classification": "The needed repair is a local addition of the already-used clean-ball condition, but without it the lemma is false as stated."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ 2\\eta_t^2\\sum_{i\\in \\mathcal{G}} p_i(\\bs{w_t}) \\norm{\\nabla f_{i}( \\wg)}^2",
+          "tag": "lem:R"
+        }
+      ],
+      "failure_explanation": "The main Theorem thm:R states a residual R_t that omits the positive good-sample noise term 2\\eta_t^2\\sum_{i\\notin O}p_i(w_t)\\|\\nabla f_i(w^*)\\|^2. This term is present in the derivation and in the appendix version lem:R. Because the omitted term is nonnegative, the stated upper bound is not justified in the noisy setting.",
+      "failure_location": {
+        "quote": "R_t \n\t=\t& - 2  \\sum_{i\\notin \\mathbb{O}} p_i(\\bs{w_t}) \\langle{ \\bs{w_t} - \\wg,\\nabla f_{i}( \\wg)\\rangle}+ \\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t}) \\left(2\\eta_t\\norm{\\nabla f_{i}( \\wg)}^2+ \\eta_t\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+2\\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right) \\right)",
+        "tag": "thm:R"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the main theorem's R_t by the correct residual from lem:R, including the good-sample noise term.",
+      "overall_effect": "The noisy-setting convergence bound in the main text is not supported as written; the appendix version is the correct one.",
+      "primary_affected_tag": "thm:R",
+      "target_type": "formal_result",
+      "title": "Main convergence residual omits good-sample noise term",
+      "why_classification": "A correct version of the residual already appears in the appendix, so the repair is a local replacement; however, the main noisy convergence guarantee is invalid as stated."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Under assumptions 1-3",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The lemma invokes assumptions N1, N2, A4, and A5, but the source only defines Assumptions 1, 2, and 3. The hypotheses of the lemma are therefore undefined and the result is ill-posed as written.",
+      "failure_location": {
+        "quote": "For any $\\wsm \\in  \\mathcal{B}_r(\\ws)$ that satisfies assumptions N1, N2, A4 and A5, there exists $N'\\geq N$ and $\\epsilon' \\leq \\epsilon$ such that,",
+        "tag": "lemma:m2lbound"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Define the missing assumptions or replace them with the actual assumptions intended in the source.",
+      "overall_effect": "Lemma m2lbound cannot be interpreted or used without knowing the missing assumptions.",
+      "primary_affected_tag": "lemma:m2lbound",
+      "target_type": "formal_result",
+      "title": "Appendix lemma uses undefined assumptions",
+      "why_classification": "The lemma is an appendix auxiliary result not used in the main argument; the repair is to supply or correct the missing assumption references."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "p_{m_i(\\bs{w})}(\\bs{w}) = \\dfrac{2(n-i)}{n(n-1)}",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "Suppose we have $\\abs{\\mathcal{G}}\\leq \\frac{n}{2}$.",
+          "tag": "cor:added-1"
+        }
+      ],
+      "failure_explanation": "The proof replaces the MKL probabilities for outlier ranks by 1/n. Since |G|\\le n/2, there are outlier ranks i with i < (n+1)/2, for which 2(n-i)/(n(n-1)) > 1/n. Thus the replacement is not an upper bound, and the inequality R_t^{(MKL_2)}\\le R_t^{(SGD)} is not established.",
+      "failure_location": {
+        "quote": "&+ \\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{\\eta_t^2}{n}\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2+  \\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{2  \\eta_t}{n} \\left(f_{i}(\\wg)- f_i(\\bs{w_t} )\\right)",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Redo the comparison using correct upper bounds on the outlier probabilities, or add a condition ensuring p_i\\le 1/n for all outlier ranks.",
+      "overall_effect": "The corollary's claim that MKL-2 improves over SGD even when the clean set is at most half the data is unsupported by the given proof.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Corollary comparison uses invalid outlier probability bound",
+      "why_classification": "The proof has a concrete invalid probability bound; a corrected comparison may still be possible, but it requires a nontrivial repair of the appendix argument."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2001.03316",
+  "question_id": "Q1",
+  "run_name": "deepseek-v4.1-flash-max-2026-10-02-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d10c7474fbe52751d29cd038f650e3f1381876416035c1862f7697927c71b083",
+  "status": "ok"
+}

@@ -1,0 +1,329 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If the data are well-conditioned and the classes are separable, convergence is fast.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Strict convexity yields at most one minimizer, not existence. For linearly separable data the logistic empirical risk (strictly convex when the samples span R^d) has infimum 0 that is not attained: the loss decreases to 0 along a diverging ray, so no minimizer exists. The paper itself treats the separable case two sentences later, so the inference 'strictly convex, therefore admits a unique minimizer' fails in a regime the text covers.",
+      "failure_location": {
+        "quote": "This function is smooth and (strictly) \\emph{convex}, and therefore its minimization admits a unique minimizer.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the claim by 'admits at most one minimizer; a minimizer exists whenever the data are not separable (e.g., the objective is coercive)'.",
+      "overall_effect": "The asserted existence and uniqueness of the logistic-regression ERM solution is unreliable in the separable (non-coercive) case.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Logistic-regression ERM claimed to admit a unique minimizer",
+      "why_classification": "One-sentence local correction; no downstream claim or result relies on existence of the minimizer."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nabla_\\theta \\widehat{R}_m(\\theta^\\star,\\gamma)=0",
+          "tag": null
+        },
+        {
+          "quote": "inverse Hessian~$H^{-1}$ of the inner objective.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed hypergradient is invalid as written. (1) H is defined as the gradient of the inner objective, which by the stationarity condition stated two lines earlier equals zero at theta*(gamma); a zero vector cannot be inverted, and the surrounding prose itself calls H^{-1} 'the inverse Hessian of the inner objective', so H must be the Hessian. (2) The final factor is written as the Hessian of the j-th term, an n x n matrix, making the product (grad_theta C)^T H^{-1} grad_theta^2 R_j dimensionally invalid; differentiating the stationarity condition via the implicit function theorem gives the mixed derivative, i.e., the gradient grad_theta R_j(theta*), not its Hessian.",
+      "failure_location": {
+        "quote": "H = \\nabla_\\theta \\widehat{R}_m(\\theta^\\star,\\gamma),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redefine H := grad_theta^2 R_m(theta*,gamma) and replace the final factor by grad_theta R_j(theta*), yielding the standard implicit-function-theorem hypergradient.",
+      "overall_effect": "The displayed hypergradient formula and the claim that it provides an exact update for the loss weights are mathematically invalid as written.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Bilevel hypergradient: H defined as the gradient (zero at the inner optimum) and wrong derivative factor",
+      "why_classification": "Two local symbol corrections restore the standard formula; the paragraph's qualitative message (hypergradient governed by the inverse Hessian) is unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "which updates the weights~$\\gamma$ in order to equalize the magnitudes of the per-loss gradients with respect to the shared parameters.",
+          "tag": null
+        },
+        {
+          "quote": "At each iteration, \\emph{GradNorm} computes for each component~$i$ the partial gradients  $ \\|\\gamma_i \\nabla_\\theta  \\widehat{R}_i(\\theta)\\|$, measuring the contribution of the $i$-th loss component to the overall gradient.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Inside the average over j the i-th weight gamma_i multiplies the j-th gradient norm; the target should be the mean of the weighted per-loss norms (1/N) sum_j ||gamma_j grad R_j||, as in GradNorm and as required by the stated goal of equalizing the weighted contributions ||gamma_i grad R_i||. As written, gamma_i factors out of the i-th term, so L_grad(gamma) = sum_i gamma_i * | ||grad R_i|| - (1/N) sum_j ||grad R_j|| r_i^zeta |; its infimum over gamma >= 0 is 0 at gamma = 0, and its derivative with respect to gamma_i is nonnegative regardless of whether the i-th contribution is above or below its target, so minimizing it with respect to gamma drives all weights toward zero and cannot equalize anything.",
+      "failure_location": {
+        "quote": "L_{\\mathrm{grad}}(\\gamma) = \\sum_{i=1}^N \\big|\\, \\|\\gamma_i \\nabla_\\theta  \\widehat{R}_i(\\theta)\\| -  \\frac{1}{N}\\sum_{j=1}^N \\|\\gamma_i \\nabla_\\theta  \\widehat{R}_j(\\theta)\\|\\, r_i^\\zeta \\,\\big|,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace gamma_i by gamma_j inside the sum over j so that the target is (1/N) sum_j ||gamma_j grad_theta R_j(theta)|| r_i^zeta.",
+      "overall_effect": "The displayed surrogate objective does not implement the described equalization mechanism; its minimization with respect to gamma is degenerate.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "GradNorm surrogate objective uses the wrong weight index and is degenerate in the weights",
+      "why_classification": "A single local index correction restores the cited method's objective; no other claim depends on it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\theta_{k+1}-\\theta^{\\star}\\| \\le \\left(\\frac{\\kappa(H)-1}{\\kappa(H)+1}\\right) \\|\\theta_k-\\theta^{\\star}\\|",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The factor (kappa-1)/(kappa+1) is the worst-case contraction only for the specific step size alpha = 2/(lambda_max + lambda_min). For a general step size in (0, 2/lambda_max) the contraction factor is max{|1-alpha*lambda_min|, |1-alpha*lambda_max|}, which can be arbitrarily close to 1 (e.g., alpha -> 0). Counterexample: H = diag(1, 0.1) (kappa = 10), alpha = 0.1: the factor along the lambda_min eigendirection is 0.99, violating the claimed bound (10-1)/(10+1) ~ 0.818. The stated hypotheses are insufficient for the displayed bound.",
+      "failure_location": {
+        "quote": "applied to a strongly convex quadratic model with constant Hessian $H = \\nabla^2 f(\\theta)$ and step size $0 < \\alpha < 2/\\lambda_{\\max}(H)$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Either restrict the statement to the optimal step size alpha = 2/(lambda_max(H)+lambda_min(H)) or replace the factor by max{|1-alpha*lambda_min(H)|, |1-alpha*lambda_max(H)|}.",
+      "overall_effect": "The displayed contraction bound is false as stated; only the qualitative conclusion (small lambda_min slows GD) survives with the corrected step-size-dependent factor.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "GD contraction factor (kappa-1)/(kappa+1) claimed for arbitrary step sizes below 2/lambda_max",
+      "why_classification": "Local correction of the hypothesis or of the factor; the surrounding ill-conditioning argument is preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\E{\\|\\theta_k-\\theta^{\\star}\\|^2}\\leq (1-\\alpha \\mu)^k \\|\\theta_0-\\theta^{\\star}\\|^2+\\frac{2\\alpha}{\\mu } \\sigma^2.",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "Note, the discussed results remain valid if the stochastic gradient $\\nabla f_{i_k}$ is replaced by any unbiased gradient estimator $g_k$ satisfying $\\mathbb{E}[g_k]=\\nabla f(\\theta_k)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A mini-batch gradient with fixed batch size |I| < m is an unbiased estimator with positive variance sigma^2/|I|. By the paper's own Theorem thm:added-1, which Section 4.1 explicitly extends to any unbiased gradient estimator, constant-step iterates converge only to a neighborhood of radius proportional to alpha*sigma^2/|I|, not to the solution; exact convergence with a fixed step requires the variance to vanish (batch growing to m, or decreasing steps). Moreover SGD is the |I| = 1 mini-batch method, so the stated contrast is internally inconsistent, and the referenced section contains no result establishing mini-batch convergence with fixed step sizes.",
+      "failure_location": {
+        "quote": "As we will see in the following section, mini-batch methods can converge with fixed step sizes, whereas SGD typically requires a decreasing step size.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the sentence to state that fixed-batch mini-batch methods with a fixed step size converge only up to a variance-controlled neighborhood, and that exact convergence requires vanishing step sizes or growing batch sizes.",
+      "overall_effect": "The stated convergence contrast between mini-batch methods and SGD is false and unsupported by the cited section.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that mini-batch methods converge with fixed step sizes",
+      "why_classification": "Local correction of one sentence; no theorem or algorithm depends on it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Each function $f_i:\\mathbb{R}^n\\rightarrow \\mathbb{R}$ in problem \\eqref{eq:min_problem} is $L_i$-smooth. Denote $L_{\\max}:=\\max_{i=1,\\dots,n} L_i$.",
+          "tag": "hp_smooth"
+        },
+        {
+          "quote": "Notice the constant hidden in the $\\pazocal{O}(1/\\sqrt{K})$ term depends on $L_{\\max}=\\sup_\\theta \\max_i |\\lambda_i(H(\\theta))|$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Under Assumption hp_smooth, L_max is the maximum of the component smoothness constants L_i, whereas sup_theta lambda_max(H(theta)) is the smoothness constant of the averaged objective f; only sup lambda_max(H) <= L_max holds, and equality fails in general (e.g., f_1 = (L/2)x_1^2, f_2 = (L/2)x_2^2 gives sup lambda_max(H) = L/2 < L = L_max). Likewise a mu-strongly convex f satisfies inf_theta lambda_min(H(theta)) >= mu, with equality only when mu is the tight constant, and the hypothesis 'if f is mu strongly convex' is irrelevant to the L_max identity. After Theorem th:nonconvex, L_max is re-identified yet again as sup_theta max_i |lambda_i(H(theta))|, a third inconsistent definition. These false identities misrepresent the constants that actually enter Theorems thm:added-1, thm:added-2, th:convex and th:nonconvex.",
+      "failure_location": {
+        "quote": "L_{\\max} =\\sup_{\\theta}\\lambda_{\\max}(H(\\theta)), \\quad \\mu=\\inf_{\\theta} \\lambda_{\\min}(H(\\theta)),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the identities with the correct relations (sup_theta lambda_max(H) <= L_max; mu <= inf_theta lambda_min(H), equality for tight constants) and use one consistent definition of L_max throughout.",
+      "overall_effect": "The interpretive passage linking the convergence rates to kappa(H(theta)) rests on false identities; the meaning of L_max in the theorems is misrepresented (the theorems themselves, using L_max as defined in hp_smooth, are unaffected).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "L_max and mu incorrectly identified with Hessian eigenvalue extremes",
+      "why_classification": "Local correction of the displayed relations; no theorem's statement or proof relies on the false identities."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with a constant  step size $\\alpha_k=\\alpha=\\sqrt{\\frac{2}{L_fL_{\\max}K}}$ for all $k$.",
+          "tag": "th:nonconvex"
+        },
+        {
+          "quote": "with $\\Delta_f:=\\inf f-\\frac{1}{m}\\sum_{i=1}^{m}\\inf f_i$.",
+          "tag": "th:nonconvex"
+        },
+        {
+          "quote": "$$\\bar \\theta_K:= \\frac{1}{K}\\sum_{k=1}^K\\theta_k.$$",
+          "tag": "thm:added-2"
+        },
+        {
+          "quote": "This means that we need $\\pazocal{O}(\\epsilon^{-2})$ iterations to drive the norm of the gradient below the tolerance $\\epsilon$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem statement is ill-defined and does not state a provable claim. (1) The constant L_f in the step size and in the bound is never defined anywhere in the paper (Assumption hp_smooth defines only L_i and L_max). (2) The bound uses Delta_f^star, but the quantity defined in the theorem is Delta_f (no star); Delta_f^star is undefined. (3) The left-hand side minimizes over k = 0,...,K-1 the quantity E||grad f(theta_bar_K)||^2, where theta_bar_K is the averaged iterate (per thm:added-2) and does not depend on k, so the minimization is vacuous. Read literally, the theorem bounds the gradient at the averaged iterate; for a nonconvex objective the standard constant-step SGD analysis bounds the average or minimum of E||grad f(theta_k)||^2 over the iterates, and E||grad f(theta_bar_K)||^2 can be large even when all iterates have small expected gradient, so the literal statement is unsupported and false in general. The concluding remark also conflates the gradient norm with its square (the bound controls the squared norm). No proof is given for this theorem.",
+      "failure_location": {
+        "quote": "\\min_{k=0,\\dots,K-1}\\E{\\|\\nabla f(\\bar{\\theta}_K)}\\|^2\\leq \\frac{\\sqrt{2L_fL_{\\max}}\\left(2(f(\\theta_0)-\\inf f)+\\Delta_f^{\\star}\\right)}{\\sqrt{K}}",
+        "tag": "th:nonconvex"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Restate the theorem with defined constants (e.g., L_f as the smoothness constant of f, Delta_f as defined) and a well-defined left-hand side such as (1/K) sum_{k=0}^{K-1} E||grad f(theta_k)||^2 or min_{k<K} E||grad f(theta_k)||^2, for which the O(K^{-1/2}) bound holds by the standard analysis.",
+      "overall_effect": "The paper's only nonconvex SGD convergence guarantee is unusable as stated: its constants are undefined and its asserted bound concerns a quantity (the averaged iterate) that the theory does not control.",
+      "primary_affected_tag": "th:nonconvex",
+      "target_type": "formal_result",
+      "title": "Theorem th:nonconvex: undefined constants and ill-formed guarantee",
+      "why_classification": "The literal guarantee about the averaged iterate must be withdrawn and the statement rebuilt with defined constants; a contained restatement at the iterate level preserves the O(K^{-1/2}) rate without new proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Theta_k := \\frac{1}{m} J_k J_k^\\top,",
+          "tag": "eq:ntk_update"
+        },
+        {
+          "quote": "where $\\Theta_k \\in \\mathbb{R}^{m \\times m}$ is the empirical NTK at iteration $k$.",
+          "tag": null
+        },
+        {
+          "quote": "Recall Section~\\ref{sec:NTK_illconditioning}, the NTK is defined as a sum of positive semidefinite (PSD) rank-one terms, i.e.,~$\\Theta_m = \\tfrac{1}{m}\\sum_{j=1}^m J_jJ_j^\\top$, where $m$ denotes the number of utilized collocation points.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Section 3.1 defines the empirical NTK as Theta_k = (1/m) J_k J_k^T, an m x m matrix (J_k in R^{m x n} stacks the transposed parameter gradients as rows). Section 5.1 instead 'recalls' the empirical NTK as (1/m) sum_j grad h(x_j) grad h(x_j)^T = (1/m) J_k^T J_k, an n x n sum of outer products (the Gauss-Newton/Hessian approximation discussed separately in Section 3.1's parameter-space paragraph). The attribution 'from Section 3.1' is false: the two matrices have different dimensions and are different objects (they only share nonzero eigenvalues). The subsequent claim that each collocation point contributes one rank-one matrix to the kernel holds only for the n x n object, not for the NTK defined in Section 3.1; Section 5.2 repeats the inconsistent attribution.",
+      "failure_location": {
+        "quote": "Recall that, from Section~\\ref{sec:NTK_illconditioning}, the empirical NTK is given as $\\Theta_k = \\frac{1}{m} \\sum_{j=1}^m \\nabla_\\theta h_{\\theta_k}(x_j)\\, \\nabla_{\\theta} h_{\\theta_k}(x_j)^\\top$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Correct the recalled formula to Theta_k = (1/m) J_k J_k^T, or explicitly relabel the n x n outer-product sum as the parameter-space (Gauss-Newton) kernel sharing nonzero eigenvalues with the empirical NTK.",
+      "overall_effect": "The object analyzed throughout Section 5 (rank-one contributions, Weyl inequality, adaptive sampling) is not the empirical NTK defined in Section 3.1; the definitional chain is broken, although since the two matrices share nonzero eigenvalues the qualitative spectral conclusions survive.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Empirical NTK redefined as an n x n outer-product sum, contradicting the Section 3.1 definition",
+      "why_classification": "Local notational repair; because the two matrices share nonzero eigenvalues, all spectral claims and the Weyl-based argument remain valid."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\phi_1(x) = x(1-x),\\qquad \\phi_2(x) = x^2(1-x)^2.",
+          "tag": null
+        },
+        {
+          "quote": "J(x) = \\nabla_\\theta r(x;\\theta) = \\begin{bmatrix} -\\phi_1''(x) \\\\[3pt] -\\phi_2''(x) \\end{bmatrix}.",
+          "tag": null
+        },
+        {
+          "quote": "The NTK  is defined as $\\Theta_m = \\frac{1}{m}\\sum_{j=1}^m J(x_j)J(x_j)^\\top$, where $m$ denotes the number of utilized collocation points.",
+          "tag": null
+        },
+        {
+          "quote": "x_j \\in \\{0.1,\\,0.3,\\,0.5,\\,0.7,\\,0.9\\}",
+          "tag": null
+        },
+        {
+          "quote": "exhibits $\\lambda_{\\max}\\approx 4.0$ and $\\lambda_{\\min}\\approx 0.30$,",
+          "tag": null
+        },
+        {
+          "quote": "Most of these points lie in regions where $f(x)$ and $r(x)$ are small, resulting in Jacobians that are nearly collinear.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the stated construction, -phi_1''(x) = 2 and -phi_2''(x) = 12x - 12x^2 - 2, so J(x) = [2; 12x-12x^2-2]. For the uniform set {0.1,0.3,0.5,0.7,0.9} this gives Theta_5 = [[4, 0.08],[0.08, 0.647]] with eigenvalues lambda_max ~ 4.00 and lambda_min ~ 0.645, i.e., kappa ~ 6.2 - not lambda_min ~ 0.02 and kappa ~ 200 as claimed. For the refined set {0.1,0.3,0.5,0.7,0.85,0.9,0.95}, Theta_7 = [[4, -0.486],[-0.486, 0.786]] with lambda_max ~ 4.07, lambda_min ~ 0.714, kappa ~ 5.7 - not lambda_min ~ 0.30 and kappa ~ 13. The Jacobians [2; b(x)] are also not 'nearly collinear' (first component constant 2, second ranging over [-1.43, 1]). Hence the example's quantitative claims are wrong, and the corrected numbers (lambda_min rising only from ~0.64 to ~0.71, kappa from ~6.2 to ~5.7) do not support the advertised dramatic conditioning improvement (kappa from 200 to 13, smallest eigenvalue increasing significantly).",
+      "failure_location": {
+        "quote": "has eigenvalues $\\lambda_{\\max}\\approx 4.1$ and $\\lambda_{\\min}\\approx 0.02$, yielding a condition number $\\kappa(\\Theta_5)\\!\\approx\\!200$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Recompute and report the correct eigenvalues/condition numbers (which show only a marginal improvement), or redesign the example (e.g., basis functions genuinely localized near the feature at x ~ 0.9 so that uniform sampling misses the corresponding Jacobian direction) so that the claimed effect actually occurs.",
+      "overall_effect": "The worked example that purports to demonstrate the benefit of adaptive collocation for NTK conditioning reports numbers inconsistent with its own definitions, and its qualitative conclusion is not supported by the actual computation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Adaptive-sampling Poisson example reports eigenvalues inconsistent with its own construction",
+      "why_classification": "Correcting the numbers alone withdraws the example's advertised conclusion; preserving the illustration requires a redesigned construction, a contained but nontrivial change."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$i = k-1, k-2,\\dots,k-S $}",
+          "tag": "alg:bfgs_twoloop"
+        },
+        {
+          "quote": "which stores only $S$ most recent secant pairs $(s_k, y_k)$ instead of the full $\\tilde B_k$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Because 'Compute and save (s_k, y_k)' is placed inside the conditional 'if k > S', no secant pairs are stored during iterations k = 0,...,S; the first S+1 pairs are permanently lost. The two-loop recursion, invoked at every iteration, runs over i = k-1,...,k-S, so for every k <= 2S it references pairs s_j with j <= S that were never stored: the procedure is not well defined for its first 2S iterations, and during the transient it does not maintain the advertised invariant of storing the S most recent secant pairs. The intended logic is to save (s_k, y_k) at every iteration and discard the oldest pair only once S pairs are already stored.",
+      "failure_location": {
+        "quote": "\\If{$k>S$} \\COMMENTmine{Secant pairs update} \\State Discard $\\{(s_{k-S},y_{k-S})\\}$ from the storage \\State Compute and save $s_k=\\theta_{k+1}-\\theta_k$, $y_k=\\nabla f(\\theta_{k+1})-\\nabla f(\\theta_k)$",
+        "tag": "alg:bfgs"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Move the 'compute and save (s_k, y_k)' step outside the conditional and discard the oldest stored pair only when the storage already contains S pairs (guarding only the discard), keeping the two-loop bounds consistent with the stored indices.",
+      "overall_effect": "Algorithm alg:bfgs as written does not implement L-BFGS: it is ill-defined for early iterations and does not maintain its stated memory invariant.",
+      "primary_affected_tag": "alg:bfgs",
+      "target_type": "algorithm",
+      "title": "L-BFGS algorithm saves secant pairs only when k > S and thereby references undefined pairs",
+      "why_classification": "A short, local restructuring of the pseudocode restores the standard, correct L-BFGS procedure without changing any claimed behavior."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the sample-wise objective function becomes $f_i(\\theta) = \\ell\\bigl(h_\\theta(M^{-1}x),\\, y\\bigr)$,",
+          "tag": null
+        },
+        {
+          "quote": "If a linear transformation $M^{-1}$ is applied to the input $x$, this alters both the search direction and its magnitude",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For f_i(theta) = ell(h_theta(M^{-1}x), y), the transformed input M^{-1}x is constant with respect to theta, so the chain rule gives grad_theta f_i = J_{h_theta}(M^{-1}x)^T grad_z ell (with J the Jacobian with respect to theta): no M^{-1} factor appears in the parameter gradient. The displayed formula inserts M^{-1} between the Jacobian and grad_z ell; that factor belongs to the gradient with respect to the input x (grad_x f_i = M^{-T} J_{h_theta}(M^{-1}x)^T grad_z ell), not to grad_theta f_i, and as written the displayed product is not a vector in R^n. The claimed mechanism (the transformation rescales the parameter-space search direction through this factor) is therefore misattributed.",
+      "failure_location": {
+        "quote": "\\nabla_\\theta f_i(\\theta) = J_{h_\\theta}(M^{-1}x)\\, M^{-1}\\, \\nabla_z \\ell.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Remove the M^{-1} factor from the displayed grad_theta f_i formula, or relabel the formula as the gradient with respect to the input x with the correct transpose placement.",
+      "overall_effect": "The displayed gradient formula for data-space preconditioning is incorrect; the bullet's account of how input transformations alter the parameter-space search direction is unreliable (though the qualitative claim that such transformations affect conditioning remains plausible).",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Data-space preconditioning gradient formula contains a spurious M^{-1} factor",
+      "why_classification": "Local correction of one displayed formula; the surrounding discussion does not depend on the erroneous factor."
+    }
+  ],
+  "issues_found": 11,
+  "paper_id": "2601.10222",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n02-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "cc4e517be3a26aba07d09c88bf9c61e1735a37373726924b6ba9ce4a0ce5483f",
+  "status": "ok"
+}

@@ -1,0 +1,72 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:msgfem:iteration"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ \\int_{\\bdryO \\cap \\partial \\ovlpdomain} \\fwp \\fwpTest \\velField \\cdot \\bn \\ds",
+          "tag": null
+        },
+        {
+          "quote": "\\bilWF{\\fwpSol - \\fwpiPart}{\\fwpiPart}{\\osdomain_\\ddindex} = 0",
+          "tag": "cor:added-1"
+        }
+      ],
+      "failure_explanation": "The proof's first step asserts \\|w\\|^2_{a,\\omega_j^*} \\leq |B(w,w)_{\\omega_j^*}| via 'coercivity of the bilinear form.' However, the local bilinear form is not coercive on subdomains. For divergence-free velocity, integration by parts gives B(w,w) = \\|w\\|^2_a + \\tfrac12\\int_{\\Gamma_O\\cap\\partial\\omega_j^*} w^2 b\\cdot n - \\tfrac12\\int_{\\partial\\omega_j^*\\cap\\Omega} w^2 b\\cdot n. The last term is negative when velocity flows out through the interior boundary \\partial\\omega_j^*\\cap\\Omega. Since the harmonic error w = u^e|_{\\omega_j^*} - u_j^p equals u^e there (the particular function vanishes on \\partial\\omega_j^*\\cap\\Omega), the claimed inequality B(w,w) \\geq \\|w\\|^2_a can fail, making the first step unjustified.",
+      "failure_location": {
+        "quote": "Using the coercivity and continuity of the bilinear form, we obtain",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the first step of the corollary proof with a valid bound on \\|u^e|_{\\omega_j^*} - u_j^p\\|_{a,\\omega_j^*} in terms of \\|u^e\\|_{a,\\omega_j^*} that does not assume local coercivity—for example, via the theory of B-harmonic extensions or a global coercivity argument—likely yielding weaker explicit constants. The qualitative convergence of th:msgfem:iteration would then follow from th:msgfem:global combined with the exponential eigenvalue decay.",
+      "overall_effect": "The explicit error bound in cor:added-1 (with the factor (1 + C Pe_H)^2) is unproven. The convergence rate in th:msgfem:iteration cannot be explicitly bounded as claimed. The qualitative convergence of the MS-GFEM iteration for sufficiently large local dimensions may still follow from th:msgfem:global (proved independently) combined with th:msgfem:evaldecay, but the dependence of the convergence rate on the Péclet number is not established.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Corollary proof uses false local coercivity of bilinear form on subdomains",
+      "why_classification": "The false coercivity claim invalidates the corollary's proof and the explicit convergence rate. However, the qualitative convergence can be recovered from th:msgfem:global (proved independently of the corollary) combined with the exponential eigenvalue decay, once local harmonic errors are bounded by a contained nontrivial argument. This does not require new global proof architecture or abandonment of the main results."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\mat{\\msgfemOperator} = \\discPreconditioner\\discBilForm$",
+          "tag": null
+        },
+        {
+          "quote": "$\\discProjCoarse = \\discBilForm_S^{-1}\\discCoarseRestriction\\discBilForm$",
+          "tag": null
+        },
+        {
+          "quote": "$\\msgfemOperator w = \\sum_{\\ddindex = 1}^\\nDoms \\pu_\\ddindex \\projB(w)\n  + \\projCoarse\\left(w - \\sum_{\\ddindex = 1}^\\nDoms \\pu_\\ddindex \\projB(w)\\right)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The stated preconditioner formula is M = M_1 + M_S(I - M_1) where M_1 = \\sum R_j^T D_j B_j^{-1} R_j and M_S = R_S^T B_S^{-1} R_S. However, the MS-GFEM operator decomposition with projections \\Pi_j = B_j^{-1} R_j B and \\Pi_S = B_S^{-1} R_S B yields G = (M_1 + M_S(I - B M_1)) B. Thus the correct preconditioner satisfying G = M B is M = M_1 + M_S(I - B M_1), not M_1 + M_S(I - M_1). The stated formula omits the factor \\discBilForm (i.e., B) before M_1 in the coarse correction term, so the claim G = M B does not hold with the stated M.",
+      "failure_location": {
+        "quote": "\\left(\\mat{I} - \\sum_{\\ddindex=1}^\\nDoms \\discRestriction\\transpose \\discPU \\discBilForm_\\ddindex^{-1}\\discRestriction \\right)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Insert \\discBilForm before the inner sum in the coarse correction term: change \\left(\\mat{I} - \\sum_{\\ddindex=1}^\\nDoms \\discRestriction\\transpose \\discPU \\discBilForm_\\ddindex^{-1}\\discRestriction \\right) to \\left(\\mat{I} - \\discBilForm \\sum_{\\ddindex=1}^\\nDoms \\discRestriction\\transpose \\discPU \\discBilForm_\\ddindex^{-1}\\discRestriction \\right).",
+      "overall_effect": "The claim that the MS-GFEM operator equals \\discPreconditioner\\discBilForm does not hold with the stated formula. If the formula is applied literally (e.g., in the GMRES stopping criterion), it computes a different preconditioned residual than the two-step iteration eq:discrete:RAS. The two-step iteration itself is correct and implements the intended preconditioner.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Preconditioner formula omits discBilForm factor in coarse correction term",
+      "why_classification": "The correction is a short, local, one-factor insertion in a displayed formula. The two-step algorithm (eq:discrete:RAS) is already correct and implements the right preconditioner; all substantive claims and guarantees survive without any new lemma or construction."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2509.17531",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n01",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "10d5e7cc895eb71bc1c68a4a297aef9c190ad8b22b3542cc47b43a3abea14ccf",
+  "status": "ok"
+}

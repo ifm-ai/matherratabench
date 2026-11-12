@@ -1,0 +1,84 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:main_end_to_end_v"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\REQUIRE Learned map $\\widehat\\Pi$, stepsizes $\\{\\alpha_t\\}_{t=0}^{T-1}$, iteration budget $T$",
+          "tag": "alg:main_psa"
+        },
+        {
+          "quote": "Assume the conditions of Lemma~\\ref{lem:projSA_stability_template} hold and that\n\\(\\alpha_t=\\alpha/(t+t_0)\\) with \\(t_0\\ge \\max\\{\\alpha,1\\}\\).",
+          "tag": "thm:projSA_rate_template"
+        },
+        {
+          "quote": "Define $a := \\alpha(1-\\widehat\\gamma)$. Assume \\(a>1/2\\).",
+          "tag": "thm:projSA_rate_template"
+        }
+      ],
+      "failure_explanation": "Theorem thm:main_sa_rate asserts the O(T^{-1/2})+O(N eps_b) expectation bound for Algorithm alg:main_psa under only structural/weight-learning success and \\widehat\\gamma<1, but the algorithm takes the stepsizes {\\alpha_t} as an unconstrained input, and the claimed bound fails for general choices: \\alpha_t=0 yields v_T=v_0 with non-decaying error, and constant stepsizes leave a persistent noise floor. The paper's own proof (formal version thm:projSA_rate_template) establishes the rate only for \\alpha_t=\\alpha/(t+t_0) with t_0>=max{\\alpha,1} and a=\\alpha(1-\\widehat\\gamma)>1/2; the condition a>1/2 is needed so that the second-moment recursion sum sum_t (t+t_0)^{2a-2} produces the T^{-1/2} term. These hypotheses the proof needs are omitted from the stated result.",
+      "failure_location": {
+        "quote": "Assume the structural learning and weight estimation steps succeed and assume $\\widehat\\gamma<1$.\nThen Algorithm~\\ref{alg:main_psa} satisfies",
+        "tag": "thm:main_sa_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the theorem and corollary statements to stepsizes \\alpha_t=\\alpha/(t+t_0) with t_0>=max{\\alpha,1} and \\alpha(1-\\widehat\\gamma)>1/2, matching the formal versions thm:projSA_rate_template and cor:end_to_end_v; no other change is needed and every conclusion and rate is preserved.",
+      "overall_effect": "As stated, the headline finite-time guarantee quantifies over arbitrary stepsize inputs of Algorithm 4, and the end-to-end statement cor:main_end_to_end_v (\"T=\\widetilde O(1/\\varepsilon^2) suffices\") inherits the gap; both are valid only for the restricted stepsize family used in the appendix.",
+      "primary_affected_tag": "thm:main_sa_rate",
+      "target_type": "formal_result",
+      "title": "Main-text SA rate theorem omits the stepsize hypotheses its proof requires",
+      "why_classification": "The repair adds a standard local condition that is already present in the paper's own formal statements; the method, conclusion, rate, and advertised scope all survive with no new lemma or reoptimization."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:main_end_to_end_v",
+        "cor:end_to_end_v",
+        "thm:main_g_rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\E[\\widehat T(v_t)\\mid \\cF_t]=r+Pv_t,\n\\qquad\n\\E\\!\\left[\\|\\widehat T(v_t)-(r+Pv_t)\\|_\\infty^2\\mid \\cF_t\\right]\\le \\sigma^2.",
+          "tag": "lem:projSA_stability_template"
+        },
+        {
+          "quote": "Assume the oracle noise along the iterates satisfies the uniform conditional second-moment bound",
+          "tag": "lem:optionB_stability"
+        },
+        {
+          "quote": "for each $s\\in \\mathcal{S}$, sample $\\tilde s\\sim P(\\cdot | s)$ and set $\\widehat T(v_t)(s)=r(s)+v_t(\\tilde s)$.",
+          "tag": null
+        },
+        {
+          "quote": "Assume the SA stepsizes are $\\alpha_t=\\alpha/(t+t_0)$ with $t_0\\ge \\alpha$ and $a=\\alpha(1-\\widehat\\gamma)>1/2$.",
+          "tag": "cor:end_to_end_v"
+        }
+      ],
+      "failure_explanation": "The SA stability and rate results condition on a uniform, trajectory-independent noise bound E[|| \\widehat T(v_t)-(r+Pv_t) ||_\\infty^2 | F_t] <= \\sigma^2 (eq:oracleB / eq:oracleA_along_iterates). For the paper's own oracle (one next-state sample per state, \\widehat T(v_t)(s)=r(s)+v_t(\\tilde s)), the noise satisfies ||\\xi_{t+1}||_\\infty <= 2||v_t||_\\infty, so a constant \\sigma exists only if the iterates are uniformly bounded almost surely. This is never established: the stability lemmas (lem:optionB_stability, lem:projSA_stability_template, lem:contract_noise_bounded_iterates) prove sup_t E||v_t||_\\infty^2<\\infty under the noise assumption, so they cannot discharge it, and no deterministic uniform bound follows from the stated quantities (using v_t(a_{i,k})=0 and sum_{i,k} \\widehat b_{i,k}=1 gives only ||v_{t+1}||_\\infty <= (1+\\alpha_t)||v_t||_\\infty + 2\\alpha_t R, a growing polynomial envelope, since sum_t \\alpha_t diverges). Thus the premise is not a consequence of the other assumptions for the specified estimator, yet the unconditional pipeline guarantees rest on it; the formal end-to-end corollary cor:end_to_end_v does not even list the noise condition among its hypotheses.",
+      "failure_location": {
+        "quote": "where the hidden constants depend on the contraction parameters and the oracle second moment bound.",
+        "tag": "thm:main_sa_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Re-derive the SA bounds with the state-dependent noise bound E[||\\xi_{t+1}||_\\infty^2|F_t] <= 4||v_t||_\\infty^2 <= c(1+||e_t||_q^2) that the per-state sampler actually satisfies: the extra O(\\alpha_t^2 m_t) term in the second-moment recursion is absorbed for large t since sum_t \\alpha_t^2<\\infty, preserving the O(T^{-1/2}) rate, the O(N\\varepsilon_b) floor, and all downstream complexity bounds with worse constants; alternatively add a projection of the iterates onto a bounded set and repeat the analysis.",
+      "overall_effect": "The advertised \\widetilde O(T^{-1/2}) convergence of Algorithm alg:main_psa, the end-to-end query-complexity guarantees (cor:main_end_to_end_v and cor:end_to_end_v), and the residual-estimation guarantee thm:main_g_rate (via the bound B_v^2=E||v_T||_\\infty^2 furnished by the same stability lemmas) are unsupported as unconditional statements about the specified sampling pipeline.",
+      "primary_affected_tag": "thm:main_sa_rate",
+      "target_type": "formal_result",
+      "title": "Uniform oracle-noise second-moment premise is unestablished (and not derivable) for the per-state sampler",
+      "why_classification": "The premise cannot be discharged from the stated hypotheses (the oracle noise is multiplicative in the iterate and no almost-sure uniform iterate bound is available), so the SA lemmas must be genuinely reworked with state-dependent noise or the algorithm modified—more than a routine local fix—but the repair is contained, uses standard stochastic-approximation machinery, and preserves the method, rates, and advertised scope, so it is moderate rather than serious."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2602.00474",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p2-retry",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "972379f0da0ee4de13a10747348296e76d7000e64b93e768397abb525d521a6d",
+  "status": "ok"
+}

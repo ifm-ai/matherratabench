@@ -1,0 +1,116 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In contrast, our approach targets quotient-stable quantities directly from samples, avoiding explicit estimation of $P$ and eigen-decompositions.",
+          "tag": null
+        },
+        {
+          "quote": "Add edge $(s,\\tilde s)$ to $\\widehat E$",
+          "tag": "alg:main_learn_structure"
+        },
+        {
+          "quote": "If $K \\ge p_{\\min}^{-1}\\log(n^2/\\delta)$, then with probability at least $1-\\delta$ the learned support graph equals the true support graph.",
+          "tag": "thm:main_support_recovery"
+        },
+        {
+          "quote": "$M=\\tilde O\\!\\left(\\frac{N^2}{\\varepsilon^2}\\right)$",
+          "tag": "cor:main_end_to_end_v"
+        }
+      ],
+      "failure_explanation": "The paper presents avoiding Theta(n^2) storage and the sample inefficiency of plug-in estimation as advantages of its method. Algorithm 1, however, stores the full learned support graph, which can have Theta(n^2) edges for dense chains. Its exactness guarantee requires observing every positive transition from every state, with K >= log(n^2/delta)/p_min samples per state. That is precisely the all-transition coverage a plug-in estimator needs. The method then adds |T| M H_abs absorption queries and stores an n x N weight table. No storage or sample-complexity comparison with plug-in estimation is proved anywhere.",
+      "failure_location": {
+        "quote": "plug-in estimation typically requires $\\Theta(n^2)$ storage and can be sample-inefficient if one aims for uniform accuracy over all transitions",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Withdraw or qualify the storage and sample-efficiency comparison. Alternatively, state the actual storage (support graph plus n x N weights) and query costs and compare them explicitly with plug-in estimation.",
+      "overall_effect": "The advertised resource advantage over plug-in estimation is unsupported. The formal guarantees themselves are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed storage/sample advantage over plug-in estimation is unsupported by the pipeline",
+      "why_classification": "Rewording the comparison suffices. No theorem, rate or algorithm changes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:main_end_to_end_v",
+        "cor:end_to_end_v"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Set $\\widehat T(v_t)(s)\\leftarrow r(s)+v_t(\\tilde s)$",
+          "tag": "alg:main_psa"
+        },
+        {
+          "quote": "\\E\\!\\left[\\|\\widehat T(v_t)-(r+Pv_t)\\|_\\infty^2\\mid \\cF_t\\right]\\le \\sigma^2",
+          "tag": "lem:projSA_stability_template"
+        },
+        {
+          "quote": "Assume the oracle noise along the iterates satisfies the uniform conditional second-moment bound",
+          "tag": "lem:optionB_stability"
+        },
+        {
+          "quote": "Consequently, there is a finite constant $B_{\\sup}$ such that",
+          "tag": "lem:projSA_stability_template"
+        }
+      ],
+      "failure_explanation": "For the paper's own oracle, the noise is xi_{t+1}(s) = v_t(s~) - (Pv_t)(s). Its conditional second moment therefore scales with ||v_t||_inf^2, up to 4||v_t||_inf^2. The iterates are random and not shown to be almost surely bounded: the one-step map can enlarge ||v_t||_inf by a constant factor. A uniform conditional bound sigma^2 valid for all t is thus an unverified assumption about the algorithm's own trajectory. The only boundedness results (B_sup) are themselves derived assuming sigma, which is circular. As a result, the main rate statement for Algorithm 5 relies on an unestablished premise, as do the end-to-end complexity claims whose constants involve sigma.",
+      "failure_location": {
+        "quote": "where the hidden constants depend on the contraction parameters and the oracle second moment bound.",
+        "tag": "thm:main_sa_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the uniform sigma^2 assumption with the affine-variance bound that the oracle actually satisfies: E[||xi||^2 | F_t] <= 4||v_t||_inf^2 <= c1 + c2 ||v_t - v_hat*||_q^2. Then rework the second-moment recursion, absorbing the alpha_t^2 c2 m_t term via a burn-in or a larger t0. This recovers the T^{-1/2} rate with modified constants.",
+      "overall_effect": "The O(T^{-1/2}) guarantee and the end-to-end query complexity are not established for the stated sampling oracle. They hold only under an extra, unverified noise condition.",
+      "primary_affected_tag": "thm:main_sa_rate",
+      "target_type": "formal_result",
+      "title": "Uniform oracle second-moment bound is assumed but not justified for the algorithm's multiplicative noise",
+      "why_classification": "The repair requires a contained but nontrivial reworking of the SA recursion and its constants. The rate and the overall architecture survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Work on the event of Theorem~\\ref{thm:identify} and Lemma~\\ref{lem:bhats}.",
+          "tag": "lem:optionB_stability"
+        },
+        {
+          "quote": "Then there exists a finite constant $C_{\\mathrm{stab}}$ (depending on $\\alpha,\\gamma,N,\\|r\\|_\\infty$, and norm-equivalence constants)",
+          "tag": "lem:optionB_stability"
+        },
+        {
+          "quote": "Then for any $\\epsb\\in(0,1)$",
+          "tag": "lem:bhats"
+        }
+      ],
+      "failure_explanation": "The statement asserts sup_t E||v_t - v*||_q^2 < infinity on the event of Lemma bhats, which allows any eps_b in (0,1). The derived recursion has the coefficient 1 - alpha_t D + alpha_t C_delta^2 eps_b^2 / D. For large N eps_b this coefficient is at least 1, and the perturbed projected map need not be contractive, so boundedness does not follow. The proof closes only by imposing D - C_delta^2 eps_b^2 / D >= D/2, which is not among the lemma's hypotheses.",
+      "failure_location": {
+        "quote": "If \\(\\epsb\\) is chosen so that \\(D-\\tfrac{1}{D}C_\\delta^2\\epsb^2\\ge D/2\\), then the above is a standard stable Robbins--Monro recursion",
+        "tag": "lem:optionB_stability"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the hypothesis C_delta^2 eps_b^2 <= D^2/2, or equivalently a hat-gamma < 1 type condition, to the lemma statement.",
+      "overall_effect": "As stated, the lemma's uniform second-moment bound is unproven for non-small eps_b. No later result cites this lemma.",
+      "primary_affected_tag": "lem:optionB_stability",
+      "target_type": "formal_result",
+      "title": "Stability lemma's proof needs a smallness condition on eps_b that is absent from the statement",
+      "why_classification": "Adding the standard local condition already used in the proof fixes the lemma. Nothing downstream depends on it."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2602.00474",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "972379f0da0ee4de13a10747348296e76d7000e64b93e768397abb525d521a6d",
+  "status": "ok"
+}

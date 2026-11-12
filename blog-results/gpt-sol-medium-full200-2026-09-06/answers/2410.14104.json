@@ -1,0 +1,140 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "X_{t+1} = (1-\\omega) X_t + \\omega S_1(Y_t).",
+          "tag": "algo: overrelaxation PD"
+        },
+        {
+          "quote": "when $\\omega > 1$ is used (which is the case of interest in overrelaxation) it cannot be guaranteed that positive definite matrices are generated.",
+          "tag": null
+        },
+        {
+          "quote": "L_{t+1} = (1-\\omega) L_t + \\frac{\\omega}{\\sqrt{m}} C_t^{-1}.",
+          "tag": "algo: overrelaxation Cholesky"
+        }
+      ],
+      "failure_explanation": "The stated input domain allows iterations that immediately leave the PD or invertible domain. For example, with $m=n=k=1$, $A_1=1$, $X_0=2$, $Y_0=1$, and $\\omega=2$, PD-OR gives $S_1(Y_0)=1$ and $X_1=0$, so its requested Cholesky factor and next inverse do not exist. Likewise, Cholesky-OR with $L_0=2$, $R_0=1$, and $\\omega=2$ gives $L_1=0$. Thus both affine schemes lack a domain-preservation condition on their advertised inputs.",
+      "failure_location": {
+        "quote": "Matrix collection $\\bA$ satisfying Assumption~\\ref{assumption 1},  initial matrices $(X_0, Y_0) \\in \\caC_m \\times \\caC_n$, and relaxation parameter $\\omega >0$.",
+        "tag": "algo: overrelaxation PD"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the algorithmic inputs to a domain known to keep every affine update PD or invertible, such as the sufficiently local regime used by the local theorem, or add an explicit admissibility check and conditional termination. For a global unconditional PD guarantee, PD-OR would need the underrelaxed range $0<\\omega\\leq1$; Cholesky-OR also needs canonical triangular positive-diagonal initial factors.",
+      "overall_effect": "Algorithms PD-OR and Cholesky-OR cannot be executed indefinitely for all inputs and all $\\omega>0$ permitted by their algorithm blocks. The local convergence theorem is not invalidated because it separately requires initialization sufficiently close to a fixed point.",
+      "primary_affected_tag": "algo: overrelaxation PD",
+      "target_type": "algorithm",
+      "title": "Affine overrelaxation algorithms are not well-defined on their stated inputs",
+      "why_classification": "A complete repair requires materially narrowing the unrestricted input contract or adding a safeguarded procedure; merely editing an algebraic typo is insufficient. The paper's local guarantees can nevertheless be retained without new global proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "f(X,Y) &= \\tr (X \\Phi(Y) ) -\\frac{1}{m} \\log \\det (X) - \\frac{1}{n} \\log \\det (Y)",
+          "tag": "eq: cost function"
+        },
+        {
+          "quote": "\\nabla_X f(X,Y) = \\Phi(Y) - \\frac{1}{m} X^{-1} \\quad \\text{and} \\quad \\nabla_Y f(X,Y) = \\Phi^*(X) - \\frac{1}{n} Y^{-1}.",
+          "tag": null
+        },
+        {
+          "quote": "\\err(\\bA_t) = \\sqrt{\\norm*{\\sum_i A_{t,i}^{} A_{t,i}^\\top - \\frac{1}{m}I_m}_F^2 + \\norm*{\\sum_i A_{t,i}^\\top A_{t,i}^{} - \\frac{1}{n}I_n}_F^2}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With $X=L^\\top L$ and $Y=R^\\top R$, the first residual is $L(\\nabla_X f)L^\\top$, not $\\nabla_X f$ itself, and analogously the second residual is $R(\\nabla_Y f)R^\\top$. Their Frobenius norms therefore do not generally equal the ordinary Euclidean gradient norm. They instead represent the gradient norm associated with the affine-invariant metric introduced later in the appendix.",
+      "failure_location": {
+        "quote": "It turns out that this error equals the norm of the gradient of $f$ (see~\\eqref{eq: cost function}). Therefore, we call it the gradient norm.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State that the residual equals the norm of the Riemannian gradient under the product affine-invariant metric, or simply call it the marginal residual norm.",
+      "overall_effect": "The numerical residual remains a valid stationarity and scaling-error measure, but its identification as the unqualified gradient norm is false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The reported residual is not the Euclidean gradient norm claimed",
+      "why_classification": "A short local qualification makes the claim correct without altering the experiments, convergence plots, rates, or algorithms."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In the experiment, we set $n = 50$, $k = 55$",
+          "tag": null
+        },
+        {
+          "quote": "So $P = R$ and $\\alpha_i = n\\ell_i^2$ yield a solution to frame scaling, and vice versa.",
+          "tag": null
+        },
+        {
+          "quote": "\\ell_i^2 (R x_i)^\\top (R x_i) = \\frac{1}{k}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Taking traces in the second frame condition gives $\\sum_i\\|\\tilde x_i\\|_2^2=n$, whereas the first condition gives $\\sum_i\\|\\tilde x_i\\|_2^2=k(n/k)^2=n^2/k$. These are incompatible unless $k=n$, contrary to the experiment's $k=55$, $n=50$. Moreover, the operator-scaling equations imply that $\\tilde x_i=\\sqrt n\\,\\ell_i R x_i$ has squared norm $n/k$ and sums to $I_n$; the stated choice $\\alpha_i=n\\ell_i^2$ does not follow.",
+      "failure_location": {
+        "quote": "The goal is to find a nonsingular matrix $P \\in \\GL_n(\\R)$ and nonnegative scalars $\\alpha_1, \\dots, \\alpha_k \\geq 0$ such that the scaled frame $\\tilde x_i = \\alpha_i P x_i$ satisfies \n\\begin{align*}\n    \\norm{\\tilde x_i}_2 &= \\frac{n}{k} \\quad (i = 1, \\dots, k), \\\\\n    \\sum_{i=1}^k \\tilde x_i \\tilde x_i^\\top &= I_n.\n\\end{align*}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the first condition by $\\|\\tilde x_i\\|_2^2=n/k$ and, with the stated convention $\\tilde x_i=\\alpha_iPx_i$, replace the correspondence by $P=R$ and $\\alpha_i=\\sqrt n\\,\\ell_i$.",
+      "overall_effect": "As written, the experimental instance cannot solve the defined frame-scaling problem, and the claimed equivalence between that problem and the operator-scaling instance is false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The stated frame-scaling problem is inconsistent and the scaling correspondence is wrong",
+      "why_classification": "The inconsistency is substantive, but the source supports a short algebraic repair that preserves the operator-scaling experiment and the intended frame-scaling interpretation."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that the CP map $\\Phi$ is positivity improving",
+          "tag": "thm: local convergence"
+        },
+        {
+          "quote": "A CP map $\\Phi$ is said to be \\emph{positivity improving} if it maps nonzero positive semidefinite (PSD) matrices to positive definite ones.",
+          "tag": "def:positivity improving"
+        },
+        {
+          "quote": "\\Phi(Z) = \n    \\begin{pmatrix}\n        x_1^\\top Z x_1^{} & & \\\\\n        & \\ddots & \\\\\n        & & x_k^\\top Z x_k^{}     \n    \\end{pmatrix}",
+          "tag": null
+        },
+        {
+          "quote": "In the experiment, we set $n = 50$, $k = 55$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "This frame CP map is not positivity improving when $n>1$: choose a nonzero vector $v$ orthogonal to $x_1$ and set $Z=vv^\\top$. Then $Z$ is nonzero PSD but the first diagonal entry of $\\Phi(Z)$ is $(x_1^\\top v)^2=0$, so $\\Phi(Z)$ is not positive definite. Consequently Theorem~\\ref{thm: local convergence} does not apply to the reported frame experiment, regardless of whether its observed rates agree.",
+      "failure_location": {
+        "quote": "We see that the convergence rates of all three SOR methods are the same, validating the local convergence result in Theorem~\\ref{thm: local convergence}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace “validating” by “consistent with” and explicitly note that this frame map is outside the positivity-improving regime, or prove a local convergence extension under weaker hypotheses that cover the frame instance.",
+      "overall_effect": "The experiment may provide evidence for a broader phenomenon, but it does not validate the stated theorem under that theorem's assumptions.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The frame experiment lies outside the hypothesis of the theorem it is said to validate",
+      "why_classification": "A local qualification removes the unsupported validation claim without changing the theorem or experiment; extending the theorem would be nontrivial but is not necessary to repair the prose."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2410.14104",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6946c25aa56d0ba7d62182b05a2028c4576a5f6e05caf7ba7dc90b0cfbdbfdcb",
+  "status": "ok"
+}

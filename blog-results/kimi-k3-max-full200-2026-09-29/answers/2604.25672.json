@@ -1,0 +1,101 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\kappa = z_1 z_2 \\frac{\\nu_1-\\nu_2}{\\nu},\\quad \\nu_k = \\frac{1}{\\rho_k c_k^2},\\quad \\nu = z_1\\nu_1 + z_2\\nu_2.",
+          "tag": null
+        },
+        {
+          "quote": "\\nu_k^{n+1} &= (\\frac{1}{\\rho_k c_k^2})^{n+1}= \\frac{1}{\\gamma_k (p^{n+1}+p_{w,k})},",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "\\frac{1}{\\rho c^2(\\mathbf{U}^{(s)})} = \\frac{0.5}\n {1.4(-273.326 + 0)} + \\frac{0.5}{4.4(-273.326 + 6000)}\\approx -0.001286 < 0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the implicit equation, f(z1)=κ(z1)∇·u^n with κ(z1)=z1 z2 (ν1−ν2)/ν, ν_k=1/(γ_k(p(z1)+p_{w,k})), and p(z1) the Tammann pressure at frozen (z_kρ_k, ρu, E). When p_{w,1}≠p_{w,2} (e.g., water–air with p_{w,2}=6000) and the trial pressure p(z1) crosses the band (−p_{w,2}, −p_{w,1}), the mixture compressibility ν(z1)=z1ν1+z2ν2 vanishes at some z*∈(0,1) while ν1−ν2≠0 there, so κ (hence F) has a genuine pole on [0,1]; the invoked premise 'continuity of F' is false, and the IVT argument is applied outside its hypotheses. The conclusion is not merely unproven but false: with γ1=1.4, p_{w,1}=0, γ2=4.4, p_{w,2}=6000, take the admissible state z1ρ1=0.6, z2ρ2=500, ρu=0, E=3500.5, z1^n=0.9 (p^n≈1195>0, so the state lies in 𝒢^p). Then ν(z*)=0 at z*≈0.237 (p(z*)≈−2965). With ∇·u^n=−1 and Δt_im=1, F(z)=z−0.9+κ(z) satisfies F<0 on [0,z*) and F>0 on (z*,1] (e.g., F(0)=−0.9, F(0.25)≈4.3, F(0.5)≈0.115, F(0.9)≈0.094, F(1)=0.1): the implicit equation has no solution in [0,1] at all, contradicting the theorem asserted for every Δt_im>0. The paper's own Appendix A (mixed state with 1/(ρc²)≈−0.001286<0) confirms that ν changes sign across trial values of z1 in exactly this Tammann gas-liquid regime.",
+      "failure_location": {
+        "quote": "The continuity of $F(z_1)$ guarantees the \nexistence of root $z_1^{n+1} \\in [0, 1]$.",
+        "tag": "thm:implicit_solver"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified that preserves the unconditional claim; at minimum, a repair must either (i) restrict the theorem to a Δt-dependent smallness/CFL-type condition, abandoning the advertised 'unconditional BP' guarantee, (ii) restrict the EOS regime (e.g., p_{w,1}=p_{w,2} or gas-gas cases, where κ stays continuous), excluding the flagship gas-liquid cases, or (iii) modify the implicit equation (e.g., regularize or freeze the trial-state dependence of κ so that f is continuous on [0,1]) and supply a new existence/BP analysis.",
+      "overall_effect": "Theorem thm:implicit_solver (existence of a bound-preserving update for every Δt_im>0) is unsupported and false in general for the Tammann EOS with p_{w,1}≠p_{w,2}. The same singularity invalidates the omitted proof of the BP property of the adaptive BE/SDIRK2 scheme \\eqref{adaptive_sdirk2} (its stage equations have the same f), and the stated practice of locating the root by bisection at every quadrature point can converge to the pole instead of a root. Consequently the abstract/introduction/conclusion claims that the implicit treatment is 'unconditionally BP' and 'effectively remov[es] the stiffness-induced stability constraints' are unsupported for the water–air Tammann regime that is the paper's stated target (sections 'Water shock hit air bubble', gas-liquid Riemann/shock-tube). Theorem im_abgrall is unaffected (f≡0 there).",
+      "primary_affected_tag": "thm:implicit_solver",
+      "target_type": "formal_result",
+      "title": "Unconditional BP claim for implicit κ-solver fails: κ(z1) has a pole inside [0,1] when the trial pressure enters (−p_{w,2}, −p_{w,1}), so the IVT proof is invalid and existence of a BP root is false in general",
+      "why_classification": "The statement is false in the paper's central gas-liquid Tammann regime; every correct resolution changes the central guarantee type (unconditional → conditional), excludes the advertised regime, or requires a redesigned implicit solver with new analysis, so the loss is major and no comparable version of the claim survives as stated."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        },
+        {
+          "quote": "p(\\mathbf{U}) = \\frac{E - \\frac{|\\rho\\mathbf{u}|^2}{2\\rho} - \\left( \\frac{z_1 \\gamma_1 p_{w, 1}}{\\gamma_1 - 1} + \\frac{z_2 \\gamma_2 p_{w, 2}}{\\gamma_2 - 1} \\right)}{\\frac{z_1}{\\gamma_1 - 1} + \\frac{z_2}{\\gamma_2 - 1}},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Along the limiting segment U(θ)=Ū+θ(Ũ−Ū) all conserved components vary linearly in θ, but the Tammann mixture pressure is p(θ)=N(θ)/D(θ) with denominator D(θ)=z1(θ)/(γ1−1)+z2(θ)/(γ2−1) varying whenever z1 varies and γ1≠γ2; hence p(θ) is nonlinear and can be convex along the segment. The stated θ_p is the secant (linear-interpolation) root of p(θ)=ε_p, which need not be ≤ the true root. Concrete counterexample: γ1=1.4, γ2=4.4, p_{w,1}=p_{w,2}=0 (the paper's gas-gas regime); anchor z̄1=0.1, zero velocity, ρe=0.5147 so p(Ū)=1; at one quadrature point z1=0.9, ρe=−1.1397 so p_min=−0.5. With ε_p=10^−13 the formula gives θ_p≈2/3, but the true root of p(θ)=ε_p is θ*≈0.311; the limited pressure at that point is p(θ_p)≈−0.348<0. Thus the claim 'The solution after BP limiter satisfies (U_ingp)' (i.e., U∈𝒢^p at every Gauss-Lobatto point) is false in general: pressure can remain below ε_p, even negative, at the minimizing quadrature point. (The volume-fraction and partial-density substeps are exact because those quantities are linear along the segment; only the pressure step is defective.)",
+      "failure_location": {
+        "quote": "\\frac{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\varepsilon_p}{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y))}",
+        "tag": "BP_P"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the closed-form θ_p by the exact root of the scalar equation p(Ū+θ(Ũ(x*)−Ū))=ε_p at each offending quadrature point — equivalently the root of the concave function N(θ)−ε_p D(θ) on [0,1], computable by bisection/Newton, a standard step in Zhang–Shu-type BP limiters; all stated guarantees (BP at quadrature points, average preservation, Abgrall condition) then survive unchanged.",
+      "overall_effect": "The BP guarantee of the two-step limiter in Section 4.2.1 fails for gas-gas/gas-liquid cases with γ1≠γ2; the scheme can produce negative pressure at quadrature points after limiting, undermining the claims in the abstract and conclusion that the BP limiter 'ensure[s] the BP property of partial densities, pressure, and volume fraction' and risking failure of downstream sound-speed evaluations. Average preservation and Theorems line-invar-BP and thm:added-1 (Abgrall condition) are unaffected, since they rely only on the scalar nature of θ.",
+      "primary_affected_tag": "BP_P",
+      "target_type": "algorithm",
+      "title": "BP pressure limiter's closed-form θ_p does not guarantee p≥ε_p: pressure is nonlinear (rational) along the limiting segment, so the secant step can overshoot the true root",
+      "why_classification": "A short, local, routine repair (one-dimensional root solve in place of the secant formula, the same bisection machinery already used in the paper's implicit solver) restores every advertised guarantee with no new lemma, no change of method, accuracy, or scope."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal G=\\left\\{ \\mathbf U : z_1\\rho_1 > 0, z_2\\rho_2 > 0, \\ c^2(\\mathbf U)>0,\\ z_1\\in[0,1] \\right\\}",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{U}^{(1)} = \n [1.2, \\ 0, \\ 0, \\ 1000, \\ 1]^T",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{U}^{(2)} = [0, \\ 1000, \\ 0, \n \\ 6001, \\ 0]^T",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper defines 𝒢={U : z1ρ1>0, z2ρ2>0, c²(U)>0, z1∈[0,1]}, requiring both partial densities to be strictly positive. Appendix A's counterexample uses U^(1)=[1.2,0,0,1000,1]^T, whose second component is z2ρ2=0, and U^(2)=[0,1000,0,6001,0]^T, whose first component is z1ρ1=0; hence neither state satisfies z1ρ1>0 and z2ρ2>0, so U^(1),U^(2)∉𝒢 as defined. The 'verification' steps check only c²>0 and never address the partial-density constraints. Therefore the exhibited example does not demonstrate non-convexity of 𝒢 as written, and the Section-2 claim 'we provide a concrete counterexample in Appendix A to demonstrate that the admissible set 𝒢 is non-convex' is unsupported as written. (The midpoint calculation c²(U^(s))<0 is itself correct, and the non-convexity claim is true and repairable by perturbing the endpoints to small strictly positive partial densities, since c² at the endpoints stays positive and at the midpoint stays negative by continuity.)",
+      "failure_location": {
+        "quote": "Step 1: Verification \n of state $\\mathbf{U}^{(1)} \\in \\mathcal{G}$, For state 1, \n it represents pure phase 1 ($z_1 = 1$, $\\rho_1 = 1.2$).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Perturb both endpoint states to have small strictly positive partial densities (e.g., z1=1−ε with consistently adjusted energies and partial densities) so that they lie in 𝒢; by continuity the endpoint sound speeds remain positive while the midpoint's c² remains negative, yielding a valid counterexample with routine changes.",
+      "overall_effect": "The demonstration of the motivating claim that 𝒢 is non-convex (which justifies introducing the stricter set 𝒢^p) is invalid as written; the comparison 'previous studies ... have traditionally utilized admissible set 𝒢, we propose the admissible set 𝒢^p' loses its exhibited justification. Theorem thm:convex_Gp (convexity of 𝒢^p) is independent and unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Appendix A non-convexity counterexample uses endpoint states that do not belong to 𝒢 as defined (zero partial densities violate strict positivity)",
+      "why_classification": "The non-convexity claim survives a short, routine perturbation of the exhibited states; no substantive result is lost (in particular Theorem thm:convex_Gp stands), and no new argument or construction is needed."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2604.25672",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s4-retry",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6e33d4743ac4690d4731311b541c59b0314910ae99b86bef3e25e9c3e4e7b64a",
+  "status": "ok"
+}

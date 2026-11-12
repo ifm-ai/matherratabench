@@ -1,0 +1,169 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lyapOper \\vcentcolon= \\fI_\\stateDim\\otimes\\fA +\\fA\\otimes\\fI_\\stateDim",
+          "tag": "eqn:GLE:oper"
+        },
+        {
+          "quote": "Consider the Lyapunov equation~\\eqref{alg:statIterGLE:lyap} with $\\fA$ Hurwitz",
+          "tag": "prop1"
+        },
+        {
+          "quote": "\\|\\calL^{-1}\\|_2\\|\\gleOper\\|_2 = \\frac{1}{2\\sigma_{\\mathrm{min}}(\\fA)}\\Bigg\\|\\sum_{j=1}^{M}\\fN_j\\otimes\\fN_j\\Bigg\\|_2",
+          "tag": "eq33"
+        },
+        {
+          "quote": "\\|\\fX-\\tilde{\\fX}_k\\|_2 \\le \\gamma \\Delta_{k,k-1}+ \\frac{(1+\\gamma)\\|\\fR_k\\|_{\\Frob}+\\gamma\\|\\fR_{k-1}\\|_{\\Frob}}{2\\sigma_{\\min}(\\fA)}",
+          "tag": "teo1"
+        }
+      ],
+      "failure_explanation": "For L = I⊗A + A⊗I with merely Hurwitz A, sigma_min(L) = 2 sigma_min(A) is false. Counterexample: A = [[-1,-10],[10,-1]] is Hurwitz and normal, with sigma_min(A)=sqrt(101); the eigenvalues of L are -2±20i and -2 (double), so sigma_min(L)=2 while 2 sigma_min(A)≈20.1. A symmetric residual R aligned with the eigendirection of L for the eigenvalue -2 gives ||E||_F = (1/2)||R||_F, violating the claimed ||E||_2 ≤ ||R||_F/(2 sigma_min(A)) by a factor ≈10 (unbounded in general, e.g. whenever lambda_i(A)+lambda_j(A) is small relative to |lambda_i(A)|). The correct constant is sigma_min(L). The same false identity is used as an equality in (33) (hence also in the rescaling (34) and the claim gamma<1), and the proof of teo1 additionally applies prop1's spectral-norm bound to Frobenius norms, so teo1's bound (50) inherits the defect.",
+      "failure_location": {
+        "quote": "Using $\\|\\fE\\|_2\\le\\|\\fE\\|_{\\Frob}$ and $\\sigma_{\\min}(\\calL)=2\\sigma_{\\min}(\\fA)$ yields",
+        "tag": "prop1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace 2 sigma_min(A) by sigma_min(L) (or a rigorous, computable lower bound obtained e.g. by inverse iteration on the Lyapunov operator) throughout prop1, teo1, (33)-(34) and the stopping-criterion constants; all certification guarantees then survive with the corrected constant.",
+      "overall_effect": "prop1's residual bound (12), teo1's certified bound (50), the computable bound (33), the rescaling (34) with the claim gamma<1, and the stopping criteria promising ||X - X~||_2 ≤ tol (abstract, introduction, Section 3, conclusions) are unfounded: the certified tolerance can be violated by an unbounded factor whenever sigma_min(L) << 2 sigma_min(A), so the advertised rigorous error guarantees for the GLE solver are not established.",
+      "primary_affected_tag": "prop1",
+      "target_type": "formal_result",
+      "title": "False identity sigma_min(L)=2 sigma_min(A) invalidates the Lyapunov residual bound and the GLE error certification",
+      "why_classification": "A local change of the constant (and of how it is computed) repairs prop1 and teo1 with the certification guarantee intact; no proof architecture or substantive result is abandoned, although the corrected constant can be much smaller and costlier to evaluate."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA_j+\\fA^{\\T}_j\\prec\\zeroVec,\\quad\\text{ for all }j\\in\\switchingSet.",
+          "tag": "eqn:ass:ndeAj"
+        },
+        {
+          "quote": "\\perturbation \\;\\ge\\; \\max_{j\\in\\switchingSet} \\frac{\\sigma_1(\\fA_j)}{\\sigma_\\stateDim(\\fA_j)} \\|\\fX-\\tilde \\fX\\|_2\\;=\\;\\max_{j\\in\\switchingSet}\\kappa(\\fA_j)\\|\\fX-\\tilde \\fX\\|_2",
+          "tag": "eqn:ass:teo4"
+        },
+        {
+          "quote": "\\perturbation=\\hat \\perturbation\\vcentcolon=\\tol \\max_{j=1,\\ldots,M}\\kappa(\\fA_j)",
+          "tag": "eqn:cond:LMI"
+        }
+      ],
+      "failure_explanation": "The proof bounds mu*w^T A_j^T w <= -mu*sigma_min(A_j)||w||^2, citing only dissipativity (w^T A_j w < 0). Dissipativity gives w^T A_j w <= lambda_max((A_j+A_j^T)/2)||w||^2, which can be much less negative than -sigma_min(A_j)||w||^2: for A = [[-eps,K],[-K,-eps]] (dissipative for eps>0, even normal), lambda_max(sym A) = -eps while sigma_min(A) = sqrt(K^2+eps^2) >> eps. The inference is therefore invalid, the sufficient condition (22) with kappa(A_j)=sigma_1/sigma_n is too weak (the argument actually requires mu >= sigma_1(A_j)/|lambda_max(sym A_j)| * ||X - X~||_2, unboundedly larger for nearly skew-symmetric dissipative matrices), and X^ = X~ + mu*I can fail to satisfy the LMI (9a) under the stated hypotheses.",
+      "failure_location": {
+        "quote": "\\fw^{\\T}\\hat \\fE\\fA_j^{\\T}\\fw= \\fw^{\\T}\\tilde \\fE\\fA_j^{\\T}\\fw+\\perturbation\\fw^{\\T}\\fA_j^{\\T}\\fw\\le\\|\\fw\\|_2^2\\left(\\sigma_1({\\fA_j})\\|\\tilde \\fE\\|_2-\\sigma_\\stateDim(\\fA_j)\\perturbation \\right)",
+        "tag": "teo4"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace kappa(A_j) in (22) (and correspondingly in (eqn:cond:LMI)) by sigma_1(A_j)/|lambda_max((A_j+A_j^T)/2)|, the ratio actually implied by dissipativity, and adjust the subsequent discussion of the perturbation magnitude; teo4 and its uses then hold with the corrected constant.",
+      "overall_effect": "teo4's guarantee that the perturbed Gramian X^ = X~ + mu*I satisfies the reachability LMI (9a) is unproven and false in general under hypothesis (22); the recommended choice mu^ = tol*max_j kappa(A_j) (eqn:cond:LMI) and the LMI-enforcement strategy numerically exercised in Section 5.1 inherit the insufficient perturbation size.",
+      "primary_affected_tag": "teo4",
+      "target_type": "formal_result",
+      "title": "teo4: dissipativity does not imply w^T A_j w <= -sigma_min(A_j)||w||^2; the stated perturbation size is insufficient",
+      "why_classification": "A local change of the constant in hypothesis (22) repairs the theorem and all its uses; the required perturbation can become much larger for lightly damped, strongly non-normal modes (a quantitative weakening only), while the result and method remain comparable."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Big(\\gleH_{c,\\switch}(\\stateDim,\\stateDimRed)+\\gleH_{o,\\switch}(\\stateDim,\\stateDimRed)-\\left(\\gleG_{o,\\switch}(\\stateDim,\\stateDimRed)+\\gleG_{c,\\switch}(\\stateDim,\\stateDimRed)\\right)",
+          "tag": "teo5"
+        },
+        {
+          "quote": "The proof follows directly by applying the sub-additivity of the square root function to \\Cref{teo5} and standard balance truncation error arguments; see, for instance, \\cite[Sec.~7]{PetWL13}.",
+          "tag": "teo6"
+        },
+        {
+          "quote": "$s_k\\vcentcolon=\\sum_{k=\\stateDimRed}^{\\tilde n}m_k$, $m_\\stateDimRed\\vcentcolon=\\stateDimRed$",
+          "tag": "teo6"
+        },
+        {
+          "quote": "the dominant contribution to the error bound at higher values of $\\stateDimRed$ stems from the violation of the \\LMI conditions, i.e., the component $\\iota(\\stateDimRed, \\switchedSysRedJumps)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In teo5 the quantities G_{c,o} enter the bound as -G_{c,o} under the square root, so subadditive extraction yields +max(-G_{c,o},0)^{1/2}. teo6 instead subtracts G_{c,o}^{1/2}H(-G_{c,o}): when G_{c,o}<0 the square root is not real-valued (the formula is ill-defined), and under the natural repair the term is subtracted, making the right-hand side smaller than the provable bound, so the stated inequality can fail (an error bound that underestimates). Moreover, G_{c,o,q}(s_{k+1},s_k) and H_{c,o,q}(s_{k+1},s_k) are never defined - teo5 defines G,H only for the full FOM/ROM pair (n, n - m~) - the index s_k is defined with a reused summation index and an undefined 'n tilde', the sum range requires the undefined s_{n~+1}, and the two-line proof does not establish the iterative decomposition. The paper's own numerical definition of iota (eqn:iota), presented as a positive dominant component of the estimate, contradicts the stated minus sign.",
+      "failure_location": {
+        "quote": "\\sum_{k=\\stateDimRed+1}^{\\tilde \\stateDim}   \\gleG_{c,o,\\switch}(s_{k+1},s_{k})^{\\frac{1}{2}}H(-   \\gleG_{c,o,\\switch}(s_{k+1},s_{k}))",
+        "tag": "teo6"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Rewrite the G term of (eq:err:est:3) and (eqn:iota) as + sum_k (-G_{c,o,q}(s_{k+1},s_k))^{1/2} H(-G_{c,o,q}(s_{k+1},s_k)), define s_k and the intermediate-size quantities G,H (principal blocks of the balanced M_c, M_o together with the trajectories of the intermediate reduced systems), and spell out the iterative application of teo5 (legitimate since Sigma_j is diagonal).",
+      "overall_effect": "The paper's central new a-posteriori error bound (eq:err:est:3) for the PBR method is not a valid, well-defined bound as stated; the error-estimate decomposition tau, chi, iota, varphi (eqn:tau:tilde - eqn:err:est:fin) and the Black-Scholes error-bound evaluation in Section 5.2 inherit the defective formula.",
+      "primary_affected_tag": "teo6",
+      "target_type": "formal_result",
+      "title": "teo6: the PBR error bound is invalid as stated (sign-inverted/ill-defined G term, undefined intermediate quantities and indices)",
+      "why_classification": "The mathematical content of the bound is recoverable by a contained correction (sign fix plus precise definitions and completion of the standard iterative argument); no guarantee or regime is lost, but the repair is more than a routine typo fix because the statement's quantities must be properly defined and the derivation completed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\fA_1(i,j)\\vcentcolon=\\begin{cases} -1, & \\mbox{if }i=j \\\\ \\frac{1}{2}, & \\mbox{if }i-1=j\\\\ 0,&\\mbox{otherwise} \\end{cases}",
+          "tag": "eqn:synt:ex"
+        },
+        {
+          "quote": "if $\\fA_j$ is normal, i.e., $\\fA_j\\fA^{*}_j=\\fA_j^{*}\\fA_j$, then~\\eqref{eqn:ass:ndeAj} holds",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the defined matrices (n = 200 >= 2), A_1 = -I + (1/2)L and A_2 = -2I + (4/5)L - (1/5)L^T (L the down-shift) satisfy A_1 A_1^T - A_1^T A_1 = (1/4)(LL^T - L^TL) = (1/4)diag(1,0,...,0,-1) != 0 and A_2 A_2^T - A_2^T A_2 = (15/25)(LL^T - L^TL) != 0, so neither is normal by the paper's own definition. Normality was invoked as the route to the dissipativity hypothesis (21) of teo4; that hypothesis does hold for these matrices by direct computation (A_j + A_j^T is strictly diagonally dominant with negative diagonal), so only the stated justification is false.",
+      "failure_location": {
+        "quote": "Moreover, both $\\fA_1$ and $\\fA_2$ are normal matrices, so the hypothesis of \\Cref{teo4} holds.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the normality assertion by a direct verification that A_j + A_j^T < 0 for the given bidiagonal/tridiagonal matrices.",
+      "overall_effect": "The stated justification for the applicability of teo4 to the synthetic example is wrong; no formal result is invalidated because dissipativity of A_1, A_2 holds anyway.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Synthetic example: A_1 and A_2 are falsely claimed to be normal matrices",
+      "why_classification": "A local correction of a false justification in the experimental section; the hypothesis it was invoked to support holds by direct computation, so no claim or guarantee is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "we project the Lyapunov equation~\\eqref{eqn:lyap:residual} onto a smaller subspace and then use standard solvers for the small equation, thus obtaining the coordinates of the approximation in the subspace",
+          "tag": null
+        },
+        {
+          "quote": "we apply truncation when computing the approximate \\GLE solution $\\tilde{\\fX}$, i.e., we discard all singular values smaller than the prescribed accuracy threshold $\\tol$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Loewner ordering P >= P~, Q >= Q~ is provable for the exact stationary iterates (a monotone Lyapunov-series argument), but the computed P~, Q~ are produced by Algorithm 2 with approximately solved inner Lyapunov equations (subspace projection) and additional truncation of small singular values; neither Galerkin approximation nor singular-value truncation is order-preserving in general. The cited theorem therefore cannot establish the asserted ordering for the computed quantities, and no other argument is given; the claim is only certified to hold up to the error tol.",
+      "failure_location": {
+        "quote": "As expected, the green curve lies above the blue one since $\\fcP \\succeq \\tilde\\fcP$ and $\\fcQ \\succeq \\tilde\\fcQ$. This property follows directly from an application of \\cite[Thm.~3.3.16]{HorJ91}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "State the ordering for the exact iterates and note that for the computed Gramians it holds only up to the certified error tol, or present the plot observation as empirical.",
+      "overall_effect": "The explanation of the singular-value decay plot (fig2:a) rests on an unestablished ordering of the computed Gramians; no formal result depends on it.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unsupported claim that the computed Gramians are PSD-ordered below the exact Gramians",
+      "why_classification": "A local caveat suffices; the affected claim only explains a figure and can fail by at most the certified tolerance, so no substantive claim or guarantee is lost."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2601.13039",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n01-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "bd667d07baf9874b99b339d8a0a6b0aa8d1d403f5cfe7b718aa7b9a572affb14",
+  "status": "ok"
+}

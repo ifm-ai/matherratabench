@@ -1,0 +1,183 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "complemented by a BP limiter to ensure the BP property of partial densities, pressure, and volume fraction.",
+          "tag": null
+        },
+        {
+          "quote": "p^{n+1} &= (\\rho e)^{n}(\\gamma^{n+1}-1)-\\gamma^{n+1} p_{w}^{n+1}",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "exists a solution such that $z_1^{n+1} \\in [0, 1]$.",
+          "tag": "thm:implicit_solver"
+        },
+        {
+          "quote": "Next, enforce the pressure positivity $p \\ge \\varepsilon_p$ with $\\varepsilon_p = \\min\\{ p(\\overline{\\mathbf{U}}_{i,j}^n), 10^{-13} \\}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The kappa-step changes z1 while (rho e) is frozen, and the pressure depends on z1 through gamma and p_w. Theorem thm:implicit_solver bounds only z1. Use the paper's gas-water parameters (gamma1=1.4, pw1=0; gamma2=4.4, pw2=6000) and take z1=0.9, p=1, u=0. Then rho e is about 778.75, and z1=0.89 at the same rho e gives p of about -33. The derivative p'(z1) is large, so p(z1)>0 only for z1 >~ 0.8997. With kappa about 0.1 and compression D<0, F>0 on [0.8997,0.9] once |D|Delta t_im >~ 0.003, so any root has p<=0. After projection p(Ubar) can be negative. Step 2 then takes eps_p=min{p(Ubar),1e-13}<0 and cannot restore p>0. No cell-average admissibility analysis is given for the transport step either. The claimed unconditional BP (G^p, including pressure) is therefore not established.",
+      "failure_location": {
+        "quote": "is unconditionally BP, effectively removing",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified. At minimum, a repair must redesign the kappa-step, or couple it with the energy/pressure, so that the updated cell averages stay in G^p. It must also prove weak positivity of the transport-step cell averages under an explicit CFL condition.",
+      "overall_effect": "Pressure positivity, and hence membership in G^p, is not guaranteed in the stiff gas-liquid regime the paper targets. The abstract and introduction claims of unconditional BP and stable operation under a standard CFL are unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Implicit kappa-step does not preserve pressure positivity; BP of the scheme in G^p is unestablished",
+      "why_classification": "The headline BP guarantee for pressure fails in the advertised regime. Restoring it needs a new update and new analysis, or a time-step restriction that defeats the 'unconditional' claim."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\nu_k^{n+1} &= (\\frac{1}{\\rho_k c_k^2})^{n+1}= \\frac{1}{\\gamma_k (p^{n+1}+p_{w,k})}",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "\\kappa^{n+1} &= z_1^{n+1} z_2^{n+1} \\frac{\\nu_1^{n+1}-\\nu_2^{n+1}}{\\nu^{n+1}}",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "BP property of \\eqref{adaptive_sdirk2} is similar to the proof of Theorem \\ref{thm:implicit_solver}, so omitted.",
+          "tag": null
+        },
+        {
+          "quote": "that $c^2(\\mathbf{U}^{(s)}) < 0$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With (rho e)^n frozen, p(z1) sweeps values in (-pw2,-pw1) over [0,1]; for example z1^n=0.9, p=1 gives p(0) of about -23750. Write a_k=gamma_k(p+pw_k), so kappa=z1 z2(a2-a1)/(z1 a2+z2 a1). In the band -6000<p<0 we have a1<0<a2. The denominator (equivalently nu) is positive as p->0- and negative as p->-6000+, while the numerator stays positive. Hence kappa, f and F have a pole inside (0,1). F is not continuous on [0,1]: the signs F(0)<=0<=F(1) can come from the jump across the pole, so the IVT yields no root, and bisection may converge to the pole. Appendix A itself exhibits nu<0 for such mixtures.",
+      "failure_location": {
+        "quote": "The continuity of $F(z_1)$ guarantees the",
+        "tag": "thm:implicit_solver"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified. At minimum, a repair must establish continuity of F on [0,1] along the root search (nu nonzero, p+pw_k>0), or modify the update (e.g. evaluate nu_k at the admissible p^n so kappa is continuous). It must then reprove existence in [0,1] for both implicit variants.",
+      "overall_effect": "Unconditional existence of a bounded implicit solution is unproven for backward Euler and for the adaptive SDIRK2 scheme, whose BP proof is deferred to this one. The bisection solver is not justified.",
+      "primary_affected_tag": "thm:implicit_solver",
+      "target_type": "formal_result",
+      "title": "IVT existence proof assumes continuity of F, but kappa has a pole in (0,1)",
+      "why_classification": "The central unconditional-BP theorem for the implicit solver fails as proved. Fixing it requires changing the scheme or adding a new argument that the source does not supply."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\varepsilon_p}{p(\\overline{\\mathbf{U}}_{i,j}^n) - \\min_{(x,y) \\in \\mathbb{S}_{i,j}} p(\\widetilde{\\mathbf{U}}_{i,j}(x,y))}",
+          "tag": null
+        },
+        {
+          "quote": "{\\frac{z_1}{\\gamma_1 - 1} + \\frac{z_2}{\\gamma_2 - 1}}",
+          "tag": "thm:convex_Gp"
+        },
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The formula theta_p=(pbar-eps)/(pbar-p_min) yields p>=eps only if p is concave along segments from Ubar. Here p=N(U)/D(z1), with N concave but D affine in z1 and varying along the segment. Thus p(theta) is at best the D-weighted average [(1-theta)Dbar pbar+theta D~ p_min]/[(1-theta)Dbar+theta D~], with equality when u=0. Take pbar=1, p_min=-1 and eps about 0. Then theta is about 1/2 and the limited pressure is about (Dbar-D~)/(Dbar+D~), which is negative whenever the minimizing point has a larger gas fraction (D~>Dbar).",
+      "failure_location": {
+        "quote": "\\mathbf{U}_{i,j} = \\overline{\\mathbf{U}}_{i,j}^n + \\theta_{p} \\left( \\widetilde{\\mathbf{U}}_{i,j} - \\overline{\\mathbf{U}}_{i,j}^n \\right),",
+        "tag": "BP_P"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Compute theta_p from the concave function g(U)=N(U)-eps_p D(U) (theta=gbar/(gbar-min g)), or solve exactly for theta. Both are standard and local.",
+      "overall_effect": "The stated pointwise guarantee U in G^p at quadrature points after the BP limiter can fail even when cell averages are admissible.",
+      "primary_affected_tag": "BP_P",
+      "target_type": "algorithm",
+      "title": "Linear-scaling pressure limiter does not guarantee p >= eps_p",
+      "why_classification": "This is a routine local change to the limiter formula that preserves the method and its claims."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the resulting temporal error remains subdominant to the overall error.",
+          "tag": null
+        },
+        {
+          "quote": "For all cases, we simply employ $\\Delta t \\propto \\Delta x$ and $CFL=0.1$.",
+          "tag": null
+        },
+        {
+          "quote": "In this work, we implicitly solve it in first-order backward Euler:",
+          "tag": null
+        },
+        {
+          "quote": "0.5 + 0.4\\sin(\\pi x)",
+          "tag": null
+        },
+        {
+          "quote": "preserving high-order fidelity in the smooth, single-phase regions.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper concedes O(Delta t^2) temporal error. It is only first order where backward Euler is used, as in the written Strang steps and the SDIRK2 fallback. With Delta t proportional to Delta x the error is O(Dx^{K+1})+O(Dx^2), so for P2 the temporal part must dominate asymptotically, and third order is not 'expected'. The localization remark does not apply: in the smooth test z1 lies in (0.1,0.9) everywhere, so the kappa-step is active globally, and interface errors are transported anyway. The observed rates are pre-asymptotic or empirical only.",
+      "failure_location": {
+        "quote": "still exhibits the expected third-order convergence.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate the accuracy as at most second order in time. Run the P2 convergence tests with Delta t proportional to Delta x^{3/2} (or report asymptotic rates), and remove the localization claim.",
+      "overall_effect": "The claimed high-order (third-order for P2) accuracy of the Kapila-split scheme is unsupported. The scheme is asymptotically at most second order, and first order where backward Euler is used.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Third-order accuracy claimed with Delta t proportional to Delta x despite an O(Delta t^2) splitting error",
+      "why_classification": "An advertised accuracy order must be withdrawn and the tests redone. This is a limited weakening and needs no new architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{G} = \\left\\{ \\mathbf{U} : z_1\\rho_1 > 0, z_2\\rho_2 > 0, \\ c^2(\\mathbf{U})>0,\\ z_1\\in[0,1] \\right\\}",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{U}^{(2)} = [0, \\ 1000, \\ 0,",
+          "tag": null
+        },
+        {
+          "quote": "admissible and belongs to $\\mathcal{G}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "G requires z1 rho1>0 and z2 rho2>0 strictly. U^(1) has z2 rho2=0 and U^(2) has z1 rho1=0, so neither endpoint lies in G, and the stated counterexample does not show that G is non-convex.",
+      "failure_location": {
+        "quote": "[1.2, \\ 0, \\ 0, \\ 1000, \\ 1]^T",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Perturb the endpoints to small positive partial densities with z1 slightly inside (0,1). Since c^2(U^(s))<0 strictly and the endpoint c^2 stay positive, continuity preserves the counterexample.",
+      "overall_effect": "The claimed demonstration that G is non-convex, which motivates replacing G by G^p, is invalid as written.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Appendix A counterexample endpoints violate the strict inequalities defining G",
+      "why_classification": "A short continuity or perturbation argument restores the claim unchanged."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2604.25672",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6e33d4743ac4690d4731311b541c59b0314910ae99b86bef3e25e9c3e4e7b64a",
+  "status": "ok"
+}

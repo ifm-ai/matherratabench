@@ -1,0 +1,308 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Concretely, if $\\mM = \\mU \\mSigma \\mV^\\T$ is the rank-reduced singular value decomposition (SVD) of $\\mM$, then",
+          "tag": null
+        },
+        {
+          "quote": "\\polar(\\mM) := \\mU \\mV^\\T.",
+          "tag": "eq:matrixsign"
+        }
+      ],
+      "failure_explanation": "For M = diag(1,0), the stipulated rank-reduced definition gives polar(M) = diag(1,0), which is not semi-orthogonal. It therefore cannot be the closest semi-orthogonal matrix. The same problem affects the subsequent description as an orthogonal factor: the defined object is a canonical partial isometry, without an orthogonal completion on the nullspace.",
+      "failure_location": {
+        "quote": "where $\\polar(\\mM)$ denotes the closest semi-orthogonal matrix to $\\mM$ \\cite[Chapter 8]{highamfunctions}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Describe the defined factor as the canonical partial isometry, and restrict the semi-orthogonal/orthogonal-factor characterization to full-rank inputs.",
+      "overall_effect": "The geometric characterization is incorrect for rank-deficient inputs, although the rank-reduced definition and polynomial computations remain meaningful.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The rank-reduced polar factor need not be semi-orthogonal",
+      "why_classification": "A local rank qualification preserves the defined target, the Muon update, and the polynomial method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The third change is copied from the original \\muon implementation: normalize $\\mM$ by $\\|\\mM\\|_\\F + 10^{-7}$ instead of by $\\|\\mM\\|_\\F$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "No nonzero-input condition is imposed on this construction. At M = 0, the initialization divides by zero, despite the rank-reduced definition giving the well-defined target polar(0) = 0.",
+      "failure_location": {
+        "quote": "\\mX_0 = \\mM/\\|\\mM\\|_\\F",
+        "tag": "eq:NS3"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Return zero immediately when the input norm is zero, before performing the displayed normalization.",
+      "overall_effect": "The unregularized baseline iteration is not defined for a zero input. The later regularized Polar Express implementation avoids this particular failure.",
+      "primary_affected_tag": "eq:NS3",
+      "target_type": "algorithm",
+      "title": "The classical Newton–Schulz initialization is undefined at the zero matrix",
+      "why_classification": "A routine zero-input branch leaves every nonzero-input iterate and convergence claim unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $d$ be odd and define $\\ell_1 = \\ell$ and $u_1 = u$.",
+          "tag": "theorem:greedy"
+        },
+        {
+          "quote": "Letting $\\ell$ and $u$ be the minimum and maximum singular values of $\\mM$, respectively, our goal is now to find an odd polynomial $p$ so that $p(x)$ is as close to $1$ as possible on $[\\ell,u]$.",
+          "tag": null
+        },
+        {
+          "quote": "Let $u, \\ell > 0$ and define",
+          "tag": "lemma:computableerror"
+        }
+      ],
+      "failure_explanation": "The stated setup permits ell = 0, but the supporting lemma requires ell > 0. On [0,1], p = 0 is a minimax odd polynomial, with error 1. Choosing it gives ell_2 = u_2 = 0, contradicting u_2 = 2 - ell_2. Repeated zero minimizers also contradict the asserted convergence. The matrix/scalar maximum identification needs the same qualification: for p(x) = x on [0,1], the scalar maximum is attained at zero, whereas the scalar-matrix polar error approaches 1 near zero but does not attain it.",
+      "failure_location": {
+        "quote": "u_{t+1} = 2-\\ell_{t+1}",
+        "tag": "eq:newbounds"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Explicitly require a strictly positive lower bound in the exact minimax and convergence statements. For rank-deficient matrices, apply the interval condition to nonzero singular values and handle zero singular directions and the zero matrix separately.",
+      "overall_effect": "The endpoint recurrences and qualitative convergence claims do not hold for arbitrary greedy minimizer selections when the supplied lower bound is zero; the matrix/scalar maximum equivalence also mishandles that endpoint.",
+      "primary_affected_tag": "theorem:greedy",
+      "target_type": "formal_result",
+      "title": "The greedy theorem lacks the necessary positive-lower-bound hypothesis",
+      "why_classification": "This separates a degenerate endpoint case using the already-defined rank-reduced SVD; the positive-interval method and its rates remain unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Pick any $f$ such that $f \\neq g$ and",
+          "tag": null
+        },
+        {
+          "quote": "Define $c = \\frac{2}{a+b}$. Then, the image of the scaled function $c f$ on $[\\ell,u]$ is $[ca,cb]$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The competing odd-polynomial composition f need not have a positive image. Taking f = -g gives a = -u_T and b = -ell_T, so a/b = u_T/ell_T, contradicting the claimed ratio inequality. Moreover, f = 0 makes a/b and c undefined, and a negative c reverses the stated image endpoints. The proof therefore does not cover all competitors in the minimization.",
+      "failure_location": {
+        "quote": "Let the image of $f$ on $[\\ell,u]$ be $[a,b]$. We will prove that $\\frac{a}{b} \\leq \\frac{\\ell_T}{u_T}$  by contradiction.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "First discard intermediate images containing zero, since every odd completion then has error at least 1. Reflect a strictly negative image by negating the prefix and the final polynomial, preserving the completed composition. The existing ratio argument then applies with 0 < a <= b.",
+      "overall_effect": "The induction establishing optimality over all odd-polynomial compositions is incomplete.",
+      "primary_affected_tag": "theorem:greedy",
+      "target_type": "formal_result",
+      "title": "The greedy optimality proof omits negative and zero-crossing intermediate images",
+      "why_classification": "A short sign-case reduction repairs the proof without changing the competitor class, algorithm, or optimality guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State $p_t = \\argmin\\limits_{p \\in \\mathbb{P}_d^{\\odd}}\\max\\limits_{x \\in \\left[\\max(\\ell_t, u_t/10),\\, u_t \\right]} |1-p(x)|$.",
+          "tag": "ln:offline-polynomial-comp"
+        },
+        {
+          "quote": "\\State $p_t \\leftarrow p_t(\\cdot / 1.01)$.",
+          "tag": "alg:polarexpress"
+        },
+        {
+          "quote": "though it does cause the singular values to converge to $0.999998$ instead of to $1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The algorithm clips the optimization interval and then changes each polynomial by input rescaling. These are not the exact greedy minimizers defining p-star in the theorem. Even without clipping, rescaling changes the unique minimizer on a nondegenerate positive interval. Thus the asserted algorithm-output identity is false, and its exact minimax convergence bound cannot be transferred to the stabilized pseudocode.",
+      "failure_location": {
+        "quote": "Then \\Cref{alg:polarexpress} returns $\\bm{X}_T = p^{\\star}(\\mM)$.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Delete the algorithm-output identification from the proof and use the theorem's own definition of X_T. Explicitly distinguish the ideal iteration covered by the theorem from the modified practical algorithm in the surrounding descriptions.",
+      "overall_effect": "The formal bound applies to the ideal greedy composition, not automatically to the practical stabilized algorithm described under the same name.",
+      "primary_affected_tag": "theorem:convergence",
+      "target_type": "formal_result",
+      "title": "The convergence proof identifies stabilized updates with the exact minimax composition",
+      "why_classification": "The false identification is unnecessary to prove the stated ideal-iteration theorem; removing it preserves that theorem and the already-qualified practical approximation method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:computableerror",
+        "theorem:greedy",
+        "theorem:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $d = 2q+1$ and $u, \\ell > 0$.",
+          "tag": "theorem:approxtheorystuff"
+        },
+        {
+          "quote": "there exist $q+2$ distinct points $\\{x_0,\\ldots,x_{q+1}\\} \\subset [\\ell,u]$",
+          "tag": "theorem:approxtheorystuff"
+        }
+      ],
+      "failure_explanation": "The hypotheses allow ell = u. For d = 3 and ell = u = 1, both p(x) = x and p(x) = x^3 have zero error, so the minimizer is not unique. A singleton also cannot contain the required three distinct equioscillation points. The Chebyshev argument therefore needs a nondegenerate interval.",
+      "failure_location": {
+        "quote": "There exists a unique polynomial $p^{\\star} \\in \\mathbb{P}_d^{\\odd}$ solving \\eqref{eq:oneiteration}.",
+        "tag": "theorem:approxtheorystuff"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "State the uniqueness/equioscillation lemma for 0 < ell < u. Handle ell = u separately using p(ell) = 1, selecting the scaled Padé polynomial when a particular minimizer is needed, as the Remez fallback already does.",
+      "overall_effect": "The lemma is false on point intervals, and the downstream proofs invoking its equioscillation property omit those cases.",
+      "primary_affected_tag": "theorem:approxtheorystuff",
+      "target_type": "formal_result",
+      "title": "Uniqueness and equioscillation fail on a singleton interval",
+      "why_classification": "A routine singleton case preserves all substantive approximation and convergence conclusions on both degenerate and nondegenerate inputs."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For any fixed set of four points $\\ell < q < r < u$, we can find an degree-5 odd polynomial $p$ that satisfies",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Membership in [ell,u] does not ensure that the displayed interpolation matrix is invertible. For a nondegenerate interval outside the fallback branch, the allowed choice x_1 = x_2 = ell makes its first and third rows identical. The algorithm then attempts to invert a singular matrix.",
+      "failure_location": {
+        "quote": "\\textbf{input:} interval $[\\ell,u]$ for $\\ell > 0$, initial trial points $x_1^{(1)},x_2^{(1)} \\in [\\ell,u]$.",
+        "tag": "alg:remezdeg5"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Require ell < x_1 < x_2 < u, or initialize these points internally at the quarter and three-quarter positions already described in the text.",
+      "overall_effect": "The procedure is not defined for all trial-point inputs admitted by its stated contract.",
+      "primary_affected_tag": "alg:remezdeg5",
+      "target_type": "algorithm",
+      "title": "The Remez input contract permits singular trial systems",
+      "why_classification": "A standard local input condition or the existing initialization preserves the algorithm and all interval regimes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&\\leq2\\max\\limits_{x \\in [\\ell,u]}|1 - p(x)|",
+          "tag": null
+        },
+        {
+          "quote": "&\\leq 2 \\left(1-\\ell/u\\right)^3.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Writing r = ell/u, the displayed fallback polynomial satisfies 1-p(ell) = (1-r)^3(8+9r+3r^2)/8. The coefficient exceeds 1 for r > 0 and tends to 5/2 as r approaches 1. Consequently, the proof's bound max|1-p| <= (1-r)^3 is false, so the stated cutoff does not establish the promised 2-epsilon distance from the minimax polynomial.",
+      "failure_location": {
+        "quote": "\\If{$\\ell / u \\geq 1 - \\epsilon_{\\text{double}}^{1/3}$ }\n\\State Return $p(x) = \\frac{x/u}{8}\\left(15-10(x/u)^2 + 3(x/u)^4\\right)$",
+        "tag": "alg:remezdeg5"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Use the valid triangle-inequality bound max|p-star-p| <= 5(1-r)^3 and change the cutoff to 1-r <= (2 epsilon_double/5)^(1/3), including the corresponding code cutoff.",
+      "overall_effect": "The numerical-equality certificate used to bypass Remez near a point interval is unsupported with the stated constant and threshold.",
+      "primary_affected_tag": "alg:remezdeg5",
+      "target_type": "algorithm",
+      "title": "The Padé fallback uses an incorrect error constant",
+      "why_classification": "A local constant and threshold correction retains the same polynomial, machine-precision accuracy target, and convergence order."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [],
+      "failure_explanation": "At k = 0, both absolute values are infinity, so the condition evaluates infinity minus infinity. This is undefined mathematically and becomes NaN in ordinary floating-point execution. The loop therefore is not a valid initialization and can be skipped, leaving the returned coefficients undefined.",
+      "failure_location": {
+        "quote": "\\State $E_0 = \\infty$, $E_{-1} = -\\infty$\n\\State $k \\gets 0$\n\\While{$||E_k| - |E_{k-1}|| > \\epsilon_{\\text{double}}$ }",
+        "tag": "alg:remezdeg5"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Use a finite previous-error sentinel, such as E_{-1} = 0 with E_0 = infinity, so the first comparison is well-defined and the loop necessarily starts.",
+      "overall_effect": "Outside the early fallback branch, the stated Remez pseudocode does not reliably execute its first linear solve.",
+      "primary_affected_tag": "alg:remezdeg5",
+      "target_type": "algorithm",
+      "title": "The Remez loop starts with an undefined stopping comparison",
+      "why_classification": "A one-step control-flow initialization repair preserves the iteration and its intended stopping test."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that these intervals do not overlap, that is, $\\sqrt{1- z^2} \\leq z \\iff z \\geq 1/\\sqrt{2}$.",
+          "tag": null
+        },
+        {
+          "quote": "Then we construct the unique odd cubic polynomial $p(x) = ax + bx^3$ that satisfies $p(\\sqrt{1-z^2})=1$ and $p(z) = 1$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The admitted range includes z = 1/sqrt(2) and z = 1, but the coefficient denominators vanish at both. At the first endpoint the two interpolation conditions coincide, so they do not determine a unique cubic. At z = 1, the first condition becomes p(0) = 1, impossible for an odd polynomial. The claimed strict lower bound p(1) > 1/sqrt(2) also becomes equality at the continuous limit of the first endpoint.",
+      "failure_location": {
+        "quote": "b = \\frac{\\sqrt{1-z^2}-z}{z \\sqrt{1-z^2} (2 z^2 - 1)}",
+        "tag": "eq:init_poly"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Use the quotient formula only for 1/sqrt(2) < z < 1. At z = 1/sqrt(2), explicitly select the limiting cubic with a = 3/sqrt(2), b = -sqrt(2), and use the non-strict bound. At z = 1, return the normalized input, which is already its rank-reduced polar factor.",
+      "overall_effect": "The preprocessing construction is not defined for a touching-gap case or for a normalized rank-one input, both allowed by the stated assumptions.",
+      "primary_affected_tag": "eq:init_poly",
+      "target_type": "algorithm",
+      "title": "The spectral-gap initialization is undefined at admitted endpoints",
+      "why_classification": "Explicit endpoint branches preserve the construction and acceleration claims throughout the genuine-gap regime."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "def optimal_quintic(l, u):\n    assert 0 <= l <= u",
+          "tag": "alg:added-1"
+        },
+        {
+          "quote": "        a, b, c, E = np.linalg.solve(LHS, np.ones(4))",
+          "tag": "alg:added-1"
+        }
+      ],
+      "failure_explanation": "The helper accepts general upper bounds but uses fixed constants instead of u when constructing its trial points. For the valid positive interval l = 1, u = 2, the fallback is not triggered and q = r = l = 1. The first and third interpolation rows are then identical, so numpy.linalg.solve fails. Thus this is not a general implementation of the stated interval algorithm.",
+      "failure_location": {
+        "quote": "    q = (3*l + 1) / 4\n    r = (l + 3) / 4",
+        "tag": "alg:added-1"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Initialize q = (3*l + u)/4 and r = (l + 3*u)/4, so both points are strictly ordered inside every nondegenerate positive interval.",
+      "overall_effect": "The code can fail on valid scaled intervals even after imposing the proper Remez trial-point requirements.",
+      "primary_affected_tag": "alg:added-1",
+      "target_type": "algorithm",
+      "title": "The quintic code initializes trial points as though the upper bound were always one",
+      "why_classification": "A local initialization correction restores the interval contract without changing the Remez method, polynomial degree, or substantive guarantees."
+    }
+  ],
+  "issues_found": 11,
+  "paper_id": "2505.16932",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6ebe06e0c9bfee0447ce016e9a368b86685f1c6c273b02b7e00083cf71c1cb99",
+  "status": "ok"
+}

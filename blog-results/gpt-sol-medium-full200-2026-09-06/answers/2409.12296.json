@@ -1,0 +1,245 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\WHILE{not converged} \n                \\STATE Update $\\theta$ of $\\bu^{n+1}_\\theta$ by minimizing the JKO loss $\\ell^{n+1}$ \\eqref{jko_loss} using Algorithm \\ref{algorithm_opt}.\n            \\ENDWHILE",
+          "tag": "algorithm_jko"
+        },
+        {
+          "quote": "\\frac{1}{K} \\sum_{k=0}^{K-1} \\mathbb{E} \\left[ \\left\\| \\nabla_{\\theta} \\ell(\\theta_k) \\right\\|^2 \\right]\n        \\leq \\frac{4}{\\alpha K} \\left[\\ell(\\theta_0) - \\ell_*\\right] + 6\\sigma^2 L^2 \\alpha^2 \\frac{N}{B^2} \\,.",
+          "tag": "thm_opt_conv"
+        },
+        {
+          "quote": "Property (i) is a direct consequence of optimization.",
+          "tag": "prop:added-4"
+        }
+      ],
+      "failure_explanation": "The entropy argument for the ideal variational scheme requires attainment of a global objective value no larger than the zero-field competitor. The implemented neural-network algorithm only runs a nonconvex stochastic optimizer until an unspecified convergence test, and even its stated optimization theorem gives at most an average stationarity bound with a nonzero residual, not global minimization or the objective-sign condition needed for entropy decay. No mathematical definition or proof of unconditional stability is supplied for the forward-Euler, stochastic, neural-network implementation.",
+      "failure_location": {
+        "quote": "Compared to other deterministic particle methods, the proposed method enjoys exact entropy dissipation and unconditional stability, therefore making it suitable for large-scale plasma simulations over extended time periods.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either add enforceable acceptance/global-optimality and stability arguments for the implemented updates, or withdraw the claims of exact entropy decay and unconditional stability from the practical method.",
+      "overall_effect": "The paper's central advertised guarantees do not follow for Algorithm \\ref{algorithm_jko} or for the numerical method actually used.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Exact entropy decay and unconditional stability are not guaranteed for the implemented method",
+      "why_classification": "Without new guarantees for inexact nonconvex training and the discrete updates, the least supported resolution is to abandon two central advertised guarantee types."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, we can assume $V$ admits the following form: \n\\begin{equation*}\n    V = \\Tilde{\\nabla}\\phi",
+          "tag": null
+        },
+        {
+          "quote": "This is analogous to the fact that the optimal vector field in 2-Wasserstein metric is the gradient of some potential function",
+          "tag": null
+        },
+        {
+          "quote": "Then \\eqref{dL-new} directly follows from \\eqref{dL}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The original infimum in \\eqref{dL} ranges over general pair fields V satisfying the nonlocal continuity equation. Replacing that class by fields of the form V=\\widetilde\\nabla\\phi, and then by u=\\nabla\\phi, requires a nontrivial weighted projection or duality argument proving that this restriction leaves the infimum and attainable curves unchanged. An analogy with the Wasserstein case does not establish that fact for the Landau operator.",
+      "failure_location": {
+        "quote": "d_L^2(f_0, f_1) :=& ~  \\inf_{f, \\bu} \\frac{1}{2} \\int_0^1 \\iint_{{\\mathbb{R}^{2d}}} |\\bu-\\bu_*|^2_A ff_{*} \\rd\\bv \\rd\\bv_* \\rd t",
+        "tag": "dL-new"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Supply a functional-analytic projection or duality result, with the required admissibility and closure hypotheses, proving equality of the two infima; alternatively present \\eqref{dL-new} only as a restricted surrogate rather than the same metric.",
+      "overall_effect": "The asserted identity between the original Landau metric and the computational formulation, and hence the claimed metric/JKO interpretation of the latter, is unsupported.",
+      "primary_affected_tag": "dL-new",
+      "target_type": "other",
+      "title": "The alternative Landau metric is obtained by an unjustified restriction of admissible fields",
+      "why_classification": "A contained but nontrivial new equivalence lemma could preserve the formulation; otherwise the metric claim must be weakened, but the numerical construction can remain recognizable."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Since $A$ is semi-positive definite, this implies $A(\\bv-\\bv_*)(\\varphi -\\varphi_*) = 0$ on the support of $f_* f$. Therefore, $\\varphi \\in span\\{ \\mathbf{1}, \\bv\\}$ on the support of $f$.",
+          "tag": "lemma_1"
+        }
+      ],
+      "failure_explanation": "The final implication needs geometric nondegeneracy of the support and is false as stated. For example, for the Maxwellian kernel and a measure supported on three collinear points, any vector field whose values lie along that same line satisfies A(v-v_*)(varphi-varphi_*)=0 pairwise, while its three values may be chosen non-affinely and hence need not equal b+c v on the support. Positive semidefiniteness only yields the pairwise kernel condition, not the asserted rigidity.",
+      "failure_location": {
+        "quote": "If $\\varphi(\\bv) : \\R^d \\to \\R^d$ satisfies $\\int_{\\R^d} A(\\bv-\\bv_*) (\\varphi -\\varphi_*)f_* \\rd\\bv_* = 0$, then $\\varphi \\in \\text{span}\\{ \\mathbf{1}, \\bv\\}$ on the support of $f$.",
+        "tag": "lemma_1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add suitable nondegeneracy and regularity hypotheses on f and prove the resulting rigidity statement, or replace the conclusion by the weaker pairwise kernel condition and redo its later use.",
+      "overall_effect": "The deduction from \\eqref{opt_u} that the optimizer is a score plus an affine null-space term is unsupported under the stated assumptions.",
+      "primary_affected_tag": "lemma_1",
+      "target_type": "formal_result",
+      "title": "The null-space characterization is false on general supports",
+      "why_classification": "The intended conclusion may survive for sufficiently regular full-dimensional densities, but establishing it requires a genuine rigidity argument and additional hypotheses."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bu(1, \\bv) \\in \\tau \\nabla\\log f(1, \\bv) + span\\{ \\mathbf{1}, \\bv\\} \\, ~~\\text{on}~~ supp~(f)\\,.",
+          "tag": "opt_u1"
+        },
+        {
+          "quote": "\\partial_t f = \\nabla \\cdot \\left[f \\left(\\int_{\\R^d} A(\\bv-\\bv_*) (\\bu-\\bu_*) f_{*} \\rd\\bv_* \\right)\\right] \\,",
+          "tag": "djko"
+        }
+      ],
+      "failure_explanation": "Equation \\eqref{opt_u1} holds only at the artificial terminal time t=1. Substitution into the constraint therefore identifies the endpoint derivative \\partial_t f(1) with tau times the Landau operator at f(1); it does not identify the finite difference f(1)-f(0) with that derivative. Obtaining a first-order implicit-Euler relation requires integrating the path equation and controlling its variation, which is not done.",
+      "failure_location": {
+        "quote": "Substituting \n\\eqref{opt_u1} into the constraint PDE in \\eqref{djko} reveals that $f^{n+1} = f(1, \\cdot)$ is indeed the solution of the homogeneous Landau equation \\eqref{landau_homo} after one time step $\\tau$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Weaken the statement to the terminal derivative relation and provide a Taylor or consistency argument, with regularity estimates, establishing the advertised first-order approximation.",
+      "overall_effect": "The claimed recovery of a Landau time step is not established; at most a terminal tangent relation has been derived.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A terminal optimality condition is incorrectly identified with a full time step",
+      "why_classification": "The intended first-order consistency may be recoverable, but it requires a nontrivial missing argument rather than a local algebraic correction."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:added-3",
+        "prop:added-4"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the collision kernel is\n$A(\\bz)=\\frac{1}{16}\\frac{1}{|\\bz|^3}(|\\bz|^2I_2 - \\bz \\otimes \\bz)$.",
+          "tag": null
+        },
+        {
+          "quote": "h_{i,j}^{n+1}(\\bu) = A(\\bv_i^n \\!-\\! \\bv_j^n) : \\nabla\\bu(\\bv_i^n) \\!-\\! (d \\!-\\! 1) C_{\\gamma}|\\bv_i^n \\!-\\! \\bv_j^n|^{\\gamma} (\\bv_i^n \\!-\\! \\bv_j^n) \\cdot [\\bu(\\bv_i^n) \\!-\\! \\bu(\\bv_j^n)]",
+          "tag": "djko_p2"
+        }
+      ],
+      "failure_explanation": "Every double sum includes i=j. In the Coulomb regime, A(0) and the displayed |v_i-v_j|^gamma factors are singular and are not defined by the source, even though the velocity and field differences vanish. Thus the objective, Jacobian update, and particle update are not well-defined in the paper's principal Coulomb examples.",
+      "failure_location": {
+        "quote": "\\frac{1}{2N^2} \\sum_{i=1}^{N}\\sum_{j=1}^{N} \\int_0^1 |\\bu(t, T_t(\\bv_i^n)) \\!-\\! \\bu(t, T_t(\\bv_j^n))|^2_A \\rd t",
+        "tag": "djko_p"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Explicitly omit self-pairs j=i, adjust normalization if desired, and state the corresponding convention throughout the objective and updates.",
+      "overall_effect": "The particle construction and its stated structural properties are undefined as written for Coulomb interactions.",
+      "primary_affected_tag": "djko_p",
+      "target_type": "algorithm",
+      "title": "Empirical sums include undefined Coulomb self-interactions",
+      "why_classification": "Removing self-interactions is a short standard local repair that preserves the method, rates, and advertised interaction regimes."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm_opt_conv"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\STATE $\\theta^{(k)}_q = \\theta^{(k)}_{q-1} - \\alpha^{(k)}_q \\frac{1}{B^2} \\sum_{i,j \\in C_q} \\nabla_{\\theta} \\ell_{i,j}(\\theta^{(k)}_{q-1})$",
+          "tag": "algorithm_opt"
+        },
+        {
+          "quote": "\\nabla\\ell(\\theta_{k}) - \\frac{1}{BN} \\sum_{q=1}^{\\frac{N}{B}} \\sum_{i,j \\in C_q} \\nabla_{\\theta} \\ell_{i,j}(\\theta^{(k+1)}_{q-1})",
+          "tag": "sgd_lemma2"
+        },
+        {
+          "quote": "& \\leq \\ell(\\theta_{k}) \n    + \\frac{\\alpha_k L^2 B}{2N} \\sum_{q=1}^{\\frac{N}{B}} \\| \\theta_{k} - \\theta^{(k+1)}_{q-1} \\|^2 \n    - \\frac{\\alpha_k}{2} \\| \\nabla\\ell(\\theta_{k}) \\|^2 \\,.",
+          "tag": "sgd_lemma2"
+        }
+      ],
+      "failure_explanation": "A partition into vertex batches includes only pairs whose two indices lie in the same batch; it omits all cross-batch pairs. Consequently, even when every iterate in the epoch equals theta_k, the scaled within-batch sum need not equal the full gradient of ell, which averages all N^2 pairs. The last estimate in Lemma \\ref{sgd_lemma2} drops this sampling discrepancy and bounds the entire difference solely by smoothness-induced iterate displacement. For B=1, the algorithm sees only diagonal losses, providing an immediate counterexample whenever off-diagonal losses carry the objective.",
+      "failure_location": {
+        "quote": "\\ell(\\theta_{k+1}) \n        \\leq \n        \\ell(\\theta_{k}) + \\frac{\\alpha_k L^2 B}{2N} \\sum_{q=1}^{\\frac{N}{B}} \\| \\theta_{k} - \\theta^{(k+1)}_{q-1} \\|^2 - \\frac{\\alpha_k}{2} \\| \\nabla\\ell(\\theta_{k}) \\|^2 \\,.",
+        "tag": "sgd_lemma2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Develop a new biased-gradient/random-partition analysis that retains the within-batch sampling error, or change the estimator so that it is an appropriately weighted unbiased estimator of the full pair objective and rederive the convergence rate.",
+      "overall_effect": "Lemma \\ref{sgd_lemma2} is false and the stated convergence bound for Algorithm \\ref{algorithm_opt} is unsupported.",
+      "primary_affected_tag": "sgd_lemma2",
+      "target_type": "formal_result",
+      "title": "The reshuffling analysis treats within-batch pairs as the full gradient",
+      "why_classification": "Repair requires a new stochastic-estimator lemma and likely a modified error term or estimator, but not necessarily a new global numerical architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bv_i^{n+1} = \\bv_i^n - \\frac{\\tau}{B'} \\sum_{j \\in C_q} A(\\bv_i^n-\\bv_j^n) [\\bu_\\theta^{n+1}(\\bv_i^n) - \\bu_\\theta^{n+1}(\\bv_j^n)]",
+          "tag": null
+        },
+        {
+          "quote": "\\item Discrete energy $\\frac{1}{N} \\sum_{i=1}^N |\\bv_i^{n}|^2$ is conserved up to $\\mathcal{O}(\\tau)$.",
+          "tag": "prop:added-4"
+        }
+      ],
+      "failure_explanation": "Pairwise antisymmetry cancels the first-order change in kinetic energy, but an explicit Euler update leaves the nonnegative quadratic increment tau^2 sum_i |F_i|^2, so energy is not exactly preserved. Moreover, the random-batch density update is not itself the minimizer of a batch objective whose sign would imply entropy decay. Thus the displayed random-batch procedure does not preserve all of the claimed physical quantities.",
+      "failure_location": {
+        "quote": "This approach accelerates the particle updates and preserves all physical quantities without significantly impacting the accuracy",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "State precisely which quantities remain exact and give error bounds for the others, or replace the update by an invariant- and entropy-preserving batch integrator with a corresponding proof.",
+      "overall_effect": "The structural guarantee asserted for the accelerated particle update is false; only selected invariants such as momentum are preserved exactly.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Random-batch forward Euler updates do not preserve all physical quantities",
+      "why_classification": "A complete repair either weakens the preservation claim or requires a nontrivial structure-preserving update, though the random-batch acceleration itself can remain."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\REQUIRE $N$ initial particles $\\{\\bv_i^0\\}_{i=1}^N \\stackrel{i.i.d.}\\sim f^0$;",
+          "tag": "algorithm_jko"
+        },
+        {
+          "quote": "Let $\\mathcal{P}_2(\\R^d)$ be the space of probability measures with finite 2-moments",
+          "tag": null
+        },
+        {
+          "quote": "Here, the equilibrium Maxwellian distribution is given by $\\frac{\\rho}{(2\\pi T)^{d/2}} \\exp\\left(-\\frac{|\\bv|^2}{2T}\\right)$ with\n\\begin{flalign*}\n    \\rho & = \\frac{2\\pi \\sigma^3}{S^2}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The stated Rosenbluth profile has total mass rho given later in the paper and is not a probability density. It therefore cannot literally be the i.i.d. sampling law required by Algorithm \\ref{algorithm_jko}. Sampling from f^0/rho while retaining unweighted 1/N empirical sums changes the factors in the collision field and hence the physical time scale; the source supplies no mass weights or rescaling.",
+      "failure_location": {
+        "quote": "The initial condition is set to\n\\begin{equation*}\n    f^0(\\bv) = \\frac{1}{S^2} \\exp\\left( -S\\frac{(|\\bv|-\\sigma)^2}{\\sigma^2} \\right) \\, ,~ \\sigma=0.3 \\, ,~ S=10 \\,.\n\\end{equation*}\nWe solve this problem using a JKO time step of $\\tau = 0.2$, with a total of  $N = 50^3$ particles.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Normalize the sampling distribution and insert the appropriate mass factors in all empirical collision and entropy formulas, or reformulate the theory and algorithm for finite measures and rerun the example with that scaling.",
+      "overall_effect": "The described application of the algorithm and its quantitative time evolution are not mathematically consistent with the particle formulation derived for probability measures.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The Rosenbluth example applies a probability-particle scheme to a nonnormalized density",
+      "why_classification": "The repair is conceptually contained but changes the numerical scaling and requires consistent modifications throughout the example and particle equations."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2409.12296",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gpt56sol-medium-all200-20260906-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "91c8b71b38392adb77e6b756cced52757c09fdabebe2a2f4891834723c7a9f5b",
+  "status": "ok"
+}

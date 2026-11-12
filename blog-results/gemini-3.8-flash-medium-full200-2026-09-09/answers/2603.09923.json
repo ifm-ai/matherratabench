@@ -1,0 +1,76 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:sum:tail",
+        "lemma:G:bound",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\rho_t = 1 + \\sum_{i=1}^t \\| \\g_i \\|^2, \\quad \\tau_t = \\max_{i=1}^t \\| \\g_i \\|.",
+          "tag": null
+        },
+        {
+          "quote": "(\\alpha_t, \\beta_t) = \\begin{cases}\n(\\rho_t^{-1/2}, \\beta)   & \\text{if OptEMA-M}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In Lemma 6 (Appendix B.3, Eq. (10)), expanding \\|\\s_t\\|^2 = \\|\\z_t + \\alpha_t(\\g_t - \\nabla f(\\x_t))\\|^2 under expectation omits the cross-term 2 \\EEE[\\langle \\z_t, \\alpha_t(\\g_t - \\nabla f(\\x_t)) \\rangle]. This cross-term does not vanish because in OptEMA-M, \\alpha_t = \\rho_t^{-1/2} = (1 + \\sum_{i=1}^t \\|\\g_i\\|^2)^{-1/2} is a function of the current stochastic gradient \\g_t = \\nabla f(\\x_t; \\xi_t), making \\alpha_t$ dependent on and correlated with $\\g_t - \\nabla f(\\x_t)$. Furthermore, $\\z_t = (1-\\alpha_t)(\\s_{t-1} + \\nabla f(\\x_{t-1}) - \\nabla f(\\x_t))$ also depends on $\\alpha_t$. In addition, step (1) of Eq. (10) pulls the random variable $\\alpha_t^2$ outside the expectation $\\EEE[\\|\\nabla f(\\x_t;\\xi_t)\\|^2]$, which is mathematically invalid.",
+      "failure_location": {
+        "quote": "\\EEE[\\|\\s_{t}\\|^2] &=& \\EEE\\left[\\left\\| \\alpha_{t} (\\nabla f(\\x_{t};\\xi_{t}) - \\nabla f(\\x_{t})) \\right\\|^2\\right] + \\EEE[ \\|\\z_{t} \\|^2]",
+        "tag": "lemma:bound:eee:1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must define \\alpha_t using historical information up to iteration t-1 to ensure measurability with respect to \\mathcal{F}_{t-1}, or control the covariance between \\alpha_t and \\g_t, and re-establish the tracking error recursion without dropping non-zero cross-terms.",
+      "overall_effect": "The tracking error bound on \\EEE[\\|\\s_t\\|^2] fails, which breaks the subsequent bounds on the cumulative tracking error, objective value, and gradient norms, ultimately invalidating the convergence guarantee for OptEMA-M in Theorem 12.",
+      "primary_affected_tag": "lemma:bound:eee:1",
+      "target_type": "formal_result",
+      "title": "Invalid tracking error recurrence via omitted cross-term and non-measurable EMA weight in OptEMA-M",
+      "why_classification": "The failure invalidates the main theoretical result for OptEMA-M (Theorem 12). Resolving it requires changing the definition of the algorithmic EMA weights or introducing a new proof architecture to handle non-measurable adaptive weights."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Theta_t \\leq \\sum_{j=1}^{t}  \\left( \\prod_{k=j+1}^t (1-\\alpha_k) \\right) (-D_j +E_j).",
+          "tag": null
+        },
+        {
+          "quote": "\\ts \\EEE [ f(\\x_{t+1}) - f(\\x_{t}) ] \\leq \\EEE [ c_3 \\gamma_t^2 \\|\\m_t\\|^2 +  \\gamma_t \\sum_{j=1}^{t}  \\left( \\prod_{k=j+1}^t (1-\\alpha_k) \\right) \\left(E_j - D_j\\right)].",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the proof of Lemma 9 (Appendix C.3, Eq. (18)), the stochastic gradient \\g_t is replaced with \\nabla f(\\x_t) by invoking \\EEE[\\g_t] = \\nabla f(\\x_t). Immediately after, the author drops the expectation operator, treats the resulting recurrence \\Theta_t - (1-\\alpha_t)\\Theta_{t-1} \\le -D_t + E_t as a pathwise inequality, unrolls it across iterations j=1,...,t, and multiplies it by the random variable \\theta \\gamma_t before taking expectation again. Because \\g_t \\neq \\nabla f(\\x_t) pathwise, this invalidly drops the stochastic gradient noise term \\g_t - \\nabla f(\\x_t) from E_t and the descent bound without accounting for the variance of the momentum estimator under constant \\alpha.",
+      "failure_location": {
+        "quote": "&\\overset{\\step{3}}{=}& \\ts \\EEE[ (1-\\alpha_t) \\Theta_{t-1} + (1-\\alpha_t) \\langle \\nabla f(\\x_{t-1}) - \\nabla f(\\x_{t}), \\tfrac{\\theta \\m_{t-1}}{\\varepsilon + \\sqrt{\\v_{t-1}}} \\rangle -  \\alpha_t \\theta \\langle \\nabla f(\\x_t), \\frac{ \\nabla f(\\x_t) }{\\varepsilon + \\sqrt{\\v_{t-1}}} \\rangle]",
+        "tag": "lemma:OptEMA:V:suff:dec"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must retain the stochastic gradient estimation error terms \\g_t - \\nabla f(\\x_t) across the momentum unrolling, account for the non-vanishing variance under constant EMA weight \\alpha, and handle coupling with the trajectory-dependent stepsize \\gamma_t.",
+      "overall_effect": "The one-step descent inequality in Lemma 9 is false in the stochastic regime (\\sigma > 0). Consequently, the objective boundedness (Lemma 11), cumulative gradient estimate (Lemma 12), and main convergence theorem for OptEMA-V (Theorem 13) are entirely unsupported.",
+      "primary_affected_tag": "lemma:OptEMA:V:suff:dec",
+      "target_type": "formal_result",
+      "title": "Elimination of stochastic variance by unrolling conditional expectation pathwise in OptEMA-V descent lemma",
+      "why_classification": "The error falsely eliminates the stochastic gradient noise from the descent analysis, invalidating the main convergence claim for OptEMA-V (Theorem 13); repairing it requires a fundamentally different proof architecture."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2603.09923",
+  "question_id": "Q1",
+  "run_name": "q1-natural-gemini38flash-medium-all200-20260909-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7b0dd08a3822424a13d5abe6787b30dbd3aaca288887f32f89d091821f7ea682",
+  "status": "ok"
+}

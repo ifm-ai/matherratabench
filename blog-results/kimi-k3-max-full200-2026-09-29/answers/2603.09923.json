@@ -1,0 +1,244 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:sum:tail",
+        "lemma:G:bound",
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "(\\alpha_t, \\beta_t) = \\begin{cases}\n(\\rho_t^{-1/2}, \\beta)   & \\text{if OptEMA-M}",
+          "tag": "alg:main-1"
+        },
+        {
+          "quote": "\\rho_t = 1 + \\sum_{i=1}^t \\| \\g_i \\|^2",
+          "tag": "alg:main-1"
+        },
+        {
+          "quote": "step \\step{1} uses $\\EEE[\\|\\nabla f(\\x_{t};\\xi_t) - \\nabla f(\\x_t)\\|_2^2] = \\EEE[\\|\\nabla f(\\x_{t};\\xi_t)\\|_2^2] - 2 \\la \\EEE[\\nabla f(\\x_{t};\\xi_t)], \\nabla f(\\x_t) \\ra + \\|\\nabla f(\\x_t)\\|_2^2 \\leq \\EEE[\\|\\nabla f(\\x_{t};\\xi_t)\\|_2^2]$",
+          "tag": "lemma:bound:eee:1"
+        },
+        {
+          "quote": "step \\step{2} uses the relation $\\|\\s_{t}\\|^2 \\leq \\|\\s_{t-1}\\|^2 + B_{t}$ implied by neglecting the non-positive term $-\\alpha_t\\|\\s_{t-1}\\|^2$ in Inequality (\\ref{eq:sssBBB})",
+          "tag": "lemma:sum:tail"
+        }
+      ],
+      "failure_explanation": "The first equality in the proof of Lemma lemma:bound:eee:1 writes E||s_t||^2 as E||alpha_t eta_t||^2 + E||zeta_t||^2, which requires the cross term 2 E[alpha_t(1-alpha_t)<W_t, eta_t>] (W_t = s_{t-1}+grad f(x_{t-1})-grad f(x_t), eta_t = g_t - grad f(x_t)) to vanish. It does not: alpha_t = rho_t^{-1/2} = (1+G_{t-1}+||g_t||^2)^{-1/2} depends on ||g_t||^2 and hence on eta_t, so alpha_t is not F_{t-1}-measurable and E[alpha_t eta_t | F_{t-1}] != 0 in general (e.g., scalar grad f(x_t)=1 with symmetric two-point noise eta_t = +/-1 makes alpha_t differ between the two realizations). The next step is also invalid: E[alpha_t^2 ||eta_t||^2] is bounded via the identity E||eta_t||^2 = E||g_t||^2 - ||grad f||^2, which cannot be applied with the correlated factor alpha_t^2 inside the expectation. The lemma's statement itself fails: in any configuration with W_t = 0, grad f(x_t)=1, eta_t = +/-1 w.p. 1/2 (compatible with the algorithm and assumptions), E||s_t||^2 = E[alpha_t^2 eta_t^2] = 0.6 while E[(1-alpha_t)]||s_{t-1}||^2 + E[B_t] = E[alpha_t^2 g_t^2] = 0.4, since alpha_t is largest exactly when g_t = 0 (noise cancels the gradient). Downstream, Lemma lemma:sum:tail (step 2) and Lemma lemma:M:sum:s (Eq. (eq:alpha:s)) then use this expectation-only relation as a pathwise pointwise inequality under random weights, which the same root causes.",
+      "failure_location": {
+        "quote": "\\EEE[\\|\\s_{t}\\|^2] &=& \\EEE\\left[\\left\\| \\alpha_{t} (\\nabla f(\\x_{t};\\xi_{t}) - \\nabla f(\\x_{t})) \\right\\|^2\\right] + \\EEE[ \\|\\z_{t} \\|^2]",
+        "tag": "lemma:bound:eee:1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must re-establish a valid tracking-error recursion despite the correlation between alpha_t and the current noise. The standard Young-type split restores a contraction 1 - Theta(alpha_t) only with an O(alpha_t)||eta_t||^2 noise term (instead of O(alpha_t^2)||g_t||^2), whose sums are no longer logarithmic and inject an unabsorbable O(sum ||grad f||^2) term into the descent closing; making alpha_t predictable (F_{t-1}-measurable) instead breaks the sum-to-log bounds (Lemma lemma:adaptive:important(a)) that the later proofs rely on, since those need the current-t increment in the denominator.",
+      "overall_effect": "The gradient-tracking recursion that drives the entire OptEMA-M analysis is unproven and in fact false as stated; Lemmas lemma:sum:tail, lemma:G:bound, lemma:M:sum:s, lemma:M:sum:m and Theorem the:it:EMA:M all lose their foundation, so the advertised noise-adaptive rate O~(T^{-1/2} + sigma^{1/2} T^{-1/4}) and the zero-noise optimality claim for OptEMA-M are unsupported.",
+      "primary_affected_tag": "lemma:bound:eee:1",
+      "target_type": "formal_result",
+      "title": "OptEMA-M tracking-error recursion drops a cross term that does not vanish (alpha_t correlates with current noise); the stated recursion is false",
+      "why_classification": "The defective equality is the keystone of the M-variant proof chain; the lemma statement is false as written, every attempted standard fix either destroys the logarithmic error sums (and with them the claimed rate) or changes the algorithm in a way that breaks other load-bearing steps, so no supported resolution preserves a comparable result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where step \\step{1} uses the fact that $\\gamma_{t}\\leq \\frac{\\alpha_t}{ \\mu (1+\\tau_t^2)} \\leq \\frac{2 \\alpha_t}{ \\mu (1+\\tau_t)^2}$",
+          "tag": "lemma:sum:tail"
+        }
+      ],
+      "failure_explanation": "Step 1 replaces (1-alpha_t)||s_{t-1}||^2 by (1 - 2 gamma_t mu (1+tau_t)^2)||s_{t-1}||^2, which requires 2 gamma_t mu (1+tau_t)^2 <= alpha_t. The cited bound gamma_t <= alpha_t/(mu(1+tau_t^2)) only yields 2 gamma_t mu (1+tau_t)^2 <= 2 alpha_t (1+tau_t)^2/(1+tau_t^2) <= 4 alpha_t, i.e. the inequality is four times too large; the valid replacement is (1-alpha_t) <= 1 - (1/2) gamma_t mu (1+tau_t)^2. This defect is independent of ISSUE-001: it persists even with a valid recursion.",
+      "failure_location": {
+        "quote": "&\\overset{\\step{1}}{\\leq}& \\EEE[ B_t + \\|\\s_{t-1}\\|^2 - 2\\gamma_t \\mu (1+\\tau_t)^2 \\|\\s_{t-1}\\|^2 ]",
+        "tag": "lemma:sum:tail"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Use the valid factor (1/2) gamma_t mu (1+tau_t)^2 <= alpha_t, multiply the rearranged inequality by 2/(mu(1+tau_t)) instead of 1/(2 mu(1+tau_t)), and rescale C_w by the resulting constant factors; no other argument changes.",
+      "overall_effect": "The telescoping that produces the logarithmic weighted-tracking-error bound uses an unjustified factor; the derived constant C_w (and constants built on it) are understated by constant factors, but the form of Lemma lemma:sum:tail's conclusion is unaffected.",
+      "primary_affected_tag": "lemma:sum:tail",
+      "target_type": "formal_result",
+      "title": "Factor-4 error when converting the alpha_t-contraction into a gamma_t-weighted term in Lemma sum:tail",
+      "why_classification": "The correction is a forced constant-factor adjustment that leaves the lemma's statement form, the method, and every downstream rate unchanged; only named constants grow."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:m",
+        "the:it:EMA:M",
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$1 + \\tau_T~\\overset{\\step{1}}{\\leq}~\\ts 1 + \\sqrt{C_g \\ln (e+T)} \\leq (1 + \\sqrt{C_g}) \\sqrt{\\ln(e+T)} ~=~ \\iota \\sqrt{\\ln(e+T)}$",
+          "tag": "lemma:M:sum:m"
+        },
+        {
+          "quote": "where step \\step{1} uses $\\tau_t:=\\max_{i=1}^t \\|\\g_i\\|$, and $\\|\\g_t\\|^2 \\leq C_g \\ln(e+t)$ for all $t$.",
+          "tag": "lemma:M:sum:m"
+        },
+        {
+          "quote": "&\\leq & \\max_{i=1}^t \\EEE[\\|\\nabla f(\\x_i;\\xi_i)\\|^2 ]",
+          "tag": "lemma:M:sum:s"
+        },
+        {
+          "quote": "&\\overset{\\step{2}}{\\leq}& \\ts  C_f \\ln(e+T) \\cdot (1+\\mu\\tau_T) \\sqrt{1+\\MMM} + 2 c_3 \\sqrt{1+\\MMM}",
+          "tag": "lamma:bound:sum:nabla"
+        },
+        {
+          "quote": "\\ts \\EEE[ \\left( \\hat{f}_1 + c_1 C_w + \\tfrac{4 c_2}{\\mu} \\right) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))]",
+          "tag": "lemma:G:bound"
+        }
+      ],
+      "failure_explanation": "Lemmas lemma:G:bound and lemma:G:bound:2 only establish expectation bounds E||g_t||^2 <= C_g ln(e+t) and E[f(x_t)]-f* <= C_f ln(e+t). The closing arguments use them as deterministic pathwise bounds: (i) Eq. (eq:iota)/(eq:iota:2) assert the pathwise bound 1+tau_T <= (1+sqrt(C_g)) sqrt(ln(e+T)) for tau_T = max_{i<=T}||g_i||, which is false under Assumption ass:sigma (bounded variance only): heavy-tailed noise with P(||eta||>r) ~ r^{-2}(ln r)^{-2} has finite variance but max_{i<=T}||eta_i|| ~ sqrt(T)/ln T -> infinity, and E tau_T^2 can be Omega(T ln T); (ii) max_{t<=T}||s_t||^2 and max_{t<=T}(f(x_t)-f*) are replaced by their per-t expectation bounds inside multiplied (non-logarithmic) expressions, and E||m_t||^2 <= max_i E||g_i||^2 is the wrong direction (E max >= max E). The same slip occurs inside lemma:G:bound/lemma:G:bound:2 themselves (E[max_t hat f_t] bounded by max_t E[hat f_t] when substituting A_t), but there the maximum sits inside a logarithm, so the union bound E max <= sum E costs only a factor 2 in the log and those lemmas' statements survive; in lemma:M:sum:s, lemma:M:sum:m and lamma:bound:sum:nabla the maxima multiply non-log quantities, so the correct bounds introduce genuine poly(T) factors (C_s, C_o become Omega(sqrt T) or worse).",
+      "failure_location": {
+        "quote": "step \\step{3} uses $\\tau_T \\leq \\sqrt{C_g} \\sqrt{ \\ln(e+T)}$",
+        "tag": "lemma:M:sum:s"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must restructure the closing arguments to avoid pathwise uniform bounds on tau_T and on trajectory maxima, since only expectation bounds exist and the standard substitutes (E max <= sum E, Cauchy-Schwarz) introduce factors of T that destroy the claimed rates; recovering log-uniform control would require stronger noise assumptions (e.g., sub-Gaussian noise or almost-surely bounded gradients) that the paper explicitly avoids.",
+      "overall_effect": "The self-bounding closing arguments of both main theorems collapse: with the only bounds available under the stated assumptions, the constants C_s and C_o become polynomial in T (Theorem the:it:EMA:M's Gamma becomes Omega(T), so the final bound no longer even vanishes, and Term I of lamma:bound:sum:nabla requires dividing by the random, potentially unbounded epsilon+tau_T), so both Theorem the:it:EMA:M and Theorem the:it:EMA:V lose their proofs.",
+      "primary_affected_tag": "lemma:M:sum:s",
+      "target_type": "formal_result",
+      "title": "Expectation-level logarithmic bounds are used as pathwise uniform bounds on tau_T and trajectory maxima in the closing arguments",
+      "why_classification": "The false pathwise bounds are load-bearing in both main theorems' closings, the concrete counterexamples show they fail under the paper's own assumptions, and every standard workaround injects polynomial-in-T factors that invalidate the advertised rates; no supported resolution preserves a comparable guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\ts \\EEE[\\sum_{t=1}^T \\|\\m_t \\|^2 ]",
+          "tag": "the:it:EMA:M"
+        },
+        {
+          "quote": "&\\overset{\\step{4}}{\\leq}&\\ts \\max\\left( \\delta \\ln^{5/2}(e+T) \\rho_T^{1/2}  ,\\,  \\delta^2 \\ln^3(e+T) \\rho_T^{1/2} \\right)",
+          "tag": "the:it:EMA:M"
+        }
+      ],
+      "failure_explanation": "The chain bounding E[MMM] starts from expectation-level inputs (Lemma lemma:M:sum:m and lemma:M:sum:s give E of the right-hand sides), but after dropping the expectation the proof applies the pointwise rule x <= a sqrt(x) => x <= a^2 to the random variables MMM and rho_T as if the max-inequality held pathwise. As written the step is invalid (a deterministic E[MMM] is bounded by random expressions, and the self-bounding implication is used inside an expectation); the same occurs when the resulting MMM bound is substituted back into E[rho_T^{1/4} MMM^{1/2}]. This defect is independent of ISSUE-001 and ISSUE-003: it would remain even if those input bounds were valid.",
+      "failure_location": {
+        "quote": "step \\step{4} uses the property that $x \\leq a\\sqrt{x}$ implies $x \\leq a^2$ for all $a,x\\geq 0$",
+        "tag": "the:it:EMA:M"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Insert a Cauchy-Schwarz step: E[ln^{3/2}(e+T) rho_T^{1/4} sqrt(MMM)] <= sqrt(E[ln^3(e+T) rho_T^{1/2}]) sqrt(E[MMM]), then solve the resulting scalar self-bounding inequality for E[MMM]; only constant factors change.",
+      "overall_effect": "A gap in Theorem the:it:EMA:M's closing algebra; the final constant (the factor 2 delta^2) is understated, but the form of the bound is unchanged.",
+      "primary_affected_tag": "the:it:EMA:M",
+      "target_type": "formal_result",
+      "title": "Theorem M's self-bounding step applies a pointwise implication to random variables under an expectation",
+      "why_classification": "The repair is a routine, local application of Cauchy-Schwarz and scalar self-bounding that preserves the theorem's statement and rate with no new content beyond constants."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "step \\step{2} uses $\\tfrac{1}{\\a} - \\tfrac{1}{\\b} = \\tfrac{\\b\\odot \\b - \\a\\odot \\a}{\\a\\odot \\b \\odot (\\a+\\b)}$ for all $\\a,\\b>\\zero$; step \\step{3} uses $\\v_t \\ge 0$ and $\\v_t - \\v_{t-1} = \\beta_t (\\g_t^2 - \\v_{t-1})$",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        },
+        {
+          "quote": "\\ts \\beta_t = \\rho_t^{-1/4}\\cdot \\frac{1}{1+\\mu\\tau_t^2}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The true per-coordinate difference is 1/(epsilon+sqrt(v_t)) - 1/(epsilon+sqrt(v_{t-1})) = (sqrt(v_{t-1})-sqrt(v_t))/((epsilon+sqrt(v_t))(epsilon+sqrt(v_{t-1}))), and the proof bounds it by |v_{t-1}-v_t|/epsilon^3 (steps 2-3), which is false in general: with v_{t-1}=0 and v_t = (epsilon/2)^2, the true difference is (epsilon/2)/((3epsilon/2)(epsilon)) = 1/(3 epsilon), larger than the claimed bound (epsilon^2/4)/epsilon^3 = 1/(4 epsilon). Consequently ||Delta_t||^2 <= theta^2 ||m_t||^2 beta_t^2 ||g_t^2 - v_{t-1}||^2/epsilon^6 is not valid. The correct bound is first-order: (sqrt(v_{t-1})-sqrt(v_t))^2 <= |v_{t-1}-v_t| = beta_t |g_t^2 - v_{t-1}|, giving ||Delta_t||^2 <= 2 theta^2 beta_t tau_t^2 ||m_t||^2/epsilon^4 = O(rho_t^{-1/4}) ||m_t||^2 for the stated beta_t = rho_t^{-1/4}/(1+mu tau_t^2), whereas the claimed E_t relies on O(rho_t^{-1/2}) decay. With only rho_t^{-1/4} decay, the penalty sums grow like MMM^{1/4} (Lemma lemma:adaptive:important(b)), the objective/gradient bounds in lemma:G:bound:2 become polynomial in T instead of logarithmic, and the closing collapses.",
+      "failure_location": {
+        "quote": "&\\overset{\\step{3}}{\\leq }& \\ts  \\varpi_t \\|\\nabla f(\\x_t)\\|^2 +   \\frac{\\theta^2}{4 \\varpi_t } \\|\\m_t\\|^2  \\cdot \\beta_t^2 \\cdot  \\tfrac{1}{\\varepsilon^6} \\cdot  \\| \\g_t^2 - \\v_{t-1}\\|^2",
+        "tag": "lemma:OptEMA:V:suff:dec"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Change OptEMA-V's second-moment coefficient to beta_t = rho_t^{-1/2} * 1/(1+mu tau_t^2) (still in (0,1), and nothing else in the paper constrains the exponent) and correct the Gamma_1 bound to the first-order form ||Delta_t||^2 <= 2 theta^2 beta_t tau_t^2 ||m_t||^2/epsilon^4, which restores the rho_t^{-1/2} decay of E_t with only constant changes (epsilon^{-6} -> epsilon^{-4}, mu^{-2} -> mu^{-1}); the rest of the V-analysis then proceeds as written (modulo ISSUE-003 and ISSUE-006, which are independent).",
+      "overall_effect": "The one-step descent inequality for OptEMA-V is unproven with the stated E_t; if the analysis is redone with the valid first-order bound while keeping beta_t = rho_t^{-1/4}/(1+mu tau_t^2), the logarithmic growth bounds degrade to polynomial-in-T bounds and Theorem the:it:EMA:V's rate is lost.",
+      "primary_affected_tag": "lemma:OptEMA:V:suff:dec",
+      "target_type": "formal_result",
+      "title": "False beta_t^2/epsilon^6 bound on ||Delta_t|| in the OptEMA-V descent lemma; correct scaling is first-order in beta_t (rho^{-1/4}, not rho^{-1/2})",
+      "why_classification": "The defective step is false as written, but a contained repair - reparameterizing beta_t's exponent plus a corrected local bound - restores the claimed E_t decay and preserves the algorithm and theorem statements, so there is no major loss; it is more than a typo because the algorithm's update rule and a nontrivial inequality must be repaired."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound:2",
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "step \\step{3} uses the fact that $\\EEE[\\g_t] = \\nabla f(\\x_t)$",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        },
+        {
+          "quote": "\\Theta_t \\leq \\sum_{j=1}^{t}  \\left( \\prod_{k=j+1}^t (1-\\alpha_k) \\right) (-D_j +E_j)",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        },
+        {
+          "quote": "\\gamma_t =\n\\frac{1}{1+\\mu\\tau_t}\n\\left(1+\\sum_{j=1}^t \\|\\m_j\\|^2\\right)^{-1/2}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The recursion for Theta_t is derived only in expectation: step 3 of the Gamma_2 chain replaces g_t by grad f(x_t) using E[g_t | F_{t-1}] = grad f(x_t), so the unrolled bound Theta_t <= sum_j (prod (1-alpha_k))(E_j - D_j) holds for E[Theta_t], not pathwise. Pathwise, each step contributes an additional martingale term alpha theta <grad f(x_j), eta_j/(epsilon+sqrt(v_{j-1}))>. The lemma's final substitution inserts the bound inside E[theta gamma_t Theta_t], which requires the pathwise version because gamma_t = (1+mu tau_t)^{-1}(1+sum_{j<=t}||m_j||^2)^{-1/2} depends on g_t (through tau_t and m_t) and is therefore correlated with eta_t: E[gamma_t <grad f(x_t), eta_t> | F_{t-1}] != 0 in general (e.g., with grad f(x_t)=1, v_{t-1}=0, eta_t = +/-1, gamma_t differs between g_t = 2 and g_t = 0, giving a nonzero mean product). Hence the stated one-step descent inequality (and its later division by gamma_t in lamma:bound:sum:nabla) is unproven; controlling the dropped cross terms introduces sigma-weighted gradient-sum terms (or requires fourth-order moments) that the telescoping argument cannot absorb.",
+      "failure_location": {
+        "quote": "&\\leq& \\EEE[\\frac{L}{2} \\frac{\\theta^2}{\\varepsilon^2} \\gamma_t^2\\left\\| \\m_t \\right\\|^2\n+ \\theta \\gamma_t \\sum_{j=1}^{t}  \\left( \\prod_{k=j+1}^t (1-\\alpha_k) \\right) (E_j -D_j)]",
+        "tag": "lemma:OptEMA:V:suff:dec"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must control the cross terms E[gamma_t sum_j (prod(1-alpha)) alpha theta <grad f(x_j), eta_j/(epsilon+sqrt(v_{j-1}))>] whose summands have nonzero mean (gamma_t correlates with each eta_j, j <= t); standard Young/Cauchy-Schwarz controls inject sigma-weighted gradient sums that the current telescoping cannot absorb, so the V-analysis needs a genuinely new treatment of the gamma_t-Theta_t coupling (or an algorithm change that makes gamma_t independent of the current stochastic gradient).",
+      "overall_effect": "The OptEMA-V descent lemma - the basis for telescoping in lemma:G:bound:2 and lamma:bound:sum:nabla - is invalid as stated, so the entire convergence proof of Theorem the:it:EMA:V is unsupported independently of ISSUE-003 and ISSUE-005.",
+      "primary_affected_tag": "lemma:OptEMA:V:suff:dec",
+      "target_type": "formal_result",
+      "title": "OptEMA-V descent substitutes an expectation-derived Theta-recursion into E[gamma_t Theta_t] with random, g_t-dependent gamma_t; martingale cross terms are dropped",
+      "why_classification": "The gap is a concrete, non-vanishing noise-coupling term at the heart of the V-descent lemma; no standard or source-supported argument closes it without new architecture or an algorithm change, and the lemma is the foundation of every subsequent V result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ \\theta \\gamma_t \\sum_{j=1}^{t}  \\left( \\prod_{k=j+1}^t (1-\\alpha_k) \\right) (E_j -D_j)]",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        },
+        {
+          "quote": "+ \\frac{2 \\theta}{  \\alpha_t } \\|\\m_t\\|^2  \\cdot\\rho_t^{-1/2} \\cdot  \\tfrac{1}{\\varepsilon^6} \\cdot  (1+\\tau_t)",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        },
+        {
+          "quote": "Define $c_1:=\\tfrac{\\theta^2 L}{\\varepsilon^2}$, $c_2:= \\frac{2 \\theta}{ \\mu \\varepsilon^6 }$, $c_3:=\\tfrac{L\\theta^2}{2\\varepsilon^2}$.",
+          "tag": "lemma:OptEMA:V:suff:dec"
+        }
+      ],
+      "failure_explanation": "Two constant-level mismatches between the lemma statement and its proof (independent of ISSUE-005 and ISSUE-006): (i) the proof's final display yields theta gamma_t sum_j(prod)(E_j-D_j), but the statement writes gamma_t sum_j(prod)(E_j-D_j), dropping the factor theta (theta > 0 is an arbitrary input, so this is not a normalization); (ii) deriving E_t, the proof goes from 2 theta (epsilon+sqrt(max(v_{t-1})))/(alpha_t mu^2 epsilon^6) rho_t^{-1/2}||m_t||^2 to 2 theta (1+tau_t)/(alpha_t epsilon^6) rho_t^{-1/2}||m_t||^2, dropping the factor 1/mu^2 >= 1 (invalid direction for mu in (0,1)); combined with the valid (1+tau_t) <= (1+mu tau_t)/mu, the proven constant is 2 theta/(mu^3 epsilon^6), not the statement's c_2 = 2 theta/(mu epsilon^6).",
+      "failure_location": {
+        "quote": "\\EEE [ f(\\x_{t+1}) - f(\\x_{t}) ] \\leq \\EEE [ c_3 \\gamma_t^2 \\|\\m_t\\|^2 +  \\gamma_t \\sum_{j=1}^{t}  \\left( \\prod_{k=j+1}^t (1-\\alpha_k) \\right) \\left(E_j - D_j\\right)]",
+        "tag": "lemma:OptEMA:V:suff:dec"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Redefine c_2 := 2 theta/(mu^3 epsilon^6) and restore the missing factor theta in the statement's EMA sum (or rescale E_t and D_t accordingly); all downstream uses are symbolic in these constants, so no argument or rate changes.",
+      "overall_effect": "The lemma as stated is slightly stronger than what the proof establishes; downstream proofs use c_1, c_2, c_3 and the EMA-sum coefficient only symbolically, so the discrepancy propagates as constant-factor changes only.",
+      "primary_affected_tag": "lemma:OptEMA:V:suff:dec",
+      "target_type": "formal_result",
+      "title": "OptEMA-V descent lemma statement drops the proof's factor theta on the EMA sum and undercounts c_2's mu-exponent",
+      "why_classification": "The repair is a forced redefinition of named constants and a single bookkeeping factor; every conclusion and rate survives unchanged, with no new lemma or argument needed."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2603.09923",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-rerun86-v030-p2-retry",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7b0dd08a3822424a13d5abe6787b30dbd3aaca288887f32f89d091821f7ea682",
+  "status": "ok"
+}

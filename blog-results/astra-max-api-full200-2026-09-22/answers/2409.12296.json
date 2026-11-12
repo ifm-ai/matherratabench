@@ -1,0 +1,428 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "At the fully discrete level, the inner time in the dynamic formulation is discretized using a one-step forward Euler method, making the vector field $\\bu$ independent of the inner time.",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{\\tau^2}{2N^2} \\sum_{i=1}^{N}\\sum_{j=1}^{N} d_{i,j}^{n+1}(\\bu) + \\frac{2\\tau^2}{N^2} \\sum_{i=1}^{N}\\sum_{j=1}^{N} h_{i,j}^{n+1}(\\bu)",
+          "tag": "djko_p2"
+        },
+        {
+          "quote": "\\bv_i^{n+1} = \\bv_i^n - \\frac{\\tau}{N} \\sum_{j=1}^N A(\\bv_i^n-\\bv_j^n) [\\bu^{n+1}(\\bv_i^n) - \\bu^{n+1}(\\bv_j^n)]",
+          "tag": "update_v"
+        },
+        {
+          "quote": "P_{i,j}(t) = P_{i,j}(\\infty) - (P_{i,j}(\\infty)-P_{i,j}(0)) e^{-4dt}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The entire frozen objective has the common factor τ², so an exact optimizer is independent of τ. The position update is therefore forward Euler with a field determined solely from the old particles. Writing its force as R_i, the kernel identities give E^{n+1}=E^n+τ² N^{-1}Σ_i|R_i|². More specifically, in the population Maxwellian case the frozen loss selects the current score, and linearizing the supplied stress evolution gives the multiplier 1−4dτ, which is unstable when τ>1/(2d). Minimizing the frozen loss does not retain the implicit JKO stability mechanism.",
+      "failure_location": {
+        "quote": "Compared to other deterministic particle methods, the proposed method enjoys exact entropy dissipation and unconditional stability, therefore making it suitable for large-scale plasma simulations over extended time periods.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Withdraw the unconditional-stability and implicit-time-stepping claims for the frozen scheme, or replace it by a genuinely implicit variational time discretization with a stability argument.",
+      "overall_effect": "The advertised distinction from explicit score-based methods and the unconditional large-time-step stability guarantee do not hold for the implemented update.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The implemented time step is explicit, not unconditionally stable",
+      "why_classification": "Preserving the advertised guarantee requires a different time-discretization construction; merely qualifying the claim abandons a central guarantee and the unrestricted large-step regime."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\iint_{\\R^{2d}} \\Tilde{\\nabla}\\varphi(\\bv,\\bv_*) \\cdot \\psi(\\bv,\\bv_*) \\rd\\bv_* \\rd\\bv = - \\int_{\\R^d} \\varphi(\\bv) (\\Tilde{\\nabla} \\cdot \\psi)(\\bv)\\rd\\bv",
+          "tag": "new_div"
+        },
+        {
+          "quote": "\\frac{\\rd}{\\rd t} \\int_{\\R^d} \\varphi f \\rd\\bv = -\\frac{1}{2} \\iint_{\\R^{2d}} \\Tilde{\\nabla}\\varphi \\cdot \\Tilde{\\nabla} \\frac{\\delta \\mathcal{H}}{\\delta f} f f_{*} \\rd\\bv \\rd\\bv_*",
+          "tag": "0910"
+        },
+        {
+          "quote": "by comparing the constrained equation in \\eqref{dL} with the Landau equation \\eqref{landau_weak3}, we see that $V$ corresponds to $\\tilde \\nabla \\frac{\\delta \\mathcal H}{\\delta f}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the stated adjoint convention, the weak equation implies ∂_t f=(1/2) tilde-div(ff_* tilde-grad δH/δf), not its negative. The displayed equation instead produces the opposite weak-form sign and entropy increase. The erroneous sign is subsequently used to identify the metric velocity V, so it also enters an inference rather than remaining an isolated display error.",
+      "failure_location": {
+        "quote": "\\partial_t f + \\frac{1}{2} \\Tilde{\\nabla} \\cdot \\left(f f_{*} \\Tilde{\\nabla} \\frac{\\delta \\mathcal{H}}{\\delta f} \\right) = 0",
+        "tag": "landau_weak3"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Use a minus sign before the divergence in landau_weak3 and identify the descending metric velocity as V=−tilde-grad(δH/δf); adjust the potential parametrization consistently.",
+      "overall_effect": "The asserted nonlocal rewriting and the accompanying identification of the gradient-flow velocity have the wrong orientation.",
+      "primary_affected_tag": "landau_weak3",
+      "target_type": "other",
+      "title": "The nonlocal Landau equation has the wrong divergence sign",
+      "why_classification": "A local sign-convention repair preserves the quadratic action, metric values, and intended variational scheme."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\inf_{f, V} \\bigg\\{ \\frac{1}{2} \\int_0^1 \\iint_{{\\mathbb{R}^{2d}}} |V|^2 ff_{*} \\rd\\bv \\rd\\bv_* \\rd t \\bigg\\}",
+          "tag": "dL"
+        },
+        {
+          "quote": "Therefore, we can assume $V$ admits the following form:",
+          "tag": null
+        },
+        {
+          "quote": "V = \\Tilde{\\nabla}\\phi = \\sqrt{C_\\gamma}|\\bv-\\bv_*|^{1+\\gamma/2} \\Pi(\\bv-\\bv_*)(\\nabla\\phi - \\nabla_*\\phi_*)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The original infimum permits general two-variable velocity fields V. Recognizing that the particular Landau entropy flow has a gradient-form velocity does not show that the metric infimum can be restricted to such velocities without increasing it. The source supplies neither a minimizing-velocity characterization nor a projection/density argument that preserves the continuity equation and justifies representation by a one-particle field u.",
+      "failure_location": {
+        "quote": "d_L^2(f_0, f_1) :=& ~  \\inf_{f, \\bu} \\frac{1}{2} \\int_0^1 \\iint_{{\\mathbb{R}^{2d}}} |\\bu-\\bu_*|^2_A ff_{*} \\rd\\bv \\rd\\bv_* \\rd t",
+        "tag": "dL-new"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Supply a weighted-L2 projection argument at fixed f, with precise admissible and completed spaces, showing preservation of the continuity constraint, reduction of action, and the required potential or u representation.",
+      "overall_effect": "The new variational problem is not shown to use the same metric as the cited Landau gradient-flow theory. Its direct entropy and conservation calculations do not establish that equivalence.",
+      "primary_affected_tag": "dL-new",
+      "target_type": "other",
+      "title": "Equality of the two Landau metric formulations is not established",
+      "why_classification": "A contained but nontrivial variational lemma is missing; the algebraic reformulation and its independently proved structural properties need not be abandoned."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In this paper, we do not distinguish between the notation for probability measures and densities.",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, $\\varphi \\in span\\{ \\mathbf{1}, \\bv\\}$ on the support of $f$.",
+          "tag": "lemma_1"
+        }
+      ],
+      "failure_explanation": "For measures supported on a line, pairwise differences parallel to that line need not come from one affine field. An explicit counterexample for γ=0 is f=(δ_{−e_1}+δ_0+δ_{e_1})/3, with φ(se_1)=s²e_1 and φ(v)=2e_1/3 off the axis. The displayed operator vanishes everywhere, but the three support values are not a+bv. The last proof step silently requires a nondegenerate support, which is not stated for the paper's measure-valued convention.",
+      "failure_location": {
+        "quote": "If $\\varphi(\\bv) : \\R^d \\to \\R^d$ satisfies $\\int_{\\R^d} A(\\bv-\\bv_*) (\\varphi -\\varphi_*)f_* \\rd\\bv_* = 0$, then $\\varphi \\in \\text{span}\\{ \\mathbf{1}, \\bv\\}$ on the support of $f$.",
+        "tag": "lemma_1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "State the lemma for nonzero densities, or impose that the support is not contained in an affine line, together with the integrability needed for symmetrization; state the conclusion almost everywhere unless continuity is assumed.",
+      "overall_effect": "The claimed affine characterization of the collision nullspace, and hence the score-plus-affine description, is unsupported for degenerate measures.",
+      "primary_affected_tag": "lemma_1",
+      "target_type": "formal_result",
+      "title": "The nullspace lemma omits a nondegeneracy condition on the support",
+      "why_classification": "A standard local support condition and a short noncollinear-point argument recover the intended density setting without changing the method or its rates."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bu(1, \\bv) \\in \\tau \\nabla\\log f(1, \\bv) + span\\{ \\mathbf{1}, \\bv\\} \\, ~~\\text{on}~~ supp~(f)",
+          "tag": "opt_u1"
+        },
+        {
+          "quote": "We now demonstrate that \\eqref{djko} indeed provides a first-order in $\\tau$ approximation to \\eqref{landau_homo}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The derived score relation holds only at inner time t=1. Substituting it gives a relation for the terminal derivative of the minimizing path, not an evolution equation valid throughout the path and not an identity between its endpoint and the exact Landau semigroup at time τ. Even first-order consistency requires integrating the path and controlling the variation of f and u in τ.",
+      "failure_location": {
+        "quote": "reveals that $f^{n+1} = f(1, \\cdot)$ is indeed the solution of the homogeneous Landau equation \\eqref{landau_homo} after one time step $\\tau$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the exact-solution assertion by a first-order consistency statement and supply a small-τ expansion of the constrained path under suitable uniform regularity bounds.",
+      "overall_effect": "The asserted exact time-step identification is unsupported, and the displayed optimality calculation alone does not prove the announced first-order consistency.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A terminal optimality relation is promoted to an exact Landau time step",
+      "why_classification": "A contained consistency argument and a limited weakening to the already advertised first-order approximation suffice, but the terminal substitution is not itself that argument."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:added-4"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{2N^2} \\sum_{i=1}^{N}\\sum_{j=1}^{N} \\int_0^1 |\\bu(t, T_t(\\bv_i^n)) \\!-\\! \\bu(t, T_t(\\bv_j^n))|^2_A \\rd t - \\frac{2\\tau}{N} \\sum_{i=1}^{N} \\log |\\det \\nabla_\\bv T_1(\\bv_i^n)|",
+          "tag": "djko_p"
+        },
+        {
+          "quote": "h_{i,j}^{n+1}(\\bu) = A(\\bv_i^n \\!-\\! \\bv_j^n) : \\nabla\\bu(\\bv_i^n)",
+          "tag": "djko_p2"
+        }
+      ],
+      "failure_explanation": "Already for the nonsingular Maxwell kernel and distinct particles, choose smooth fields u_K with u_K(v_i)=0 and ∇u_K(v_i)=−K I at every sampled point. In djko_p the particles remain fixed and the action is zero, while each log determinant grows at rate K N^{-1}Σ_j Tr A(v_i−v_j). The objective therefore tends to −∞. In djko_p2 the same jets give d_{ij}=0 and h_{ij}=−K Tr A(v_i−v_j), again yielding infimum −∞. Thus the optimal particle map assumed by the proposition does not exist in the stated admissible class.",
+      "failure_location": {
+        "quote": "Property (i) is a direct consequence of optimization.",
+        "tag": "prop:added-3"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must supply a coercive admissible class or regularization controlling sampled derivatives, establish a well-defined minimization, and retain the claimed consistency and entropy properties.",
+      "overall_effect": "The ideal particle JKO construction and its optimizer-based entropy guarantee are not well defined. Restricting to neural networks is not accompanied by a coercivity or parameter-bound argument that resolves this derivative-overfitting mechanism.",
+      "primary_affected_tag": "prop:added-3",
+      "target_type": "formal_result",
+      "title": "The particle entropy minimization is unbounded below",
+      "why_classification": "This is failure of existence, not optimization accuracy. Repair requires a new regularized variational construction or abandonment of the asserted particle minimization."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:added-4"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\rd}{\\rd t} \\log |\\det\\nabla_\\bv T_t(\\bv_i^n)| = - \\frac1N \\sum_{j=1}^{N} \\bigg\\{ A(T_t(\\bv_i^n) \\!-\\! T_t(\\bv_j^n)) : \\nabla\\bu(t, T_t(\\bv_i^n))",
+          "tag": "djko_p"
+        },
+        {
+          "quote": "A(\\bz)=\\frac{1}{4\\pi}\\frac{1}{|\\bz|^3}(|\\bz|^2I_3 - \\bz \\otimes \\bz)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Every particle sum includes j=i, but the Coulomb kernel behaves as |z|^{-1} and has no defined value at z=0. In particular, the entropy/log-Jacobian term contains A(0):∇u(v_i), not merely a kernel multiplied by a zero velocity difference. No self-exclusion, zero-separation convention, or regularization is specified. Consequently the proposition invokes an undefined particle problem in the advertised Coulomb regime.",
+      "failure_location": {
+        "quote": "The particle-based variational formulation \\eqref{djko_p} has the following properties for any $n \\geq 0$:",
+        "tag": "prop:added-3"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Explicitly specify a consistent self-interaction convention, normally omitting diagonal terms throughout the action, force, and entropy sums, and handle any coincident-particle terms consistently.",
+      "overall_effect": "The Coulomb losses, force calculations, density updates, and their structural guarantees cannot be evaluated as written.",
+      "primary_affected_tag": "prop:added-3",
+      "target_type": "formal_result",
+      "title": "Coulomb self-interactions make the particle formulas undefined",
+      "why_classification": "A local interaction convention can make the finite sums well defined while preserving the pairwise conservation algebra and the intended Coulomb scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Property (i) is a direct consequence of optimization.",
+          "tag": "prop:added-4"
+        },
+        {
+          "quote": "Trained parameters $\\theta_K$.",
+          "tag": "algorithm_opt"
+        },
+        {
+          "quote": "The number of epochs is set to 3 for each JKO step, and the batch size is 1280.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The entropy proof needs a variational comparison with the feasible zero field, or at least Σ_{ij}h_{ij}≤0. The executable training procedure and finite-epoch experiments impose neither condition. A finite SGD run on a quadratic-plus-linear loss can leave its linear h contribution positive, in which case update_f increases the stated discrete entropy. A convergence tolerance or the theorem's average-gradient estimate does not certify the required sign.",
+      "failure_location": {
+        "quote": "Update $\\theta$ of $\\bu^{n+1}_\\theta$ by minimizing the JKO loss $\\ell^{n+1}$ \\eqref{jko_loss} using Algorithm \\ref{algorithm_opt}.",
+        "tag": "algorithm_jko"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Add a certified decrease or acceptance condition for the update functional, with comparison to the zero field and a specified retraining or feasible-fallback rule; account for the certification cost in the accelerated implementation.",
+      "overall_effect": "Even assuming a well-posed loss and using full-particle updates, the implemented neural-network algorithm does not inherit the ideal optimizer's exact entropy-decay guarantee.",
+      "primary_affected_tag": "algorithm_jko",
+      "target_type": "algorithm",
+      "title": "Finite stochastic training does not certify the entropy comparison",
+      "why_classification": "A contained acceptance/certification mechanism can retain the intended guarantee, but finite stochastic training alone is not that mechanism and its cost must be reconciled with the claimed acceleration."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\alpha_k^2 N^2}{B^2} \\left( (3M+2) \\left\\| \\nabla_{\\theta} \\ell(\\theta^{(k)}_0) \\right\\|^2 + 3\\sigma^2 \\right)",
+          "tag": "sgd_lemma1"
+        },
+        {
+          "quote": "\\frac{\\alpha_k L^2 B}{2N} \\sum_{q=1}^{\\frac{N}{B}} \\| \\theta_{k} - \\theta^{(k+1)}_{q-1} \\|^2",
+          "tag": "sgd_lemma2"
+        }
+      ],
+      "failure_explanation": "Even granting both lemmas, substitution multiplies αL²B/(2N) by α²N²/B², yielding α³L²N/(2B), not α³L²N/(2B²). The proof silently removes B. Thus these stated lemmas would give a residual 6σ²L²α²N/B, rather than the theorem's N/B² dependence. This arithmetic defect is independent of the separate failure of Lemma sgd_lemma2.",
+      "failure_location": {
+        "quote": "+ \\frac{\\alpha L^2}{2N} \\frac{\\alpha^2 N^2}{B^2} \\left( (3M+2) \\left\\| \\nabla_{\\theta} \\ell(\\theta_k) \\right\\|^2 + 3\\sigma^2 \\right)",
+        "tag": "thm_opt_conv"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Correct the multiplication and weaken the resulting residual to 6σ²L²α²N/B, with the associated batch/learning-rate tradeoff, or supply a genuinely sharper supporting estimate.",
+      "overall_effect": "The claimed batch-size dependence of the stationarity bound is not obtained even from the supporting bounds as stated.",
+      "primary_affected_tag": "thm_opt_conv",
+      "target_type": "formal_result",
+      "title": "The convergence proof drops a factor of the batch size",
+      "why_classification": "The repair changes a substantive batch-size dependence, rather than typography alone, but retains a comparable bound with the same epoch and α orders."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bv_i^{n+1} = \\bv_i^n - \\frac{\\tau}{N} \\sum_{j=1}^N A(\\bv_i^n-\\bv_j^n) [\\bu^{n+1}(\\bv_i^n) - \\bu^{n+1}(\\bv_j^n)]",
+          "tag": "update_v"
+        },
+        {
+          "quote": "Given $N$ particles, we randomly divide them into $\\frac{N}{B'}$ batches $C_q$, $q=1,\\ldots,\\frac{N}{B'}$, with a batch size $B' \\ll N$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "After defining the self term as zero, each j≠i belongs to i's batch with probability (B'−1)/(N−1). Hence the conditional mean batch force is N(B'−1)/[B'(N−1)] times the full force, not the full force. For fixed B' this leaves a drift/time-scale bias approaching (B'−1)/B' as N grows; it is not zero-mean batching noise. B'=1 freezes every particle.",
+      "failure_location": {
+        "quote": "\\bv_i^{n+1} = \\bv_i^n - \\frac{\\tau}{B'} \\sum_{j \\in C_q} A(\\bv_i^n-\\bv_j^n) [\\bu_\\theta^{n+1}(\\bv_i^n) - \\bu_\\theta^{n+1}(\\bv_j^n)]",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Require B'>1 and replace 1/B' on off-diagonal batch sums by (N−1)/[N(B'−1)], consistently for both force and h estimates.",
+      "overall_effect": "The accelerated update changes the physical drift as well as adding random sampling error, so it does not approximate the original update with an unbiased random-batch force.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The random-batch force has a systematic normalization bias",
+      "why_classification": "A routine combinatorial reweighting restores the intended mean update without changing the computational order or excluding a substantive interaction regime."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\tau^2}{2N^2} \\sum_{i=1}^{N}\\sum_{j=1}^{N} d_{i,j}^{n+1}(\\bu) + \\frac{2\\tau^2}{N^2} \\sum_{i=1}^{N}\\sum_{j=1}^{N} h_{i,j}^{n+1}(\\bu)",
+          "tag": "djko_p2"
+        },
+        {
+          "quote": "This approach accelerates the particle updates and preserves all physical quantities without significantly impacting the accuracy",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Full-loss optimization controls the full sum of h_{ij}, not its sum over a new partition. The latter can have the opposite sign. For the 2D Maxwell kernel with C_0=1, take four particles (±R,±1), R>1, and u_θ(x,y)=θ(x,−y). The full loss in this family is 8τ²[R²θ²−(R²−1)θ], minimized at θ=(R²−1)/(2R²)>0. A partition into the two vertical pairs has h_{ij}=8θ>0 for every interacting ordered pair, so every stored log density increases by 4τθ. This failure persists even with exact optimization of that full-loss family and correct positive batch reweighting.",
+      "failure_location": {
+        "quote": "h_i^{n+1}(\\bu_\\theta^{n+1}) = -\\frac{\\tau}{B'} \\sum_{j \\in C_q} h_{i,j}^{n+1}(\\bu_\\theta^{n+1})",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Optimize or certify a decrease of the objective for the same realized partition used in the particle update, with the zero field as comparator; alternatively weaken the guarantee to a properly proved expectation statement.",
+      "overall_effect": "The random-batch implementation does not inherit pathwise exact discrete entropy decay from the full-particle variational comparison.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "A fresh random update partition need not dissipate entropy",
+      "why_classification": "Retaining pathwise decay requires a contained change to the batch objective or acceptance mechanism, rather than merely correcting the force normalization."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "f^0(\\bv) = \\frac{1}{S^2} \\exp\\left( -S\\frac{(|\\bv|-\\sigma)^2}{\\sigma^2} \\right) \\,,~ \\sigma=0.3 \\,,~ S=10",
+          "tag": null
+        },
+        {
+          "quote": "\\bv_i^{n+1} = \\bv_i^n - \\frac{\\tau}{N} \\sum_{j=1}^N A(\\bv_i^n-\\bv_j^n) [\\bu^{n+1}(\\bv_i^n) - \\bu^{n+1}(\\bv_j^n)]",
+          "tag": "update_v"
+        },
+        {
+          "quote": "f_{kde}^n(\\bv) := \\frac{1}{N}\\sum_{i=1}^N \\psi_\\varepsilon(\\bv-\\bv_i^n)",
+          "tag": "kde"
+        }
+      ],
+      "failure_explanation": "The stated initial density has mass ρ≈0.001997, not one, as also reflected in the paper's equilibrium formula. Sampling requires the probability density p=f/ρ, but the displayed particle sums and KDE have unit weights and unit total mass. Since Q is quadratic, p must satisfy ∂_t p=ρQ(p,p); the unweighted update instead uses Q(p,p). No mass weighting, time rescaling, or density rescaling is supplied for this example.",
+      "failure_location": {
+        "quote": "We solve this problem using a JKO time step of $\\tau = 0.2$, with a total of  $N = 50^3$ particles.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Use particle weights ρ/N and a mass-ρ KDE, or explicitly solve for p=f/ρ in time s=ρt and rescale all returned densities and diagnostics; recompute or consistently reinterpret the benchmark.",
+      "overall_effect": "The Rosenbluth computation, its physical time labels, reconstructed densities, and comparison with the stated mass-ρ equilibrium are not supported by the algorithm as written.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The non-unit-mass Rosenbluth example is incompatible with the unweighted probability scheme",
+      "why_classification": "A contained mass/time rescaling repairs the method, but the existing numerical comparison cannot be retained unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with a total of  $N = 50^3$ particles.",
+          "tag": null
+        },
+        {
+          "quote": "Divide $N$ into $\\frac{N}{B}$ batches denoted by $C_q$ with size $B$ randomly.",
+          "tag": "algorithm_opt"
+        },
+        {
+          "quote": "Given $N$ particles, we randomly divide them into $\\frac{N}{B'}$ batches $C_q$, $q=1,\\ldots,\\frac{N}{B'}$, with a batch size $B' \\ll N$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Here N=125000, which is divisible by neither 640 nor 1280. Consequently neither prescribed equal-size partition exists. The source gives no remainder-batch, padding, or dropping rule, although such a rule would also determine the denominators for the final batch.",
+      "failure_location": {
+        "quote": "We use 3 epochs for each JKO step, with a batch size of 640. Additionally, a random batch method with a batch size of 1280 is employed for particle updates.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Use a particle count divisible by both batch sizes, or specify a remainder-batch policy with its actual-cardinality normalization and distinguish it from the equal-size analysis.",
+      "overall_effect": "The stated Rosenbluth run is not fully specified by the published batching procedures.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The Rosenbluth particle count cannot be partitioned into the prescribed equal batches",
+      "why_classification": "This is a local input-admissibility or remainder-handling repair that does not change the mathematical method or its asymptotic cost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm_opt_conv"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|  \\nabla\\ell(\\theta_{k}) - \\nabla_{\\theta} \\ell_{i,j}(\\theta^{(k+1)}_{q-1}) \\|^2",
+          "tag": "sgd_lemma2"
+        },
+        {
+          "quote": "\\| \\nabla_\\theta \\ell_{i,j}(\\theta_2) - \\nabla_\\theta \\ell_{i,j}(\\theta_1) \\| \\leq L \\| \\theta_2 - \\theta_1 \\|",
+          "tag": null
+        },
+        {
+          "quote": "\\theta^{(k)}_q = \\theta^{(k)}_{q-1} - \\alpha^{(k)}_q \\frac{1}{B^2} \\sum_{i,j \\in C_q} \\nabla_{\\theta} \\ell_{i,j}(\\theta^{(k)}_{q-1})",
+          "tag": "algorithm_opt"
+        }
+      ],
+      "failure_explanation": "L-smoothness controls differences of the same component gradient at two parameters, not the difference between the full gradient and a component gradient. An epoch visits only within-batch pairs, so the missing component discrepancy does not cancel as it would in exhaustive finite-sum reshuffling. For N=4, B=2, let only ℓ_{12}=ℓ_{21}=(θ−1)²/2 be nonzero and choose batches {1,3}, {2,4}. Starting at θ=0, no iterate moves and the displacement sum is zero, but ∇ℓ(0)=−1/8. The claimed inequality then reads ℓ(0)≤ℓ(0)−α_k/128. Thus the lemma is false even for smooth, lower-bounded quadratic losses satisfying the variance assumption.",
+      "failure_location": {
+        "quote": "+ \\frac{\\alpha_k L^2 B}{2N} \\sum_{q=1}^{\\frac{N}{B}} \\| \\theta_{k} - \\theta^{(k+1)}_{q-1} \\|^2",
+        "tag": "sgd_lemma2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, retain the epoch pair-sampling error and reprove convergence with the appropriate bias and variance terms, or change epochs to cover all pairs.",
+      "overall_effect": "The main convergence theorem lacks its descent estimate. In particular, the claimed O(α²) residual cannot be obtained by treating particle reshuffling as exhaustive reshuffling of all interaction pairs.",
+      "primary_affected_tag": "sgd_lemma2",
+      "target_type": "formal_result",
+      "title": "The reshuffling descent lemma discards the missing-pair sampling error",
+      "why_classification": "The source supplies no comparable convergence proof for its linear-cost batching rule. Exhaustive pair coverage loses the advertised epoch complexity, while a stochastic-noise analysis requires a different argument and may change the claimed rate."
+    }
+  ],
+  "issues_found": 14,
+  "paper_id": "2409.12296",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "91c8b71b38392adb77e6b756cced52757c09fdabebe2a2f4891834723c7a9f5b",
+  "status": "ok"
+}

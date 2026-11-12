@@ -1,0 +1,146 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The flow map $\\Phi_{0,t} \\colon \\R^d \\to \\R^d$ is defined by $\\Phi_{t_0,t}(y_0) := y(t)$, where $y(t)$ denotes the unique solution of the ODE at time $t$ with initial condition $y(t_0) = y_0$",
+          "tag": null
+        },
+        {
+          "quote": "Accordingly, we abbreviate $\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$, and denote by $\\Phi := \\Phi_{0,1}$ the flow map evaluated at final time $t = 1$.",
+          "tag": null
+        },
+        {
+          "quote": "by learning a transport map $\\Phi^\\theta \\colon \\Omega \\to \\Omega$ such that the pushforward $\\Phi^\\theta \\_*\\nu$ approximates $\\mu$ with respect to $\\mathcal{D}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "By the paper's own definition $\\Phi_{t_0,t}(y_0)=y(t)$, integrating the ODE backward from $z$ returns $\\Phi^{-1}(z)$, which has law $(\\Phi^{-1})_*\\nu$, not $\\Phi_*\\nu$. Samples from the model $\\Phi_*\\nu$ are obtained by integrating forward, $x=\\Phi(z)$ with $z\\sim\\nu$. The sentence thus claims the model distribution for a procedure that delivers the inverse pushforward; either the integration direction and endpoint or the claimed output law must be changed, so this is not a single forced typographical correction.",
+      "failure_location": {
+        "quote": "allowing efficient computation of samples from $\\Phi_* \\nu$ by sampling $Z \\sim \\nu$ and solving the ODE backward in time with $z$, a realization of $Z$, to obtain $x = \\Phi^{-1}(z)$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restate the sampling step: draw $z\\sim\\nu$ and integrate the ODE forward to $t=1$ to obtain $x=\\Phi(z)\\sim\\Phi_*\\nu$, reserving the backward solve for computing $\\Phi^{-1}$ in likelihood evaluation.",
+      "overall_effect": "The advertised sampling capability of the neuralODE generative model is misstated: the described backward-in-time procedure does not produce samples from the model distribution $\\Phi_*\\nu$ used in the change-of-variables identity and in the likelihood. No formal result is affected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Stated sampling procedure runs the flow in the wrong direction",
+      "why_classification": "The fix is local to one sentence and restores the claimed sampling contract; no theorem, rate, or scope statement depends on the erroneous direction, so every substantive guarantee is preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Accordingly, we abbreviate $\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$, and denote by $\\Phi := \\Phi_{0,1}$ the flow map evaluated at final time $t = 1$.",
+          "tag": null
+        },
+        {
+          "quote": "\\log \\left| \\det \\left({D_x[\\Phi^\\theta]}^{-1}(x) \\right) \\right| - \\log \\left| \\det \\left({D_x[\\Phi^{\\theta'}]}^{-1}(x) \\right) \\right| \\Big|.",
+          "tag": "lem:sub_gaussian"
+        },
+        {
+          "quote": "\\log f_\\nu\\left({[\\Phi^\\theta]}^{-1}(x)\\right) - \\log f_\\nu\\left({[\\Phi^\\mu]}^{-1}(x)\\right)",
+          "tag": "thm:learnability_target_class"
+        }
+      ],
+      "failure_explanation": "Change of variables gives $f_{\\Phi_*\\nu}(y)=f_\\nu(\\Phi^{-1}(y))\\,|\\det D\\Phi^{-1}(y)|$ and Liouville's formula $\\det D\\Phi(z)=\\exp(\\int_0^1\\operatorname{div}v(\\Phi_t(z),t)dt)$ along the trajectory issuing from $z$. Hence the correct identity is $\\log f_{\\Phi_*\\nu}(y)=\\log f_\\nu(\\Phi^{-1}(y))-\\int_0^1\\operatorname{div}v(\\Phi_t(\\Phi^{-1}(y)),t)dt$. The display carries a plus sign and integrates along the trajectory starting at $y$ (which ends at $\\Phi(y)\\ne y$) instead of the one ending at $y$. For $v(y,t)=y$ and $\\nu$ uniform on $[0,1]$ the printed formula gives density $e f_\\nu(y/e)$ instead of the correct $e^{-1}f_\\nu(y/e)$. Later proofs use the correct Jacobian-of-the-inverse expression, confirming the inconsistency.",
+      "failure_location": {
+        "quote": "\\log f_{\\Phi_*\\nu}(y) = \\log f_\\nu(\\Phi^{-1}(y)) + \\int_0^1 \\operatorname{div}_y v(\\Phi_t(y), t) \\, dt,",
+        "tag": "eq:liouville_log_det"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the display by $\\log f_{\\Phi_*\\nu}(y)=\\log f_\\nu(\\Phi^{-1}(y))-\\int_0^1\\operatorname{div}v(\\Phi_t(\\Phi^{-1}(y)),t)\\,dt$ (equivalently state the identity along the trajectory $t\\mapsto\\Phi_t(z)$ with $y=\\Phi(z)$).",
+      "overall_effect": "The identity is the stated basis for evaluating $f_{\\Phi^\\theta_*\\nu}$ in the maximum-likelihood objective \\eqref{neural_ode_log_likelihood}; implemented as printed, training would minimize an incorrect log-likelihood and the learned $\\hat\\theta_n$ would not be an empirical risk minimizer. Formal results phrased through $f_{\\mu_\\theta}$ and $\\log|\\det D\\Phi^{-1}|$ survive the correction.",
+      "primary_affected_tag": "eq:liouville_log_det",
+      "target_type": "other",
+      "title": "Liouville change-of-variables identity has the wrong sign and the wrong flow argument",
+      "why_classification": "Both the sign and the trajectory argument are wrong, but the repair is a local rewrite of one displayed identity; every formal result is stated through the abstract density $f_{\\mu_\\theta}$ and the correct Jacobian term and is preserved unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The target class $\\mathcal{T} \\subset \\mathcal{M}_1^+([0,1]^d)$ consists of absolutely continuous measures with densities $f_\\mu \\in C^k([0,1]^d)$.",
+          "tag": "main_assumptions"
+        },
+        {
+          "quote": "\\kappa \\leq f_\\nu(x) \\leq \\mathcal{K} \\quad \\text{and} \\quad \\kappa \\leq f_\\mu(x) \\leq \\mathcal{K} \\quad \\text{for all } x \\in [0,1]^d, \\ \\mu \\in \\mathcal{T}.",
+          "tag": "main_assumptions"
+        },
+        {
+          "quote": "and that $\\|u^\\mu\\|_{C^1}$ can be bounded by a constant $c_{d,\\kappa,\\mathcal{K}}$ by~\\cite[Theorem 4.12]{marzouk2025} depending only on $d,\\kappa,\\mathcal{K}$.",
+          "tag": "thm:learnability_target_class"
+        },
+        {
+          "quote": "there exist a constants $\\tilde{c}_{d,k,\\kappa,\\mathcal{K}}$ depending on $d,k,\\kappa,\\mathcal{K}$, such that if we choose a neural network architecture",
+          "tag": "thm:learnability_target_class"
+        }
+      ],
+      "failure_explanation": "Assumption \\ref{main_assumptions} controls only the values of the target densities ($\\kappa\\le f_\\mu\\le\\mathcal K$) and their membership in $C^k$; it imposes no uniform bound on $\\|f_\\mu\\|_{C^k}$ over $\\mathcal T$. The displacement field inherits the derivatives of $f_\\mu$: for $d=1$, $T=F_\\mu^{-1}\\circ F_\\nu$ satisfies $T''=-f_\\mu'(T)T'/f_\\mu(T)^2$, which is unbounded on $\\mathcal T$ (take $f_\\mu=c+a\\sin(Mx)$ with $0<a<c$, which stays in $[\\kappa,\\mathcal K]$ while $\\|f_\\mu\\|_{C^k}\\sim aM^k$). Hence $\\sup_{\\mu\\in\\mathcal T}\\|u^\\mu\\odiv\\eta_d\\|_{C^k}$ and $\\sup_{\\mu\\in\\mathcal T}\\|u^\\mu\\|_{C^1}$ are infinite, so the uniform constants the proof relies on do not exist as stated and the best-approximation bound \\eqref{c1_target_approx_thm} and model-error bound \\eqref{kl_target_approx_thm} cannot hold uniformly over $\\mathcal T$.",
+      "failure_location": {
+        "quote": "\\sup_{\\mu \\in \\mathcal{T}} \\|u^\\mu \\odiv \\eta_d\\|_{C^k([0,1]^{d+1}; \\mathbb{R}^d)} \\leq c_{d,k,\\kappa,\\mathcal{K}}",
+        "tag": "thm:learnability_target_class"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add a uniform smoothness bound to the target class, e.g. require $\\|f_\\mu\\|_{C^k([0,1]^d)}\\le M$ for all $\\mu\\in\\mathcal T$ (a bounded Hölder ball), and let all constants depend on $M$ as well; the proof structure, the rate $K^{-(k-1)}$ and the PAC conclusion then hold for that class.",
+      "overall_effect": "The $\\mu$-uniform model-error bound is unreliable, so the main PAC theorem, which quantifies over all $\\mu\\in\\mathcal T$ with $\\mu$-independent constants and thresholds, becomes unreliable as well; distributions in $\\mathcal T$ with large $C^k$ norms lose the advertised guarantee.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Uniform model-error bounds use target-class regularity that the assumptions do not provide",
+      "why_classification": "Inserting the missing boundedness hypothesis is a short local change that preserves the method, the rates and the PAC form of the conclusion, but it necessarily narrows the quantified target class (uniformity over all $C^k$ densities bounded away from zero is lost), so the repair exceeds a purely minor one while avoiding any new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "such that for all sample sizes $n,m \\geq n(\\varepsilon,\\delta), m(\\varepsilon,\\delta)$",
+          "tag": "thm:learnability_sparse_grid"
+        },
+        {
+          "quote": "for all $n \\geq n(\\varepsilon, \\delta),\\ell \\geq \\ell(\\varepsilon, \\delta)$",
+          "tag": "defn:pac_learnability"
+        },
+        {
+          "quote": "it is possible to choose a threshold $m(n)$ for the number of quadrature points (i.e., a sparsity level $\\ell(n)$ large enough) such that",
+          "tag": "thm:learnability_sparse_grid"
+        },
+        {
+          "quote": "\\tilde{c}_d\\cdot m^{-{1}/d} \\cdot (\\log m)^{(d-1)(1/d+1)} \\cdot \\|\\qoi\\|_{C^1} \\left(1 + \\sqrt{d} \\, e^{\\sqrt{d} \\sqrt{q} \\operatorname{Lip}_1^\\Theta}\\right) \\leq \\frac{\\varepsilon}{2},",
+          "tag": "eq:main_thm_sg_error_bd"
+        }
+      ],
+      "failure_explanation": "The quadrature target \\eqref{eq:main_thm_sg_error_bd} contains the factor $1+\\sqrt d\\exp(\\sqrt d\\sqrt q\\,\\operatorname{Lip}_1^\\Theta(L_n,W_n))$ with $q\\le L_n(W_n+1)W_n$ and $L_n,W_n\\to\\infty$; hence the admissible node count $m(n)$ tends to infinity with $n$. Choosing $m(\\varepsilon,\\delta)=m(n(\\varepsilon,\\delta))$ therefore does not make \\eqref{eq:main_thm_sg_error_bd} hold for any $n>n(\\varepsilon,\\delta)$, and the final quantifier step is invalid. The argument establishes only the diagonal statement 'for every $n$ there is $m(n,\\varepsilon,\\delta)$', while the statement and definition \\eqref{defn:pac_learnability} demand thresholds that work for all larger $n$ and $m$. For fixed $m$ no such uniform bound is available, since admissible learned maps in the growing classes $\\mathcal H_2^{L_n,W_n}$ may oscillate ever faster, making $\\qoi\\circ\\Phi^{\\hat\\theta_n}$ arbitrarily hard for a fixed sparse grid.",
+      "failure_location": {
+        "quote": "and a threshold $m(\\varepsilon, \\delta) := m(n(\\varepsilon, \\delta))$ on the number of quadrature points such that \\eqref{eq:main_thm_sg_error_bd} holds, for all $n \\geq n(\\varepsilon,\\delta)$ and all $m \\geq m(\\varepsilon,\\delta)$",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate the guarantee with a quadrature threshold allowed to depend on the sample size: for every $\\varepsilon,\\delta>0$ there are $n(\\varepsilon,\\delta)$ and a map $n\\mapsto m(n,\\varepsilon,\\delta)$ such that $\\mathbb{P}(\\varepsilon^{\\mathrm{total}}>\\varepsilon)\\le\\delta$ for all $n\\ge n(\\varepsilon,\\delta)$ and $m\\ge m(n,\\varepsilon,\\delta)$, and adjust \\eqref{defn:pac_learnability} accordingly.",
+      "overall_effect": "PAC-learnability in the sense of \\eqref{defn:pac_learnability} (fixed sample-size and sparsity thresholds valid for all larger $n,\\ell$) is not established; only a joint/diagonal version in which the quadrature budget grows with the sample size follows, and the abstract's PAC claim inherits this weakening.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "PAC guarantee needs a quadrature budget growing with the sample size",
+      "why_classification": "The proof already delivers the diagonal version, so a limited weakening of the threshold quantifiers preserves the method, the rates and the advertised asymptotic consistency; but the fixed-threshold PAC statement of \\eqref{defn:pac_learnability} is lost and the required quadrature budget grows with $n$, which exceeds a minor local repair without forcing a new proof architecture or abandoning the result."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2507.01533",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n03",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4061c0fabc84b846272339b854b6a82a9cfd5d1ef91d57be1f2279301753237e",
+  "status": "ok"
+}

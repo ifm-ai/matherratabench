@@ -1,0 +1,138 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\varphi(\\bv) : \\R^d \\to \\R^d$ satisfies $\\int_{\\R^d} A(\\bv-\\bv_*) (\\varphi -\\varphi_*)f_* \\rd\\bv_* = 0$, then $\\varphi \\in \\text{span}\\{ \\mathbf{1}, \\bv\\}$ on the support of $f$.",
+          "tag": "lemma_1"
+        },
+        {
+          "quote": "In this paper, we do not distinguish between the notation for probability measures and densities.",
+          "tag": null
+        },
+        {
+          "quote": "By Lemma \\ref{lemma_1}, \\eqref{opt_u} implies that $2\\bu + \\nabla\\lambda \\in span\\{ \\mathbf{1}, \\bv\\}$ on $supp~(f)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof correctly derives $A(\\bv-\\bv_*)(\\varphi-\\varphi_*)=0$ $f\\otimes f$-a.e., but $A(\\bz)w=0$ only gives $w\\parallel\\bz$ (or $\\bz=0$). Concluding $\\varphi\\in span\\{1,\\bv\\}$ from 'differences parallel to chords' is a non sequitur as written: it needs unstated hypotheses ($d\\ge2$; $f$ absolutely continuous or at least not giving full mass to a line, which is false for general probability measures that the paper explicitly conflates with densities) and a nontrivial a.e. argument (fix a base point, write $\\varphi(\\bv)-\\varphi(\\bv_0)=\\lambda(\\bv)(\\bv-\\bv_0)$, and use that a.e. triples are non-collinear to force $\\lambda$ constant). Counterexample to the statement as given: if $f$ is supported on a line, any $\\varphi$ mapping that line into itself with an arbitrary along-line profile satisfies the hypothesis but is not in $span\\{1,\\bv\\}$.",
+      "failure_location": {
+        "quote": "Since $A$ is semi-positive definite, this implies $A(\\bv-\\bv_*)(\\varphi -\\varphi_*) = 0$ on the support of $f_* f$. Therefore, $\\varphi \\in span\\{ \\mathbf{1}, \\bv\\}$ on the support of $f$.",
+        "tag": "lemma_1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the needed hypotheses ($d\\ge2$, $f$ an absolutely continuous probability density not concentrated on a line) and supply the standard parallel-chords-to-affine argument, concluding $\\varphi\\in span\\{1,\\bv\\}$ $f$-a.e. (pointwise on supp$(f)$ under continuity of $\\varphi$).",
+      "overall_effect": "The structural condition (opt_u1) — that the optimal field is the score plus a null-space term, the paper's stated key observation guiding the neural-network parametrization and initialization — is under-justified. No labelled result beyond the lemma itself is invalidated.",
+      "primary_affected_tag": "lemma_1",
+      "target_type": "formal_result",
+      "title": "Lemma 1: inference from vanishing pair differences to affinity is asserted without proof and fails for degenerate supports",
+      "why_classification": "A short, local, standard argument repairs the lemma in the intended (absolutely continuous density) setting; its conclusion, its use in (opt_u1), and all downstream claims survive unchanged."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\theta^{(k)}_q = \\theta^{(k)}_{q-1} - \\alpha^{(k)}_q \\frac{1}{B^2} \\sum_{i,j \\in C_q} \\nabla_{\\theta} \\ell_{i,j}(\\theta^{(k)}_{q-1})$",
+          "tag": "algorithm_opt"
+        },
+        {
+          "quote": "+ \\frac{\\alpha L^2 B}{2N} \\sum_{q=1}^{\\frac{N}{B}} \\left\\| \\theta_{k} - \\theta^{(k+1)}_{q-1} \\right\\|^2",
+          "tag": "thm_opt_conv"
+        },
+        {
+          "quote": "+ \\frac{\\alpha L^2}{2N} \\frac{\\alpha^2 N^2}{B^2} \\left( (3M+2) \\left\\| \\nabla_{\\theta} \\ell(\\theta_k) \\right\\|^2 + 3\\sigma^2 \\right)",
+          "tag": "thm_opt_conv"
+        }
+      ],
+      "failure_explanation": "(1) The minibatch gradient uses only within-batch index pairs, a biased estimator of the full double-sum gradient (diagonal pairs always sampled, cross-batch pairs never within an epoch); the claimed error term $6\\sigma^2L^2\\alpha^2\\frac{N}{B^2}$ vanishes as $\\alpha\\to0$ and cannot hold. Counterexample satisfying (A.1)-(A.3) with $L=1$, $M=0$, $\\sigma^2=\\frac{N-1}{N^2}$: $\\ell_{ii}(\\theta)=\\frac12(\\theta+1)^2$, $\\ell_{ij}(\\theta)=\\frac12\\theta^2$ ($i\\ne j$); every batch of size $B$ has gradient sum $B^2\\theta+B$, so the epoch map $\\theta\\mapsto(1-\\frac{\\alpha B}{N})\\theta-\\frac{\\alpha}{N}$ is independent of the random partition and $\\theta_k\\to-\\frac1B$, where $\\|\\nabla\\ell\\|^2=(\\frac1B-\\frac1N)^2$ is independent of $\\alpha$; e.g. $N=100$, $B=10$, $\\alpha=\\frac{B}{2N}$ gives LHS $\\to0.0081$ versus RHS $\\to1.5\\times10^{-4}$. (2) Independently, substituting Lemma sgd_lemma1's bound $\\frac{\\alpha^2N^2}{B^2}(\\cdot)$ into the preceding line's coefficient $\\frac{\\alpha L^2B}{2N}$ yields $\\frac{\\alpha^3L^2N}{2B}(\\cdot)$, not the written $\\frac{\\alpha L^2}{2N}\\frac{\\alpha^2N^2}{B^2}=\\frac{\\alpha^3L^2N}{2B^2}(\\cdot)$: a factor $B$ is dropped, so the stated learning-rate condition and final bound do not follow from the lemmas even if the lemmas were true.",
+      "failure_location": {
+        "quote": "$\\frac{1}{K} \\sum_{k=0}^{K-1} \\mathbb{E} \\left[ \\left\\| \\nabla_{\\theta} \\ell(\\theta_k) \\right\\|^2 \\right] \\leq \\frac{4}{\\alpha K} \\left[\\ell(\\theta_0) - \\ell_*\\right] + 6\\sigma^2 L^2 \\alpha^2 \\frac{N}{B^2} \\,.$",
+        "tag": "thm_opt_conv"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either add assumptions eliminating the within-batch sampling bias (e.g., exchangeability/homogeneity of the pair losses, or an unbiased pair-sampling scheme) and rederive the estimate, or weaken the conclusion to include a non-vanishing bias term; the stated bound and learning-rate condition cannot be preserved.",
+      "overall_effect": "The convergence guarantee for the mini-batch SGD (Algorithm 2) — the stated rate and noise floor — is false as stated, and the paper's prose claims of providing convergence analysis for the stochastic optimization (Section 4, introduction, conclusion) are unsupported.",
+      "primary_affected_tag": "thm_opt_conv",
+      "target_type": "formal_result",
+      "title": "Theorem thm_opt_conv: claimed SGD convergence bound is false under (A.1)-(A.3), and the proof drops a factor B when composing its lemmas",
+      "why_classification": "The advertised guarantee (average gradient norm driven to an $\\alpha^2$-small noise floor) is unattainable under the stated hypotheses; every supported repair either changes the guarantee type (non-vanishing bias term) or requires new assumptions or a modified algorithm, i.e., major loss or new proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In three dimensions, the BKW solution corresponding to the collision kernel $A(\\bz)=\\frac{1}{24}(|\\bz|^2I_3 - \\bz \\otimes \\bz)$ reads:",
+          "tag": null
+        },
+        {
+          "quote": "$f(t, \\bv) = \\frac{1}{2\\pi K} \\exp\\left( -\\frac{|\\bv|^2}{2K} \\right)\\left( \\frac{2K-1}{K} + \\frac{1-K}{2K^2}|\\bv|^2 \\right) \\,,~ K=1-\\frac{1}{2}\\exp\\left(-\\frac{t}{8}\\right) \\,.$",
+          "tag": "BKW-2"
+        },
+        {
+          "quote": "we plot slices of the reconstructed solution on the computational domain  $[-4, 4]^3$ at $t=5$, $5.75$, and $6$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With $K=1-e^{-t/6}$ one has $K(0)=0$, so the displayed formula is singular at $t=0$ and cannot define the initial distribution. Moreover $5K-3=2-5e^{-t/6}<0$ for $0<t<6\\ln(5/2)\\approx5.50$, so the bracket $\\frac{5K-3}{2K}+\\frac{1-K}{2K^2}|\\bv|^2$ is negative near $\\bv=0$ and the displayed function is not a nonnegative probability density on that interval (a Landau solution with density data stays nonnegative). The BKW amplitude must satisfy $\\theta\\le\\frac{2}{d+2}=\\frac25$ in $d=3$; the 2D formula (BKW-2) uses exactly the maximal admissible amplitude $\\frac12$. The paper presents this formula as the exact benchmark solution and compares at $t=5<5.50$, where the 'analytical' density is negative near the origin (the figure caption says $t=5.5$, itself inconsistent with the text).",
+      "failure_location": {
+        "quote": "$f(t, \\bv) = \\frac{1}{(2\\pi K)^{3/2}} \\exp\\left( -\\frac{|\\bv|^2}{2K} \\right)\\left( \\frac{5K-3}{2K} + \\frac{1-K}{2K^2}|\\bv|^2 \\right) \\,,~ K=1-\\exp\\left(-\\frac{t}{6}\\right) \\,.$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the BKW amplitude to an admissible value (e.g., $K=1-\\frac25e^{-t/6}$, valid for all $t\\ge0$) or start the BKW clock at $t_0\\ge6\\ln(5/2)$ with initial condition $f(t_0,\\cdot)$, and make the stated plot times consistent.",
+      "overall_effect": "The 3D BKW benchmark is ill-defined as described: no valid initial condition at $t=0$, and the stated comparison time $t=5$ lies in the regime where the exact-solution formula is negative; the accuracy verification of Section 5.2 is unreliable as written.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "3D BKW 'analytical solution' is singular at t=0 and negative for t < 6 ln(5/2), so it is not a probability density on the range where it is used",
+      "why_classification": "A local change of one parameter (or of the time origin) restores a valid exact solution and preserves the benchmark, the method, and all substantive claims; no theorem or scheme component is affected."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm_opt_conv"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that assumption (A.2) holds.",
+          "tag": "sgd_lemma2"
+        },
+        {
+          "quote": "& \\leq \\ell(\\theta_{k}) + \\frac{\\alpha_k}{2} \\frac{1}{BN} \\sum_{q=1}^{\\frac{N}{B}} \\sum_{i,j \\in C_q} \\|  \\nabla\\ell(\\theta_{k}) - \\nabla_{\\theta} \\ell_{i,j}(\\theta^{(k+1)}_{q-1}) \\|^2 - \\frac{\\alpha_k}{2} \\| \\nabla\\ell(\\theta_{k}) \\|^2",
+          "tag": "sgd_lemma2"
+        },
+        {
+          "quote": "Combining Lemma \\ref{sgd_lemma1} and \\ref{sgd_lemma2}, we have",
+          "tag": "thm_opt_conv"
+        }
+      ],
+      "failure_explanation": "The final step of the proof requires, term by term, $\\|\\nabla\\ell(\\theta_k)-\\nabla\\ell_{ij}(\\theta^{(k+1)}_{q-1})\\|\\le L\\|\\theta_k-\\theta^{(k+1)}_{q-1}\\|$, which holds only if $\\nabla\\ell_{ij}(\\theta_k)=\\nabla\\ell(\\theta_k)$; the gap $\\|\\nabla\\ell(\\theta_k)-\\nabla\\ell_{ij}(\\theta_k)\\|$ is a variance term not controlled by the assumed (A.2) (smoothness only). The lemma is false as stated: with $N=4$, $B=2$, batches $\\{1,2\\},\\{3,4\\}$, $\\ell_{ij}(\\theta)=\\frac12(\\theta+G)^2$ for within-batch pairs and $\\frac12(\\theta-3G)^2$ for cross pairs (all $1$-smooth), one epoch from $\\theta_0=0$ moves $\\theta$ to $G\\beta$ with $\\beta=-\\alpha_k+\\frac{\\alpha_k^2}{4}$ and increases $\\ell$ by $\\frac{G^2}{2}\\beta(\\beta-2)>0$ (about $0.53G^2$ at $\\alpha_k=\\frac12$), while the lemma permits only $\\frac{\\alpha_k^3G^2}{16}-\\frac{\\alpha_kG^2}{2}<0$.",
+      "failure_location": {
+        "quote": "$\\ell(\\theta_{k+1}) \\leq \\ell(\\theta_{k}) + \\frac{\\alpha_k L^2 B}{2N} \\sum_{q=1}^{\\frac{N}{B}} \\| \\theta_{k} - \\theta^{(k+1)}_{q-1} \\|^2 - \\frac{\\alpha_k}{2} \\| \\nabla\\ell(\\theta_{k}) \\|^2 \\,.$",
+        "tag": "sgd_lemma2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Reprove the lemma using (A.3) in addition to (A.2), splitting $\\nabla\\ell(\\theta_k)-\\nabla\\ell_{ij}(\\theta^{(k+1)}_{q-1})$ into a variance part and a smoothness part; this yields the weaker conclusion with an added term $+\\alpha_k\\frac{N}{B}(M\\|\\nabla\\ell(\\theta_k)\\|^2+\\sigma^2)$.",
+      "overall_effect": "Lemma sgd_lemma2 is unreliable, and the proof of Theorem thm_opt_conv, which combines it with Lemma sgd_lemma1, collapses; the theorem's further independent defects are reported separately (ISSUE-002).",
+      "primary_affected_tag": "sgd_lemma2",
+      "target_type": "formal_result",
+      "title": "Lemma sgd_lemma2 is false: its proof bounds the gap between the full and pair gradients by smoothness alone",
+      "why_classification": "A contained nontrivial argument gives a corrected, recognizably comparable lemma (descent up to movement error plus an explicit variance term), but the stated descent property must be weakened, and the dependent theorem requires separate repair."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2409.12296",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n04-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "91c8b71b38392adb77e6b756cced52757c09fdabebe2a2f4891834723c7a9f5b",
+  "status": "ok"
+}

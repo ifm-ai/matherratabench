@@ -1,0 +1,1018 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "h_{\\theta}(x_i) = \\rho(x_i^\\top \\theta),",
+          "tag": null
+        },
+        {
+          "quote": "\\ell(h_{\\theta}(x_i), y_i)\n  = -\\, y_i \\log h_{\\theta}(x_i)\n    - (1 - y_i)\\log\\!\\big(1 - h_{\\theta}(x_i)\\big).",
+          "tag": "eq:logistic_loss"
+        }
+      ],
+      "failure_explanation": "The Hessian is X^T W X/m with positive diagonal W, so strict convexity requires full column rank of X. For two samples with x_1=x_2=(1,0), y_1=0 and y_2=1, every parameter (0,t) is a minimizer. Thus strict convexity and uniqueness fail even when the minimum is attained.",
+      "failure_location": {
+        "quote": "This function is smooth and (strictly) \\emph{convex}, and therefore its minimization admits a unique minimizer.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Qualify strict convexity and uniqueness, when a minimizer exists, by full column rank; describe rank-deficient cases as merely convex and potentially nonunique.",
+      "overall_effect": "The stated uniqueness guarantee does not cover rank-deficient datasets.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Logistic regression is not strictly convex without a rank condition",
+      "why_classification": "A standard local rank condition and explicit treatment of the degenerate case suffice without changing the optimization method."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If the data are well-conditioned and the classes are separable, convergence is fast.",
+          "tag": null
+        },
+        {
+          "quote": "\\ell(h_{\\theta}(x_i), y_i)\n  = -\\, y_i \\log h_{\\theta}(x_i)\n    - (1 - y_i)\\log\\!\\big(1 - h_{\\theta}(x_i)\\big).",
+          "tag": "eq:logistic_loss"
+        }
+      ],
+      "failure_explanation": "Strict convexity gives at most one minimizer, not existence. For the full-rank scalar dataset x_1=1, y_1=1, the objective is log(1+exp(-theta)): its infimum is zero but no finite parameter attains it. This directly affects the specifically advertised separable-data regime.",
+      "failure_location": {
+        "quote": "This function is smooth and (strictly) \\emph{convex}, and therefore its minimization admits a unique minimizer.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Distinguish unattained infima for separable unregularized data, and use the later-described positive quadratic regularization when asserting existence of a finite unique minimizer.",
+      "overall_effect": "The finite unique-minimizer claim and the accompanying interpretation of separable logistic training are false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unregularized separable logistic regression need not attain its infimum",
+      "why_classification": "Repair requires a substantive qualification or modification of the objective in a nondegenerate advertised regime, although a comparable regularized problem is already supported by the source."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Here, $\\rho$ denotes an activation function of the user's choice, e.g., \\emph{ReLU}, or \\emph{Tanh}.",
+          "tag": null
+        },
+        {
+          "quote": "For example, in a binary classification problem, one can use the logistic loss~\\eqref{eq:logistic_loss}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The same unrestricted activation is used at the output and then paired with the logistic loss. ReLU can output 2, making log(1-h) nonreal, while Tanh can output negative values, making log(h) nonreal. The prescribed binary-classification objective is therefore not generally defined.",
+      "failure_location": {
+        "quote": "h_\\theta(x) = \\rho(U_Q z_{Q-1} + b_Q).",
+        "tag": "eq:dnn"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Separate hidden-layer activations from the output activation and require a sigmoid output for this logistic-loss construction.",
+      "overall_effect": "The recommended network/loss combination can fail before optimization begins.",
+      "primary_affected_tag": "eq:dnn",
+      "target_type": "algorithm",
+      "title": "The classification network permits outputs outside the logistic-loss domain",
+      "why_classification": "A standard local output-layer restriction preserves the architecture choices for hidden layers and the intended classification method."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "A common approach is to use Monte-Carlo (MC)  quadrature.",
+          "tag": null
+        },
+        {
+          "quote": "When collocation points are generated using structured sampling strategies, such as quasi-Monte Carlo, or adaptive schemes, the samples are no longer independent.\nAs a result, classical variance-based analyses of SGD do not apply directly.",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbb{E}[\\nabla f_{i_k}(\\theta_k)| \\theta_k] = \\sum_{i=1}^m\n\\frac{1}{m}\\nabla f_{i}(\\theta_k)=\\nabla f(\\theta_k).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For fixed parameters, applying a deterministic residual function to independent collocation locations preserves independence. Moreover, uniformly sampling indices from any fixed finite collocation set gives an unbiased finite-sum gradient estimator, regardless of whether that set was created by a grid, QMC, or an adaptive procedure. Spatial similarity is not statistical dependence, and differential operators do not destroy the displayed finite-sum decomposition.",
+      "failure_location": {
+        "quote": "Here, we emphasise that increasing the number of collocation points in PINNs is \\emph{not} analogous to adding independent samples in classical ML, as the same deterministic PDE residual is evaluated at additional locations.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Separate collocation-generation randomness from conditional mini-batch index sampling, and attribute difficulties to heterogeneous residuals, variance, and conditioning rather than inherent nonseparability or dependence.",
+      "overall_effect": "The claimed statistical obstruction to PINN mini-batching, and related justifications for avoiding stochastic gradients and subsampled Hessians, are unsupported as stated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Deterministic PDE residuals are incorrectly said to prevent independent sampling",
+      "why_classification": "A substantial conceptual correction is required across the sampling discussion, but the stated finite-sum algorithms and convergence theorems need not be abandoned."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\theta(\\gamma)\n  = \\arg\\min_{\\theta}\\, \\sum_{i=1}^N \\gamma_i\\, \\widehat{R}_i(\\theta),",
+          "tag": null
+        },
+        {
+          "quote": "In principle, this formula provides an exact update for the loss weights~$\\gamma$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The nonconvex inner argmin can be set-valued, and stationarity alone does not define a differentiable function of gamma. For example, an inner loss (theta^2-1)^2 has two global minimizers, while theta^4 has a unique minimizer with singular Hessian. Neither uniqueness/selection nor Hessian nonsingularity is assumed.",
+      "failure_location": {
+        "quote": "At the inner optimum~$\\theta^\\star(\\gamma)$, the stationarity condition\n\\[\n\\nabla_\\theta \\widehat{R}_m(\\theta^\\star,\\gamma)=0\n\\]\nimplicitly defines the dependence of $\\theta^\\star(\\gamma)$ on $\\gamma$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restrict the formula to a selected, sufficiently smooth local optimizer branch with invertible inner Hessian, and distinguish that local sensitivity from a globally defined argmin map.",
+      "overall_effect": "The asserted exact hypergradient and resulting weight-update construction are not defined for the stated general inner problems.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The bilevel hypergradient assumes an unjustified differentiable optimizer branch",
+      "why_classification": "The repair materially qualifies the bilevel construction and needs an implicit-function hypothesis, but does not require a new global optimization framework."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\theta(\\gamma)\n  = \\arg\\min_{\\theta}\\, \\sum_{i=1}^N \\gamma_i\\, \\widehat{R}_i(\\theta),",
+          "tag": null
+        },
+        {
+          "quote": "Differentiating this condition with respect to~$\\gamma$ yields the \\emph{hypergradient} $\\nabla_\\gamma \\pazocal{C}$ whose components are given as",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Differentiating the stationarity equation with respect to gamma_j produces the vector grad R_j, not the Hessian of R_j. Even interpreting H as the intended Hessian, the displayed product is generally a row vector rather than a scalar component. In one dimension it can also give the wrong sign: for F=gamma_1(theta-a)^2/2+gamma_2 theta^2/2 and C(theta)=theta, the true derivative with respect to gamma_1 is positive for a>0, whereas the displayed right factor yields a negative value. H is additionally written as the stationary gradient rather than the Hessian.",
+      "failure_location": {
+        "quote": "\\frac{\\partial\\pazocal{C} }{\\partial \\gamma_j} \n  = -\\,(\\nabla_\\theta \\pazocal{C}(\\theta^\\star))^\\top \n      H^{-1}(\\theta^\\star,\\gamma)\\,\\nabla_{\\theta}^2 \\widehat{R}_j(\\theta^\\star),\n\\qquad\nH = \\nabla_\\theta \\widehat{R}_m(\\theta^\\star,\\gamma),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Use H=grad_theta^2 F and partial C/partial gamma_j=-(grad C)^T H^{-1} grad R_j.",
+      "overall_effect": "The proposed hypergradient computation is incorrect even when a smooth nonsingular optimizer branch exists.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "The displayed hypergradient differentiates the component loss to the wrong order",
+      "why_classification": "A local chain-rule correction repairs the computation without changing the valid local hypergradient guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\widehat{R}_m(\\theta)\n=\n\\frac{1}{2m}\\,\\|u(\\theta) - y\\|^2.",
+          "tag": "eq:squared_loss"
+        }
+      ],
+      "failure_explanation": "The admissible squared-residual losses can vanish initially, for example when an initial network already satisfies one boundary or data term. Then the corresponding ratio divides by zero. If all current component losses vanish, the outer normalization also vanishes. No positivity condition or zero-loss branch is specified.",
+      "failure_location": {
+        "quote": "r_{i} =\n  \\frac{\\widehat{R}_i(\\theta) / \\widehat{R}_i(0)}\n       {\\tfrac{1}{N}\\sum_{j=1}^N \\widehat{R}_j(\\theta) / \\widehat{R}_j(0)}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Specify positive safeguarded denominators or an explicit treatment of initially zero components, together with a stopping/default branch when all losses vanish.",
+      "overall_effect": "The GradNorm update is undefined on allowed training states.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "GradNorm ratios are undefined for zero initial component losses",
+      "why_classification": "These are local normalization safeguards that preserve the heuristic's substantive purpose and computational cost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{j=1}^{m_\\Omega} \\xi_j = m_\\Omega,\\quad \\xi_j \\ge 0.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "If all collocation residuals are zero, every numerator and the denominator are zero. Such a state is allowed and is precisely a desired residual-fitting outcome, but the prescribed weights then do not exist.",
+      "failure_location": {
+        "quote": "\\xi_j = \n\\frac{|r_j|^\\beta}{\\tfrac{1}{m_\\Omega}\\sum_{k=1}^{m_\\Omega}|r_k|^\\beta},\n\\qquad \\beta>0.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "When the normalizer is zero, stop residual reweighting or set all spatial weights to one.",
+      "overall_effect": "The adaptive weighting construction lacks an output at an admissible solved residual state.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Residual-power spatial weights are undefined at zero residual",
+      "why_classification": "An explicit zero-residual branch is a routine local repair preserving the normalization and all advertised uses."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\theta_{k+1} = \\theta_k - \\alpha_k M_k^{-1} \\nabla f(\\theta_k),",
+          "tag": "eq:adaptive_methods"
+        },
+        {
+          "quote": "\\theta_{k+1}(i)= \\theta_{k}(i) - \\alpha \\frac{\\hat{m}_k(i)}{\\sqrt{\\hat{v}_k(i)} + \\epsilon}.",
+          "tag": "eq:adam_update"
+        }
+      ],
+      "failure_explanation": "Adam scales a momentum average, not the current gradient. A coordinate can have current gradient zero and nonzero stored first moment, producing a nonzero Adam update; no diagonal linear map of the current gradient can produce that update. Consequently the current-error kernel recursion derived from eq:adaptive_methods does not describe Adam's full dynamics.",
+      "failure_location": {
+        "quote": "Practical optimizers such as AdaGrad~\\cite{duchi2011adaptive}, or Adam~\\cite{kingma2017adammethodstochasticoptimization} utilize~\\eqref{eq:adaptive_methods} with a diagonal preconditioner $M_k$, which is built from running estimates of first and/or second moments of past gradients.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Restrict the current-gradient kernel formula to methods of the stated form, and describe Adam using its momentum state and the linearized output update involving that state.",
+      "overall_effect": "The universal adaptive-kernel interpretation and its application to Adam's contraction behavior omit an essential state variable.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Adam is incorrectly represented as diagonal scaling of the current gradient",
+      "why_classification": "This needs a substantive restriction or a state-augmented analysis, not a change of notation, while leaving a comparable preconditioning discussion intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "f(\\theta) := \\widehat{R}_m(\\theta) + \\gamma \\widehat{R}_{\\text{reg}}(\\theta),",
+          "tag": null
+        },
+        {
+          "quote": "\\widehat{R}_{\\text{reg}}(\\theta)\n  = \n\\|\\theta\\|^2,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The equality requires f to depend on theta only through h_theta. The source has explicitly admitted parameter penalties. For h_theta(x)=theta_1 with an unused parameter theta_2 and a quadratic parameter penalty, the right-hand side has zero theta_2 component, while grad f has component 2 gamma theta_2. There need not even be a well-defined functional f(h) for such a parameter-dependent objective.",
+      "failure_location": {
+        "quote": "\\nabla_\\theta f = \\int_\\Omega \\nabla_\\theta h_\\theta(x') \\, \\frac{\\delta f}{\\delta h(x')} \\, dx',",
+        "tag": "eq:ntk2"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "State the factorization assumption f=F(h_theta); for explicit parameter regularization, retain its separate gradient and the resulting additional output-space drift.",
+      "overall_effect": "The asserted pure kernel gradient flow does not cover all previously defined training objectives.",
+      "primary_affected_tag": "eq:ntk2",
+      "target_type": "other",
+      "title": "The functional chain rule omits explicit parameter regularization",
+      "why_classification": "The scope of the function-space interpretation must be qualified or its dynamics augmented, although the unregularized least-squares analysis survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Theta_k := \\frac{1}{m} J_k J_k^\\top,",
+          "tag": "eq:ntk_update"
+        },
+        {
+          "quote": "h_{\\theta_{k+1}}(x)\n  \\approx h_{\\theta_k}(x)\n        + \\nabla_\\theta h_{\\theta_k}(x)^\\top (\\theta_{k+1}-\\theta_k).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Small alpha controls a single-step displacement, not the cumulative parameter displacement over training. For the scalar model h_theta=theta^2 trained toward output 1 from theta=2, the kernel 4 theta^2 changes from 16 toward 4 even as the learning rate tends to zero. Width alone likewise supplies no bound on Jacobian variation without a specified scaling and training regime.",
+      "failure_location": {
+        "quote": "In sufficiently wide neural networks or in the almost stationary regime ($\\alpha$ small),  the NTK remains nearly constant during training, providing a tractable mathematical description of deep learning dynamics.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Make the frozen-kernel model explicitly conditional on small Jacobian variation along the whole trajectory; distinguish that assumption from a small per-step learning rate.",
+      "overall_effect": "The stated sufficient regimes for a nearly constant training kernel are not established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A small learning rate does not freeze the NTK over training",
+      "why_classification": "A substantive regime qualification is necessary, but the subsequent conditional fixed-kernel analysis can be retained."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "H(\\theta_k)=\\tfrac{1}{m}J_k^\\top J_k + \\text{(higher-order terms)}.",
+          "tag": null
+        },
+        {
+          "quote": "the higher-order terms are small, and $H$ can be approximated by the Gauss-Newton (GN) approximation $\\tfrac{1}{m}J_k^\\top J_k$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The exact shared-nonzero-spectrum identity applies to J^T J/m and JJ^T/m, not to the full Hessian after adding residual-weighted second derivatives. A small additive term is not zero and can dominate a small eigenvalue or lift a null direction. Therefore exact equality and the asserted exact correspondence of flat and slow-learning directions do not follow.",
+      "failure_location": {
+        "quote": "it follows that \\emph{$H(\\theta_k)$ and $\\Theta_k$ share the same nonzero eigenvalues}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "State the identity for the Gauss-Newton matrix and use an explicitly bounded perturbation argument, with suitable spectral-gap conditions, for claims about the true Hessian.",
+      "overall_effect": "The exact Hessian/NTK conditioning correspondence is overstated, especially near small or zero eigenvalues.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Approximate Gauss-Newton structure is promoted to an exact Hessian spectrum identity",
+      "why_classification": "Preserving a Hessian conclusion requires more than renaming a matrix: the spectral approximation must be qualified or supported by a contained perturbation argument."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "a strongly convex quadratic model with constant Hessian $H = \\nabla^2 f(\\theta)$ and step size $0 < \\alpha < 2/\\lambda_{\\max}(H)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a quadratic, the contraction factor is max_i |1-alpha lambda_i|. The displayed condition-number factor requires the optimal step alpha=2/(lambda_max+lambda_min). For H=I and alpha=1/2, the claimed factor is zero although the actual error is halved, not annihilated.",
+      "failure_location": {
+        "quote": "\\|\\theta_{k+1}-\\theta^{\\star}\\|\n  \\le \n  \\left(\\frac{\\kappa(H)-1}{\\kappa(H)+1}\\right)\n  \\|\\theta_k-\\theta^{\\star}\\|,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Give the alpha-dependent contraction factor and identify the displayed factor as its value at the optimal constant step.",
+      "overall_effect": "The claimed convergence-rate guarantee is false over the stated stepsize interval.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The optimal quadratic GD contraction factor is asserted for every stable step",
+      "why_classification": "The uniform rate promise must be weakened or the stepsize restricted; the change is substantive even though the corrected calculation is short."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|e_k\\|^2\n  = \\sum_{i=1}^m c_i^2 (1-\\alpha\\lambda_i)^{2k}.",
+          "tag": null
+        },
+        {
+          "quote": "As a consequence, the smallest NTK eigenvalue $\\lambda_{\\min}(\\Theta)$ governs the slowest decaying error\nand directly controls the overall speed of learning.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Decay depends on |1-alpha lambda_i|, not the signed factor. Even within the stable interval, larger eigenvalues need not decay faster: eigenvalues 1 and 10 with alpha=0.19 give magnitudes 0.81 and 0.9. Without a stability restriction modes can grow; without positive eigenvalues, nullspace error never decays. The Jacobian dimensions in the source permit such nullspaces.",
+      "failure_location": {
+        "quote": "Hence, if $\\lambda_i$ is large, the factor $1 - \\alpha\\lambda_i$ is significantly below one, which leads to a rapid decrease of the corresponding error mode.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "Use absolute contraction factors, impose alpha at most 1/lambda_max for monotone ordering by eigenvalue, and state the persistence of zero-eigenvalue components.",
+      "overall_effect": "The unconditional geometric-decay and smallest-eigenvalue bottleneck interpretation are invalid for the stated parameter range.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Mode-wise decay and eigenvalue ordering omit necessary stepsize and rank conditions",
+      "why_classification": "The interpretation requires substantive parameter and subspace qualifications, although the displayed linear recursion remains usable."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Theta_k^{(M_k)}\n  := \\frac{1}{m}\\, J_k\\, M_k^{-1}\\, J_k^\\top.",
+          "tag": "eq:precond_ntk"
+        },
+        {
+          "quote": "the formal choice $M_k = H(\\theta_k)$ corresponds to a Newton's step.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "No symmetry or positive-definiteness condition is imposed on M_k. A nonconvex Newton Hessian can be indefinite, making the displayed matrix indefinite rather than an RKHS kernel. For f(theta)=(theta^2-1)^2/2 at theta=1/2, J=1 and H=-1/2, so the proposed kernel is -2 and its linearized error multiplier is 1+2 alpha, not a contraction.",
+      "failure_location": {
+        "quote": "Thus, every adaptive and second-order method can be interpreted in function space as performing a kernel gradient descent with kernel $\\Theta_k^{(M_k)}$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-015",
+      "least_adequate_overall_repair": "Restrict the kernel interpretation to symmetric positive-definite preconditioners, and treat indefinite Newton steps separately or explicitly regularize their curvature matrix.",
+      "overall_effect": "The universal kernel-gradient-descent and contraction interpretation does not apply to unrestricted second-order steps.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Arbitrary Newton preconditioners need not define positive-semidefinite kernels",
+      "why_classification": "This removes a substantive unrestricted-Newton interpretation or requires a safeguarded construction, while retaining the positive-definite preconditioning framework."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "J_k \\sim \\omega^p,\n\\qquad  \\qquad\nH(\\theta)=\\tfrac{1}{m}J_k^\\top J_k \\sim \\omega^{2p}.",
+          "tag": null
+        },
+        {
+          "quote": "The  condition number thus scales as $\\kappa(H)  \\approx  \\left(\\frac{\\omega_{\\max}}{\\omega_{\\min}}\\right)^{2p}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Multiplication of a function-space Fourier coefficient by omega^p does not identify a parameter-space eigenvector or account for the parameter-to-function Jacobian. Even for orthogonal Fourier features h_theta=sum a_omega theta_omega sin(omega x), the residual Gauss-Newton eigenvalues are proportional to a_omega^2 omega^(2p). Choosing a_omega=omega^(-p) makes that spectrum flat. General nonlinear or variable-coefficient PDE operators introduce further missing structure.",
+      "failure_location": {
+        "quote": "Thus, each Fourier mode of frequency $\\omega$ approximately satisfies\n\\[\nH(\\theta)\\, q_\\omega \\approx \\omega^{2p} q_\\omega.\n\\]",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-016",
+      "least_adequate_overall_repair": "Present the power law only for an explicitly normalized linear Fourier parameterization and compatible differential operator; for networks, retain the parameter Jacobian factors in the curvature operator.",
+      "overall_effect": "The universal Hessian eigenvalue scaling, condition-number formula, and consequent ordering of PDE difficulty by differential order are unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Differential Fourier multipliers do not determine the parameter Hessian spectrum",
+      "why_classification": "A contained but substantive model qualification is necessary; a comparable illustrative Fourier calculation survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $\\Delta_f:=\\inf f-\\frac{1}{m}\\sum_{i=1}^{m}\\inf f_i$.",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{\\sqrt{2L_fL_{\\max}}\\left(2(f(\\theta_0)-\\inf f)+\\Delta_f^{\\star}\\right)}{\\sqrt{K}}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The nonconvex bound uses finite-sum component lower bounds through Delta_f and has no arbitrary-estimator variance term. Even after correcting its output to a best iterate, the extension fails: take m=1, f(theta)=theta^2/2, theta_0=1, K=100, and g_k=theta_k+Z_k with independent mean-zero noise of variance 100. The stated step gives every later expected squared gradient at least 2, so the best value is 1, while the displayed bound is about 0.141. This estimator is unbiased and has uniformly bounded variance.",
+      "failure_location": {
+        "quote": "Note, the discussed results remain valid if the stochastic gradient $\\nabla f_{i_k}$ is replaced by any unbiased gradient estimator $g_k$ satisfying $\\mathbb{E}[g_k]=\\nabla f(\\theta_k)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-017",
+      "least_adequate_overall_repair": "Limit the Delta_f result to its finite-sum sampling model, or supply a conditional-unbiasedness and variance-based nonconvex bound with explicit sigma dependence and a valid stepsize restriction.",
+      "overall_effect": "The announced estimator-independent scope of the theory is false, independently of the nonconvex theorem's averaging defect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The convergence results cannot all be extended to arbitrary unbiased estimators unchanged",
+      "why_classification": "A contained replacement bound can preserve the stochastic stationarity rate, but the constants and estimator assumptions cannot remain as advertised."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Each function $f_i:\\mathbb{R}^n\\rightarrow \\mathbb{R}$ in problem \\eqref{eq:min_problem} is $L_i$-smooth.",
+          "tag": "hp_smooth"
+        },
+        {
+          "quote": "the key constants that determine the convergence rates\n(smoothness $L_{\\max}$, strong convexity $\\mu$, and the SGD variance)\nare directly related to the eigenvalues of the Hessian $H(\\theta)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "L_max concerns individual component gradients, not just the Hessian of their average, and the gradient-noise variance is not determined by that Hessian. For f_1=x^2/2+a sin x+b x+C and f_2=x^2/2-a sin x-b x+C, with 0<a<1 and sufficiently large C, all losses are smooth, convex, and nonnegative. The average Hessian is always 1, the component smoothness constant is 1+a, and the uniformly bounded gradient variance (a cos x+b)^2 can be made arbitrarily large by changing b.",
+      "failure_location": {
+        "quote": "L_{\\max} =\\sup_{\\theta}\\lambda_{\\max}(H(\\theta)),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-018",
+      "least_adequate_overall_repair": "Distinguish the average-objective smoothness constant from component smoothness constants, use inequalities unless optimal constants are specified, and retain variance as an independent quantity.",
+      "overall_effect": "The interpretation of SGD constants and rates using only the full objective Hessian, including its later nonconvex restatement, is invalid.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Component smoothness and gradient noise are incorrectly identified with the full Hessian",
+      "why_classification": "The explanatory reduction to one spectrum must be substantially revised, but the convergence statements using their original component and variance assumptions can remain."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}_k\\|\\theta_{k+1}-\\theta^\\star\\|^2\n&= \\|\\theta_k-\\theta^\\star\\|^2\n   - 2\\alpha\\langle \\nabla f(\\theta_k), \\theta_k-\\theta^\\star\\rangle\n   + \\alpha^2 \\mathbb{E}_k\\|\\nabla f_{i_k}(\\theta_k)\\|^2 .",
+          "tag": null
+        },
+        {
+          "quote": "\\sigma^2(\\theta):=\\E[\\|\\nabla f_i(\\theta)-\\nabla f(\\theta)\\|^2]",
+          "tag": "hp_noise"
+        }
+      ],
+      "failure_explanation": "Even restoring the evidently missing distance factor, strong convexity does not permit replacing E_k||grad f_i||^2 by sigma^2: this second moment equals ||grad f||^2 plus the variance. For deterministic nonstationary quadratics the discarded positive term is nonzero while sigma=0, so the displayed inference is false.",
+      "failure_location": {
+        "quote": "\\mathbb{E}_k\\|\\theta_{k+1}-\\theta^\\star\\|^2\n\\le (1 - \\alpha \\mu) -2\\alpha (f(\\theta_k)-f(\\theta^\\star))\n  + \\alpha_k^2 \\sigma^2.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-019",
+      "least_adequate_overall_repair": "Retain alpha^2 E_k||grad f_i||^2 after applying strong convexity, then apply the stated variance-transfer bound to obtain the subsequent valid recursion.",
+      "overall_effect": "An intermediate inequality in the proof is invalid, although the claimed theorem can still be obtained from the preceding identity.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "The strong-convexity proof drops the squared mean-gradient term",
+      "why_classification": "A short local proof repair preserves the theorem's assumptions, rate, and noise bound."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\E{\\|\\theta_k-\\theta^{\\star}\\|^2}\\leq (1-\\alpha \\mu)^k \\|\\theta_0-\\theta^{\\star}\\|^2+\\frac{2\\alpha}{\\mu } \\sigma^2.",
+          "tag": null
+        },
+        {
+          "quote": "Once again, convergence cannot be achieved with constant step sizes, but the effect of the variance can be counteracted by a vanishing step size, as shown in the following theorem.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A positive upper-bound remainder does not establish a positive limiting error. For f_1=x^2/2+a(1-cos x) and f_2=x^2/2-a(1-cos x), 0<a<1, all stated strong-convexity assumptions hold and the variance a^2 sin^2 x is nonzero away from the common minimizer. Nevertheless sufficiently small constant-step updates contract toward zero for every sampled component. Constant-step averaging can also converge even when individual iterates retain noise.",
+      "failure_location": {
+        "quote": "This result tells us that SGD does not converge with a constant step size.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-020",
+      "least_adequate_overall_repair": "Say that these bounds guarantee only a noise-dependent error level, and distinguish persistent noise at the optimum from variance that vanishes there and from iterate averaging.",
+      "overall_effect": "The paper's impossibility conclusions for constant-step SGD and its convex averaged output do not follow from the valid upper bounds.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A nonzero upper error bound is incorrectly used to prove nonconvergence",
+      "why_classification": "The asserted impossibility must be withdrawn and replaced by a materially more qualified conclusion, although no convergence theorem needs replacement."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\E{\\|\\theta_k-\\theta^{\\star}\\|^2}\\leq (1-\\alpha \\mu)^k \\|\\theta_0-\\theta^{\\star}\\|^2+\\frac{2\\alpha}{\\mu } \\sigma^2.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem bounds expected squared distance by a quantity of order alpha sigma^2/mu. The corresponding root-mean-square distance scales as sigma sqrt(alpha/mu), not alpha times the variance. For scalar quadratic component losses with additive gradient noise, the stationary mean-square error is alpha sigma^2/(2-alpha), confirming the square-root radius scaling.",
+      "failure_location": {
+        "quote": "until we reach a neighborhood of radius proportional to $\\alpha$ and to the variance",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-021",
+      "least_adequate_overall_repair": "Describe an expected squared-error level of order alpha sigma^2/mu, or give the corresponding root-mean-square radius and avoid claiming a pathwise trapping ball.",
+      "overall_effect": "The stated dependence of attainable parameter-distance accuracy on the learning rate is incorrect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The SGD neighborhood radius is confused with a squared-distance bound",
+      "why_classification": "The distance-accuracy scaling must be materially corrected rather than merely reworded."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that $\\{\\theta_k\\}_{k\\in\\mathbb{N}}$ is the sequence generated by SGD \\eqref{eq:sgd} with a constant  step size $\\alpha_k=\\alpha=\\sqrt{\\frac{2}{L_fL_{\\max}K}}$ for all $k$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The expression minimized over k contains no k: it asserts a bound at bar theta_K, which is not defined for this theorem. Even interpreting it as the natural average for constant steps makes the claim false. Let alpha=delta, K=2/delta^2, theta_0=3-delta, f(0)=0, and define the 1-Lipschitz derivative by f'(x)=x for x<=1, f'(x)=2-x for 1<=x<=2-delta, and f'(x)=delta thereafter. With m=1, sigma=Delta_f=0, half the iterates traverse the flat-slope segment and the remaining iterates approach zero. As delta tends to zero, their average tends to 5/4, so its squared gradient tends to 9/16, whereas the stated right side tends to zero.",
+      "failure_location": {
+        "quote": "\\min_{k=0,\\dots,K-1}\\E{\\|\\nabla f(\\bar{\\theta}_K)}\\|^2\\leq \\frac{\\sqrt{2L_fL_{\\max}}\\left(2(f(\\theta_0)-\\inf f)+\\Delta_f^{\\star}\\right)}{\\sqrt{K}},",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-022",
+      "least_adequate_overall_repair": "Replace the claim by a bound on min_k E||grad f(theta_k)||^2, or on an appropriately randomized iterate. Retaining the averaged-iterate guarantee requires substantial additional structure.",
+      "overall_effect": "The theorem's averaged-output stationarity guarantee is false even for deterministic smooth optimization.",
+      "primary_affected_tag": "th:nonconvex",
+      "target_type": "formal_result",
+      "title": "The nonconvex theorem incorrectly guarantees stationarity of an averaged iterate",
+      "why_classification": "The valid resolution changes the central output guarantee from the specified averaged point to a best or randomized iterate; the original guarantee cannot survive in the stated nonconvex regime."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{k=0,\\dots,K-1}\\E{\\|\\nabla f(\\bar{\\theta}_K)}\\|^2=\\pazocal{O}(\\epsilon).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The preceding rate concerns expected squared gradient norm. An O(epsilon) squared-norm bound gives only an O(sqrt(epsilon)) root-mean-square norm bound. Even after repairing the theorem's output, its O(K^(-1/2)) squared-stationarity rate requires O(epsilon^(-4)) iterations to obtain an O(epsilon) gradient-norm bound.",
+      "failure_location": {
+        "quote": "This means that we need $\\pazocal{O}(\\epsilon^{-2})$ iterations to drive the norm of the gradient below the tolerance $\\epsilon$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-023",
+      "least_adequate_overall_repair": "State that O(epsilon^(-2)) controls expected squared gradient norm, or change the gradient-norm complexity to O(epsilon^(-4)) and specify the expectation/output convention.",
+      "overall_effect": "The advertised gradient-norm iteration complexity is quadratically too optimistic in the tolerance.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Squared-gradient complexity is advertised as gradient-norm complexity",
+      "why_classification": "Repair necessarily changes the promised guarantee type or materially worsens the advertised tolerance complexity."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\E{[f(\\bar{\\theta}_K)-\\inf f]}\\leq \\frac{\\|\\theta_0-\\theta^{\\star}\\|^2}{\\alpha K}+2\\alpha \\sigma^2.",
+          "tag": "eq:convex"
+        },
+        {
+          "quote": "Furthermore, large condition numbers $\\kappa(H(\\theta))$ enforce very small step sizes and the variance scales like $1/\\lambda_{\\min}(H(\\theta))$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Only the strongly convex distance theorem has a positive strong-convexity constant controlling linear contraction. The general convex bounds have no such factor, and in the nonconvex case lambda_min can be negative or zero, so the displayed positive-definite condition-number and inverse-curvature interpretation is unavailable. The later theorems do not establish the asserted all-regime contraction or noise-amplification law.",
+      "failure_location": {
+        "quote": "As we have seen, across all considered settings, the theoretical results imply that extremely small eigenvalues $\\lambda_{\\min}(H(\\theta))$ lead to a slower contraction rate.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-024",
+      "least_adequate_overall_repair": "Limit this contraction interpretation to positive-definite/strongly convex models and summarize the other regimes using their actual smoothness, variance, and stationarity bounds.",
+      "overall_effect": "The summary attributes stronger and differently structured conclusions to the convex and nonconvex theorems than they provide.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Strong-convexity spectral conclusions are extrapolated to every regime",
+      "why_classification": "A substantive regime restriction is required, but the separate valid bounds can still support a comparable discussion."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State $p_k = -\\nabla f_{i_k}(\\theta_k)$ \\COMMENTmine{Search direction computation}",
+          "tag": "alg:sgd"
+        },
+        {
+          "quote": "Reducing the learning rate decreases the magnitude of stochastic perturbations and,\nas predicted theoretically, it enforces a gradual reduction of variance",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The defined search direction does not contain alpha_k. Learning-rate decay reduces the variance of the scaled update alpha_k p_k, not the conditional variance of the gradient estimator itself. For component losses (theta-a)^2/2 and (theta+a)^2/2, the gradient-estimator variance is the constant a^2 at every parameter, regardless of the learning-rate schedule.",
+      "failure_location": {
+        "quote": "As we can see, both learning rate decay and batch-size growth strategies effectively reduce the variance of the search direction, thereby restoring convergence.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-025",
+      "least_adequate_overall_repair": "Distinguish estimator variance from update variance and state that learning-rate decay suppresses the latter while batch-size growth can reduce the former.",
+      "overall_effect": "The mechanism attributed to learning-rate scheduling and its claimed equivalence to batch-size variance reduction are mathematically incorrect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Learning-rate decay is incorrectly claimed to reduce gradient-estimator variance",
+      "why_classification": "The stated statistical guarantee must change, although the practical scheduling method and its stabilization rationale remain usable."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Theta_k := \\frac{1}{m} J_k J_k^\\top,",
+          "tag": "eq:ntk_update"
+        },
+        {
+          "quote": "where $\\Theta_k \\in \\mathbb{R}^{m \\times m}$ is the empirical NTK at iteration $k$.",
+          "tag": null
+        },
+        {
+          "quote": "\\Theta_{m+1}\n= \\frac{m}{m+1}\\Theta_m\n + \\frac{1}{m+1}J_{m+1}J_{m+1}^\\top,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The rank-one sum is J^T J/m, an n-by-n parameter-space matrix, whereas the earlier empirical NTK is JJ^T/m, an m-by-m sample-space matrix. Adding a point changes the dimension of the latter, so it cannot obey the stated fixed-dimensional rank-one update. Their positive spectra coincide, but their nullspaces and ordinary condition numbers need not; for the later two-parameter example, the true five-point NTK has at least three zero eigenvalues.",
+      "failure_location": {
+        "quote": "Recall that, from Section~\\ref{sec:NTK_illconditioning}, the empirical NTK is given as\n$\n\\Theta_k \n= \\frac{1}{m} \\sum_{j=1}^m \n  \\nabla_\\theta h_{\\theta_k}(x_j)\\,\n  \\nabla_{\\theta} h_{\\theta_k}(x_j)^\\top$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-026",
+      "least_adequate_overall_repair": "Identify the rank-one sum as the parameter-space Gauss-Newton/covariance matrix and distinguish its condition number from the NTK's, or explicitly restrict comparisons to nonzero spectra.",
+      "overall_effect": "The sampling section's claimed NTK update, Weyl interpretation, and finite NTK condition numbers refer to the wrong object.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The sampling section replaces the empirical NTK by a different-dimensional Gram matrix",
+      "why_classification": "A substantive change of mathematical object and spectral interpretation is needed; changing a transpose in one display would not repair the downstream dimension and rank claims."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "p^{(t+1)}(x)\n= \\frac{\\big(\\eta^{(t)}(x)\\big)^{\\beta}}\n       {\\int_{\\Omega} \\big(\\eta^{(t)}(\\tilde x)\\big)^{\\beta}\\,\\mathrm d\\tilde x},\n\\qquad \\beta>0.",
+          "tag": null
+        },
+        {
+          "quote": "Adaptive resampling can be performed every $T$ iterations, after which training resumes from the current parameters~$\\theta$",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{1}{p^{(t)}(x_j^{(\\Omega)})}\n  \\big|\\pazocal{N}[h_\\theta](x_j^{(\\Omega)}) - q(x_j^{(\\Omega)})\\big|^2,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The indicator-based density may vanish on a positive-measure region where the residual-gradient integrand is nonzero. Inverse-probability weighting cannot recover that omitted contribution. Even a region with zero current residual can acquire a nonzero residual during the T optimization steps for which the density is held fixed. If the indicator vanishes everywhere, the density itself is undefined.",
+      "failure_location": {
+        "quote": "which yields unbiased gradient estimates under nonuniform sampling~\\cite{nabian2021efficient}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-027",
+      "least_adequate_overall_repair": "Use a positive exploration/base-density component, handle a zero indicator normalizer, and state the target measure and conditional importance-weighting assumptions explicitly.",
+      "overall_effect": "The proposed adaptive estimator is not generally unbiased and may fail to define any sampling distribution.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Adaptive importance sampling lacks the support needed for unbiased gradients",
+      "why_classification": "A safeguarded sampling construction is required; this is more than a cosmetic normalization fix but does not require new global optimization architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lambda_i(\\Theta_{m+1})\n\\ge\n\\lambda_i\\!\\left(\\frac{m}{m+1} \\Theta_m\\right)\n=\n\\frac{m}{m+1}\\,\\lambda_i(\\Theta_m)\\geq 0,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Even for the parameter-space matrix for which the update is valid, the displayed lower bound permits eigenvalues to decrease because of normalization. It supplies no upper bound on lambda_max and no bound on their ratio. Adding a vector along an already large-eigenvalue direction worsens conditioning. A genuinely new direction may still leave other null directions untouched, and a tiny component in the new direction need not produce a substantial smallest eigenvalue.",
+      "failure_location": {
+        "quote": "Hence, in practice, when the new Jacobian $J_{m+1}$ introduces a direction not yet represented in  $\\{J(x_j)\\}_{j=1}^m$, the smallest eigenvalue $\\lambda_{\\min}(\\Theta_m)$ increases sharply, while $\\lambda_{\\max}(\\Theta_m)$ is nearly unaffected.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-028",
+      "least_adequate_overall_repair": "Present conditioning improvement as conditional, and require quantitative control of the new vector's contribution to low-curvature directions relative to its contribution to the maximum eigenvalue.",
+      "overall_effect": "The claimed spectral guarantee for adaptive enrichment is not proved and can fail independently of the NTK/Gram-matrix identification error.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Weyl's inequality does not establish conditioning improvement after adding samples",
+      "why_classification": "A contained spectral criterion or a substantive weakening of the enrichment guarantee is necessary."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "step size $0 < \\alpha < 2/\\lambda_{\\max}(H)$.",
+          "tag": null
+        },
+        {
+          "quote": "the smallest eigenvalue $\\lambda_{\\min}(\\Theta_m)$ increases sharply, while $\\lambda_{\\max}(\\Theta_m)$ is nearly unaffected.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The stability ceiling is controlled by the largest eigenvalue, not the condition number. Replacing diag(epsilon,1) by diag(1,1) improves conditioning arbitrarily while leaving the stable interval alpha<2 unchanged. In particular, the preceding claimed mechanism of increasing only lambda_min cannot justify larger stable steps.",
+      "failure_location": {
+        "quote": "Improving~$\\kappa(\\Theta_m)$ corresponds to making these level sets more isotropic, which in turn permits larger stable step sizes and faster convergence of the GD method.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-029",
+      "least_adequate_overall_repair": "Distinguish a faster contraction at a fixed stable step from a larger stability interval, and claim the latter only when lambda_max is suitably reduced.",
+      "overall_effect": "The stated stepsize benefit does not follow even if the claimed conditioning improvement is separately established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Improving a condition number does not by itself permit larger stable GD steps",
+      "why_classification": "An independent promised benefit must be withdrawn or given an additional spectral hypothesis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\phi_1(x) = x(1-x),\\qquad \\phi_2(x) = x^2(1-x)^2.",
+          "tag": null
+        },
+        {
+          "quote": "J(x) = \\nabla_\\theta r(x;\\theta)\n      = \\begin{bmatrix} -\\phi_1''(x) \\\\[3pt] -\\phi_2''(x) \\end{bmatrix}.",
+          "tag": null
+        },
+        {
+          "quote": "exhibits $\\lambda_{\\max}\\approx 4.0$ and $\\lambda_{\\min}\\approx 0.30$,\nin turn reducing the condition number to $\\kappa(\\Theta_7)\\!\\approx\\!13$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The specified Jacobian is (2, -2+12x-12x^2)^T. At the five stated uniform points, its averaged outer product is [[4,0.08],[0.08,0.64672]], with eigenvalues about 4.0019 and 0.6448 and condition number 6.21. At the seven refined points it is [[4,-0.485714],[-0.485714,0.785629]], with eigenvalues about 4.0718 and 0.7138 and condition number 5.70. Moreover, this Jacobian is independent of the forcing and residual magnitude, contrary to the explanation attributing its collinearity to small residuals.",
+      "failure_location": {
+        "quote": "has eigenvalues $\\lambda_{\\max}\\approx 4.1$ and $\\lambda_{\\min}\\approx 0.02$, yielding a condition number $\\kappa(\\Theta_5)\\!\\approx\\!200$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-030",
+      "least_adequate_overall_repair": "Recompute the matrices and spectra from the given basis and points, replace the quantitative conclusions, and explain the modest change through basis derivatives rather than forcing magnitude.",
+      "overall_effect": "The example does not demonstrate the advertised reduction from approximately 200 to 13 or a sharp lifting of a nearly singular spectrum.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The Poisson sampling example has incorrect eigenvalues and improvement factors",
+      "why_classification": "The numerical argument and claimed magnitude of the benefit must be materially revised, although the same example still permits a modest conditioning comparison."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "v_k(i) &= \\beta_2 v_{k-1}(i) + (1-\\beta_2) (g_k(i))^2,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "An exponential average is bounded when its inputs are uniformly bounded, not for arbitrary gradient histories. For g_k=k and 0<beta_2<1, v_k grows on the order of k^2, and the corresponding coordinate scaling tends to zero. The section supplies no bounded-gradient assumption.",
+      "failure_location": {
+        "quote": "Adam maintains an exponentially decaying moving average of squared gradients, which remains bounded and thus avoids the vanishing learning-rate issue inherent to AdaGrad’s cumulative accumulation of squared gradients.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-031",
+      "least_adequate_overall_repair": "State the bounded-gradient condition and explain that exponential averaging avoids forced cumulative growth, not all possible growth of the second moment.",
+      "overall_effect": "The claimed unconditional boundedness and nonvanishing effective learning-rate property are unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Adam's exponential second-moment average is not unconditionally bounded",
+      "why_classification": "A standard local bounded-input qualification preserves the intended comparison and leaves the optimizer unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "m_k(i) &= \\beta_1 m_{k-1}(i) + (1-\\beta_1) g_k(i), \\\\\nv_k(i) &= \\beta_2 v_{k-1}(i) + (1-\\beta_2) (g_k(i))^2,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Expanding either recurrence gives weights proportional to (1-beta) beta^(k-j), which are larger for more recent j when 0<beta<1. Bias correction multiplies all those weights by the same factor and does not remove the recency preference. The asserted property is the opposite of the specified algorithm.",
+      "failure_location": {
+        "quote": "Moreover, it also avoids giving more importance to the most recent gradients.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-032",
+      "least_adequate_overall_repair": "Remove the recency-neutrality claim and explain the exponentially greater weighting of recent gradients.",
+      "overall_effect": "One of the stated mathematical advantages used to explain Adam is false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Adam is incorrectly said not to emphasize recent gradients",
+      "why_classification": "The claimed property cannot be preserved for the given algorithm; it must be replaced by a different, though limited, explanation."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "H_{\\pazocal{I}^H_k}(\\theta_k)p_k = -\\nabla f_{\\pazocal{I}_k}(\\theta_k),",
+          "tag": null
+        },
+        {
+          "quote": "\\State Choose $\\alpha_k$ \\COMMENTmine{Step size selection}",
+          "tag": "alg:subsampled_newton"
+        }
+      ],
+      "failure_explanation": "A subsampled gradient can produce an ascent direction for the full objective even when every Hessian is positive definite. For equally represented losses (theta-1)^2/2 and (theta+1)^2/2, a batch containing only the former at 0<theta<1 produces p=1-theta>0, while the full gradient is theta>0. No positive step along that direction decreases the convex full objective. Thus an ordinary full-objective descent line search cannot even accept a step, let alone supply the stated all-start convergence guarantee.",
+      "failure_location": {
+        "quote": "The choice of the step size in this context is often done via line-search strategies \\cite[ch.3]{nocedal2006numerical}, adaptive techniques that ensure convergence of the method for any starting point.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-033",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must specify descent-producing sampling or fallback rules, a globalization procedure, and hypotheses proving its convergence, or withdraw the all-start guarantee.",
+      "overall_effect": "The advertised global-convergence guarantee for the subsampled method is unsupported independently of Hessian singularity or indefiniteness.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Line search alone does not globally converge subsampled Newton from any start",
+      "why_classification": "The unconditional global guarantee requires a newly safeguarded method and convergence analysis, or abandonment of the claimed guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "an objective function $f:\\mathbb{R}^n\\rightarrow\\mathbb{R}$, an initial iterate $\\theta_0 \\in \\mathbb{R}^n$",
+          "tag": "alg:subsampled_newton"
+        },
+        {
+          "quote": "these methods compute an approximate Newton step using an iterative Krylov solver, e.g., the conjugate gradient method.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The algorithm imposes no invertibility or curvature safeguard. With identical component losses f_i(theta)=1+sin(theta) and theta_0=0, every sampled Hessian is zero and every sampled gradient is one, so the required equation is 0 p=-1. It has no solution or small-residual approximation. Indefinite Hessians also fall outside ordinary conjugate-gradient assumptions.",
+      "failure_location": {
+        "quote": "\\State Obtain $p_k$ by approximately solving \\COMMENTmine{Inexact  step computation}\n    \\[\n    H_{\\pazocal{I}_k^H}(\\xk) p_k = -\\nabla f_{\\pazocal{I}_k}(\\xk)\n    \\]",
+        "tag": "alg:subsampled_newton"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-034",
+      "least_adequate_overall_repair": "Specify a regularized or otherwise safeguarded curvature system and a solver appropriate to its definiteness, with a fallback when the Newton equation cannot be solved adequately.",
+      "overall_effect": "The procedure is not well defined on its advertised smooth nonconvex inputs.",
+      "primary_affected_tag": "alg:subsampled_newton",
+      "target_type": "algorithm",
+      "title": "The subsampled Newton procedure can require solving an inconsistent system",
+      "why_classification": "A contained but nontrivial curvature-safeguarding construction is needed; the Newton-Krylov approach itself can remain."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$k = 0, 1, 2, \\dots$}",
+          "tag": "alg:bfgs"
+        },
+        {
+          "quote": "\\For{$i = k-1, k-2,\\dots,k-S $}",
+          "tag": "alg:bfgs_twoloop"
+        }
+      ],
+      "failure_explanation": "No initial secant pairs are supplied, yet the first two-loop call requests S pairs, including negative indices. The outer algorithm then saves no pairs for k<=S because saving is inside the discard condition. When k>S it attempts to discard a pair that was never stored. The memory invariant therefore fails from initialization onward.",
+      "failure_location": {
+        "quote": "\\If{$k>S$} \\COMMENTmine{Secant pairs update}\n    \\State Discard $\\{(s_{k-S},y_{k-S})\\}$ from the storage \n    \\State Compute and save $s_k=\\theta_{k+1}-\\theta_k$, $y_k=\\nabla f(\\theta_{k+1})-\\nabla f(\\theta_k)$\n    \\EndIf",
+        "tag": "alg:bfgs"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-035",
+      "least_adequate_overall_repair": "Initialize an empty buffer, run the two-loop recursion over the actual stored count, compute and append a pair after every accepted step, and discard an oldest pair only when the buffer is full.",
+      "overall_effect": "The stated L-BFGS algorithm cannot execute its intended two-loop recursion.",
+      "primary_affected_tag": "alg:bfgs",
+      "target_type": "algorithm",
+      "title": "L-BFGS never builds the secant memory needed by its two-loop calls",
+      "why_classification": "Routine local bookkeeping repairs restore the intended L-BFGS procedure without changing its method or storage complexity."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\varrho_k = \\frac{1}{y_k^T s_k},",
+          "tag": "eq:bfgs_inverse"
+        },
+        {
+          "quote": "If $\\tilde B_k$ is symmetric positive definite and the curvature condition $y_k^T s_k > 0$ holds, then $\\tilde B_{k+1}$ is also symmetric positive definite.",
+          "tag": null
+        },
+        {
+          "quote": "\\State Compute and save $s_k=\\theta_{k+1}-\\theta_k$, $y_k=\\nabla f(\\theta_{k+1})-\\nabla f(\\theta_k)$",
+          "tag": "alg:bfgs"
+        }
+      ],
+      "failure_explanation": "After repairing the memory handling, arbitrary steps on the permitted nonconvex objectives can still produce y_k^T s_k=0 or a negative value. Zero makes the prescribed reciprocal undefined; a negative value destroys the stated positive-definiteness invariant. For f(theta)=1+sin(theta), theta_0=0, initial inverse approximation 1, and alpha_0=2 pi, the step has nonzero s but identical endpoint gradients, hence y=0.",
+      "failure_location": {
+        "quote": "\\State Choose $\\alpha_k$\n    \\COMMENTmine{Step size selection}",
+        "tag": "alg:bfgs"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-036",
+      "least_adequate_overall_repair": "Require a positive-definite initial approximation and accept secant pairs only when the curvature condition holds, using a suitable line search, damping, or skipping rule.",
+      "overall_effect": "The L-BFGS construction can divide by zero or lose its intended positive-definite search-direction structure.",
+      "primary_affected_tag": "alg:bfgs",
+      "target_type": "algorithm",
+      "title": "L-BFGS does not enforce the curvature condition required by its updates",
+      "why_classification": "The source already states the needed invariant; an explicit standard local safeguard restores well-defined updates without a new convergence-rate claim."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the sample-wise objective function becomes $f_i(\\theta) = \\ell\\bigl(h_\\theta(M^{-1}x),\\, y\\bigr)$,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The transformed input M^{-1}x is independent of theta, so differentiation with respect to theta introduces the parameter Jacobian of h evaluated at that input, but no additional factor M^{-1}. The displayed factors also need not have compatible dimensions. Even for the scalar input-independent model h_theta(z)=theta, the formula spuriously scales the parameter gradient by M^{-1}.",
+      "failure_location": {
+        "quote": "\\nabla_\\theta f_i(\\theta)\n=\nJ_{h_\\theta}(M^{-1}x)\\, M^{-1}\\, \\nabla_z \\ell.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-037",
+      "least_adequate_overall_repair": "Use (D_theta h_theta(M^{-1}x))^T times the derivative of the loss with respect to its prediction argument, and explain that M changes the evaluation point rather than directly multiplying the parameter gradient.",
+      "overall_effect": "The mathematical derivation of input-space preconditioning is incorrect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The data-transformation gradient applies an invalid chain-rule factor",
+      "why_classification": "A local chain-rule correction preserves the qualitative claim that input transformations can change optimization geometry."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For each sample, the objective is given by $f(u)=\\ell(\\pazocal{N}(u),q)$, and the functional gradient reads",
+          "tag": null
+        },
+        {
+          "quote": "where ideally~$\\pazocal{M}\\approx \\pazocal{N}^*\\pazocal{N}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a general differentiable PDE operator and loss, the derivative is D N(u)^* applied to the prediction derivative of ell. The displayed residual formula requires a half-squared Hilbert-space loss and a linear operator with an appropriately defined adjoint. A nonlinear N has no linear adjoint N^* of the stated kind; for the scalar example N(u)=u^2, the squared-loss gradient is 2u(u^2-q), not an unqualified N^*(N(u)-q).",
+      "failure_location": {
+        "quote": "\\nabla_u f = \\pazocal{N}^*\\!\\left(\\pazocal{N}(u) - q \\right).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-038",
+      "least_adequate_overall_repair": "Either state the linear-operator, squared-loss, and adjoint-domain assumptions, or use the general chain rule and, for nonlinear least squares, a linearized normal operator D N(u)^* D N(u).",
+      "overall_effect": "The function-space gradient and proposed normal-operator preconditioner do not cover the general operator/loss setting in which they are introduced.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The function-space gradient silently assumes a linear operator and squared loss",
+      "why_classification": "The scope must be materially restricted or the operator construction replaced by a linearized one, though a comparable function-space preconditioning framework survives."
+    }
+  ],
+  "issues_found": 38,
+  "paper_id": "2601.10222",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "cc4e517be3a26aba07d09c88bf9c61e1735a37373726924b6ba9ce4a0ce5483f",
+  "status": "ok"
+}

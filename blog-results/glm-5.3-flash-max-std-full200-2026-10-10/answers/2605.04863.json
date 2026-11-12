@@ -1,0 +1,193 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Given parameters $p \\ge 1$ and $\\tau > 0$, we define the smooth shut-off function",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The definition admits every real p >= 1, but for non-integer p the function h(eta) = eta^p/(eta^p + tau^p) ~ (eta/tau)^p near eta = 0 is not smooth there: for p = 3/2, h''(eta) ~ eta^{-1/2} diverges, so h is not even C^2 at 0. The stated smoothness holds only for integer p.",
+      "failure_location": {
+        "quote": "\\item $h \\in C^\\infty[0,1]$ for $p \\ge 1$ (smoothness),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the smoothness claim to integer p >= 1 (or state h in C^{floor(p)}); all uses (p = 1, 2, 4) are unaffected.",
+      "overall_effect": "A stated property of the shut-off function is false for admitted parameters; no labelled result invokes C^infty regularity, so no guarantee is lost.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Shut-off function claimed C-infinity on [0,1] for every real p >= 1",
+      "why_classification": "A local restriction of the admitted parameter set; every substantive claim, rate, and experiment survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For the one-neighborhood case $W_i = \\{j\\}$ for all $i \\in M_j$, so",
+          "tag": "prop:conservation"
+        },
+        {
+          "quote": "while for cells $i$ not in any small-cell neighborhood we set $U^{n+1}_i = U^*_i$.",
+          "tag": null
+        },
+        {
+          "quote": "which ensures conservation on the original mesh.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The statement covers the general weights of Section 3, in which a cell of M_j may receive from other neighborhoods (W_i containing k != j) and neighborhood j's aggregate may feed cells outside M_j. The proof handles only 'the one-neighborhood case W_i = {j}', where w_{i,j} = 1 and S_j is plain volume-weighted merging. With cross-neighborhood coupling, cell values in M_j are pulled toward other aggregates scaled by s_j, while buffer cells that pure SRD would feed are frozen at U^*_i by the global operator ('identity on all other cells'), so the claimed balance sum_{i in M_j} V_i U_i^{n+1} = sum_{i in M_j} V_i U_i^* fails for 0 < s_j < 1. The stated per-cell constraint sum_j w_{i,j} = 1 alone does not imply conservation; the needed hypothesis (self-contained neighborhoods, or a common blending value across coupled neighborhoods) is never stated.",
+      "failure_location": {
+        "quote": "For any $s_j \\in [0,1]$, the blended operator $R_j(s_j)$ is conservative:",
+        "tag": "prop:conservation"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis that each neighborhood's redistribution support is M_j itself (as in the 1D model), or impose the dual mass-balance condition sum_i w_{i,j} V_i = V_hat_j with one common blending value per coupled component and redo the short balance argument; the 1D analysis is unaffected.",
+      "overall_effect": "The blanket conservation guarantee (abstract; the algorithm's 'conservative by construction'; the 2D extension's claim that the blending 'is conservative') is established only for the degenerate one-neighborhood 1D configuration; in multi-neighborhood or buffer-receiving configurations the blended update can lose mass.",
+      "primary_affected_tag": "prop:conservation",
+      "target_type": "formal_result",
+      "title": "Conservation of the blended operator proved only for a single isolated neighborhood",
+      "why_classification": "A contained fix (added hypothesis or common blending value plus a short balance argument) preserves a comparable conservation result, but the advertised general-dimension conservation must be scoped down, which is more than a routine local edit."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Each time step of UM-SRD can be decomposed into:",
+          "tag": "thm:TVD-UMSRD"
+        },
+        {
+          "quote": "\\STATE \\textbf{Finite volume update:}",
+          "tag": "alg:added-1"
+        },
+        {
+          "quote": "  U^*_i = U^n_i - \\frac{\\Delta t}{V_i} \\sum_{f \\in \\partial i} F_{i,f},",
+          "tag": null
+        },
+        {
+          "quote": "  U^*_j = U^n_j - \\frac{\\nu}{\\alpha}(U^n_j - U^n_{j-1}),",
+          "tag": "rem:stability-mechanism"
+        }
+      ],
+      "failure_explanation": "The proof chains Propositions TVD-SRD, TVD-Q-update and TVD-R for the staging pre-merge -> finite-volume update on the MERGED mesh -> blended redistribution. But the method defined in Section 3 and realized by Algorithm 1 has no pre-merge stage: the base upwind update runs on the ORIGINAL cut-cell mesh (so the small cell steps at local CFL nu/alpha, a non-monotone, TV-increasing step whenever nu > alpha), and only then is the SRD operator blended in (exactly the one-step form U^{n+1,UM} = (1-s)U^{n+1,base} + s S_j(U^{n+1,base}) used in the accuracy analysis). For that defined scheme TVD fails under the theorem's stated CFL a dt/h <= 1: take h = 1, alpha = 0.05, a dt/h = 0.5, data (U_{j-2}, U_{j-1}, U_j, U_{j+1}) = (0, 1, 0, 0), so TV(U^n) = 2. The base step gives U*_{j-1} = 0.5, U*_j = 10; then eta ~ 1, s = 1/1.01, Qhat* = (0.5 + 0.05*10)/1.05 = 1/1.05, and the update gives U^{n+1}_{j-1} ~ 0.948, U^{n+1}_j ~ 1.042, whence TV(U^{n+1}) ~ 0.948 + 0.094 + 1.042 = 2.18 > 2: total variation increases and a new maximum is created. The proof therefore establishes TVD for a different operator than the stated one.",
+      "failure_location": {
+        "quote": "the UM-SRD time-stepping operator is TVD on the original mesh:",
+        "tag": "thm:TVD-UMSRD"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair preserves the advertised claim: either re-stage the method so merging precedes the finite-volume update (changing Section 3, Algorithm 1, the indicator's input and invalidating the perturbation-based accuracy analysis and the experiments as described), or prove TVD of the defined post-update scheme, which the counterexample shows is false; the only source-supported complete resolution is restating the guarantee under the small-cell CFL a dt/(alpha h) <= 1, which excludes the advertised regime and voids the method's purpose.",
+      "overall_effect": "The central stability guarantee (abstract, goals list, Theorem thm:TVD-UMSRD, the summary bullet, Algorithm 1's claim to 'inherit the TVD property', and Experiment 3's appeal to the theorem) is unsupported for the method the paper actually defines; stability and accuracy analyses attach to two different schemes, and the advertised full-mesh-timestep regime loses its TVD justification.",
+      "primary_affected_tag": "thm:TVD-UMSRD",
+      "target_type": "formal_result",
+      "title": "TVD theorem analyzes a re-staged operator; the defined UM-SRD scheme violates TVD under the theorem's own CFL",
+      "why_classification": "The central stability theorem is false for the algorithm the paper defines under its own hypotheses; every supported repair either re-architects the method's staging (invalidating the accuracy analysis and experiments as described) or shrinks the guarantee to a regime where the method is unnecessary."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:srd-steady",
+        "cor:steady-accumulation"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "U^{n+1}_{j-1} = U^{n+1}_j = (1-\\alpha)U^n_{j-1} + \\alpha U^n_j,",
+          "tag": "prop:srd-steady"
+        },
+        {
+          "quote": "$U_{j-1} = U_j = \\hat{Q}^* = (1 \\cdot 1.5 + 0.2 \\cdot 2.5)/(1 + 0.2)\n= 1.6\\overline{6}$",
+          "tag": null
+        },
+        {
+          "quote": "U^N_{j-1} - u(x_{j-1}) = (1-\\alpha)\\varepsilon_{j-1} + \\alpha\\varepsilon_j,",
+          "tag": "cor:steady-accumulation"
+        }
+      ],
+      "failure_explanation": "(h V_{j-1} + alpha h V_j)/(h + alpha h) equals (V_{j-1} + alpha V_j)/(1 + alpha), a convex combination with weights 1/(1+alpha) and alpha/(1+alpha), not (1-alpha, alpha); the two agree only for alpha in {0,1}. The same wrong weights appear in Proposition srd-steady's displayed equation and inside its proof, and in Corollary steady-accumulation's formulas. The paper's own Experiment 6 evaluates the correct expression and obtains 5/3 = 1.6-with-bar, contradicting the proposition's stated value (which for alpha = 0.2, U_{j-1} = 1.5, U_j = 2.5 would be 1.7).",
+      "failure_location": {
+        "quote": "= \\frac{h\\,V_{j-1} + \\alpha h\\, V_j}{h + \\alpha h}\n  = (1-\\alpha)V_{j-1} + \\alpha V_j.",
+        "tag": "prop:local-consistency"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace (1-alpha, alpha) by (1/(1+alpha), alpha/(1+alpha)) in the proof of Proposition local-consistency, in the displayed equation and proof of Proposition srd-steady, and in Corollary steady-accumulation; all orders, arguments, and Experiment 6's numbers then hold.",
+      "overall_effect": "The explicit post-redistribution values in Proposition srd-steady and the error formulas in Corollary steady-accumulation are false as written; the qualitative conclusions (standard SRD alters steady states; the perturbation (S_j - I)B(u^n) is O(h)) survive with the corrected constant alpha/(1+alpha).",
+      "primary_affected_tag": "prop:local-consistency",
+      "target_type": "formal_result",
+      "title": "Volume-weighted neighborhood average mis-simplified: weights are 1/(1+alpha), not (1-alpha, alpha)",
+      "why_classification": "A local algebraic correction with changed constants; no inference, rate, or guarantee has to be restructured, and the corrected values match the paper's own numerics."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then $s_j^n$ is not $\\mathcal{O}(h^p)$ in smooth regions with nonzero updates; instead,\n$s_j^n \\approx 1/(1+\\tau^p)$ whenever any update is present.",
+          "tag": "cor:normalized-accuracy"
+        },
+        {
+          "quote": "This means the normalized implementation does not satisfy the theoretical\nscaling $s_j^n = \\mathcal{O}(h^p)$ in smooth regions with nonzero updates.",
+          "tag": null
+        },
+        {
+          "quote": "satisfies this scaling for any $p \\ge 1$ under a standard CFL condition.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The corollary proves only the undivided one-step bound tau^UM - tau^base = s_j^n (S_j - I)B(u^n) = O(1) x O(h) = O(h). Under the paper's convention (tau = B(u^n) - u^{n+1}, one step, dt = Theta(h)), the base first-order scheme's LTE is O(h^2), so an O(h) perturbation is one order LARGER than the base LTE, not 'the same order'; an O(h) LTE supports only zeroth-order consistency, from which first-order global accuracy does not follow (the standard LTE-to-error argument would give an O(1) contribution). The inference 'same order as the base scheme, hence still first-order accurate' is therefore invalid; the conclusion may still be true (the O(h) defect acts at a fixed cell pair and equilibrates under advection), but that argument is absent. Additionally, the conclusion section asserts the normalized-indicator choice 'satisfies this scaling for any p >= 1', directly contradicting Section 4.7 ('does not satisfy the theoretical scaling'), and the abstract's unconditional 'local truncation error modification is higher-order' claim holds only for the unnormalized indicator with p >= 2, not for the implemented method.",
+      "failure_location": {
+        "quote": "which is the same order as the base first-order scheme, so UM-SRD with\nthe normalized indicator is still first-order accurate.",
+        "tag": "cor:normalized-accuracy"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Weaken the corollary to consistency (the LTE perturbation is O(h), vanishing as h -> 0) with first-order convergence supported only empirically, or add a contained new argument (e.g., a modified-equation/defect-accumulation analysis showing the fixed-location O(h) defect equilibrates to an O(h) global error); the abstract and conclusion must stop claiming a higher-order LTE modification for the normalized indicator.",
+      "overall_effect": "First-order accuracy of the normalized implementation (the corollary, and the abstract/intro/conclusion claims built on it) is unsupported; only consistency of the LTE perturbation is established, and first-order convergence rests solely on the numerical experiments.",
+      "primary_affected_tag": "cor:normalized-accuracy",
+      "target_type": "formal_result",
+      "title": "First-order accuracy of the normalized indicator does not follow from the O(h) LTE-difference argument",
+      "why_classification": "A limited weakening (consistency plus numerical evidence) or a contained new lemma rescues a comparable first-order claim, but the invalid inference cannot be patched locally and the advertised higher-order-LTE property is lost for the implemented method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Using the full-mesh timestep violates the\nsmall-cell CFL condition and causes the base scheme to diverge.",
+          "tag": null
+        },
+        {
+          "quote": "Under this timestep, the base upwind scheme diverges rapidly: $\\max|U^n|$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The setup claims a dt/h <= 1 ensures stability of the base (redistribution-free) scheme. The base scheme runs on the original cut-cell mesh, where the small cell requires a dt/(alpha h) <= 1; a dt/h <= 1 does not provide this, and the paper's own Experiment 5 demonstrates the base scheme diverging at a dt/h = 0.5 <= 1 with alpha = 0.05. Hence the stated three-way comparison (base vs SRD vs UM-SRD) in Experiment 1 is not realizable under the timestep as described, and the timestep actually used is not stated.",
+      "failure_location": {
+        "quote": "The time step is chosen to satisfy the CFL condition $a \\Delta t / h \\le 1$, ensuring stability of the base scheme on the merged mesh.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "State the timestep actually used (e.g., one respecting a dt/(alpha h) <= 1, under which all three schemes are stable); all reported numbers can stand under the clarified configuration.",
+      "overall_effect": "The experimental configuration as described is internally inconsistent (its stability claim is refuted by Experiment 5), leaving the reported three-method error comparison of Experiment 1 without a specified, stable configuration.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Experimental setup claims the full-mesh CFL ensures base-scheme stability, contradicted by Experiment 5",
+      "why_classification": "A one-line clarification of the experimental timestep preserves every reported number and conclusion."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2605.04863",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7818cd4cd642c55846288cd8538a55a3a2f19a519b1a0153dbaf44ab1fba0b17",
+  "status": "ok"
+}

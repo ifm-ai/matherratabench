@@ -1,0 +1,102 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:LTE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\norm{D(z)} \\leq 1$ for all $z \\in \\C^-$, then $\\norm{D(Z)} \\leq 1$ for all $Z \\in \\R^{\\nvar \\times \\nvar}$ satisfying $\\mu(Z) \\leq 0$",
+          "tag": "Thm:Nevanlinna"
+        },
+        {
+          "quote": "The Runge--Kutta method \\cref{eq:RK} is called AS-stable if $I - z A$ is non-singular for all $z \\in \\C^-$ and $z b^T (I - z A)^{-1}$ is uniformly bounded for $z \\in \\C^-$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the second matrix function, the proof scales D(z)=alpha z b^T(I-zA)^{-1} by alpha defined from sup ||b^T(I-zA)^{-1}||, omitting the factor z. That does not prove ||D(z)||<=1 on C^-, so Nevanlinna's hypothesis is not verified for the (b^T x Z)(I-A x Z)^{-1} bound. The needed finite constant is instead sup ||z b^T(I-zA)^{-1}||, which is exactly what AS-stability provides.",
+      "failure_location": {
+        "quote": "D(z) &= \\alpha zb^T (I - zA)^{-1}  &  \\quad \\textrm{where} \\quad &  \\alpha^{-1} = \\sup_{z \\in \\C^{-} } \\norm{b^T (I - zA)^{-1}} ,",
+        "tag": "lem:AS_ASI_stability_bounds"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Define alpha^{-1}=sup_{z in C^-} || z b^T (I-zA)^{-1} || for the second application of Nevanlinna; the first inverse bound already follows from ASI-stability.",
+      "overall_effect": "As written, the uniform-in-Z bound on (b^T x Z)(I-A x Z)^{-1} used in the dy local-error recursion is not established; thm:LTE's uniform LTE expansion is unsupported until this normalization is corrected.",
+      "primary_affected_tag": "lem:AS_ASI_stability_bounds",
+      "target_type": "formal_result",
+      "title": "Wrong normalization in the second Nevanlinna application for the AS-stability matrix bound",
+      "why_classification": "The conclusion of the lemma is unchanged and the repair is a one-line normalization directly forced by the AS-stability hypothesis."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\vy[i+1] &= \\ac[i] + \\sum_{\\ell = 0}^{i-1} \\sum_{k=1}^{i-\\ell} \\sum_{m_1 + \\ldots + m_k = i - \\ell} \\scalvar_{\\ell, k} \\bimap_{\\ell, k}(\\vy[m_1], \\ldots, \\vy[m_k])",
+          "tag": "eq:abstractrec"
+        },
+        {
+          "quote": "\\ac[\\ell] & \\quad \\treevar = [\\treeroot^{\\ell}], & (\\ell \\geq 1)",
+          "tag": "Eq:PhiFormula"
+        },
+        {
+          "quote": "\\comcoef([\\treeroot^{\\ell} \\treevar_1 \\ldots \\treevar_k]) = \\frac{\\scalvar_{\\ell, k} \\, k!}{\\mu_1! \\, \\mu_2! \\cdots \\mu_\\sigma!}\\comcoef(\\treevar_1) \\comcoef(\\treevar_2) \\cdots \\comcoef(\\treevar_k),",
+          "tag": "Eq:SigmaFormula"
+        }
+      ],
+      "failure_explanation": "In the induction step for v[i+1], the recursion supplies the forcing a_i, while the lone (i+1)-vertex bushy tree is [root^i] with phi=a_i and coefficient 1. The proof instead adds a[i+1] as phi([root^{i+1}]), a tree with i+2 vertices, and invokes comcoef([root^{i+1}])=1 although Eq:SigmaFormula only defines comcoef through scalvar_{ell,k} for k>=1. The lemma statement is consistent; the induction argument as printed is not.",
+      "failure_location": {
+        "quote": "The term $\\ac[i+1]$ in \\cref{eq:sum2} then adds the missing lone tree to the sum (since $\\comcoef([\\treeroot^{i+1}]) = 1$)",
+        "tag": "lem:abstractrec"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "In the induction step replace a[i+1] and [root^{i+1}] by a[i] and [root^i], and state comcoef([root^ell])=1 for the k=0 bushy case.",
+      "overall_effect": "The combinatorial lemma's proof is invalid at the final induction inclusion, but the stated representation eq:abstractsol and the formulas Eq:PhiFormula/Eq:SigmaFormula remain correct after the index is repaired.",
+      "primary_affected_tag": "lem:abstractrec",
+      "target_type": "formal_result",
+      "title": "Off-by-one forcing term and undefined k=0 combinatorial factor in the abstract tree recursion proof",
+      "why_classification": "A short local index repair restores the proof without changing the lemma, its coefficients, or any downstream tree expansion."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1",
+        "thm:convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dy[1][i] &= \\big(b^T \\otimes Z\\big) \\big(I - A \\otimes Z\\big)^{-1} \\left( \\so{i} \\otimes y^{(i)}(\\ts) \\right) \\\\\n            &\\quad + \\big(b^T \\otimes I\\big) \\big(I - A \\otimes Z\\big)^{-1} \\dg[0][i-1] \n                +\\qo{i} y^{(i)}(\\ts) ,",
+          "tag": "eq:LTE_coeffs:y"
+        },
+        {
+          "quote": "\\oc[\\treevar][Z][t] &= (b^T \\otimes I) (I - A \\otimes Z)^{-1} \\big(C^{\\ell} \\otimes I\\big) \\,\\, \\G(\\timevar) \\big( \\oc*[\\treevar_1][Z][t], \\dots, \\oc*[\\treevar_k][Z][t] \\big).",
+          "tag": "eq:LTE_tree:psi"
+        }
+      ],
+      "failure_explanation": "The proof says the psi expansion follows by applying lem:abstractrec to dy[0][i] with bimap containing (A C^ell). But the displayed recursion eq:LTE_coeffs:y has no A factor in the nonlinear dy term, and dg[0] is built from the stage errors dY[0]; thus the correct tree map uses the stage functions psi^* of the subtrees, not psi itself. Applied literally, lem:abstractrec would generate a different expression with an extra A in every non-bushy tree.",
+      "failure_location": {
+        "quote": "\\bimap_{\\ell, k} = \n        \\big(b^T \\otimes I\\big) \\big(I - A \\otimes Z\\big)^{-1} \\big((A C^{\\ell}) \\otimes I\\big) \\, \\G(\\timevar).",
+        "tag": "thm:LTE_trees"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Prove eq:LTE_tree_series:y by induction on tree size jointly with the psi^* expansion: substitute Eq:BasisPsi for each psi^*_{tau_j}, use Eq:KroneckerIdentity/Eq:GPsiSum and Eq:MatExpansion inside the recursive definition eq:LTE_tree:psi, and carry the same zeta coefficients from eq:comb1; do not recast dy[1][i] as a self-contained abstract recursion with an extra A.",
+      "overall_effect": "The tree representation of dy[1] in eq:LTE_tree_series:y is not proved by the displayed 'similarly' step. The Main Result thm:added-1 and the superconvergence part of thm:convergence use these psi functions, so their proofs rely on a repair of this expansion argument.",
+      "primary_affected_tag": "thm:LTE_trees",
+      "target_type": "formal_result",
+      "title": "Invalid abstract-recursion derivation of the dy tree expansion: extra A factor and wrong subtree arguments",
+      "why_classification": "The stated formulas are correct and no global architecture is lost, but the dy tree expansion needs a contained separate induction rather than the claimed direct application of lem:abstractrec."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2505.15099",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6126411d2378a7472a9f6ced6be434b2aeb2361034528608d64f09e66b971afc",
+  "status": "ok"
+}

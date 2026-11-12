@@ -1,0 +1,229 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "An entropy pair consists of a convex entropy function $\\eta : \\mathbb{R}^m \\to \\mathbb{R}$",
+          "tag": null
+        },
+        {
+          "quote": "E_R(U_\\theta) = \\sup_{k \\in \\mathbb{R}, \\varphi \\in \\mathcal{A}} \\mathcal{R}_{k,\\varphi}(U_\\theta)",
+          "tag": null
+        },
+        {
+          "quote": "\\mathcal{R}_{k,\\varphi}(U_\\theta) = \\int_0^T \\int_\\Omega \\left( |U_\\theta - k|\\partial_t \\varphi + \\text{sgn}(U_\\theta - k)(F(U_\\theta) - F(k))\\cdot \\nabla_x \\varphi \\right) dx\\, dt.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The claim is that conservation plus the entropy inequality for one fixed pair (eta,q) singles out the entropy solution. This is false. For the admissible system U=(u,v) with F(U)=(u^2/2,v^2/2) and the valid pair eta=(u^2+v^2)/2, q=(u^3+v^3)/3, the datum (0,1) for x<0 and (1,0) for x>0 has two distinct weak solutions satisfying both conditions: the entropy solution (rarefaction in u, compression shock in v) and the solution with an expansion shock in u and a compression shock in v along the same line x=t/2. For the latter the two jump defects are +1/12 and -1/12, so the (eta,q) inequality holds with equality although the admissible pair |u-1/2| is violated. Scalar laws need the whole Kruzhkov family |u-k| (exactly what the supremum over k in the definition of E_R uses), and for systems even that family yields no selection theorem.",
+      "failure_location": {
+        "quote": "Together, \\eqref{eq:weak_conservation} and~\\eqref{eq:entropy_inequality} characterize the entropy solution of~\\eqref{eq:conservation_law}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restate the characterization with the full family of convex (Kruzhkov) entropy inequalities for scalar laws and withdraw or restrict the uniqueness/selection statement for systems; to keep the guarantee for the implemented method, the entropy part of the loss must enforce that family.",
+      "overall_effect": "The advertised guarantee that the integral entropy term selects the physically relevant weak solution (and 'ensures uniqueness and physical consistency') is unsupported for the single pair supplied in Appendix C, in particular for the Euler and shallow-water experiments; the same insufficiency also invalidates the entropy step of the loss-to-error bound in lem:added-1 and hence thm:added-2.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "A single entropy pair does not characterize the entropy solution",
+      "why_classification": "Either a restatement of the claim or a change of the entropy loss to the full family preserves the method, the loss-to-error route and the rates, but the advertised selection/uniqueness guarantee for the systems treated in the paper is necessarily withdrawn; this is more than a routine local fix yet needs no new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "R_\\theta(D_k)\n=\n\\int_{\\partial D_k}\n\\left(\nU_\\theta\\, n_t + F(U_\\theta)\\cdot n_x\n\\right)\\, dS.",
+          "tag": null
+        },
+        {
+          "quote": "\\State \\textbf{Input:} initial condition  $U_0$, flux $F(U)$, entropy pair $(\\eta,q)$,",
+          "tag": "alg:weak_entropy_pinn"
+        }
+      ],
+      "failure_explanation": "The residual involves only the network's own trace on the boundary face (F(U_theta) dot n_x); no prescribed datum enters it, and none appears in the algorithm's input list. Counterexample: Burgers on (0,1) with u_0 = 0 (reproduced exactly by the temporal ansatz) and prescribed inflow data u(0,t)=1; the choice N_theta = 0 gives U_theta = 0, hence R_theta(D_k)=0 and E_theta(D_k)=0 for every control volume (the Burgers pair vanishes at u=0), i.e. zero total loss while the boundary condition is violated. Even evaluating the boundary-face integral with prescribed flux data would impose only flux consistency, which does not fix the boundary state for non-injective fluxes or for systems.",
+      "failure_location": {
+        "quote": "When a boundary face of a control volume $D_k$ coincides with the physical boundary of the domain $\\Omega_x$, the flux integration across this face directly enforces the prescribed boundary conditions naturally through the evaluation of $R_\\theta(D_k)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Put the boundary conditions into the problem statement and enforce them explicitly (boundary-data term or hard constraint in the loss), and carry the boundary terms of control volumes meeting the physical boundary through the analysis.",
+      "overall_effect": "The loss cannot separate solutions of different boundary-value problems, so on bounded domains the trained solution is not tied to the intended problem and the L1 bound of thm:added-2 (whose target u is not even defined without boundary conditions) is false; all numerical tests use bounded domains with physical boundaries.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Control-volume residuals do not enforce boundary conditions",
+      "why_classification": "Explicit boundary enforcement and boundary hypotheses are a contained change of the loss and of the analysis after which the method, the rates and the scope survive; the advertised seamless integration of boundary conditions is withdrawn and a new boundary argument is needed, so the repair exceeds a routine local fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{R}_{k,\\varphi}(U_\\theta) \\le \\sum_{i=1}^{N_D} \\left( \\|\\partial_t \\varphi\\|_{L^\\infty} + \\|\\nabla_x \\varphi\\|_{L^\\infty} \\right) \\cdot \\left( |R_{\\mathrm{cons}}(D_i)| + |R_{\\mathrm{ent}}(D_i, k)| \\right).",
+          "tag": "lem:added-1"
+        },
+        {
+          "quote": "\\mathcal{A} = \\left\\{ \\varphi \\in C_c^\\infty(\\Omega \\times (0,T)) : \\varphi \\ge 0, \\\\|\\partial_t \\varphi\\|_{L^\\infty} + \\|\\nabla_x \\varphi\\|_{L^\\infty} \\le 1 \\right\\}",
+          "tag": null
+        },
+        {
+          "quote": "L_{\\mathrm{ent}}(\\theta)\n=\n\\frac{1}{N_D}\n\\sum_{k=1}^{N_D}\n\\frac{\\big(\\max\\{0,\\,E_\\theta(D_k)\\}\\big)^2}{|D_k|}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "phi ranges over smooth functions and is not constant on the cells, so integrating by parts on each D_i leaves phi-weighted boundary terms plus the interior terms minus the integral of phi times the defect; these are not the unweighted residuals R(D_i), and the derivatives of phi cannot be factored out of boundary integrals (the correct factor is ||phi||_infinity, not the Lipschitz constant). The next step then bounds the residual with the absolute quantities |R_ent(D_i,k)| although the loss penalizes only the square of the positive part (max{0,E_theta(D_i)})^2; a one-sided penalty cannot control an absolute value. Hence the claimed exact translation and the estimate built on it are invalid as written.",
+      "failure_location": {
+        "quote": "Applying the divergence theorem on each $D_i$, the continuous residual translates into boundary flux integrals, corresponding exactly to the local conservation residual $R_{\\mathrm{cons}}(D_i)$ and entropy residual $R_{\\mathrm{ent}}(D_i, k)$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the step by a valid estimate: write the residual as the integral of the entropy defect over the cells, use piecewise constant approximations of the admissible test functions and bound with the one-sided cell defects, adding a hypothesis that the control volumes resolve the defect.",
+      "overall_effect": "The key step of lem:added-1 is invalid, so the loss-to-error link advertised in the abstract and invoked in Step 3 of thm:added-2 is unproven.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "The weak residual is not the sum of unweighted cell residuals",
+      "why_classification": "A single replacement argument (piecewise constant test functions plus one-sided cell defects, with a resolution hypothesis) repairs the step and keeps the loss and the claimed rate, but it is a nontrivial new estimate, so it is more than a routine local fix while stopping short of new global architecture."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "L_{\\mathrm{cons}}(\\theta)\n=\n\\frac{1}{N_D}\n\\sum_{k=1}^{N_D}\n\\frac{\\|R_\\theta(D_k)\\|_2^2}{|D_k|}",
+          "tag": null
+        },
+        {
+          "quote": "For any partition $\\{D_i\\}_{i=1}^{N_D}$ of $\\Omega \\times (0,T)$, the continuous weak truncation error is bounded by the volume-weighted network losses:",
+          "tag": null
+        },
+        {
+          "quote": "Each collocation point defines the center of a control volume $D_k$ over which the conservation identity \\eqref{eq:weak_conservation} is enforced.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Cauchy-Schwarz step produces the sum of |R(D_i)|^2/|D_i|, which is N_D times the Section 3 losses because L_cons and L_ent carry a factor 1/N_D; the constant sqrt(|Omega x (0,T)|) in the statement is therefore missing sqrt(N_D) and, being claimed for any partition, is destroyed by refinement: for a fixed U_theta with a nonzero entropy defect the sum of |R(D_i)|^2/|D_i| converges to a finite integral as the partition is refined while the averaged losses tend to zero, so the right-hand side tends to zero with E_R fixed. Moreover the volumes used by the method form a finite, dynamically sampled, overlapping family of multi-scale boxes rather than a partition, so sum |D_i| = |Omega x (0,T)| fails, and any perturbation of U_theta supported away from the sampled faces leaves every residual unchanged while changing the distributional defect.",
+      "failure_location": {
+        "quote": "Recognizing that $\\sum |D_i| = |\\Omega \\times (0,T)|$ and substituting the definitions of $L_{\\mathrm{cons}}(\\theta)$ and $L_{\\mathrm{ent}}(\\theta)$ defined in Section 3, we obtain the upper bound for any $\\varphi \\in \\mathcal{A}$.",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use unaveraged sums (or restate the constant with sqrt(N_D)) and replace the finite sampled family by a supremum over all admissible control volumes, or by a dense family with an approximation argument; the sampled average can then only be a stochastic approximation of that loss.",
+      "overall_effect": "The bound is false for the loss the algorithm actually optimizes, so the advertised statement that the network's loss function controls the L1 error, and with it thm:added-2, does not hold for the sampled control volumes.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "The Section 3 losses are not the quantities bounded in Lemma 1",
+      "why_classification": "No repair keeps the guarantee for the implemented finite sampled-average loss: discrete boundary balances cannot see defects away from the sampled faces, so the optimized quantity must become a supremum/continuum constraint and its normalization must change. That changes the central quantifier and the guarantee type and alters what is optimized and claimed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1",
+        "thm:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "E_R(U_\\theta) = \\sup_{k \\in \\mathbb{R}, \\varphi \\in \\mathcal{A}} \\mathcal{R}_{k,\\varphi}(U_\\theta)",
+          "tag": null
+        },
+        {
+          "quote": "\\mathcal{R}_{k,\\varphi}(U_\\theta) = \\int_0^T \\int_\\Omega \\left( |U_\\theta - k|\\partial_t \\varphi + \\text{sgn}(U_\\theta - k)(F(U_\\theta) - F(k))\\cdot \\nabla_x \\varphi \\right) dx\\, dt.",
+          "tag": null
+        },
+        {
+          "quote": "\\partial_t \\eta(U) + \\nabla_x \\cdot q(U) \\le 0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Writing mu_k = partial_t|U-k| + div_x(sgn(U-k)(F(U)-F(k))), the displayed residual equals minus the pairing of mu_k with phi for compactly supported phi, so the supremum over phi >= 0 measures the entropy production (where mu_k <= 0 is strictly satisfied) and not the violation the estimate must bound. It vanishes on entropy-violating solutions and is positive on exact entropy solutions with shocks. For Burgers with u_0 = 0 on x <= 0 and 1 on x > 0, the weak solution consisting of the expansion shock at x = t/2 has mu_k = k(1-k) times the shock measure for 0<k<1 and zero otherwise, hence the residual is nonpositive for all admissible phi and E_R = 0. This v is bounded, has bounded total variation and satisfies v(.,0)=u_0, so the displayed estimate forces ||v(.,T)-u(.,T)||_{L1} = 0, which is false (the entropy solution is the rarefaction fan).",
+      "failure_location": {
+        "quote": "\\|v(\\cdot, T) - u(\\cdot, T)\\|_{L^1(\\Omega)} \\leq \\|v(\\cdot, 0) - u_0\\|_{L^1(\\Omega)} + C \\sqrt{TV(u_0) \\cdot \\sup_{t \\in [0,T]} TV(v(\\cdot, t)) \\cdot \\sqrt{E_R(v)}}",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Redefine the error functional so that it measures the violation of the entropy inequality (for example the supremum over k and phi in A of minus the displayed residual, i.e. the positive part of the entropy defect measure) and state the cited estimate for that quantity.",
+      "overall_effect": "As defined, E_R is not an error functional: the quoted Bouchut-Perthame bound is false for it, the input of Steps 3-4 of thm:added-2 and the quantity controlled in lem:added-1 are wrong, and with the printed E_R the main theorem would identify distinct weak solutions.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "The weak truncation error measures entropy production, not the entropy defect",
+      "why_classification": "Aligning the sign of the defect functional with the paper's own nonpositive entropy convention is a short, local definition fix that restores the cited estimate and preserves every claim and guarantee; no new lemma, construction or reoptimization is needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "C \\sqrt{TV(u_0) \\cdot \\sup_{t \\in [0,T]} TV(v(\\cdot, t)) \\cdot \\sqrt{E_R(v)}}",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "\\|U_\\theta(\\cdot, T) - u(\\cdot, T)\\|_{L^1(\\Omega)} \\leq K_{\\mathrm{opt}} \\cdot \\left(L_{\\mathrm{cons}}(\\theta)^{1/4} + L_{\\mathrm{ent}}(\\theta)^{1/4}\\right).",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "As printed, the Bouchut-Perthame estimate bounds the error by C sqrt(TV(u_0) sup TV(v) sqrt(E_R)) = C sqrt(TV(u_0) sup TV(v)) times E_R^{1/4}. With Lemma 1's bound E_R <= B := |Omega x (0,T)|^{1/2}(sqrt(L_cons)+sqrt(L_ent)) this yields B^{1/4}, whereas Step 4 writes B^{1/2}. The stated rate L^{1/4} therefore does not follow from the inputs as stated (subadditivity would give L^{1/8}); the derivation is consistent only if E_R stands under a single square root in thm:added-1.",
+      "failure_location": {
+        "quote": "&\\leq C \\sqrt{TV(u_0) M} \\cdot \\left[ |\\Omega \\times (0,T)|^{1/2} \\left( \\sqrt{L_{\\mathrm{cons}}(\\theta)} + \\sqrt{L_{\\mathrm{ent}}(\\theta)} \\right) \\right]^{1/2}.",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Correct the exponent in the statement of the Bouchut-Perthame estimate so that sqrt(E_R) multiplies sqrt(TV(u_0) sup_t TV(v)) (the form Step 4 and the remark on 1/4 versus 1/2 rates require); otherwise weaken the conclusion to an L^{1/8} rate.",
+      "overall_effect": "The advertised explicit L1 convergence rate is not established: either the rate must be weakened to L^{1/8} or the quoted Bouchut-Perthame estimate must be restated, so the headline quantitative claim of the abstract and of the remark on optimal rates is unsupported as written.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "The claimed 1/4 rate does not follow from the stated error estimate",
+      "why_classification": "The two consistent repairs differ mathematically: correcting the quoted estimate is local and keeps the rate, while the alternative loses the advertised 1/4 rate but keeps convergence. Since the source does not decide between them, the repair loses or changes quantitative content but needs no new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\eta(U) = \\frac{1}{2} h |\\mathbf{u}|^2 + \\frac{1}{2} g h^2, \\qquad\nq(U) = \\eta(U)\\,\\mathbf{u},",
+          "tag": null
+        },
+        {
+          "quote": "\\nabla_U q^{(j)}(U) = \\nabla_U \\eta(U)\\,\\nabla_U F^{(j)}(U), \\qquad j=1,\\dots,d.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the shallow-water system with U=(h, hu) and F=(hu, hu^2 + g h^2/2) the pair eta = h u^2/2 + g h^2/2 with q = eta u violates the stated compatibility relations: with m = hu one gets q_m = u^2 + eta/h, whereas the relation requires q_m = eta_h + 2u^2, and eta_h = -u^2/2 + gh differs from eta/h - u^2 = -u^2/2 + gh/2 by gh/2. Equivalently, for smooth solutions partial_t eta + div(eta u) = -div(g h^2 u/2) is neither zero nor of fixed sign. The flux fixed by the compatibility relations is q = u(h u^2/2 + g h^2) (two dimensions: q = u_vec(h|u_vec|^2/2 + g h^2)), which does satisfy them.",
+      "failure_location": {
+        "quote": "In all cases, the entropy functions are convex and the corresponding entropy fluxes satisfy the compatibility condition with the physical flux, ensuring consistency with the entropy inequality.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the shallow-water entropy flux by the one determined by the compatibility relations (q = u(h|u|^2/2 + g h^2)) and redo the shallow-water experiments with the corrected entropy residual.",
+      "overall_effect": "The entropy residual E_theta(D_k) used in the shallow-water tests (one- and two-dimensional) is not an entropy defect: it is nonzero with either sign on exact smooth solutions, so the one-sided entropy loss penalizes correct solutions and misses genuine entropy violations, and the claim that these experiments enforce entropy admissibility is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The shallow-water entropy flux fails the compatibility condition",
+      "why_classification": "The corrected flux is uniquely determined and the formula fix is short and local, preserving the method and its guarantees, but the entropy enforcement reported for the shallow-water experiments was computed with an invalid pair and must be recomputed, so the repair exceeds a routine typo fix."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2603.24819",
+  "question_id": "Q1",
+  "run_name": "mimo-v26pro-rl-max-full200-n02",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "693e11400d8e8c9b7da21ad4ea16f4554e73c427eb19da05eee866ed9b1db33d",
+  "status": "ok"
+}

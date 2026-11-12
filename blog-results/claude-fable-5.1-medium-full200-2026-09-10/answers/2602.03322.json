@@ -1,0 +1,185 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\e^{-\\iu\\alpha}(\\e^{-\\iu\\beta}p_{j+1}^{n+1} - \\e^{\\iu\\beta}p_{j-1}^{n+1}) \n              - \\e^{\\iu\\alpha}(\\e^{-\\iu\\beta}p_{j+1}^{n-1} - \\e^{\\iu\\beta}p_{j-1}^{n-1})}{4 \\tau h}",
+          "tag": "eq:scheme"
+        },
+        {
+          "quote": "We propose an explicit and an implicit exponentially weighted finite difference method.",
+          "tag": null
+        },
+        {
+          "quote": "- 2 \\eps c_g \\frac{\\e^{-\\iu\\beta} \\nu^n_{j+1} - \\e^{\\iu\\beta} \\nu^n_{j-1}}{2 h} - 2 \\iu \\omega \\nu^n_j",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper repeatedly describes scheme (eq:scheme) as explicit (abstract, Section 3.2, Theorem th:MFE). However the discretized mixed derivative term contains p^{n+1}_{j+1} and p^{n+1}_{j-1} (equivalently ν^n_{j±1} in the compact form), so each step requires solving a banded linear system in the unknowns (p^{n+1}_j)_j. The method is linearly implicit, not explicit; only the starting step (with ν^0=0) is explicit. This also explains why the derived stability region (τ ≤ ωεh for |β|<1) exceeds the domain-of-dependence bound of a genuinely explicit three-point-per-level stencil.",
+      "failure_location": {
+        "quote": "obtain an explicit symmetric two-step scheme as follows:",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Describe the weighted leapfrog method as linearly implicit (a banded linear solve per step) and note invertibility of the implicit operator; adjust the abstract and Section 3.2 wording.",
+      "overall_effect": "The advertised explicit/implicit dichotomy is inaccurate; the 'explicit' method's per-step cost includes a linear solve. Error bounds and stability results are unaffected since the Fourier symbol e^{-iα}(1+iγ_θ) of the implicit part is uniformly invertible.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Weighted leapfrog scheme is called explicit but couples p^{n+1}_{j±1} (linearly implicit)",
+      "why_classification": "The algorithm is well defined and all guarantees survive; only the characterization of its computational structure must be corrected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop2",
+        "lem:defect-wiener",
+        "th:MFE",
+        "thm",
+        "thm:polarized"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The $BC^1(\\R)$-norm is stronger than the norm of the Wiener algebra $A(\\R)$, as is implied by \\eqref{eq:katz}.\n    Hence, the $\\mathcal{O}(\\eps)$ defect bound is also valid in the $A(\\R)$-norm.",
+          "tag": null
+        },
+        {
+          "quote": "The proof is based on \\eqref{eq:katz} and follows the same steps as the proof in \\cite[Lemma 4.2]{shi2025weighted}.",
+          "tag": "lem:defect-wiener"
+        },
+        {
+          "quote": "The remaining steps follow as in the proof of Proposition~\\ref{prop}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The second inequality in (eq:katz) is false: A(R) ⊂ C_0(R) by Riemann–Lebesgue, so e.g. f ≡ 1 has bounded f and f' but is not in A(R); the correct embedding is H^1(R) ⊂ A(R). Moreover, the defect d contains the factor e^{iκx/ε}, so ||d'||_∞ = O(1), not O(ε); even a correct BC^1-type embedding would not yield the claimed O(ε) A(R)-bound. The O(ε) bound in A(R) does hold, but only via modulation invariance of the A-norm together with an H^1 bound on the smooth profiles, which is not the argument given. The same flawed step is invoked in Proposition prop2 and in Lemma lem:defect-wiener.",
+      "failure_location": {
+        "quote": "\\| f \\|_{A(\\mathbb{R})} \\le c_1\\,\\max(\\| f \\|_{L^\\infty(\\mathbb{R})},\\| f' \\|_{L^\\infty(\\mathbb{R})}).",
+        "tag": "eq:katz"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace (eq:katz) by ||f||_A ≤ C||f||_{H^1(R)}, use ||f e^{iκ·/ε}||_A = ||f||_A, and bound the (smooth, decaying) profile of the defect in H^1 uniformly in ε.",
+      "overall_effect": "The passage from maximum-norm to Wiener-algebra defect bounds in Propositions prop, prop2 and Lemma lem:defect-wiener is unsupported as written; all downstream results rely on these A(R) bounds.",
+      "primary_affected_tag": "prop",
+      "target_type": "formal_result",
+      "title": "False Wiener-algebra embedding (eq:katz) used to transfer O(ε) defect bounds to the A(R)-norm",
+      "why_classification": "A standard, local replacement of the embedding argument restores every stated bound with no change in conclusions or rates."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\wt{u}(t,x) = (a(t, \\xi)+\\eps b(t,\\xi)) \\e^{\\iu (\\kappa x - \\omega t/\\eps)/\\eps},",
+          "tag": "prop2"
+        },
+        {
+          "quote": "2\\iu\\omega\\partial_tb&=-(1-c_g^2)\\partial_\\xi^2b+\\lambda (2|a|^2b+a^2\\bar{b})-2 c_g\\partial_t\\partial_\\xi a, \\\\ b(0,\\xi)&=0.",
+          "tag": "eq:ab"
+        }
+      ],
+      "failure_explanation": "Proposition prop2 states u = (a + εb)e^{...} + O(ε^2), where b solves a linear Schrödinger equation forced by -2c_g ∂_t∂_ξ a and is generically nonzero for t>0. Dropping εb, as (eq:pq) does by defining p̃ = a^+ e^{...}, leaves an O(ε) remainder, not O(ε^2). The displayed O(ε^2) is therefore false as stated.",
+      "failure_location": {
+        "quote": "p(t,\\xi)&= \\wt{p}(t,\\xi)+\\mathcal{O}(\\eps^2)\\quad \\text{with}\\quad\\wt{p}(t,\\xi)=a^+(t,\\xi)\\e^{\\iu\\kappa\\xi/\\eps}\\e^{\\iu \\vartheta t/\\eps^2},",
+        "tag": "eq:pq"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Either replace O(ε^2) by O(ε) in (eq:pq), or include the εb^± correction terms in p̃ and q̃.",
+      "overall_effect": "Only the displayed claim (eq:pq) is wrong; (eq:upq), Algorithm alg and Theorems th:MFE/thm use only the O(ε) version, and Theorem thm:polarized correctly uses a+εb.",
+      "primary_affected_tag": "eq:pq",
+      "target_type": "other",
+      "title": "(eq:pq) claims p = a^+ e^{...} + O(ε^2), but Proposition prop2 only gives O(ε) without the εb term",
+      "why_classification": "An isolated incorrect order statement with no downstream dependence; a one-line correction preserves all results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:polarized"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\eps^2v_{+,j}^{n}&=-\\iu\\omega p^n_j-\\eps c_g\\frac{\\e^{-\\iu\\beta} p^n_{j+1}-\\e^{\\iu\\beta} p^n_{j-1}}{2h}+\\eps^2\\frac{\\e^{-\\iu\\alpha} p^{n+1}_j - \\e^{\\iu\\alpha} p^{n-1}_j}{2 \\tau}",
+          "tag": "eq:v-pola"
+        },
+        {
+          "quote": "\\|R^\\pm\\|_{L^\\infty([0,T] \\times \\mathbb{R})} \\leq C (\\tau^2 + h^2 + \\eps).",
+          "tag": "th:MFE"
+        },
+        {
+          "quote": "Comparing this expression with \\eqref{eq:v-pola} then yields the second error bound.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The reconstructed velocity (eq:v-pola) contains ε c_g D_h p^n and ε^2 D_τ p^n, i.e. weighted difference quotients of the numerical solution. Writing p^n = p̃ + R^±, the contribution of the remainder to ε^2 v_+ is bounded only by ε||R||_∞/h + ε^2||R||_∞/τ. Theorem th:MFE gives only an L^∞ bound on R^±, so this is O(τ^2+h^2+ε) only when h ≳ ε and τ ≳ ε^2. In the regimes h ≪ ε or τ ≪ ε^2, which the theorem's ε-,τ-,h-independent constant explicitly covers, no bound on D_h R or D_τ R is established. The same gap affects the velocity bound of Theorem thm:polarized.",
+      "failure_location": {
+        "quote": "which, together with Theorem~\\ref{th:MFE}, leads to the velocity error estimate in Theorem~\\ref{thm}.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Prove a stability/consistency estimate for the error in a stronger norm controlling h^{-1}(e^{-iβ}e_{j+1}-e^{iβ}e_{j-1}) and τ^{-1}(e^{-iα}e^{n+1}-e^{iα}e^{n-1}) (e.g. via the eigen-decomposition in Fourier space, where the oscillatory-mode component of the error yields ε^2 D_τ e = O(||e||)), or restrict the velocity bounds to h ≥ cε, τ ≥ cε^2.",
+      "overall_effect": "The velocity error bounds in Theorems thm and thm:polarized are unproven uniformly in ε, τ, h; the solution error bounds are unaffected.",
+      "primary_affected_tag": "thm",
+      "target_type": "formal_result",
+      "title": "Velocity error bounds require control of difference quotients of the numerical error, not provided by Theorem th:MFE",
+      "why_classification": "A contained additional stability argument in a stronger norm is needed; otherwise the velocity bounds lose the advertised uniformity in the classical regime."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:stability-cn",
+        "lem:stability",
+        "th:MFE",
+        "thm",
+        "thm:polarized"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "equivalent to the norm $\\|\\cdot\\|_{A(\\mathbb{R}) \\times A(\\mathbb{R})}$ uniformly in $\\eps,\\tau,h$ subject to \\eqref{eq:stability}",
+          "tag": "th:stability"
+        },
+        {
+          "quote": "\\wt{\\gamma}_\\theta &=1- (1-c_g^2)\\frac{\\tau^2}{\\eps^2h^2}\\left(\\cos(\\beta-\\theta h)-1\\right)",
+          "tag": null
+        },
+        {
+          "quote": "2 \\kappa^2|\\alpha|&\\leq \\beta^2\\quad \\text{for}\\, |\\beta|\\ge 1,\\\\\n    |\\kappa||\\alpha|&\\leq |\\beta|\\quad \\text{for}\\, |\\beta| < 1.",
+          "tag": "eq:stability"
+        },
+        {
+          "quote": "where $C$ is independent of $\\eps$, $\\tau$, $h$, and $n$ with $t_n\\le T$",
+          "tag": "lem:stability"
+        },
+        {
+          "quote": "Following the same procedure as in the proof of Lemma~\\ref{lem:stability} yields the desired result.",
+          "tag": "lem:stability-cn"
+        }
+      ],
+      "failure_explanation": "At θh = β (mod 2π) one has γ̃_θ = 1 and γ_θ = α(1+κ^2) = αω^2, so γ̃_θ^2/(1+γ_θ^2) = 1/(1+α^2ω^4), which tends to 1 as α = τ/(ωε^2) → 0. The CFL condition (eq:stability) only bounds |α| from above, so no uniform μ<1 exists; ||V(θ)^{-1}||_2 ~ 1/|α| = ωε^2/τ and the claimed uniform equivalence of the norm |||·||| fails in the regime τ ≪ ε^2 (which the theorems explicitly include). The degeneracy is genuine: at this mode the recurrence reduces to leapfrog for ε^2 c_tt + 2iω c_t = 0, whose solution from (c^0,c^1) has amplitude ≈ |c^0| + (ε^2/τ)|c^1-c^0|, so the constant in Lemma lem:stability (for arbitrary p̃, hence arbitrary e^0, e^1) is not independent of ε and τ. The Crank–Nicolson lemma has the same defect (|γ_θ|^2 - 1 = ω^2τ^2/ε^4 → 0 at θh=β) and its proof defers to the same procedure.",
+      "failure_location": {
+        "quote": "Since $\\frac{\\wt{\\gamma}_\\theta ^2}{(1+\\gamma_\\theta ^2)}\\leq\\mu< 1$ by condition~\\eqref{eq:stability}",
+        "tag": "th:stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the uniform norm-equivalence argument by a θ-wise estimate: show 1+γ_θ^2-γ̃_θ^2 ≳ min(1,α^2) under (eq:stability) so that ||V^{-1}(ê^1,ê^0)|| ≲ |ê^0| + |ê^1-ê^0|/min(1,|α|), verify that the starting step gives ||e^1-e^0||_A ≲ min(τ,ε^2) (hence O(ε^2) after amplification), and note that the defect and nonlinearity enter with the compensating factor τ^2/(ε^2|1+iγ_θ|); alternatively restrict the results to τ ≥ cε^2.",
+      "overall_effect": "The uniform-in-(ε,τ,h) constants asserted in Lemmas th:stability, lem:stability-cn, lem:stability and hence in Theorems th:MFE, thm, thm:polarized are unsupported for τ ≪ ε^2; the theorems' claimed uniformity down to the classical regime rests on an invalid step.",
+      "primary_affected_tag": "th:stability",
+      "target_type": "formal_result",
+      "title": "Norm equivalence in linear stability is not uniform: eigenvalues coalesce as α = τ/(ωε^2) → 0",
+      "why_classification": "The theorems are likely true but require a new, contained stability argument exploiting the specific initial error; the simple alternative of restricting to τ ≥ cε^2 would exclude an advertised regime."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2602.03322",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "758deb3574d6f318d96a278ac617da2e486cf2a971b73263c6cefe9252adfbef",
+  "status": "ok"
+}

@@ -1,0 +1,483 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that $u$ is the exact solution of \\eqref{eqn:fZK} satisfying $u \\in C^1([0,T]; H^r_{\\text{per}}(\\Omega))$ with $r \\geq \\alpha + 1$",
+          "tag": "thm:spectral_accuracy"
+        },
+        {
+          "quote": "with  $\\partial_t \\bar{u} \\in L^\\infty(0,T; L^2_{\\text{per}}(\\Omega))$",
+          "tag": "thm:exisuq"
+        }
+      ],
+      "failure_explanation": "The rate theorem assumes both u and its time derivative have H^r regularity. The existence result supplies only an L2 time derivative, and initial H^r regularity alone does not imply the stronger assumption: the dispersive generator has α+1 spatial derivatives. No argument bridges this gap.",
+      "failure_location": {
+        "quote": "The method achieves spectral convergence of order $\\mathcal{O}(N^{-r})$ for initial data in $H^r_{\\mathrm{per}}$ with $r \\geq \\alpha+1$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Limit the advertised algebraic-rate guarantee to solutions satisfying the C^1([0,T];H^r) hypothesis of the error theorem, unless a separate initial-data regularity argument is supplied.",
+      "overall_effect": "The algebraic convergence guarantee for arbitrary H^r initial data is not established by the stated conditional error theorem.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The advertised initial-data spectral rate exceeds the theorem's regularity scope",
+      "why_classification": "Aligning the claim with the formal hypothesis preserves the rate and method but substantively narrows the advertised initial-data scope."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exisuq",
+        "conv_lemma",
+        "remk_extnsn",
+        "thm:spectral_accuracy"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $f, g \\in H^{\\alpha}_{\\mathrm{per}}(\\Omega)$ with $\\alpha \\geq 0$. Then, for $C(\\alpha) = \\max\\{1, 2^{\\alpha-1}\\}$, we have",
+          "tag": "lem:product_estimate"
+        },
+        {
+          "quote": "First, employing the triangle inequality and the properties of the fractional Laplacian from Lemma \\ref{lem:frac_properties} and Lemma \\ref{lem:product_estimate}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Take α=2, f=sin(x1), and g=-sin(x1). The left side is 2 cos(2x1), while the asserted right side is -4 sin²(x1)=2 cos(2x1)-2, so the inequality fails everywhere. Moreover, a signed pointwise inequality cannot justify the subsequent splitting of absolute inner products. The high-order energy estimate needs a genuine commutator estimate, not this product rule.",
+      "failure_location": {
+        "quote": "(-\\Delta)^{\\alpha/2}(fg)(\\mathbf{x}) \\leq C(\\alpha) \\left( f(\\mathbf{x})(-\\Delta)^{\\alpha/2}g(\\mathbf{x}) + g(\\mathbf{x})(-\\Delta)^{\\alpha/2}f(\\mathbf{x}) \\right)",
+        "tag": "eq:product_estimate_pointwise"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Remove the false pointwise assertion and replace its energy-estimate use by a valid periodic fractional commutator estimate that retains the transport cancellation. Treat the critical Sobolev endpoint separately.",
+      "overall_effect": "The nonlinear estimate establishing the mesh-uniform Sobolev bounds, and the results relying on those bounds, lack valid support.",
+      "primary_affected_tag": "lem:product_estimate",
+      "target_type": "formal_result",
+      "title": "The pointwise fractional product inequality is false",
+      "why_classification": "A contained nontrivial commutator lemma and a revised nonlinear estimate can preserve the energy method and its noncritical conclusions."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(\\partial_t u_N, v) + ((-\\Delta)^{\\frac{\\alpha}{2}} u_N, \\partial_{x_1} v) - \\frac{1}{2}(u_N^2, \\partial_{x_1} v) = 0 \\quad \\forall v \\in \\mathbb{X}_N,",
+          "tag": "fsg:fZK"
+        },
+        {
+          "quote": "L_{\\mathbf{m}} = -i m_1 |\\mathbf{m}|^\\alpha \\quad \\text{for} \\quad |\\mathbf{m}|_\\infty \\leq N,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the stated Fourier convention and conjugate-linear second inner-product argument, the Galerkin form gives coefficient evolution +i m1|m|^α times the coefficient, minus i m1/2 times the convolution. Both signs are reversed in the displayed ODE and are then used in the time integrator. Its vector field is the negative of the intended Galerkin vector field.",
+      "failure_location": {
+        "quote": "\\frac{d}{dt} \\hat{u}_N(\\mathbf{m}, t) = -i m_1 |\\mathbf{m}|^\\alpha \\hat{u}_N(\\mathbf{m}, t) + \\frac{1}{2} i m_1 \\sum_{\\substack{|\\mathbf{k}|_\\infty \\leq N \\\\ |\\mathbf{m} - \\mathbf{k}|_\\infty \\leq N}} \\hat{u}_N(\\mathbf{k}, t) \\hat{u}_N(\\mathbf{m} - \\mathbf{k}, t)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change the linear multiplier to +i m1|m|^α and the nonlinear multiplier to -i m1/2 consistently throughout the coefficient system and IFRK4 construction, and check the numerical implementation against these signs.",
+      "overall_effect": "The executable Fourier/IFRK4 construction follows the time-reversed IVP rather than the stated fZK equation.",
+      "primary_affected_tag": "ode-sys",
+      "target_type": "algorithm",
+      "title": "The Fourier evolution and IFRK4 construction reverse the target equation",
+      "why_classification": "A consistent local sign correction restores the intended Galerkin system without changing the numerical architecture, conservation arguments, stability interval, or convergence orders."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exisuq",
+        "remk_extnsn",
+        "thm:spectral_accuracy"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{2} C(\\alpha) \\norm{\\partial_{x_1}u_N}_{L^\\infty(\\Omega)}\\norm{(-\\Delta)^{\\frac{1+\\alpha}{2}}u_N}^2",
+          "tag": "est_nonl"
+        },
+        {
+          "quote": "Let $u_0\\in H^{1+\\alpha}_{\\mathrm{per}}(\\Omega)$, where $\\alpha\\in[1,2]$.",
+          "tag": "thm:exisuq"
+        },
+        {
+          "quote": "\\|\\partial_{x_1}(u-\\widetilde{\\Pi}_N u)\\|_{L^\\infty(\\Omega)} + \\|\\partial_{x_1}u\\|_{L^\\infty(\\Omega)}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At α=1 the available norm is H2 on a two-dimensional torus. This controls u in L∞ but not ∂x1u in L∞; the latter requires more than two Sobolev derivatives. Bounded-H2 trigonometric polynomials can have gradients growing like sqrt(log N). Thus neither the mesh-uniform energy estimate nor the uniqueness Grönwall coefficient follows at the stated endpoint. The spectral proof also incorrectly bounds gradient L∞ norms by H2 seminorms.",
+      "failure_location": {
+        "quote": "\\frac{d}{dt} \\|v\\|^2  \\leq \\frac{1}{4} \\|\\partial_{x_1}(\\bar{u} + \\bar{w})\\|_{L^\\infty(\\Omega)} \\|v\\|^2 \\leq C \\|v\\|^2,",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Require H^{2+ε} regularity at α=1, use the corresponding higher-order energy estimate, and replace the H2-to-gradient-L∞ steps by valid embeddings. Retaining exactly H2 data requires an additional endpoint argument not supplied here.",
+      "overall_effect": "The claimed H2-data endpoint at α=1 is unsupported in the local bounds, uniqueness, and error estimates.",
+      "primary_affected_tag": "conv_lemma",
+      "target_type": "formal_result",
+      "title": "The critical two-dimensional H2 endpoint does not control the required gradient",
+      "why_classification": "Strengthening the critical regularity is a limited but substantive weakening; it preserves the method and the fractional-order range while losing the advertised minimal endpoint."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exisuq",
+        "remk_extnsn"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{u_{N}(\\cdot,t)}_{1+\\alpha} &\\leq C,",
+          "tag": "bd3"
+        }
+      ],
+      "failure_explanation": "Equicontinuity and boundedness in an infinite-dimensional L2 space do not imply the compactness required by Arzelà–Ascoli; constant-in-time orthonormal sequences already contradict that inference. The stronger Sobolev bound available in the proof must be used to establish pointwise relative compactness.",
+      "failure_location": {
+        "quote": "Combined with the uniform boundedness in $L^2_{\\text{per}}(\\Omega)$ from \\eqref{bd1}, the Arzelà-Ascoli theorem guaranties the existence of a subsequence $\\{u_{N_k}\\}$ that converges uniformly to some function $\\bar{u}$ in $C([0,\\bar{T}]; L^2_{\\text{per}}(\\Omega))$.",
+        "tag": "conv_lemma"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Apply the compact embedding H^{1+α}(Ω) into L2(Ω) to bd3 before applying the Banach-valued Arzelà–Ascoli theorem.",
+      "overall_effect": "The stated extraction of a strongly convergent subsequence is not justified by the hypotheses actually invoked.",
+      "primary_affected_tag": "conv_lemma",
+      "target_type": "formal_result",
+      "title": "Arzelà–Ascoli is invoked without pointwise relative compactness",
+      "why_classification": "The necessary stronger bound is already available; inserting the standard compact-embedding step preserves every conclusion."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exisuq",
+        "remk_extnsn"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\int_0^{T} \\left[ \\left( u, \\partial_t \\varphi \\right) + \\left( u, (-\\Delta)^{\\frac{\\alpha}{2}} \\partial_{x_1} \\varphi \\right) - \\frac{1}{2} \\left( u^2, \\partial_{x_1} \\varphi \\right) \\right] dt + \\left( u_0, \\varphi(0) \\right) = 0.",
+          "tag": "weaksoln"
+        },
+        {
+          "quote": "\\int_0^{\\bar{T}} (\\partial_t u_N, \\varphi) dt = - \\int_0^{\\bar{T}} (u_N, \\partial_t \\varphi) dt - (u_N(0), \\varphi(0)).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Substitution of the displayed time-integration identity into weak_scheme, followed by multiplication by -1, produces a minus sign on (u,Λ^α∂x1φ) and a plus sign on (u²,∂x1φ)/2. The defined weaksoln has the opposite spatial signs and describes the time-reversed PDE. This is independent of the erroneous Fourier-system derivation.",
+      "failure_location": {
+        "quote": "Passing to the limit in \\eqref{weak_scheme} and combining the above estimate with property \\eqref{eq:frac_symmetry},  limit $\\bar u$ satisfies the weak formulation \\eqref{weaksoln}.",
+        "tag": "conv_lemma"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Correct the two spatial signs in weaksoln and use that corrected formulation in the limit identification.",
+      "overall_effect": "The proof's identification of the limit with the stated weak solution is inconsistent with the original Galerkin equation.",
+      "primary_affected_tag": "conv_lemma",
+      "target_type": "formal_result",
+      "title": "The claimed weak limit satisfies a weak formulation with reversed spatial signs",
+      "why_classification": "The integration-by-parts calculation already supplies the correct formulation, so a local correction preserves the existence and convergence claims."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:exisuq",
+        "thm:spectral_accuracy"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then there exists a finite time $\\bar T$ such that the following bounds hold",
+          "tag": "conv_lemma"
+        },
+        {
+          "quote": "\\frac{d}{dt} \\norm{u_N}_{1+\\alpha}^2 \\leq C\\norm{u_N}_{1+\\alpha}^3.",
+          "tag": "diffine"
+        },
+        {
+          "quote": "\\bar T := \\frac{T_b}{2} = \\frac{1}{C\\sqrt{D_0}},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The bound bd3 is proved only on the data-dependent local interval. Restarting can double the Sobolev norm and halve the guaranteed lifespan, so the resulting intervals can have finite total length. The differential inequality permits finite-time growth and supplies no global continuation bound.",
+      "failure_location": {
+        "quote": "Since the semi-discrete approximation is bounded on the $H^{1+\\alpha}_{\\mathrm{per}}$-norm uniformly in time \\eqref{bd3}, we may repeatedly apply the local existence and uniqueness Lemma \\ref{conv_lemma}.",
+        "tag": "remk_extnsn"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Restrict the existence and convergence conclusions to the proved local interval. Retaining arbitrary finite T requires a genuinely global a priori estimate or continuation criterion beyond the supplied argument.",
+      "overall_effect": "Global-in-time PDE existence and mesh-uniform approximation bounds on arbitrary finite intervals are not established.",
+      "primary_affected_tag": "remk_extnsn",
+      "target_type": "formal_result",
+      "title": "A local Sobolev bound is incorrectly promoted to global continuation",
+      "why_classification": "The source-supported restriction abandons the global-time guarantee; preserving it requires new global proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:time_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "For any $w \\in H^r_{\\text{per}}(\\Omega)$ with $r \\geq 1+\\alpha$, we define the modified projection $\\widetilde{\\Pi}_N w \\in \\mathbb{X}_N$ as follows",
+          "tag": null
+        },
+        {
+          "quote": "(K(\\widetilde{\\Pi}_N w - w) + u\\partial_{x_1}(\\widetilde{\\Pi}_N w - w) - (-\\Delta)^{\\alpha/2}\\partial_{x_1}(\\widetilde{\\Pi}_N w - w), v) = 0",
+          "tag": "eq:proj_def"
+        }
+      ],
+      "failure_explanation": "The projector is defined and shown to exist only for r≥α+1, using L2 inner products containing Λ^α∂x1w. For general r≥0 these terms need not be L2 functions. Neither this theorem nor the time-error lemma defines a distributional extension before applying the projector.",
+      "failure_location": {
+        "quote": "Let $r \\geq 0$, $0 \\leq l \\leq \\min\\{r, \\alpha+1\\}$, $u \\in C^1(\\Omega)$,  $w \\in H^r_{\\text{per}}(\\Omega)$, and $\\widetilde{\\Pi}_N$ be defined by \\eqref{eq:proj_def}.",
+        "tag": "thm:proj_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Extend the definition weakly by moving derivatives onto the test function, including the derivative of uv in the transport term, and use the same finite-dimensional coercivity argument.",
+      "overall_effect": "The low-regularity portions of the projection and differentiated-projection statements are ill-defined as written.",
+      "primary_affected_tag": "thm:proj_error",
+      "target_type": "formal_result",
+      "title": "Projection estimates use the projector outside its defined domain",
+      "why_classification": "A local weak-form extension makes the construction meaningful on L2 without changing the advertised approximation rates or domain."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:time_error",
+        "thm:spectral_accuracy"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "While the adaptation from the one-dimensional Kawahara setting to our multidimensional fractional ZK equation requires careful handling of the fractional Laplacian and the additional spatial dimension, the core analytical techniques remain applicable.",
+          "tag": null
+        },
+        {
+          "quote": "Thus, $B$ is bounded by the constant $M = K + C\\|u\\|_{L^\\infty(\\Omega)}N + CN^{\\alpha+1}$.",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "\\|w - \\widetilde{\\Pi}_N w\\|_l \\leq CN^{l-r}|w|_r.",
+          "tag": "proj_erro"
+        }
+      ],
+      "failure_explanation": "The supplied Lax–Milgram argument establishes finite-dimensional solvability, not the N-uniform stability needed for the optimal rate. Its continuity constant grows with N. The proposed one-dimensional duality adaptation is nontrivial: the two-dimensional dispersive symbol k1|k|^α vanishes on every transverse mode k1=0, so isotropic regularity cannot simply be transferred from a one-dimensional operator. No uniform resolvent or dual estimate is proved.",
+      "failure_location": {
+        "quote": "For brevity and to maintain focus on the novel aspects of our spectral discretization for the fZK equation \\eqref{eqn:fZK}, we omit the detailed proofs and refer readers to \\cite[Theorem 2.1]{deng2017optimal} for the complete methodology.",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Supply an N-uniform resolvent argument. For sufficiently large K, factor through K-Λ^α∂x1 and use the bounded multiplier (K-Λ^α∂x1)^{-1}∂x1 to obtain L2 projection stability; then use Fourier tails, inverse estimates, and differentiation of the projection equation.",
+      "overall_effect": "The optimal spatial projection bound, its time derivative, and the error estimates built on them remain unsupported.",
+      "primary_affected_tag": "thm:proj_error",
+      "target_type": "formal_result",
+      "title": "The mesh-uniform modified-projection estimates lack the necessary multidimensional argument",
+      "why_classification": "This requires a contained nontrivial operator estimate, but the source's construction supports such an argument without changing the method or the target rates."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|u(t) - u_N(t)\\| \\leq CN^{-r},",
+          "tag": "eq:L2_error_bound"
+        },
+        {
+          "quote": "(N^{2-r}|u|_{r} + |u|_{2})\\|u-\\widetilde{\\Pi}_N u\\|\\|\\mathcal E_N\\|",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Let s=1+α, r>s, and u0=(1+M²)^{-s/2}cos(Mx2). Its H^s norm is fixed as M varies, and it is a stationary exact solution satisfying the theorem's regularity assumption. For N=M-1, u_N=0, so the error is of order M^{-s}, not bounded by a fixed C M^{-r}. The proof itself also contains H^r norms of u and u_t that the stated constant omits.",
+      "failure_location": {
+        "quote": "There exists a constant $C = C(T, r, \\|u_0\\|_{1+\\alpha})$, independent of the discretization parameter $N$, such that",
+        "tag": "thm:spectral_accuracy"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Allow the constant to depend on the relevant C^1([0,T];H^r) solution norms, or prove and include corresponding higher-initial-norm bounds.",
+      "overall_effect": "The claimed uniform N^{-r} estimate over bounded H^{1+α} data is false for r>1+α.",
+      "primary_affected_tag": "thm:spectral_accuracy",
+      "target_type": "formal_result",
+      "title": "The spectral-error constant cannot depend only on the lower Sobolev norm",
+      "why_classification": "The convergence order can be retained, but the asserted lower-norm uniformity must be withdrawn."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $u$ and $w$ are analytic on $\\Omega$, then there exist positive constants $C, \\sigma$ independent of $N$ such that",
+          "tag": "thm:proj_error"
+        },
+        {
+          "quote": "Now, let $w$ be an analytic function on $\\Omega$. The estimate \\eqref{proj_erro2} implies",
+          "tag": "thm:spectral_accuracy"
+        }
+      ],
+      "failure_explanation": "The exponential projection bound requires analyticity of the time-dependent coefficient and projected function. The error equation additionally contains a differentiated projection. Analyticity of u0 is not shown to yield analyticity of u and u_t with a uniform positive radius on the asserted interval. Introducing an unrelated analytic w does not supply these hypotheses.",
+      "failure_location": {
+        "quote": "If, in addition, the initial data \\(u_0\\) is real-analytic, then there exist positive constants \\(C\\) and \\(\\sigma\\), independent of \\(N\\), such that",
+        "tag": "thm:spectral_accuracy"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "State the exponential error result under uniform analytic-strip bounds for u and u_t on the whole time interval, or add an analyticity-persistence argument supplying those bounds from u0.",
+      "overall_effect": "The exponential convergence conclusion from analytic initial data is unsupported.",
+      "primary_affected_tag": "thm:spectral_accuracy",
+      "target_type": "formal_result",
+      "title": "Analytic initial data are substituted for an unproved uniform analyticity hypothesis",
+      "why_classification": "A conditional analytic-solution result remains comparable and preserves the exponential rate, but it is weaker than the initial-data guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with initial data $u_0 \\in H_{\\mathrm{per}}^{r}(\\Omega)$, $r \\geq \\alpha + 5$, and assume the nonlinear term $\\mathcal{N}$ is sufficiently smooth.",
+          "tag": "thm:added-3"
+        },
+        {
+          "quote": "\\frac{\\mathrm{d}V}{\\mathrm{d}t} = e^{-L t} \\mathcal{N}\\left( e^{L t} V(t) \\right) =: \\mathcal{F}(t, V(t)).",
+          "tag": "transsys"
+        },
+        {
+          "quote": "Under the regularity assumption, the constant in the $\\mathcal{O}(\\Delta t^5)$ term is bounded uniformly in $N$",
+          "tag": "thm:added-3"
+        }
+      ],
+      "failure_explanation": "Removing the linear flow leaves rapidly oscillating nonlinear interactions. For α=2, modes 1 and M interact at M+1 with phase frequency 3M(M+1). The quadratic part of the RK4 defect is a Simpson-quadrature defect and contains four powers of this frequency, together with the output derivative M+1. With high-mode amplitude proportional to M^{-7}, the H7 norm stays bounded but this fifth-order coefficient grows like M². Thus the stated r=α+5 threshold does not support the claimed mesh-uniform constant.",
+      "failure_location": {
+        "quote": "where the constant $C$ depends on $\\|u_0\\|_{r}$, $\\alpha$, and the final time $T$, but is independent of $\\Delta t$ and $N$.",
+        "tag": "thm:added-3"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-012",
+      "least_adequate_overall_repair": "Replace the threshold-based assertion by a conditional local-error theorem assuming N-uniform bounds on the fifth-order RK elementary differentials and one-step remainders. Deriving such bounds from Sobolev data requires stronger regularity and estimates for the dispersive interaction terms.",
+      "overall_effect": "The local temporal estimate, and hence the advertised mesh-uniform temporal accuracy, is not justified at the stated regularity.",
+      "primary_affected_tag": "thm:added-3",
+      "target_type": "formal_result",
+      "title": "The temporal regularity threshold does not give an N-uniform fifth-order local defect",
+      "why_classification": "The same local order survives under stronger quantitative smoothness hypotheses, but the advertised low-regularity, mesh-uniform guarantee must be narrowed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Comparing the above identity with the exact Taylor expansion \\eqref{eq:taylor_exact} and the initial condition $V^n = V(t_n)$, we find that the numerical method matches the exact solution up to the $\\Delta t^4$ term.",
+          "tag": "thm:added-3"
+        }
+      ],
+      "failure_explanation": "In the asserted formula for d³F/dt³, take the autonomous linear field F(V)=aV. All other displayed terms vanish, leaving 2a⁴V, whereas the correct derivative is a⁴V. The stage expansions likewise omit lower-order nested-Jacobian terms. Consequently the displayed weighted sum and Taylor matching do not follow from the stated RK stages.",
+      "failure_location": {
+        "quote": "+ 2 \\frac{\\partial \\mathcal{F}}{\\partial V} \\left( \\frac{\\partial \\mathcal{F}}{\\partial V} \\left( \\frac{\\partial \\mathcal{F}}{\\partial V} \\mathcal{F} \\right) \\right),",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-013",
+      "least_adequate_overall_repair": "Replace the erroneous expansions by correct RK4 order conditions or invoke the standard fixed-dimensional fourth-order consistency result for the correctly stated RK4 stages.",
+      "overall_effect": "The paper's explicit calculation does not prove fourth-order consistency, even for a fixed spatial discretization.",
+      "primary_affected_tag": "thm:added-3",
+      "target_type": "formal_result",
+      "title": "The RK4 Taylor matching uses an incorrect chain-rule expansion",
+      "why_classification": "The executable stages are ordinary RK4, so a short standard consistency argument bypasses the faulty calculation without changing the method or its fixed-N order."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|u(t_n) - u_N^n\\| \\leq C_1 N^{-r} + C_2 \\Delta t^4,",
+          "tag": null
+        },
+        {
+          "quote": "where $C_1$ and $C_2$ are constants independent of $N$ and $\\Delta t$.",
+          "tag": null
+        },
+        {
+          "quote": "\\Delta t \\leq \\frac{2\\sqrt{2}}{|\\lambda| N}.",
+          "tag": "timestep"
+        }
+      ],
+      "failure_explanation": "A local O(Δt5) defect cannot simply be multiplied by the number of steps; its propagation needs a uniform stability estimate. The only stability result concerns constant-coefficient linearization and already imposes a CFL restriction. The global nonlinear assertion supplies neither such a restriction nor nonlinear/stage stability. Indeed, a constant background plus a cutoff Fourier mode is an invariant Galerkin subspace on which the method has exactly the stated RK4 advection amplification, which is unstable when |λ|NΔt exceeds the given interval.",
+      "failure_location": {
+        "quote": "The global error accumulates as $\\mathcal{O}(\\Delta t^4)$ over $\\mathcal{O}(1/\\Delta t)$ time steps.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-014",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish N-uniform nonlinear and stage stability under an explicit time-step condition and use it to propagate local errors. Otherwise only fixed-N ODE convergence with N-dependent constants is supported.",
+      "overall_effect": "The N-independent fully discrete global error estimate and the claimed optimal nonlinear temporal convergence are unestablished and cannot hold unconditionally.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Local temporal defects are accumulated without nonlinear mesh-uniform stability",
+      "why_classification": "The missing argument is central to the fully discrete guarantee; retaining only fixed-N convergence would lose its essential mesh-uniform content."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "u(x,y,t) = 3c \\sech^2\\left(\\frac{\\sqrt{c}}{2}\\left[(x - ct)\\cos\\theta + y\\sin\\theta\\right]\\right),",
+          "tag": "1solwavezk"
+        },
+        {
+          "quote": "We consider a solitary wave with amplitude parameter $c=1$ propagating along the x-axis ($\\theta=0$) over the time interval $t\\in[0,10]$ on the spatial domain $\\Omega = [-20\\pi, 20\\pi]^2$.",
+          "tag": null
+        },
+        {
+          "quote": "The error evolution in Table \\ref{tab:convergence} exhibits the  exponential convergence of spectral methods",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The sech² profile is a whole-space line wave, not a periodic solution on the finite box. At t=0 its values match at opposite x boundaries but its first derivatives do not, so its periodic extension is not in the H3 class used for α=2. At positive time even the boundary values differ. Exponentially small boundary discrepancies are still nonzero and invalidate the exact-periodic reference and asymptotic spectral-validation claim.",
+      "failure_location": {
+        "quote": "This example serves to validate the theoretical framework developed in Sections \\ref{sec3}-\\ref{sec5} by examining the classical ZK equation \\eqref{eqn:fZK} with $\\alpha=2$, for which exact analytical solitary wave solutions are known.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-015",
+      "least_adequate_overall_repair": "Present the test as a large-box whole-space approximation with a separately quantified boundary/domain error and an associated accuracy floor, or replace it with a genuinely smooth periodic reference solution before claiming periodic spectral validation.",
+      "overall_effect": "The reported comparison mixes periodic discretization error with domain/periodization error and does not directly validate the stated periodic convergence theorem.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The solitary-wave reference is not an exact solution of the periodic problem",
+      "why_classification": "A contained benchmark or domain-error correction can preserve a useful accuracy test, but the exact periodic and unrestricted exponential-validation claims must change."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|u(t_n) - u_N^n\\| \\leq C_1 N^{-r} + C_2 \\Delta t^4,",
+          "tag": null
+        },
+        {
+          "quote": "The exponential convergence with decay rate $\\sigma \\approx 0.09$ demonstrates the characteristic spectral accuracy of the Fourier method",
+          "tag": "tab:convergence"
+        }
+      ],
+      "failure_explanation": "Even granting the proposed fourth-order temporal estimate, Δt proportional to N^{-1} yields only an O(N^{-4}) temporal contribution, whereas the spatial error is asserted to decay exponentially. This scaling therefore does not ensure temporal errors remain subordinate as N increases. No independent temporal refinement study or bound is supplied for the reported resolutions.",
+      "failure_location": {
+        "quote": "with the time step chosen as $\\Delta t = 1/(N\\|u_0\\|_{L^{\\infty}(\\Omega)})$ to maintain numerical stability while ensuring that temporal errors remain subordinate to spatial discretization errors.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-016",
+      "least_adequate_overall_repair": "Choose the time step using an independent temporal-error estimate or refinement study. For an intended exponential spatial tolerance, ensure Δt4 is below that tolerance rather than relying solely on Δt proportional to N^{-1}.",
+      "overall_effect": "The time-step choice alone cannot justify attributing the measured convergence to spatial spectral accuracy.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "The chosen time-step scaling does not ensure separation of temporal and spectral errors",
+      "why_classification": "A separate error-separation study or time-step reoptimization is required, but no new numerical architecture is needed."
+    }
+  ],
+  "issues_found": 16,
+  "paper_id": "2510.21355",
+  "question_id": "Q1",
+  "run_name": "astra-api-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "93363023aa5a47b896417261c92ac6ca318f1657f601d64aa629f21a1d9b785c",
+  "status": "ok"
+}

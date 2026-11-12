@@ -1,0 +1,157 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Define $\\rho := \\tfrac{1}{2} \\min_{i \\in \\cI_1 \\cup \\cI_2} \\{||\\wvx_i| - \\mu|\\}$.",
+          "tag": "THdifferentiable_refined"
+        },
+        {
+          "quote": "For the noise-free case \\eqref{constrain_model}, we assume that any $(n-1)$-column submatrix of $A$ has full row rank.",
+          "tag": "THdifferentiable_refined"
+        }
+      ],
+      "failure_explanation": "The proof needs a single null vector of A that is nonzero on every coordinate of the boundary set $\\cI_0$; this is asserted without any argument. It does follow from the rank hypothesis (any $m$ columns of $A$ are independent, so each coordinate functional is nonzero on $\\ker A$, and a real vector space is not a finite union of the proper subspaces $\\{v_i=0\\}$), but the paper supplies none of this. Separately, when every component satisfies $|\\hat x_i|=\\mu$ (so $\\cI_1\\cup\\cI_2=\\emptyset$), the quantity $\\rho$ is a minimum over the empty set and is undefined, so the proof does not cover this case even though the conclusion still holds by a direct perturbation. The theorem's conclusion is correct; the proof has these two gaps.",
+      "failure_location": {
+        "quote": "Since $\\cI_0 \\neq \\emptyset$, construct $\\vv \\in \\mathbb{R}^n$ such that $A\\vv = \\mathbf{0}$, $\\|\\vv\\|_2 = 1$, and $\\vv_i \\neq 0$ for $i \\in \\cI_0$.",
+        "tag": "THdifferentiable_refined"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the short spark-based argument that $\\ker A$ contains a vector nonzero on all of $\\cI_0$ (each coordinate functional is nonzero on $\\ker A$, and $\\ker A$ is not contained in the finite union of the coordinate hyperplanes), and handle the case $\\cI_1\\cup\\cI_2=\\emptyset$ separately (any such full-support null vector gives a strict decrease of $\\Phi_\\mu(\\hat x-\\epsilon v)$).",
+      "overall_effect": "Theorem THdifferentiable_refined lacks a complete proof as written; downstream results that only cite its (correct) conclusion, such as the necessity direction of linearoptcond, remain valid once the proof is patched.",
+      "primary_affected_tag": "THdifferentiable_refined",
+      "target_type": "formal_result",
+      "title": "Differentiability proof: unjustified null-vector construction and an unhandled degenerate case",
+      "why_classification": "The conclusion is correct and both repairs are short, local additions that preserve the method, conclusion, and advertised scope; no rate or guarantee is lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "convergalg2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Theorem  \\ref{linearoptcond} establishes that $(\\wvx, \\widehat{\\vomega})$ is a minimizer of the model \\eqref{constrain_model}.",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "A vector $\\widehat{\\vx}$ minimizes \\eqref{constrain_model} locally or globally if and only if $\\abs{\\wvx_i}\\neq \\mu$ for all $i$ and there exists $\\wvy\\in\\rr^m$ such that",
+          "tag": "linearoptcond"
+        },
+        {
+          "quote": "At the limit point, the following hold:",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "\\widehat\\vomega = \\cH_{\\mu}(\\wvx).",
+          "tag": "covgergalg1"
+        }
+      ],
+      "failure_explanation": "The proofs pass to a limit of the BCD sequence and apply Theorems linearoptcond/noise_optcond, whose hypotheses require $|\\hat x_i|\\neq\\mu$ for all $i$; since $\\cH_\\mu$ is discontinuous at $|x_i|=\\mu$, the limit of the binary filter sequence need not satisfy this, so the assertion that the limit obeys $\\hat\\omega=\\cH_\\mu(\\hat x)$ and is a minimizer is unjustified. The failure is not merely a gap: the statements are false. Noise-free counterexample: $A=\\begin{pmatrix}1&1&0\\\\1&0&1\\end{pmatrix}$, $b=(2\\mu,\\mu)$ has spark $3=m+1$; with feasible $x^0=(\\mu,\\mu,0)$ (which equals the paper's $L_1$-min-norm initialization) and $\\omega^0=\\cH_\\mu(x^0)=(0,0,0)$, $\\cQ_\\mu(x^0,\\omega^0)=2<3$, the BCD $x$-update returns the min-norm solution $x^1=A^\\top(AA^\\top)^{-1}b=(\\mu,\\mu,0)=x^0$, so the algorithm stops immediately at $(\\mu,\\mu,0)$; but the feasible point $(1.1\\mu,0.9\\mu,-0.1\\mu)$ has $\\Phi_\\mu=1+0.81+0.01=1.82<2=\\Phi_\\mu(\\mu,\\mu,0)$, so the limit is not a local minimizer. Noisy counterexample: same $A$ with $\\mu=1$, $\\alpha=4$, $b=(2.5,1)$; $\\bar x=(1,1,0)$ uniquely minimizes $\\cJ_\\mu(\\cdot,(0,0,0))$ (KKT holds: $4A^\\top(A\\bar x-b)+2\\bar x=0$), $\\cJ_\\mu(\\bar x,(0,0,0))=2.5<3=\\mathrm{spark}(A)$, yet $\\cG_\\mu(1+\\epsilon,1+\\epsilon,0)=2.5-4\\epsilon+10\\epsilon^2<2.5$ for $0<\\epsilon<0.4$, so $\\bar x$ is not a local minimizer.",
+      "failure_location": {
+        "quote": "Then, the sequence $\\{(\\wvx^{k},\\widehat{\\vomega}^{k})\\}_k$ is bounded and converges to the minimizer of model \\eqref{constrain_model} in a finite number of steps.",
+        "tag": "covgergalg1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either (i) impose and verify a non-degeneracy condition excluding BCD fixed points with some $|\\hat x_i|=\\mu$ (a condition on $(\\mu,b)$ and/or the initialization that is preserved by the iteration), or (ii) weaken the conclusion to finite convergence to a KKT point/fixed point of the BCD map rather than to a minimizer, or (iii) modify the algorithm (e.g., deterministic tie-breaking of $\\cH_\\mu$ at $|x_i|=\\mu$, or a perturbation scheme) together with a new convergence analysis.",
+      "overall_effect": "The paper's headline guarantee (abstract, introduction, conclusions: finite-step convergence to a minimizer under spark conditions) is false under the stated hypotheses; both convergence theorems are invalidated, and the BCD algorithm may terminate at a point that is not a local minimizer, including from the paper's own $L_1$-min-norm initialization.",
+      "primary_affected_tag": "covgergalg1",
+      "target_type": "formal_result",
+      "title": "Finite-step convergence theorems are false: BCD can stall at a non-minimizer on the non-differentiability set $\\{|x_i|=\\mu\\}$",
+      "why_classification": "A central advertised guarantee is false with explicit counterexamples satisfying all stated hypotheses (including the paper's own initialization); every repair either changes the guarantee type (fixed point instead of minimizer), excludes an advertised regime, or requires a new algorithmic construction and analysis, so no comparable version of the primary claim survives as stated."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "From Lemma \\ref{mudecre_objincre} and Lemma \\ref{upperbound_lema2_rev}, we can easily obtain",
+          "tag": "continuescheme"
+        },
+        {
+          "quote": "where \n$\\mathcal{K}+1=\\{i\\mid \\abs{(\\wvx_{k})_i}\\leq c_{k+1}\\}$, $c_{k+1}=\\tfrac{\\mu_{k}}{\\rho}$, and $\\rho>1$ is a constant.",
+          "tag": "continuescheme"
+        },
+        {
+          "quote": "\\STATE Compute $(\\wvx_k, \\widehat{\\vomega}_k)$ by applying steps 2–7 of Algorithm \\ref{BCD}, using $(\\wvx_{k-1}, \\widehat{\\vomega}_{k-1}, \\mu_k)$ as the initialization",
+          "tag": "continuescheme"
+        }
+      ],
+      "failure_explanation": "The update is presented as a consequence of Lemma mudecre_objincre (monotonicity of the optimal value in $\\mu$) and Lemma upperbound_lema2_rev (the surrogate identity), neither of which implies it. Its denominator $m-n+\\mathrm{card}(\\mathcal K+1)$ is nonpositive whenever at most $n-m$ components of $x_k$ lie below $c_{k+1}$, so $\\mu_{k+1}$ is undefined (division by zero or square root of a negative number) in that regime. The outer loop also references $(x_{k-1},\\omega_{k-1})$ at $k=0$, which is undefined. The continuation strategy is a heuristic add-on (the convergence theorems are for fixed $\\mu$), so the defect is local to this procedure.",
+      "failure_location": {
+        "quote": "\\mu_{k+1}=\\min\\{\\max\\{c_{k+1}, \\sqrt{\\tfrac{\\sum_{i\\in\\mathcal{K}+1}(\\wvx_{k})_i^2}{m-n+\\mathrm{card}(\\mathcal{K}+1)}}\\}, \\mu_{k}\\},",
+        "tag": "continuescheme"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Guard the update (require $\\mathrm{card}(\\mathcal K+1)>n-m$ and otherwise keep $\\mu_{k+1}=\\mu_k$ or use a safe fallback), present the rule as a heuristic choice rather than a consequence of the two lemmas, and fix the $k=0$ initialization reference.",
+      "overall_effect": "Algorithm continuescheme may fail to produce a valid $\\mu_{k+1}$ when few components of the current iterate are small; its claimed invertibility preservation rests on an unsupported and sometimes undefined update.",
+      "primary_affected_tag": "continuescheme",
+      "target_type": "algorithm",
+      "title": "Continuation update rule can be undefined, is not derived from the cited lemmas, and has an off-by-one initialization",
+      "why_classification": "Short local guards and a wording correction repair the procedure; the fixed-$\\mu$ convergence theory and the experiments are unaffected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "K L1 TL1 L1L2 L0 MCP Lp TH\n2 0 0 0 0.88 0 0 0\n4 0 0 0 0.92 0 0 0\n6 0 0 0 0.94 0 0 0\n8 0 0 0 0.98 0 0 0\n10 0 0 0 1 0 0 0\n12 0 0 0.02 1 0.02 0 0\n14 0 0.02 0 1 0.04 0 0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose states that the $L_0$ model nearly always fails, but the paper's own bottom-panel (DCT matrix $A_2$) success-rate data show $L_0$ succeeding with rates 0.88–1.0 at essentially all sparsities; the statement is only consistent with the $A_1$ (Gaussian) panel, where $L_0$ does mostly fail.",
+      "failure_location": {
+        "quote": "Although the $MCP$ model performs slightly worse with high algorithm failures, the $L_1$ model consistently underperforms and the $L_0$ model nearly always fails.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Qualify the statement to the Gaussian-matrix panel (e.g., the $L_0$ model nearly always fails for $A_1$ but succeeds at low and moderate sparsity for $A_2$).",
+      "overall_effect": "The numerical-results discussion misrepresents the paper's own comparison on the DCT matrix.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that the $L_0$ model nearly always fails contradicts the paper's own $A_2$-panel success rates",
+      "why_classification": "A local wording fix reconciles the prose with the reported data table; no formal result or guarantee is affected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For the DCT matrix $A_2 \\in \\mathbb{R}^{64 \\times 1024}$ ($F = 5$, $s = 8$), the $TH$ method again outperforms all other methods, especially in low-noise conditions.",
+          "tag": null
+        },
+        {
+          "quote": "SNR   L1   TL1   L1L2   L0   MCP   Lp   TH\n30 1.6593 3.6506 2.1794 0.4138 3.7203 4.0526 0.4270",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims TH has the lowest RRE across the entire SNR range and outperforms all other methods for the DCT matrix, but the reported DCT data show $L_0$ with RRE 0.4138, lower than TH's 0.4270, at SNR = 30 (the highest-noise point of that panel). The claim holds for the Gaussian panel but not for the DCT panel.",
+      "failure_location": {
+        "quote": "For noisy observations, it maintains the lowest RRE the entire range of SNR levels.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Qualify the claim to match the data (e.g., TH achieves the lowest RRE across the SNR range except at the highest noise level for the DCT matrix, where $L_0$ is lower).",
+      "overall_effect": "The conclusions overstate TH's dominance at high noise for the DCT matrix relative to the paper's own measurements.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that TH maintains the lowest RRE over the whole SNR range contradicts the paper's own DCT data",
+      "why_classification": "A one-sentence qualification aligns the prose with the paper's own table; no formal result or guarantee is affected."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2504.04509",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "806db391bc2a12e7e296de5a289b045ed6046db853e63982b09093bf18596081",
+  "status": "ok"
+}

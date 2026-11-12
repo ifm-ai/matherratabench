@@ -1,0 +1,136 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$$\\mathbbm{P} \\left( \\|\\va\\|_2 > n^{d/2} + t\\right) \\le 2 \\exp\\left(- \\frac{ct^2}{d n^{d-1}}\\right), $$",
+          "tag": "prop:probabilistic_norm_bound_khatri"
+        },
+        {
+          "quote": "So, from Proposition~\\ref{prop:probabilistic_norm_bound_khatri} with $t = n^{d/2}$,",
+          "tag": "theorem:trim_trip"
+        },
+        {
+          "quote": "$$ \\|\\mat{A}^\\vx \\vx -\\mat{A}^{\\hat{\\vx}} \\hat\\vx\\|_2^2  \\leq m\\|\\mat{A} \\vx -\\mat{A}\\hat{\\vx}\\|_{\\infty}^2 \\leq m\\max_i\\|\\va_i\\|_2^2 \\varepsilon^2,$$",
+          "tag": "theorem:trim_trip"
+        },
+        {
+          "quote": "+ \\mathbbm{P}\\left(m \\frac{2 n^d}{m}\\varepsilon^2 + 2 \\sqrt{1 + \\delta} \\sqrt{\\frac{2 n^d}{m}}\\varepsilon > 2 \\delta\\right).",
+          "tag": "theorem:trim_trip"
+        }
+      ],
+      "failure_explanation": "Three bound inaccuracies in the net-extension step. (i) The rows of A = (1/sqrt(m)) A_1 bullet ... bullet A_d are (1/sqrt(m)) times a Kronecker product of unit-variance vectors; applying the cited proposition with t = n^{d/2} to the unnormalized rows controls only P(max_i ||a_i||^2 > 4 n^d/m) <= 2m e^{-cn/d}, whereas E_1 is defined with the smaller threshold 2 n^d/m, so the displayed probability bound for E_1 does not follow from the stated step (it is recovered with t = (sqrt(2)-1) n^{d/2}, same order 2m e^{-c'n/d}). (ii) In the final union bound the cross term is written 2 sqrt(1+delta) sqrt(2 n^d/m) eps, but the derivation gives 2 sqrt(1+delta) sqrt(2 n^d) eps; with the correct term the event is still empty for eps = delta n^{-d/2}/3 (total <= 14 delta/9 < 2 delta), so the conclusion is unaffected. (iii) The bound ||A^x x - A^{xhat} xhat||^2 <= m ||A x - A xhat||_infty^2 is justified via a lemma for signed order statistics, while trimming selects rows by absolute value; sign changes of the retained order statistics are not controlled by the cited lemma and require a short additional argument (a sign flip at rank j forces ||A(x-xhat)||_infty to be comparable to the retained value).",
+      "failure_location": {
+        "quote": "$$\\mathbbm{P} (\\mathcal{E}_1) := \\mathbbm{P}\\left( \\text{exists } i \\in [m], \\quad \\|\\va_i\\|_2^2 > \\frac{2 n^d}{m}\\right) \\le 2m \\exp\\left(-\\frac{2cn}{d}\\right).$$",
+        "tag": "theorem:trim_trip"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Control E_1 using t = (sqrt(2)-1) n^{d/2} (or a Bernstein lower-tail bound for the row norms), correct the cross term to 2 sqrt(1+delta) sqrt(2 n^d) eps, and add one short paragraph justifying the comparison of trimmed vectors under absolute-value sorting; no change to the statement, rates, or sample complexity.",
+      "overall_effect": "The proof of the paper's main trimming theorem is not valid as written at the net-extension step. The theorem statement, the sample complexities in \\eqref{eq:order_m_hosvd} and \\eqref{eq:order_m_cp}, and the probability 1 - c n^{-phi} are all preserved by the local repairs; no downstream formal result is invalidated since the statement is unchanged.",
+      "primary_affected_tag": "theorem:trim_trip",
+      "target_type": "formal_result",
+      "title": "Net-extension step of the trimmed TensorRIP proof contains bound inaccuracies",
+      "why_classification": "All three defects are local bound inaccuracies within a single proof step; each repair is a constant adjustment or one short paragraph, and the theorem's statement, sample complexity, and probability guarantee survive unchanged, so the least adequate complete resolution is minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, the $j$-th row of the trimmed matrix $\\mat{A}_k^\\vx \\in \\R^{ (m - k) \\times n}$  is given by\n$$ \\sqrt\\frac{{m}}{m-k} \\va_{i_j} \\quad j \\in [m-k]\\;.$$",
+          "tag": "def:trimmed-matrix"
+        },
+        {
+          "quote": "\\mat{A}_k \n= \\sqrt{\\frac{m}{m-m_{\\text{trim}}}} \\mat{A}[\\Theta_k,:], \\qquad \\mat{b}_k  \n= \\sqrt{\\frac{m}{m-m_{\\text{trim}}}} \\vb[\\Theta_k,:].",
+          "tag": null
+        },
+        {
+          "quote": "$\\algoname{Vec}(\\tY^{k+1}) \\gets \\algoname{Vec}(\\tX^{k}) + \\mu_k\\frac{m}{|\\Theta_k|} \\sum\\limits_{ j \\in \\Theta_k}  (b_j-\\va_{j}^\\intercal \\algoname{Vec}(\\tX^k)) \\va_j$\\;",
+          "tag": "alg:trimtiht"
+        },
+        {
+          "quote": "Note that, in the noiseless case $(\\eta = 0)$, the trimmed matrix at iteration $k$, $\\mat{A}_k$ corresponds to $\\mat{A}_{m_{trim}}^{\\algoname{Vec}(\\tX^k - \\tX^*)}$ as per Definition~\\ref{def:trimmed-matrix}.",
+          "tag": null
+        },
+        {
+          "quote": "with a sufficiently large $m$ and $m_{trim} \\approx \\ln(8n)$ ensures that with high probability $| 1 - \\Delta_t| < \\delta$ for any $t$.",
+          "tag": "rem:trimtiht-discussion"
+        }
+      ],
+      "failure_explanation": "The algorithm selects the m_trim rows with smallest |A(X^k) - b| and scales the gradient by m/|Theta_k| = m/m_trim, i.e., it keeps m_trim rows and drops m - m_trim rows. The analyzed trimming (Definition def:trimmed-matrix, Theorem theorem:trim_trip) drops only k = ln(8 n^phi) rows and keeps the m - k smallest. Consequently: (i) the rescaled matrix in the displayed equation uses sqrt(m/(m - m_trim)), but consistency with Step 5 and |Theta_k| = m_trim requires sqrt(m/m_trim); (ii) the claimed identity of A_k with A^{Vec(X^k - X*)}_{m_trim} is false, since that object keeps m - m_trim rows, not m_trim; (iii) with the reported experimental range m_trim in {5,...,80} out of m about 2700-4250, the implemented algorithm discards over 95% of the measurements, far outside the regime of Theorem theorem:trim_trip, so the RIP-based justification of the implemented TrimTIHT is unsupported.",
+      "failure_location": {
+        "quote": "$\\Theta_k = \\left[i_1, i_{2}, \\dots, i_{m_{\\text{trim}}} \\right]$",
+        "tag": "alg:trimtiht"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Change Step 4 of Algorithm alg:trimtiht to keep the m - m_trim smallest-residual rows (Theta_k = [i_1, ..., i_{m - m_trim}]), which simultaneously fixes the rescaling equation, the correspondence to Definition def:trimmed-matrix, and the applicability of Theorem theorem:trim_trip with m_trim ~ ln(8n); the empirical m_trim tuning must then be re-run under this convention.",
+      "overall_effect": "The paper's central link -- TrimTIHT implements the trimming that Theorem theorem:trim_trip shows restores norm preservation -- is false as printed. The parameter guidance m_trim ~ ln(8n) in Remark rem:trimtiht-discussion and the reported experimental tuning follow the opposite convention, and the theoretical guarantee does not cover the procedure actually implemented.",
+      "primary_affected_tag": "alg:trimtiht",
+      "target_type": "algorithm",
+      "title": "TrimTIHT keeps the wrong rows: the algorithm's trimming convention contradicts the analyzed trimming",
+      "why_classification": "A one-line change to the algorithm restores full consistency with the definition, the scaling identity, and the main theorem, so no new proof architecture is needed and the main result survives; however, the repair changes the procedure's actual operation and invalidates the reported experimental tuning, which must be re-optimized, so the resolution is more than minor."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\tR^{t+1}\\|_F \n\\leq \\left( 2\\sqrt{ 1 - (2 - \\mu_t\\rho_t )\\mu_t\\Delta_t  }+\\sqrt{( 2\\xi_t + \\xi_t^2)}\\left(1 + \\mu_t \\|\\mat{A}_t\\|_{2} \\sqrt{\\Delta_t}\\right) \\right) \\|\\tR^t\\|_F,",
+          "tag": "thm:main_path"
+        }
+      ],
+      "failure_explanation": "The contraction factor depends on t through mu_t, rho_t, Delta_t, xi_t, and the proof establishes only the one-step inequality ||R^{t+1}|| <= alpha_t ||R^t||. Iteration yields ||R^{t+1}|| <= (prod_{s<=t} alpha_s) ||R^0||, which is not bounded by alpha_t^{t+1} ||R^0|| unless alpha_s <= alpha_t for all s <= t; e.g., alpha_0 = 0.9, alpha_1 = 0.1 gives the true bound 0.09 ||R^0|| versus the claimed 0.01 ||R^0||. The statement as written is therefore unsupported by the proof.",
+      "failure_location": {
+        "quote": "\\|\\tR^{t+1}\\|_F \\leq \\left( 2\\sqrt{ 1 - (2 - \\mu_t\\rho_t )\\mu_t\\Delta_t}+\\sqrt{ 2\\xi_t + \\xi_t^2}\\left(1 + \\mu_t \\|\\mat{A}_t\\|_{2} \\sqrt{\\Delta_t}\\right) \\right)^{t+1} \\|\\tR^0\\|_F,",
+        "tag": "thm:main_path"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the conclusion as the proved one-step bound ||R^{t+1}||_F <= alpha_t ||R^t||_F, or as the product bound ||R^T||_F <= (prod_{t<T} alpha_t) ||R^0||_F.",
+      "overall_effect": "The theorem's stated convergence form (a power of a time-dependent factor times the initial error) is not established; the per-step contraction and the discussion in Remark rem:trimtiht-discussion, which explicitly uses the one-step form, survive.",
+      "primary_affected_tag": "thm:main_path",
+      "target_type": "formal_result",
+      "title": "thm:main_path states an iterated bound with a time-dependent factor that its one-step proof does not establish",
+      "why_classification": "The proof is correct for the one-step bound and the stated iterated form is repaired by a pure restatement; no method, rate, or advertised scope is lost, so a short local repair suffices."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\tR^{t+1}\\|_F\n\\le \\left(2\\sqrt{ 1 - 2\\mu_t\\Delta_t + \\mu_t^2\\rho_t \\Delta_t  }+|1 - \\mu_t\\Delta_t|\\right)\\|\\tR^t\\|_F =: \\alpha_t\\|\\tR^t\\|_F .",
+          "tag": "rem:trimtiht-discussion"
+        },
+        {
+          "quote": "\\sqrt{ 2\\xi_t + \\xi_t^2}\\left(1 + \\mu_t \\|\\mat{A}_t\\|_{2} \\sqrt{\\Delta_t}\\right)",
+          "tag": "thm:main_path"
+        }
+      ],
+      "failure_explanation": "The simplification of \\eqref{eqn:conv_path} to \\eqref{eqn:conv_path_err} requires sqrt(2 xi_t + xi_t^2) (1 + mu_t ||A_t||_2 sqrt(Delta_t)) <= |1 - mu_t Delta_t|, i.e., with c_t := |1 - mu_t Delta_t| / (1 + mu_t ||A_t||_2 sqrt(Delta_t)), the condition xi_t <= sqrt(1 + c_t^2) - 1, which is approximately c_t^2/2 for small c_t. The stated hypothesis permits xi_t up to (16/17) c_t^2 ≈ 0.94 c_t^2; e.g., c_t = 0.9 and xi_t = 0.76 give sqrt(2 xi_t + xi_t^2) ≈ 1.45 > c_t. So the condition is insufficient by nearly a factor of two, and the simplified bound on which the delta < 0.106 TIHT-recovery claim and the trimming implications for rho_t rest is not established as stated.",
+      "failure_location": {
+        "quote": "$$\\xi_t \\leq \\frac{16\\min\\{|1- \\mu_t\\Delta_t|^2\\}}{17\\left(1 + \\|\\mat{A}_t\\|_{2} \\mu_t \\sqrt{\\Delta_t}\\right)^2},$$\n \\eqref{eqn:conv_path} simplifies to",
+        "tag": "rem:trimtiht-discussion"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the constant 16/17 by a valid one, e.g., require xi_t <= |1 - mu_t Delta_t|^2 / (2 (1 + mu_t ||A_t||_2 sqrt(Delta_t))^2 + |1 - mu_t Delta_t|^2) (equivalently xi_t <= sqrt(1+c_t^2)-1), or directly assume sqrt(2 xi_t + xi_t^2)(1 + mu_t ||A_t||_2 sqrt(Delta_t)) <= |1 - mu_t Delta_t|; the delta < 0.106 analysis is unchanged.",
+      "overall_effect": "The simplified contraction bound \\eqref{eqn:conv_path_err} and the conclusions built on it (recovery of the TIHT guarantee for delta < 0.106 and the trimming discussion for rho_t) rest on an insufficient hypothesis; all of these conclusions survive after a constant-factor correction of the condition.",
+      "primary_affected_tag": "rem:trimtiht-discussion",
+      "target_type": "other",
+      "title": "Sufficient condition on xi_t in the TrimTIHT discussion does not imply the simplified contraction bound",
+      "why_classification": "The hypothesis is wrong only by a constant factor; replacing 16/17 by a valid constant (or stating the required domination directly) restores the simplified bound and all downstream discussion without any new argument or loss of content."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2502.02843",
+  "question_id": "Q1",
+  "run_name": "k2-horizon-high-2026-09-29-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4c2daef180803f17e54fe02230f23ed78ee18b72da6b7e8907307addb6750f64",
+  "status": "ok"
+}

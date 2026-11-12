@@ -1,0 +1,334 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We note that this nonlinearity is only locally Lipschitz and has quadratic growth. Theoretical convergence in this setting remains open; however, in our numerical experiments, we assume that the solution $u$ is bounded.",
+          "tag": null
+        },
+        {
+          "quote": "For a given globally Lipschitz function $v:\\mathbb{R}\\to\\mathbb{R}$, we consider the semilinear heat equation",
+          "tag": null
+        },
+        {
+          "quote": "\\phi_{\\theta^1}(t_i,x_i)\\,\\bar{\\partial}_{t} u_\\theta(t_i,x_i) - \\phi_{\\theta^2}(t_i,x_i)\\,\\bar{\\Delta}_x u_\\theta(t_i,x_i)",
+          "tag": "eq:lossheat"
+        },
+        {
+          "quote": "- \\sum_{i=1}^{d}\\phi_{\\bar{\\theta}^i}\\partial_{x_i x_i} u_{\\theta}",
+          "tag": "eq:barRQ1"
+        }
+      ],
+      "failure_explanation": "The abstract claims the experiments 'support the theoretical findings'. The theorems of Section 3 assume a globally Lipschitz nonlinearity and analyze the Section 2 residuals (per-direction Laplacian weights, weighted boundary time-derivative and, for the wave, endpoint-gradient terms, plus the neural-residual penalty). The experiments use v(u)=-u+u^2, which the paper itself states is only locally Lipschitz with theoretical convergence 'open', and the implemented losses (eq:lossheat, eq:losswave) weight the Laplacian as a single term, omit the boundary time-derivative weighting and the wave endpoint-gradient terms. Thus the experiments neither satisfy the theorems' hypotheses nor implement the analyzed loss, so the claimed support is not established by the source.",
+      "failure_location": {
+        "quote": "In addition, we provide a convergence analysis of the proposed method and support the theoretical findings with numerical experiments demonstrating good performance.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Reword the abstract/intro claims to state that the experiments use a locally Lipschitz nonlinearity and a simplified L2-formulation variant of the loss that are not covered by the analysis (or rerun experiments within the analyzed setting).",
+      "overall_effect": "The asserted link between theory and numerics is unreliable: no experiment in the paper is covered by the convergence analysis as stated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Abstract claims the numerical experiments support the theoretical findings, but the experiments fall outside the analyzed setting and use a structurally different loss",
+      "why_classification": "A local rewording of the scope claims preserves all mathematical content (theorems and experimental comparisons are untouched); the mismatch is partially disclosed in Section 4."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\phi_{\\tilde{\\theta}^1} \\partial_{x_1} u_\\theta\\|^2_{L^2(\\Sigma_T)} + \\|\\phi_{\\tilde{\\theta}^2} \\partial_{x_2} u_\\theta\\|^2_{L^2(\\Sigma_T)}",
+          "tag": null
+        },
+        {
+          "quote": "\\|u_\\theta\\|_{H^1(\\Sigma_T)}^2 +\\|u_\\theta(0,\\cdot)-u_0\\|_{L^2(\\Omega)}^2",
+          "tag": null
+        },
+        {
+          "quote": "In this case, the WeightedPINN loss reduces to the standard PINN loss.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In eq:barRG1 (and barRG2-barRG4) the tilde-weighted boundary terms are d copies of the plain L2 trace of u_theta (no derivatives), while the 2D illustrations weight the full spatial derivatives ∂_{x_i}u_θ on Σ_T, and the standard residual uses the tangential Sobolev norm ‖u_θ‖_{H1(Σ_T)}. These are mutually incompatible. As defined, the weighted boundary residual controls strictly less than the standard one (no derivative of the trace), so the Remark that at φ≡1 'the WeightedPINN loss reduces to the standard PINN loss' is false under eq:barRG1. Conversely, the illustrated version penalizes ∂_{x_i}u_θ, which for the exact solution is generally nonzero on Σ_T (it equals ν_i ∂_νu since u=0 only forces tangential derivatives to vanish), so the illustrated loss does not vanish at the exact solution. There is a genuine choice between mathematically different repairs (plain trace, full gradient, tangential gradient), and the choice changes what the method's loss controls.",
+      "failure_location": {
+        "quote": "\\sum_{i=1}^{d} \\|\\phi_{\\tilde\\theta^i}u_\\theta\\|_{L^2(\\Sigma_T)}^2",
+        "tag": "eq:barRG1"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redefine the tilde-weight terms consistently (e.g., on tangential gradient components of the trace, matching the H1(Σ_T) structure of the standard residual), and correct the Section 2.3 illustrations and the Remark accordingly.",
+      "overall_effect": "The WeightedPINN boundary formulation is not well defined; all results stated in terms of the residuals eq:barRG1-eq:barRG4 refer to an ambiguous object, and the claim that the formulation 'extends naturally' the standard boundary treatment is unsupported.",
+      "primary_affected_tag": "eq:barRG1",
+      "target_type": "other",
+      "title": "Inconsistent definition of the weighted boundary residual: the tilde-weight terms contradict the 2D illustrations and weaken the standard H1 boundary control",
+      "why_classification": "A local redefinition of four displayed residuals plus matching fixes to the illustration and Remark preserves every substantive claim and guarantee; no theorem's intended content is lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:errorWave",
+        "thm:errorHeatb",
+        "thm:errorWaveb"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, for any \\(\\delta > 0\\), any parameters \\((\\theta^i)_{i=1}^{9},(\\bar{\\theta}^i)_{i=1}^{d}, (\\tilde{\\theta}^i)_{i=1}^{d}\\), and sufficiently large \\(\\mathcal{W}, \\mathcal{L} \\in \\mathbb{N}\\) such that \\(\\log_2(\\mathcal{W}) \\le \\mathcal{L}\\), there exist neural networks \\(u_{\\theta}\\) and \\(f_{\\bar{\\theta}}\\)",
+          "tag": "thm:errorHeat"
+        },
+        {
+          "quote": "\\phi_{\\theta^1}\\partial_t u_{\\theta} - \\sum_{i=1}^{d}\\phi_{\\bar{\\theta}^i}\\partial_{x_i x_i} u_{\\theta} + \\phi_{\\theta^{2}} v(u_{\\theta}) - \\phi_{\\theta^{3}} f_{\\bar\\theta} \\mathbf 1_\\omega",
+          "tag": "eq:barRQ1"
+        },
+        {
+          "quote": "\\|\\bar{\\mathcal R}_{\\Gamma}^1(u_\\theta)\\|_{\\Gamma}\\le \\frac{P}{\\sqrt{|\\Gamma|}}\\|u_\\theta-u\\|_{H^1(\\Gamma)} \\le \\tilde C_2\\|u_\\theta-u\\|_{H^2(Q_T)},",
+          "tag": "thm:errorHeat"
+        },
+        {
+          "quote": "The proof of Theorem \\eqref{thm:errorWave} is analogous to that of Theorem \\eqref{thm:errorHeat}, with the only modification being the order of time derivative.",
+          "tag": "thm:errorWave"
+        }
+      ],
+      "failure_explanation": "Expanding the weighted residual gives R̄_Q^1(u_ε,f_ε) = R̄_Q^1(u,f) + O(‖û‖+‖f̂‖), where R̄_Q^1(u,f) = (φ_{θ^1}-1)∂_t u - Σ(φ_{θ̄^i}-1)∂_{x_i x_i}u + (φ_{θ^2}-1)v(u) - (φ_{θ^3}-1)f1_ω. This weight-deviation term vanishes only when all weights are identically 1, but the theorem asserts its conclusion for arbitrary fixed weight parameters (Assumption A2 only requires boundedness). The same omission occurs in the boundary estimate: ‖φ_{θ^6}(0)u_θ(0)-φ_{θ^7}(0)u_0‖ contains the uncontrolled deviation (φ_{θ^6}(0)-φ_{θ^7}(0))u_0. Hence the proof establishes only the trivial weights≡1 case (standard PINN), where the WeightedPINN content disappears; for general weights the claim is unsupported and fails in regimes such as a vanishing control weight φ_{θ^3}≡0 with small ρ, where the equation residual contains no control term and the loss has a positive infimum for data the free dynamics cannot connect. Also, since the networks may depend on the fixed weight configuration, no bound on the min-max value of the Section 2 formulation follows. The identical defect is replicated in the proofs of thm:errorWave, thm:errorHeatb and thm:errorWaveb.",
+      "failure_location": {
+        "quote": "\\|\\bar{\\mathcal{R}}_Q^1(u_\\varepsilon,f_\\varepsilon)\\|_{Q} \\le \\frac{P}{\\sqrt{|Q_T|}}\\Big( \\|\\partial_{t}\\hat{u}\\|_{L^2(Q_T)} +\\|\\Delta \\hat{u}\\|_{L^2(Q_T)} +\\|v(u)-v(u_\\varepsilon)\\|_{L^2(Q_T)} +\\|\\hat{f}\\|_{L^2(q_T)} \\Big)",
+        "tag": "thm:errorHeat"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either restrict the theorems to weights≡1 (reducing them to standard PINN approximation and abandoning the advertised regime) or prove residual smallness for arbitrary bounded weights, which requires establishing controllability/approximability for all weight-perturbed equations - essentially new proof architecture.",
+      "overall_effect": "The paper's central approximation guarantees for WeightedPINNs (Theorems on smallness of the weighted loss) are unestablished outside the weights≡1 case; the min-max training objective of Section 2 receives no valid guarantee.",
+      "primary_affected_tag": "thm:errorHeat",
+      "target_type": "formal_result",
+      "title": "Approximation theorems: the key residual estimates omit the weight-deviation terms and are valid only for weights identically one",
+      "why_classification": "The only regime the proof handles is the one in which the method coincides with standard PINNs, so the advertised guarantee (arbitrary adaptive weights) is lost; every supported resolution either excludes the advertised regime or requires new proof architecture."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\max_{\\theta^i,\\bar{\\theta}^i,\\tilde{\\theta}^i} \\|\\bar{\\mathcal{R}}_Q^{1}\\|_{Q}^2 +\\lambda\\|\\bar{\\mathcal{R}}_{\\Gamma}^{1}\\|_{\\Gamma}^2 -\\rho\\|\\mathcal{R}_{NN}^{1}\\|_{NN}^2 \\le \\delta ,",
+          "tag": "thm:error_estHeat"
+        },
+        {
+          "quote": "\\|f-f_{\\bar\\theta}\\|_{L^{2}(q_{T})} \\le C_{2}\\,\\|u_{0}-\\bar u(0)\\|_{L^{2}(\\Omega)}",
+          "tag": "eq:f_est1"
+        },
+        {
+          "quote": "Then, \\(f-f_{\\bar{\\theta}}\\) is the exact control with corresponding weak solution \\(\\tilde u\\) of the equation",
+          "tag": "thm:error_estHeat"
+        }
+      ],
+      "failure_explanation": "The conclusion bounds the distance to a pre-designated pair (u,f), but the loss is zero at every exact control pair, and exact pairs are non-unique: for v≡0 with zero data, any ψ ∈ C_c^∞((0,T)×ω), ψ≠0, yields a second exact pair (ψ, (∂_t-Δ)ψ) with ψ(0)=ψ(T)=0, distinct from the designated (0,0). Networks approximating this second pair make the loss (in particular its value at weights≡1) arbitrarily small - so the hypothesis holds with δ→0 - while ‖f-f_θ̄‖ stays near ‖(∂_t-Δ)ψ‖ > 0, contradicting the conclusion. The corresponding invalid proof step is eq:f_est1, which applies the controllability estimate of [fernandez-cara_guerrero_2006, Theorem 1.6] to the arbitrary control difference f-f_θ̄; such a norm bound cannot hold for an arbitrary control driving ũ(0) to zero, precisely because zero-effect controls exist.",
+      "failure_location": {
+        "quote": "\\max_{t\\in [0,T]}\\|u(t)-u_\\theta(t)\\|^2_{L^2(\\Omega)} +\\|u-u_\\theta\\|^2_{L^2(0,T;H^1(\\Omega))} +\\|f-f_{\\bar{\\theta}}\\|^2_{L^2(q_T)} \\le C \\delta.",
+        "tag": "thm:error_estHeat"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must reformulate the conclusion (e.g., closeness to some exact control pair, or to a minimal-norm control) and replace the misapplied controllability estimate by a valid argument; the guarantee type necessarily changes.",
+      "overall_effect": "The stated stability guarantee for the heat equation (small weighted loss implies closeness to the designated solution and control, with C depending only on Q_T, v, λ) is false, including its standard-PINN special case; the 'converse' reading of the convergence analysis in Section 3 is unreliable.",
+      "primary_affected_tag": "thm:error_estHeat",
+      "target_type": "formal_result",
+      "title": "Heat stability theorem is false: a small loss does not imply closeness to the designated control (exact controls are non-unique)",
+      "why_classification": "The primary claim is false as stated (an explicit in-source counterexample exists via zero-effect controls), and any repair changes the central quantifier/guarantee from closeness to the designated control to closeness to an unspecified or minimal control."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bar u(T)&=z_{0} \\quad\\text{in }\\Omega .",
+          "tag": "thm:error_estHeat"
+        },
+        {
+          "quote": "\\partial_{t}\\bar u-\\Delta\\bar u+v(\\bar u)&=f_{\\bar\\theta} \\mathbf 1_{\\omega} \\quad\\text{in }Q_{T},",
+          "tag": "thm:error_estHeat"
+        }
+      ],
+      "failure_explanation": "ū is defined as the weak solution of the semilinear heat equation with source f_θ̄1_ω and terminal condition ū(T)=z₀, i.e., a final-value (backward-in-time) parabolic problem. Such problems are ill-posed: in the linear case a solution exists only if z₀ - ∫S(T-s)f_θ̄1_ω ds lies in the domain of the unbounded operator S(T)^{-1} (exponentially decaying spectral coefficients), a meager subspace of L²; for generic z₀ ∈ L² and generic network output f_θ̄ no such ū exists. The cited references concern forward initial-value well-posedness and cannot yield backward existence. The proof's central comparison object is therefore generally undefined.",
+      "failure_location": {
+        "quote": "It follows from the approach developed in \\cite{Cazenave1980} (see also \\cite[Equation (1.4)]{FernandezZuazua2000}) that the above semilinear heat equation admits a unique solution. Consequently, \\(\\bar u\\) is well defined.",
+        "tag": "thm:error_estHeat"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the backward construction of ū by a legitimate argument (e.g., observability/Carleman estimates applied directly to the residual equation for u-u_θ), which is a different proof architecture unavailable in the source.",
+      "overall_effect": "The entire chain of estimates in the proof of Theorem thm:error_estHeat (the equations for û, the energy estimate, eq:f_est1, eq:tilde_u_est1 and the final combination) rests on an object that generally does not exist, so the proof collapses independently of other defects.",
+      "primary_affected_tag": "thm:error_estHeat",
+      "target_type": "formal_result",
+      "title": "Heat stability proof constructs the comparison solution ū via an ill-posed final-value (backward) heat problem",
+      "why_classification": "Backward solvability is unavailable in principle for parabolic problems, so any correct proof of a comparable stability statement for the heat equation requires essentially new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat u &= u_{\\theta} \\quad\\text{on }\\Sigma_{T},",
+          "tag": "thm:error_estHeat"
+        },
+        {
+          "quote": "\\int_{\\partial\\Omega}u_{\\theta}\\,(\\nabla u_\\theta\\cdot \\nu)d x \\le\\frac12\\bigl(\\|u_{\\theta}\\|_{L^{2}(\\partial\\Omega)}^{2} +\\|\\nabla u_\\theta\\cdot \\nu\\|_{L^{2}(\\partial\\Omega)}^{2}\\bigr) \\le\\frac12\\|u_{\\theta}\\|_{H^{1}(\\partial\\Omega)}^{2}.",
+          "tag": "thm:error_estHeat"
+        },
+        {
+          "quote": "\\partial_t\\|\\hat u\\|_{L^{2}(\\Omega)}^{2} +\\|\\hat u\\|_{H^{1}(\\Omega)}^{2} \\le C_{0}\\bigl(\\|\\hat u\\|_{L^{2}(\\Omega)}^{2}+\\|R\\|_{L^{2}(\\Omega)}^{2} +\\|u_{\\theta}\\|_{H^{1}(\\partial\\Omega)}^{2}\\bigr).",
+          "tag": "eq:energy"
+        }
+      ],
+      "failure_explanation": "Integration by parts produces the boundary term -∫_{∂Ω} û ∂_νû dx = -∫_{∂Ω} u_θ(∂_νu_θ - ∂_νū) dx, since û = u_θ on Σ_T while ū = 0 there only forces tangential derivatives of ū to vanish, not ∂_νū. The written identity drops the term -∫u_θ∂_νū involving the uncontrolled normal derivative of ū. Moreover, the retained part is bounded via ‖u_θ‖²_{H¹(∂Ω)}, but the normal derivative ∂_νu_θ is not part of the tangential H¹(∂Ω) norm, so the inequality ‖∇u_θ·ν‖_{L²(∂Ω)} ≤ ‖u_θ‖_{H¹(∂Ω)} is false; and the hypothesis's weighted boundary residual controls only L² norms of u_θ and ∂_tu_θ on Σ_T, so no available quantity controls ∂_νu_θ. Additionally, ‖û‖²_{H¹(Ω)} is placed on the left of eq:energy although û has nonvanishing boundary trace, so Poincaré does not apply. The energy estimate and eq:hat_u_est1 are therefore unproven.",
+      "failure_location": {
+        "quote": "\\frac12\\partial_t\\|\\hat u\\|_{L^{2}(\\Omega)}^{2} +\\|\\nabla\\hat u\\|_{L^{2}(\\Omega)}^{2} -\\int_{\\partial\\Omega}u_{\\theta}\\,(\\nabla u_\\theta\\cdot\\nu)\\, d x =\\int_{\\Omega}(R-V\\hat u)\\hat u\\, d x,",
+        "tag": "thm:error_estHeat"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Retain and correctly estimate the full boundary term -∫û∂_νû, using appropriate trace/hidden-regularity estimates (available at the H¹ level for heat) and correspondingly strengthening the boundary terms in the loss or the stated constant dependence; a contained but nontrivial boundary-estimate argument.",
+      "overall_effect": "The energy estimate (eq:energy), the Grönwall step and eq:hat_u_est1 in the proof of Theorem thm:error_estHeat are unreliable; any rebuilt proof must supply genuine control of the boundary normal-derivative terms.",
+      "primary_affected_tag": "thm:error_estHeat",
+      "target_type": "formal_result",
+      "title": "Heat stability proof: integration-by-parts boundary term is dropped and normal derivatives are falsely bounded by tangential norms",
+      "why_classification": "A contained nontrivial argument (correct boundary-term treatment with hidden-regularity-type estimates, possibly with adjusted constant dependence) can close this gap without new global architecture or major loss beyond what the theorem's other defects already force."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\max_{\\theta^i,\\bar{\\theta}^i,\\tilde{\\theta}^i,\\hat{\\theta}^i,\\check{\\theta}^i} \\|\\bar{\\mathcal{R}}_Q^{2}\\|_{Q}^2+\\lambda\\|\\bar{\\mathcal{R}}_{\\Gamma}^{2}\\|_{\\Gamma}^2-\\rho\\|\\mathcal{R}_{NN}^{2}\\|_{NN}^2\\le \\delta,",
+          "tag": "thm:error_estWave"
+        },
+        {
+          "quote": "\\|f-f_{\\bar{\\theta}}\\|_{L^2(q_T)} \\le C_3 (\\|u_0-\\bar{u}(0)\\|_{H^1(\\Omega)}+\\|u_1-\\partial_t \\bar{u}(0)\\|_{L^2(\\Omega)})",
+          "tag": "eq:f_est2"
+        },
+        {
+          "quote": "The controllability estimate of \\cite[Theorem 4.1]{zuazua2024exactcontrollabilitystabilizationwave} yields a constant \\(C_3 = C_3 (Q_{T},\\mathcal L_{v})\\) such that",
+          "tag": "thm:error_estWave"
+        }
+      ],
+      "failure_explanation": "The conclusion bounds the distance to the designated pair (u,f), but for the wave equation with v≡0 and zero data, any ψ ∈ C_c^∞((0,T)×ω), ψ≠0, yields a second exact pair (ψ, ∂_ttψ-Δψ) driving (0,0) to (0,0), at positive distance from the designated (0,0). Networks approximating this pair satisfy the hypothesis (the weighted loss, in particular at weights≡1, tends to zero) while ‖f-f_θ̄‖ and ‖u-u_θ‖ stay bounded away from zero, contradicting the conclusion as δ→0. The invalid proof step is eq:f_est2, which applies the observability/controllability estimate of [zuazua2024, Theorem 4.1] to the arbitrary control difference f-f_θ̄; such an estimate cannot bound an arbitrary control driving the difference equation to rest, since zero-effect controls exist.",
+      "failure_location": {
+        "quote": "\\max_{t\\in[0,T]}\\bigl\\{\\|u(t)-u_\\theta(t)\\|^2_{H^1(\\Omega)} +\\|\\partial_t u(t)-\\partial_t u_\\theta(t)\\|^2_{L^2(\\Omega)}\\bigr\\} +\\|f-f_{\\bar{\\theta}}\\|^2_{L^2(q_T)} \\le C \\delta.",
+        "tag": "thm:error_estWave"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must reformulate the conclusion (closeness to some exact pair or a minimal-norm control) and replace the misapplied controllability estimate by a valid argument; the guarantee type necessarily changes.",
+      "overall_effect": "The stated stability guarantee for the wave equation is false, including its standard-PINN special case; the converse half of the paper's convergence analysis for the wave equation is unreliable.",
+      "primary_affected_tag": "thm:error_estWave",
+      "target_type": "formal_result",
+      "title": "Wave stability theorem is false: a small loss does not imply closeness to the designated control (zero-effect controls exist)",
+      "why_classification": "The primary claim is false as stated via an explicit counterexample, and every repair changes the central guarantee from closeness to the designated control to a weaker, reformulated statement."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\int_{\\partial \\Omega}\\partial_t u_\\theta (\\nabla_x u_\\theta\\cdot \\nu) d x \\le \\frac{1}{2}\\bigl(\\|\\partial_t u_\\theta\\|^2_{L^2(\\partial \\Omega)} +\\|\\nabla u_\\theta\\cdot \\nu\\|^2_{L^2(\\partial\\Omega)}\\bigr).",
+          "tag": "thm:error_estWave"
+        },
+        {
+          "quote": "\\partial_t E(t) \\le C_0 \\bigl( E(t)+\\|R\\|^2_{L^2(\\Omega)} +\\|u_\\theta\\|^2_{H^1(\\partial\\Omega)} +\\|\\partial_t u_\\theta\\|^2_{L^2(\\partial \\Omega)}\\bigr)",
+          "tag": "thm:error_estWave"
+        },
+        {
+          "quote": "\\hat u &= u_{\\theta} \\quad\\text{on }\\Sigma_{T},",
+          "tag": "thm:error_estWave"
+        }
+      ],
+      "failure_explanation": "The correct energy identity contains the boundary term ∫_{∂Ω} ∂_tû ∂_νû dx = ∫_{∂Ω} ∂_tu_θ(∂_νu_θ - ∂_νū) dx, since ∂_tû = ∂_tu_θ on Σ_T (ū vanishes there) but ∂_νû = ∂_νu_θ - ∂_νū. The written identity drops -∫∂_tu_θ∂_νū, which involves the normal derivative of ū, a quantity not controlled by the hypothesis (it depends on the arbitrary network f_θ̄ and on (z₀,z₁)). Moreover, the term ‖∇u_θ·ν‖²_{L²(∂Ω)} is absorbed into ‖u_θ‖²_{H¹(∂Ω)} in the differential inequality for E(t), but the normal derivative is not part of the tangential H¹(∂Ω) norm, and the hypothesis's weighted boundary residual provides only L² norms of u_θ and ∂_tu_θ on Σ_T, so ‖∂_νu_θ‖_{L²(Σ_T)} is controlled by nothing in the assumption. The energy estimate, the Grönwall step and eq:hat_u_est2 are therefore unproven.",
+      "failure_location": {
+        "quote": "\\frac{1}{2}\\partial_t\\big( \\|\\partial_t \\hat{u}\\|^2_{L^2(\\Omega)}+\\|\\nabla \\hat{u}\\|^2_{L^2(\\Omega)}\\big) = \\int_{\\Omega} (R-V \\hat{u}) \\partial_t \\hat{u} d x +\\int_{\\partial \\Omega}\\partial_t u_\\theta (\\nabla u_\\theta\\cdot \\nu) d x,",
+        "tag": "thm:error_estWave"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Retain and estimate the full boundary term ∫∂_tû∂_νû using the classical hidden regularity (∂_νu ∈ L²(Σ_T) for wave solutions) for both u_θ (via its small residual) and ū, adjusting the stated constant dependence on the network-dependent data if necessary; a contained but nontrivial argument.",
+      "overall_effect": "The energy estimates underpinning the proof of Theorem thm:error_estWave are unreliable; any rebuilt proof must genuinely control the boundary normal-derivative terms.",
+      "primary_affected_tag": "thm:error_estWave",
+      "target_type": "formal_result",
+      "title": "Wave stability proof: energy identity drops the ∂_νū boundary term and bounds the normal derivative by tangential H1 norms",
+      "why_classification": "For the wave equation the relevant hidden-regularity estimates are classical, so a contained nontrivial repair exists; only a limited weakening (constant dependence) is incurred, beyond the losses already forced by the theorem's other defects."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The domain \\(\\omega\\subset\\Omega\\) contains a neighborhood of the boundary \\(\\partial \\Omega\\).",
+          "tag": null
+        },
+        {
+          "quote": "We fix the dimension \\(d = 10\\).",
+          "tag": null
+        },
+        {
+          "quote": "For simplicity, we further assume that $\\omega$ contains the entire boundary $\\partial\\Omega$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With d=10, the removed closed ball B((1/d,...,1/d), 3/4) has center at distance 1/√10 ≈ 0.316 from the origin and thus reaches distance 0.316+0.75 ≈ 1.066 > 1; in particular the boundary point c/|c| of the unit ball lies at distance 1-1/√10 ≈ 0.684 < 0.75 from the center and is therefore inside the removed ball together with a neighborhood of it. Hence ω = Ω \\ B does not contain any neighborhood of ∂Ω, Assumption (A3) fails for the defined ω, and the claim 'We choose ω so that Assumption (A3) is satisfied' is false. The subsequent sentence 'we further assume that ω contains the entire boundary ∂Ω' contradicts the just-given definition of ω, so the described configuration is internally inconsistent.",
+      "failure_location": {
+        "quote": "the control region $\\omega$ is defined such that $\\Omega \\setminus \\omega$ is the closed ball centered at $(1/d,\\dots,1/d)$ with radius $3/4$. We choose $\\omega$ so that Assumption~\\ref{con:wave} is satisfied.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Redefine ω consistently (e.g., remove a ball of radius strictly less than 1-1/√d so that it is contained in Ω) or delete the false A3-satisfaction and boundary-containment claims.",
+      "overall_effect": "The experimental configuration for Situation 3 (and its bilinear copy, Situation 7) is ill-specified, and the claim that the wave experiments satisfy the theoretical geometric assumption is false as stated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Situation 3: the defined control region ω contradicts Assumption (A3) and the paper's own claim that ω contains the boundary",
+      "why_classification": "A local correction of the configuration description (or of the claim) preserves all experiments' qualitative conclusions and all theoretical content."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We refer to $\\|\\mathscr{P}_w u - f \\mathbf 1_{\\omega}\\|_{L^2([0,T]\\times\\Omega)}$ as the equation error, and to the remaining terms collectively as the boundary error.",
+          "tag": null
+        },
+        {
+          "quote": "Standard & \\(7.561\\times10^{-2}\\) & \\(3.047\\times10^{-2}\\) & \\(4.514\\times10^{-2}\\)",
+          "tag": "tab:bwave2"
+        },
+        {
+          "quote": "Standard & \\(7.561\\times10^{-2}\\) & \\(3.047\\times10^{-2}\\) & \\(4.514\\times10^{-2}\\)",
+          "tag": "tab:wave2"
+        },
+        {
+          "quote": "The loss functions and error metrics for the bilinear control problems are identical to those in Section \\ref{Sec:Internal}, with the only difference being that \\(f_{\\bar{\\theta}}(t_i,x_i)\\mathbf 1_\\omega(x_i)\\) is replaced by \\(f_{\\bar{\\theta}}(t_i,x_i)u_\\theta(t_i,x_i)\\) throughout",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The total error H_w is by definition the sum of the equation error and the boundary error, and this relation Total = Eqn + Bnd holds in all other tables. In tab:bwave2 the WeightedPINN row violates it: 2.051×10^{-4} + 3.968×10^{-2} = 3.9885×10^{-2} ≠ 4.225×10^{-2}. Moreover, the Standard row (7.561×10^{-2}, 3.047×10^{-2}, 4.514×10^{-2}) and the Total and Bnd entries of the WeightedPINN row are identical to the corresponding entries of tab:wave2 (Situation 4), which reports a different experiment (internal control, not bilinear control). At least one reported number in tab:bwave2 is therefore wrong, and the reported Situation 8 results are unreliable as stated.",
+      "failure_location": {
+        "quote": "WeightedPINN & \\(4.225\\times10^{-2}\\) & \\(2.051\\times10^{-4}\\) & \\(3.968\\times10^{-2}\\)",
+        "tag": "tab:bwave2"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Correct the Situation 8 entries: the definitional relation forces Total = Eqn + Bnd (i.e., 3.9885×10^{-2} for the WeightedPINN row), and the entries duplicated from the internal-control Situation 4 must be replaced by the measurements of the actual bilinear experiment (or withdrawn).",
+      "overall_effect": "The numerical results for Situation 8, and the blanket conclusion that WeightedPINN 'consistently yields lower losses and improved error metrics' across all situations, are unreliable to the extent they rest on Table 8.",
+      "primary_affected_tag": "tab:bwave2",
+      "target_type": "prose_claim",
+      "title": "Situation 8 (Table 8) results are internally inconsistent and duplicated from the internal-control Situation 4",
+      "why_classification": "The correction is local to one table: the definitional relation forces one entry, the other seven configurations and the qualitative comparison are unaffected, and no method, theorem, or guarantee is lost."
+    }
+  ],
+  "issues_found": 10,
+  "paper_id": "2604.22414",
+  "question_id": "Q1",
+  "run_name": "glm53-max-full200-n01-primary",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "150c96ec1dc8bb115e9e398e2472b8004f83f2f7e2d892e50db58dd5cb9e08b1",
+  "status": "ok"
+}

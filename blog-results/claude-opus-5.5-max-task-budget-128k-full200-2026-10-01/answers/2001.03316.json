@@ -1,0 +1,243 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "will not hold for \\mkl~in noisy setting since there exists no strong convexity parameter",
+          "tag": null
+        },
+        {
+          "quote": "conditioned on the current parameter $\\bs{w}_t$, the expectation of the distance between the $\\bs{w}_{t+1}$ and $\\ws$ can be upper bounded as",
+          "tag": "thm:R"
+        },
+        {
+          "quote": "The worst case analysis in the noisy setting with and without outliers also remains an open problem.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The contributions claim convergence rates for noiseless and noisy settings, with and without outliers. A linear rate is argued only in the noiseless, outlier-free case via Lemma rachel. For the other settings, thm:R is a one-step conditional inequality. Its contraction factor depends on min_{i not in O} p_i(w_t) and its residual R_t depends on w_t; neither is bounded uniformly. No unrolled rate or neighbourhood radius is derived.",
+      "failure_location": {
+        "quote": "We establish the convergence rates of \\mkl -with and without outliers",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Either derive uniform lower bounds on min_{good} p_i(w_t) and upper bounds on R_t along the iterates and unroll the recursion, or restrict the claim to the noiseless outlier-free setting.",
+      "overall_effect": "The advertised convergence-rate contribution for noisy and outlier settings, and the conclusion's 'linear convergence (upto a certain neighborhood)', are unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Convergence rates claimed for noisy and outlier settings are not established",
+      "why_classification": "Proving rates would need a new contained argument; withdrawing the claim loses an advertised contribution. The rest of the paper survives either way."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Starting from any initialization $\\w_0$, for any stationary point $\\bar{\\w}$ attained by \\mkl, we have that $\\bar{\\w} \\in \\mathcal{B}_r(\\ws)$",
+          "tag": "lemma:vector"
+        },
+        {
+          "quote": "Now, we can repeat the above analysis recursively for every corresponding $\\w_C$ and $\\tilde{\\w}$ in the landscape",
+          "tag": null
+        },
+        {
+          "quote": "Thus, $\\widetilde{w}$ is the closest point to $w_B$ on the line joining $w_B$ and $w^*$",
+          "tag": null
+        },
+        {
+          "quote": "f_i(\\bs{w}) < f_j(\\bs{w})~ \\forall~i \\notin \\mathbb{O},~j \\in \\mathbb{O}",
+          "tag": "eq:defball"
+        }
+      ],
+      "failure_explanation": "1. Stationarity of the surrogate at w-bar uses the weights p_i(w-bar), but the proof substitutes p_i(w_C) at an arbitrary far point. The resulting formula for w-bar is not the stationarity condition.\n2. The derived inequality only places w-bar closer to w* than the intersection point w-tilde. That point is built from l_m and l_M and is the intersection farthest from w*. Being inside it does not give f_i < f_j for all good i and outlier j, which membership in B_r requires.\n3. Avoiding all subsequent bad minima is asserted 'recursively' without proof.\n4. The hypothesis itself depends on the unknown stationary point through theta_{M,w-bar}.",
+      "failure_location": {
+        "quote": "\\sum_{i\\notin \\mathbb{O}} p_i(\\w_C) \\nabla f_i(\\bar{\\w}) &= - \\sum_{j \\in \\mathbb{O}}",
+        "tag": "lemma:vector"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must redo the fixed-point analysis with the weights p_i(w-bar) and show the derived bound implies f_i<f_j for every good/outlier pair. It must also give an actual argument excluding every intermediate ranking pattern, under a hypothesis not depending on w-bar.",
+      "overall_effect": "The worst-case, initialization-independent guarantee is unsupported. This covers the scalar Condition 1 discussion and the claim that MKL-SGD always reaches a good local minimum. The prose claim that every MKL-SGD solution beats SGD loses its link to theorem:relativebounds, which assumes ball membership.",
+      "primary_affected_tag": "lemma:vector",
+      "target_type": "formal_result",
+      "title": "Proof that every stationary point lies in B_r(w*) is invalid",
+      "why_classification": "The central landscape guarantee has no valid proof, and fixing it requires a new argument rather than a local patch."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min\\left(\\epsilon n  G(\\wsgd), (1 - \\epsilon) n L \\norm{\\wsgd - \\ws}\\right)",
+          "tag": null
+        },
+        {
+          "quote": "For the sake of simplicity, we will assume that $\\norm{\\nabla f_i(\\bs{w})} \\leq G ~\\forall~i\\in \\mathbb{O}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof bounds the same quantity, the norm of the outlier gradient sum, from above in two ways. It then concludes that one upper bound is at most the other, which is a non sequitur. The claim is false. Take scalar good losses l w^2 and two outliers l(w-b)^2 and l(w+b)^2. Then w_SGD = w* = 0, so the right side is 0 while epsilon*G >= epsilon*2l|b| > 0 for every epsilon.",
+      "failure_location": {
+        "quote": "there exists an $\\epsilon'$ such that for all $\\epsilon \\leq \\epsilon'$",
+        "tag": "lemma:sgdbound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a genuine lower bound on ||w_SGD - w*||, e.g. under a non-cancellation assumption on outlier gradients, and re-derive theorem:relativebounds from it.",
+      "overall_effect": "The lower bound on SGD's error, and with it the comparison 'MKL-SGD is provably better than SGD' in theorem:relativebounds, is unsupported.",
+      "primary_affected_tag": "lemma:sgdbound",
+      "target_type": "formal_result",
+      "title": "SGD lower bound derived by comparing two upper bounds; false in general",
+      "why_classification": "The lemma is false as stated, and the paper's headline comparison result rests on it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:relativebounds"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\wsm$ be any first order stationary point attained by \\mkl.",
+          "tag": "lemma:m2lboundstrongconvexity"
+        },
+        {
+          "quote": "Note that strong convexity holds since we are only considering the set of good samples",
+          "tag": null
+        },
+        {
+          "quote": "For any $n-k$ size subset $S$ of the samples, we assume the loss function $\\sum_{i\\in S} f_i(\\bs{w})$ is {\\em strongly convex} in $\\bs{w}$.",
+          "tag": null
+        },
+        {
+          "quote": "In the noiseless setting, for any $\\w$ there exists a $\\lambda_{\\w} > 0$",
+          "tag": "lemma:sc"
+        }
+      ],
+      "failure_explanation": "1. The step sum_{i in O} p_i(w_MKL) <= epsilon^k holds only if all outliers are the highest-loss samples at w_MKL, i.e. w_MKL lies in B_r. For a stationary point near the outliers the total outlier probability can be 1-(1-epsilon)^k.\n2. The proof uses the strong-convexity constant m of the weighted good-sample sum. The statement instead uses lambda from lemma:sc, which concerns the full outlier-free surrogate, and m >= lambda is not shown.\n3. Assumption 2 gives strong convexity of the good set only when |O| <= k, which is never assumed.",
+      "failure_location": {
+        "quote": "m \\norm{ \\wsm - \\ws} &\\leq \\epsilon^k G(\\wsgd)",
+        "tag": "lemma:m2lboundstrongconvexity"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restrict the lemma to w_MKL in B_r(w*), assume |O| <= k, and state the bound with the good-sample strong-convexity constant m(w_MKL) instead of lambda.",
+      "overall_effect": "The bound is unsupported for general stationary points and its constant is mis-specified. theorem:relativebounds inherits the mismatched lambda.",
+      "primary_affected_tag": "lemma:m2lboundstrongconvexity",
+      "target_type": "formal_result",
+      "title": "Epsilon^k bound needs outliers ranked last and good-sample strong convexity, neither established",
+      "why_classification": "Restating hypotheses and redefining the constant is contained, but it narrows scope and changes the constant used downstream."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lambda:= \\min_{\\w} \\lambda_{\\w}",
+          "tag": "eq:lambdasc"
+        },
+        {
+          "quote": "Naively, $\\lambda_{\\w} = \\min_i p_i(\\w) \\lambda$",
+          "tag": null
+        },
+        {
+          "quote": "\\dfrac{(n - (i-1))^k - (n-i)^k}{n^k}",
+          "tag": "eq:probability"
+        },
+        {
+          "quote": "reduces $\\alpha(\\epsilon, L, k, \\lambda)$ and allows \\mkl~to get closer to $\\ws$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "alpha = (1-epsilon) L epsilon^{k-1}/lambda, and the proof makes alpha<1 by increasing k with lambda held fixed. But lambda is defined through the k-dependent probabilities p_i(w). The paper's own lower bound is lambda >= p_min*mu with p_min = 1/n^k, which gives alpha ~ n(epsilon n)^{k-1} L/mu, increasing in k when epsilon n > 1. Inside the ball, the smallest good-sample weight is about k epsilon^{k-1}/n, which cancels the epsilon^{k-1} gain.",
+      "failure_location": {
+        "quote": "Picking a large enough $k$, we can guarantee that",
+        "tag": "theorem:relativebounds"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must give a k-uniform lower bound on the relevant strong-convexity constant, or state alpha with its true k-dependence and show alpha<1 under explicit conditions.",
+      "overall_effect": "The claims that alpha<1 for large k, and that larger k shrinks alpha geometrically, are unsupported.",
+      "primary_affected_tag": "theorem:relativebounds",
+      "target_type": "formal_result",
+      "title": "Large-k step ignores that lambda depends on k",
+      "why_classification": "The exponential-in-k improvement guarantee, the theorem's main content, does not survive without a new argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "+ 2\\eta_t^2\\sum_{i\\in \\mathcal{G}} p_i(\\bs{w_t}) \\norm{\\nabla f_{i}( \\wg)}^2",
+          "tag": "lem:R"
+        },
+        {
+          "quote": "for both noiseless and noisy setting in absence and presence of outliers",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof, given in lem:R, produces the term 2 eta^2 sum over good samples of p_i ||grad f_i(w*)||^2. thm:R instead places that term in the outlier sum and drops the good-sample term. In the noisy setting the good-sample gradients at w* are nonzero, so the stated bound omits a positive term and is not established.",
+      "failure_location": {
+        "quote": "\\sum_{i\\in \\mathbb{O}}p_i(\\bs{w_t}) \\left(2\\eta_t\\norm{\\nabla f_{i}( \\wg)}^2",
+        "tag": "thm:R"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace R_t in thm:R by the residual proved in lem:R.",
+      "overall_effect": "thm:R as stated is unsupported in the noisy setting it explicitly covers.",
+      "primary_affected_tag": "thm:R",
+      "target_type": "formal_result",
+      "title": "Main-text residual R_t differs from the one proved",
+      "why_classification": "A local restatement using the already-proved bound preserves every claim."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose we have $\\abs{\\mathcal{G}}\\leq \\frac{n}{2}$.",
+          "tag": "cor:added-1"
+        },
+        {
+          "quote": "p_{m_i(\\bs{w})}(\\bs{w}) = \\dfrac{2(n-i)}{n(n-1)}",
+          "tag": null
+        },
+        {
+          "quote": "for both SGD and MKL-SGD and $p_i(\\bs{w_t})< \\dfrac{1}{N}$ for $i \\in \\mathbb{O}$, we have",
+          "tag": null
+        },
+        {
+          "quote": "MKL-SGD is always better than SGD even the corrupted data is greater than half",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "1. The proof replaces each outlier weight p_i by 1/n term-by-term. The term 2(f_i(w*) - f_i(w_t)) can be negative, e.g. for squared outlier losses with f_i(w_t) > f_i(w*) and small eta. When a bracket is negative, a smaller p_i increases R_t, so the inequality reverses.\n2. 2(n-i)/(n(n-1)) <= 1/n needs i >= (n+1)/2. With |G| < (n-1)/2, outliers of rank |G|+1 up to about n/2 have p_i > 1/n.\nThe same sign error underlies the main-text claim that R^{SGD} > R^{MKL} whenever p_i < 1/N.",
+      "failure_location": {
+        "quote": "\\sum_{i=\\abs{\\mathcal{G}}+1 }^n\\dfrac{\\eta_t^2}{n}\\norm{\\nabla f_{i}( \\bs{w_{t}})}^2",
+        "tag": "cor:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either assume every outlier bracket is nonnegative and |G| in [(n-1)/2, n/2], or find a different comparison of the weighted outlier sums.",
+      "overall_effect": "R^{MKL_2} <= R^{SGD} is unsupported. So is the claim that MKL-SGD beats SGD when corruption exceeds half.",
+      "primary_affected_tag": "cor:added-1",
+      "target_type": "formal_result",
+      "title": "Outlier-term comparison in MKL-vs-SGD corollary is invalid",
+      "why_classification": "Any supported fix confines the result to corruption of essentially exactly half under an extra sign assumption, which excludes the advertised regime."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2001.03316",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5.5-max-task-budget-128k-2026-10-01-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d10c7474fbe52751d29cd038f650e3f1381876416035c1862f7697927c71b083",
+  "status": "ok"
+}

@@ -1,0 +1,93 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The optimal threshold $-\\rho$ lies in the interval\n$[\\tau_{j^*}, \\tau_{i^*}]$ (from~\\eqref{eq:mvp} and Table~\\ref{tab:kkt}).",
+          "tag": null
+        },
+        {
+          "quote": "$\\alpha_k = 0$     & $\\Iup$ only          & $\\tau_k \\le -\\rho$ \\\\",
+          "tag": "tab:kkt"
+        }
+      ],
+      "failure_explanation": "The paper's own (correct) KKT Table tab:kkt says that at an optimum every i in I_up has τ_i ≤ -ρ and every j in I_down has τ_j ≥ -ρ, i.e. max_{I_up}τ ≤ -ρ ≤ min_{I_down}τ — the exact reverse of the displayed chain in eq:bias-bounds. In the degenerate case the remark addresses (no free support vectors) these inequalities are typically strict (e.g. the one-point problem with Ω=[1], y=1, ε/100=0.1 has optimum α=α*=0 with max_{I_up}τ=0.9, min_{I_down}τ=1.1 and any -ρ in [0.9,1.1]), so the displayed chain 0.9 ≥ -ρ ≥ 1.1 is unsatisfiable. The identical assertion (min_{I_down}τ ≤ -ρ ≤ max_{I_up}τ at the current iterate) is made in the shrinking section to justify criteria (eq:s1)-(eq:s4), and there it is simply false: for Ω=[[1,2,1],[2,5,1],[1,1,3]], y=(35/3,5,100), ε/100=0.1, C=1, the optimum is u*=(1,0,1;0,2,0) with -ρ=12.5, while at the feasible non-optimal point u=(0.5,0,1;0,1.5,0) (violation Δ=1>0) one has I_up={1,2,5} with max_{I_up}τ=12 and min_{I_down}τ=11, so -ρ=12.5 lies outside [τ_j*,τ_i*]=[11,12]. The cited derivation (eq:mvp and Table tab:kkt) only characterizes the optimum and does not imply the containment at arbitrary iterates.",
+      "failure_location": {
+        "quote": "\\max_{i \\in \\Iup} \\tau_i = \\tau_{i^*}\n  \\;\\geq\\; -\\rho \\;\\geq\\;\n  \\min_{j \\in \\Idown} \\tau_j = \\tau_{j^*}",
+        "tag": "eq:bias-bounds"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "In rem:bias-degenerate, state the correct containment at the optimum, max_{I_up}τ ≤ -ρ ≤ min_{I_down}τ (which follows directly from Table tab:kkt). In the shrinking section, withdraw the claim that -ρ lies in [τ_j*, τ_i*] at intermediate iterates and instead present (eq:s1)-(eq:s4) as a heuristic whose soundness is enforced a posteriori by the existing reconstruction/unshrinking check, which already guarantees certified optimality on termination.",
+      "overall_effect": "The stated justification for the shrinking criteria (eq:s1)-(eq:s4) is invalid: freezing a variable whose τ lies outside the current interval is not certified by any threshold containment, so with the paper's justification alone a variable that should leave its bound could be frozen. The degenerate-bias 'bounds' are stated backwards (the midpoint heuristic eq:bias-midpoint itself is unaffected). Final solutions remain certified optimal only because the reconstruction/unshrinking step (eq:full-violation) re-checks the full KKT violation a posteriori.",
+      "primary_affected_tag": "eq:bias-bounds",
+      "target_type": "other",
+      "title": "False claim that the optimal threshold -ρ is bracketed by [min_{I_down} τ, max_{I_up} τ]",
+      "why_classification": "The assertion is false as stated — it contradicts the paper's own KKT table at the optimum and admits an explicit counterexample at general iterates — so it cannot be preserved; but the repair is contained (correct the degenerate-bias inequalities and rejustify the standard shrinking criteria via the safety net the paper already has), requires no new global proof architecture, and loses no algorithmic guarantee, leaving a recognizably comparable result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$t = 1, 2, \\ldots, \\mathrm{maxiter}$}",
+          "tag": "alg:smo"
+        },
+        {
+          "quote": "\\EndFor\n\n\\State \\textbf{Reconstruction:} compute $F_k^{\\mathrm{full}}$ and",
+          "tag": "alg:smo"
+        }
+      ],
+      "failure_explanation": "The only loop in the pseudocode is the For loop over t = 1..maxiter; the reconstruction, the computation of Δ^full, and the reset block all appear after \\EndFor. Hence 'continue outer loop' refers to a loop that does not exist: as written, when Δ^full > ε_tol the algorithm resets the active set and then falls through to the bias computation and \\Return, outputting (α, α*, b̂) that has just failed the full KKT check. This contradicts the stated contract ('Otherwise, the solution is certified optimal' in Section 6.3 and the Ensure block), which requires re-entering the optimization loop after a reset.",
+      "failure_location": {
+        "quote": "\\State Reset $\\Aactive \\leftarrow \\{1,\\ldots,N\\}$, $\\Afrozen \\leftarrow \\emptyset$;\n         continue outer loop",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Enclose the iteration loop and the reconstruction/unshrinking block in an outer repeat loop (exactly the behavior described in Section 6.3), so that after a reset the algorithm resumes optimization and reaches the bias/return statements only when Δ^full ≤ ε_tol.",
+      "overall_effect": "On any run where frozen variables violate the KKT conditions at active-set convergence, the procedure as written returns a non-certified (generally suboptimal) solution despite the paper's certification guarantee; the reset step is dead code. The prose in Section 6.3 describes the intended re-entry, so the guarantee fails only at the level of the executable algorithm block.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Algorithm 1: unshrinking path has no outer loop to continue, so a KKT-violating solution is returned",
+      "why_classification": "The defect breaks the stated output guarantee on the reset path, but the repair is a single forced, mechanical control-flow correction (add the missing outer loop, as the prose already specifies), with no new lemma, construction, or weakening; every substantive claim and guarantee is then preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bigl(\\Omega_s\\bigr)_{k\\ell} =\n  \\tfrac{1}{2}\\!\\left(K(\\mathbf{x}_k,\\mathbf{x}_\\ell) +\n                a\\,K(\\mathbf{x}_k,-\\mathbf{x}_\\ell)\\right)",
+          "tag": "eq:sym-kernel"
+        },
+        {
+          "quote": "For the symmetric-kernel\nvariant (m2) with $a = +1$, $P \\succeq 0$ is preserved and the same\nguarantees apply.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The premise is false: Ω*_{kℓ} = K(x_k, -x_ℓ) is a cross-Gram matrix between {φ(x_k)} and {φ(-x_ℓ)} and need not be PSD. For the linear kernel Ω* = -Ω, which is not PSD for nonzero data; for the RBF kernel with the two points x and -x (x≠0), Ω* = [[e^{-4γ‖x‖²}, 1],[1, e^{-4γ‖x‖²}]] has determinant e^{-8γ‖x‖²} - 1 < 0, hence is indefinite. The conclusion Ω_s ⪰ 0 also fails for general valid kernels: with the PSD kernel K(x,x') = e^{x_1+x'_1}⟨x,x'⟩ and a single point with x_1<0, Ω_s = ½‖x‖²(e^{2x_1}-1) < 0, so even the m2 QP with a=+1 is nonconvex. (For 'even' kernels such as RBF, polynomial, or linear, Ω_s ⪰ 0 does follow — via the Gram matrix of the symmetrized features φ(x)+φ(-x) — but that argument and the required hypothesis on K are absent, and the given reason is wrong.)",
+      "failure_location": {
+        "quote": "For $a = +1$ (even symmetry), $\\Omega_s \\succeq 0$\nfollows from the fact that $\\Omega$ and $\\Omega^*$ are individually PSD.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict to kernels satisfying K(-x,-x') = K(x,x') and K(-x,x') = K(x,-x') (satisfied by the standard RBF/polynomial/linear kernels), state this hypothesis explicitly, and prove Ω_s ⪰ 0 via the symmetrized feature map x ↦ φ(x)+φ(-x), whose Gram matrix equals 4Ω_s (up to the consistent ½-factor conventions); delete the false claim that Ω* is individually PSD.",
+      "overall_effect": "The claimed positive semi-definiteness of P for the m2 variant with a=+1 — and with it the m2 convergence and finite-termination guarantees ('P ⪰ 0 is preserved and the same guarantees apply') and the statement that Algorithm 1 applies to m2 without modification — are unsupported as stated and can fail for arbitrary kernels, in which case the convex-QP/SMO guarantees for m2 do not hold.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "m2 with a=+1: false justification that Ω_s ⪰ 0 (Ω* need not be PSD); conclusion false for general kernels",
+      "why_classification": "The stated justification is false for the paper's own standard kernels and the conclusion fails for general valid kernels (explicit one-point counterexample), so the m2 (a=+1) guarantee cannot stand as written; however, a contained repair — an explicit evenness hypothesis plus the standard symmetrized-feature Gram argument — restores the full m2 (a=+1) results for the kernels actually used, with no new global architecture and no major loss of scope."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "kimi-k3-full199-r2-s4-retry",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

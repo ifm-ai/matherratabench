@@ -1,0 +1,70 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "In what regards $\\Y$, in order to compute one entry $y_{i_1i_2\\ldots i_N}$ in \\eqref{e:yi1i2iN}, we need one division",
+          "tag": null
+        },
+        {
+          "quote": "Therefore, in order to fully determine $\\Y$, we need $n_1n_2\\ldots n_NN$ divisions",
+          "tag": null
+        },
+        {
+          "quote": "These, together with the $n_1n_2\\ldots n_NN$ divisions needed to compute $\\Y$, make the following number of floating point operations (excluding the Schur decompositions) to implement the method:",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The per-entry analysis correctly states that computing each y_{i_1...i_N} needs exactly one division, so the total number of divisions is P = n_1n_2...n_N, but the text then asserts P*N divisions, a factor-N overcount. Independently, the displayed final simplification is arithmetically wrong: with the stated components (multiplications (P/2)(5S-N), additions (P/2)(5S-3N-2), and even with the incorrect PN divisions) the sum equals P(5S - N - 1), not P(5S - N + 1). With the correct count P of divisions the true total is (P/2)(5S-N) + (P/2)(5S-3N-2) + P = P(5S - 2N). The multiplications and additions subtotals are correct; only the division count and the final constant term are wrong.",
+      "failure_location": {
+        "quote": "& \\frac{n_1n_2\\ldots n_N}{2}\\Bigg[5\\sum_{j = 1}^{N}n_j - N\\Bigg] + \\frac{n_1n_2\\ldots n_N}{2}\\Bigg[5\\sum_{j = 1}^{N}n_j - 3N - 2\\Bigg] + n_1n_2\\ldots n_NN \\cr & \\qquad = n_1n_2\\ldots n_N\\Bigg[5\\sum_{j = 1}^{N}n_j - N + 1\\Bigg],",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the division count n_1n_2...n_N*N by n_1n_2...n_N (one per entry of Y) and re-simplify the displayed total to n_1n_2...n_N(5*sum_{j=1}^N n_j - 2N); the multiplication and addition subtotals already derived need no change.",
+      "overall_effect": "The exact flop-count formula advertised for the method (and the abstract's promise of an accurate cost calculation) is incorrect. The asymptotic conclusions survive: for equal sizes n the total is n^N(5Nn - 2N) which is still about 5Nn^{N+1}, and the O(n^{N+1}) complexity claim, as well as all algorithmic and theorem results (none of which depend on the count), remain valid.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Incorrect total floating-point operation count in the computational cost analysis",
+      "why_classification": "A short local recount and re-simplification repairs the exact formula with no new argument; every substantive cost claim, including the 5Nn^{N+1} estimate and the O(n^{N+1}) total cost, survives unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& u(\\xx, 0) = \\exp(-\\xx\\cdot\\xx),",
+          "tag": null
+        },
+        {
+          "quote": "The solution at $t = 1$, taking $N = 6$ dimensions, took $25.73$ seconds to execute, and the error was $9.6811\\times10^{-14}$, which, in our opinion, is quite remarkable.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At t = 0 the claimed solution equals (1+e^0)exp(-xx.xx) = 2exp(-xx.xx), which contradicts the initial condition u(xx,0) = exp(-xx.xx) stated in \\eqref{e:uxt}. Substitution shows u = (1+e^t)exp(-xx.xx) does solve the differential equation with the forcing term -exp(-xx.xx) (the operator terms cancel to (2N+1)u and give u_t = e^t exp(-xx.xx)), but the initial datum consistent with it is 2exp(-xx.xx); with the stated initial datum the actual (unique) solution of the printed IVP is u(xx,t) = exp(-xx.xx), constant in time. Hence the printed problem and the advertised exact solution are inconsistent by a factor of 2, and the reported error 9.6811e-14 shows the code must have used initial data matching (1+e^t)exp(-xx.xx), so the printed initial condition (or, alternatively, the printed exact solution) is the erroneous object.",
+      "failure_location": {
+        "quote": "Moreover, the solution of \\eqref{e:uxt} is $u(\\xx, t) = (1+\\exp(t))\\exp(-\\xx\\cdot\\xx)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the initial condition in \\eqref{e:uxt} to u(xx,0) = 2*exp(-xx.xx), which makes the claimed solution u = (1+exp(t))exp(-xx.xx) exact and is consistent with the reported numerical error; the alternative complete repair is to replace the claimed solution by exp(-xx.xx), the true solution of the printed IVP.",
+      "overall_effect": "As written, the benchmark problem \\eqref{e:uxt} has no solution equal to the advertised exact solution, so the numerical validation in Section s:advdif (code:advdiftest) does not test the stated IVP against the stated exact solution; a reader cannot tell from the source which of the two formulas is misprinted. The differential equation, the Schur/Bartels-Stewart method, and the claim of computing advection-diffusion solutions accurately on R^N are themselves unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed exact solution of the advection-diffusion IVP does not satisfy the stated initial condition",
+      "why_classification": "A one-line correction of the initial condition (or of the exact solution) restores full consistency among the PDE, its exact solution, and the reported numerical experiment; no method, rate, regime, or advertised scope is lost, and no new argument is required."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2412.15840",
+  "question_id": "Q1",
+  "run_name": "k2-full200-t1-p095-high",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d355df1c8786c244bfb34e8cdaf2d27ff412465fb86eaa3ee0e5c7a234cfa7a2",
+  "status": "ok"
+}

@@ -1,0 +1,105 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that the initial state $u_0$ follows a (nonzero mean) Gaussian distribution with the identity covariance, i.e., $u_0 \\sim \\mathcal{N}(m, \\mathbf{I})$",
+          "tag": "prop:added-2"
+        },
+        {
+          "quote": "Hence, the parameterization~\\eqref{eqn:cov} for $\\Sigma_{\\theta}$ in the Gaussian noise setting is optimal in the sense that $H_p(u_{t-1}|u_t) = H_{q_{\\theta}}(u_{t-1}|u_t)$.",
+          "tag": null
+        },
+        {
+          "quote": "obtained from corrupting the output $u$ by an additive Gaussian noise $\\eta \\sim \\mathcal{N}(0, \\Sigma(a))$, i.e., $u_{\\eta} = u + \\eta$.",
+          "tag": null
+        },
+        {
+          "quote": "The model is trained on the noisy data set with $\\sigma=0.0005$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The covariance $\\beta_t\\mathbf{I}$ for the reverse kernel is derived (Appendix C.3) only under $u_0\\sim\\mathcal N(m,\\mathbf I)$: then $\\mathrm{Cov}(u_t)=\\mathbf I$ for all $t$ and the true reverse covariance is $\\beta_t\\mathbf I$. The paper's Gaussian-noise setting is $u_0|a\\sim\\mathcal N(u,\\sigma^2\\mathbf I)$ with $\\sigma\\ll 1$ (0.0005, 0.001, 1%, 5%), or general $\\Sigma(a)$. For $u_0\\sim\\mathcal N(m,\\sigma^2\\mathbf I)$ the true reverse covariance is $\\beta_t v_{t-1}/(\\alpha_t v_{t-1}+\\beta_t)\\,\\mathbf I$ with $v_{t-1}=\\bar\\alpha_{t-1}\\sigma^2+1-\\bar\\alpha_{t-1}$, which for small $\\sigma$ is close to $\\tilde\\beta_t=\\frac{1-\\bar\\alpha_{t-1}}{1-\\bar\\alpha_t}\\beta_t$, not $\\beta_t$. So prop:added-2 is applied outside its hypothesis, and the asserted optimality ($H_p(u_{t-1}|u_t)=H_{q_\\theta}(u_{t-1}|u_t)$) of the $\\beta_t\\mathbf I$ choice fails in the regime actually used.",
+      "failure_location": {
+        "quote": "\\beta_t \\mathbf{I} & \\mbox{Observations with additive Gaussian noise.}",
+        "tag": "eqn:cov"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Either restrict the Gaussian-noise case of eqn:cov and the optimality statement to unit-covariance noise, or derive and use the $\\sigma$-dependent (or $\\Sigma(a)$-dependent) conditional covariance of the true reverse kernel, presenting the current choice as a heuristic otherwise.",
+      "overall_effect": "The theoretical rationale for the case split in eqn:cov and the optimality claim for the Gaussian-noise covariance are unsupported for the noise models the paper considers; the reverse sampler's variance in the noisy experiments is not the one matching the true reverse process.",
+      "primary_affected_tag": "eqn:cov",
+      "target_type": "algorithm",
+      "title": "Reverse covariance beta_t I prescribed for all additive Gaussian noise but justified only for identity noise covariance",
+      "why_classification": "A contained new computation (correct reverse covariance for general Gaussian noise) or an explicit weakening of scope is needed; the optimality claim for the advertised noisy regime is lost, but no global architecture changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\# of samples $N_s$   &  $1$ if noise-free; $500$ if noisy",
+          "tag": null
+        },
+        {
+          "quote": "PDNO &  35, 707, 841 & 0.0046 & $5.08$e$-07$ & 0.0022 & $3.52$e$-07$ & 0.0037 & $1.21$e$-05$",
+          "tag": null
+        },
+        {
+          "quote": "\\# of samples $N_s$   &  $1$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "MSTD is defined as the norm of the sample standard deviation of $N_s$ samples divided by $N_s$. The hyper-parameter tables for the noise-free experiments (Tests 2, 3, 4) state $N_s=1$, for which the sample standard deviation is undefined (or identically zero), so the metric cannot produce the nonzero MSTD values reported in Tables tab:darcy_error, tab:burgers, tab:adv_error. Additionally, dividing a standard deviation by the number of samples $N_s$ has no statistical meaning (it is not a standard error nor a relative quantity), so the reported MSTD numbers are not interpretable as the 'uncertainty' quantity the text claims.",
+      "failure_location": {
+        "quote": "\\frac{\\|\\mbox{std}(\\{\\SOPA^{(n)}(a) \\}_{n=1}^{N_s}) \\|_2}{N_s}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State the actual number of samples used for the MSTD diagnostic and fix the definition (e.g. normalize by $\\|u\\|_2$ or report the raw norm), consistent with the reported numbers.",
+      "overall_effect": "The reported MSTD values and the accompanying claims about learned uncertainty in the noise-free tables are not reproducible from the stated definition and protocol.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "MSTD metric is ill-defined under the stated protocol ($N_s=1$) yet nonzero values are reported",
+      "why_classification": "A local correction of the metric definition and experimental protocol description suffices; no theoretical claim depends on it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "H_{q_{\\theta}}(u_T) + \\sum_{t=1}^T H_{q_{\\theta}}(u_{t-1} | u_t) \n=\nH_p(u_T) + \\sum_{t=1}^T H_p(u_{t-1} | u_t)",
+          "tag": null
+        },
+        {
+          "quote": "where $\\epsilon_{\\theta}(t, u_t, a)$ is a neural network function that approximates the the standard Gaussian $\\epsilon_t$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The display only shows $\\mathbb E_{q_\\theta}[-\\log q_\\theta]=\\mathbb E_p[-\\log p]$, i.e. equality of the entropies of two Gaussian chains with matching covariances. Entropy of a Gaussian depends only on covariance, so this holds regardless of the learned means $m_\\theta$ and says nothing about the likelihood of $p$-data under $q_\\theta$ ($\\mathbb E_p[-\\log q_\\theta]$, the cross-entropy), which is what 'exact likelihood under the true model' would mean. Matching entropies does not imply $q_\\theta=p$; the claim is unsupported (and false whenever $\\epsilon_\\theta\\neq\\epsilon_t$).",
+      "failure_location": {
+        "quote": "the learned parametric model $q_{\\theta}$ achieves the exact likelihood under the true model $p$, i.e.,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the sentence with the accurate statement that the chosen covariances match the differential entropies of the true reverse kernels (under the respective hypotheses), without claiming exact likelihood.",
+      "overall_effect": "The concluding optimality/exactness claim of Appendix C.3 overstates what the two propositions establish; the covariance choice is justified only as matching the conditional entropy, not the likelihood.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Equality of entropies misrepresented as achieving exact likelihood under the true model",
+      "why_classification": "Withdrawing the misstatement is a local edit; no other result relies on it."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2305.14703",
+  "question_id": "Q1",
+  "run_name": "q1-natural-claude-fable5.1-medium-all200-20260910-v1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e417f6e97606e57c1bddcad5ccc77b48f42186a7406fb76629c7aa30c1d3514b",
+  "status": "ok"
+}

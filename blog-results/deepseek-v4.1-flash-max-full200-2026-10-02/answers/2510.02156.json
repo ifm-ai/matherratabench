@@ -1,0 +1,166 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T\\label{eq:wi1}",
+          "tag": "thm:woodberry_identity"
+        }
+      ],
+      "failure_explanation": "The Woodbury identity produces a term with an inverse, namely $(M^TM+\\lambda I_n)^{-1}$, and different powers of $\\lambda$. The source omits the inverse and uses $\\lambda^3$, so the expansion is wrong. The subsequent comparison of LHS and RHS relies on this incorrect formula. The lemma statement is true, but the proof as written is invalid.",
+      "failure_location": {
+        "quote": "Using Woodberry Identity \\cite{woodberryidentity} we can simplify $(MM^T+\\tilde{\\lambda}I_r)^{-1}$ and $(M^TM+\\tilde{\\lambda}I_n)^{-1}$ as :",
+        "tag": "thm:woodberry_identity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the Woodbury expansion with the correct formula or prove the identity directly by multiplying both sides by $MM^T+\\lambda I_r$ and $M^TM+\\lambda I_n$.",
+      "overall_effect": "The proof of the inverse identity is invalid, so the identity is not established by the given argument. Downstream uses rely on an unproven lemma, though the identity itself is standard.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Incorrect Woodbury expansion in proof of regularized inverse identity",
+      "why_classification": "A short, local algebra correction preserves the lemma and all downstream claims."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_{t+1} - x_\\star\\|_2 &= \\|\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}(x_t - x_\\star)\\|_2 [\\text{Using \\eqref{eq:errbound2}}]",
+          "tag": "thm:err_bound"
+        }
+      ],
+      "failure_explanation": "The operator $\\lambda(A_\\tau^T A_\\tau+\\lambda I)^{-1}$ has eigenvalue 1 on the nullspace of $A_\\tau$, so any component of $x_t-x_\\star$ in that nullspace is not contracted. The bound using $\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau)$ only applies when $x_t-x_\\star$ lies in the row space of $A_\\tau$. The theorem does not assume this. For example, with $A_\\tau=[1\\ 0]$, $x_t=(0,1)$, $x_\\star=(1,0)$, the update leaves the second component and violates the claimed inequality. The expectation bound inherits the same defect.",
+      "failure_location": {
+        "quote": "\\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau) + \\tilde{\\lambda}} \\|x_t - x_\\star\\|_2",
+        "tag": "thm:err_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add the hypothesis $x_t-x_\\star\\in\\mathcal{R}(A_\\tau^T)$ (or project the error onto that row space) and state the bound only on that subspace; for global convergence, provide a new analysis accounting for nullspace components across sampled blocks.",
+      "overall_effect": "The claimed exponential convergence rate for the random block updates is not valid as stated. The algorithm's convergence guarantee is unsupported without an additional range condition or a more detailed multi-block analysis.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "Per-step contraction bound misses nullspace components",
+      "why_classification": "The theorem is a central convergence guarantee; the given proof establishes at most a conditional contraction on the selected block's row space, and a correct global rate would require a new argument or a major weakening."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\min}^{+}(A_\\tau^{T}A_\\tau)}\\lesssim \\|x_{t+1}-x_\\star\\|_2^2 & \\lesssim \\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\max}^{+}(A_\\tau^{T}A_\\tau)}",
+          "tag": "thm:convergence_boost"
+        },
+        {
+          "quote": "we minimize the above upper and lower bounds of the error $\\|x_{t+1}-x_\\star\\|_2^2$ in \\cref{eq:errbound5}, as $\\lambda_{\\min}^{+}, \\lambda_{\\min}^{-}$ are bounded for a given system",
+          "tag": "thm:convergence_boost"
+        }
+      ],
+      "failure_explanation": "The upper bound depends on the ratio $\\|A_\\tau x_t-b\\|_2^2/\\lambda_{\\max}^{+}(A_\\tau^TA_\\tau)$. Selecting rows with the largest residual norm maximizes the numerator but ignores the denominator $\\lambda_{\\max}^{+}(A_\\tau^TA_\\tau)$, which also depends on the selected block. A block with slightly smaller residual norm but much smaller $\\lambda_{\\max}^{+}$ can give a smaller upper bound. The proof treats the eigenvalues as if they were uniform constants, which does not justify the claimed minimization. The regularization is also replaced by the unregularized pseudoinverse update.",
+      "failure_location": {
+        "quote": "updating the solution $x_t$ with respect to a block containing $\\left\\lfloor\\frac{m}{k}\\right\\rfloor$ rows that contribute the most to the residual, reduces the upper and lower bounds of the error thus improving convergence in general.",
+        "tag": "thm:convergence_boost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the selection rule with one that explicitly maximizes the relevant ratio, or add assumptions controlling the variation of $\\lambda_{\\max}^{+}$ across candidate blocks and prove a precise comparison bound.",
+      "overall_effect": "The claimed convergence boost from the residue-based dynamic block is not established. The prose claim that this block minimizes the full residual norm is likewise unsupported.",
+      "primary_affected_tag": "thm:convergence_boost",
+      "target_type": "formal_result",
+      "title": "Residual-top block selection does not minimize the stated error bounds",
+      "why_classification": "The theorem's broad convergence-boost claim is not proven; a precise version would require a contained new argument or a modified selection rule, but the algorithm and other claims can survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\State $h_{i,k} = w_i^T v_k$, \\quad $w_k = w_k - h_{i,k}v_i$",
+          "tag": "algo:fabgmres_dobk"
+        }
+      ],
+      "failure_explanation": "In FGMRES/GMRES, the coefficient for orthogonalizing the current vector $w_k$ against the basis vector $v_i$ is $h_{i,k}=v_i^T w_k$. The algorithm uses $w_i^T v_k$, which does not involve the current $w_k$ being orthogonalized and uses a different vector $w_i$. As written, the Arnoldi relation and the residual-minimization guarantee of FGMRES fail.",
+      "failure_location": {
+        "quote": "\\State $h_{i,k} = w_i^T v_k$, \\quad $w_k = w_k - h_{i,k}v_i$",
+        "tag": "algo:fabgmres_dobk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Change the coefficient to $h_{i,k}=v_i^T w_k$ (or $h_{i,k}=w_k^T v_i$).",
+      "overall_effect": "The FGMRES algorithm as displayed does not correctly orthogonalize the new basis vector, so its stated minimization property is not valid as written.",
+      "primary_affected_tag": "algo:fabgmres_dobk",
+      "target_type": "algorithm",
+      "title": "Incorrect orthogonalization coefficient in FGMRES",
+      "why_classification": "A one-line correction restores the standard FGMRES step and preserves the intended algorithm."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, when $x_k$ is an approximate solution of \\eqref{eq:linear_system} obtained through \\cref{algo:fabgmres_dobk}, it is the minimum residual-norm solution, since $x_k \\in \\mathcal{R}(A^T) \\perp \\mathcal{N}(A)$.",
+          "tag": null
+        },
+        {
+          "quote": "Now from the last step of \\cref{algo:fabgmres_dobk}, it is clear that when $z_{k} \\in \\mathcal{R}(A^T)$, $u_{k}$ $\\in \\mathcal{R}(A^T)$, and thus $x_{k}$ $\\in \\mathcal{R}(A^T)$ provided $x_0 \\in \\mathcal{R}(A^T)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof establishes only that $x_k\\in\\mathcal{R}(A^T)$, i.e., $x_k\\perp\\mathcal{N}(A)$. This is necessary for the minimum-norm least-squares solution but not sufficient for minimizing $\\|b-Ax_k\\|_2$. A vector in $\\mathcal{R}(A^T)$ need not satisfy the normal equations $A^T(b-Ax_k)=0$. The claim that it is a minimum-residual solution is therefore unsupported.",
+      "failure_location": {
+        "quote": "If $z_0$ (the initial solution with which ROR-BK as an inner-iteration starts) and $x_0 \\in \\mathcal{R}(A^{T})$, FABGMRES with an inner iteration of ROR-BK (\\cref{algo:fabgmres_dobk}) gives a solution $x_k \\in \\mathcal{R}(A^T)$ minimizing $\\norm{b-Ax_k}_2$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the conclusion with $x_k\\in\\mathcal{R}(A^T)$, or add a convergence argument showing that the FGMRES iterates satisfy the normal equations in the limit.",
+      "overall_effect": "The remark overstates the guarantee of FABGMRES with ROR-BK inner iterations; only the range property is shown.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Range membership does not imply residual minimization",
+      "why_classification": "The false minimization guarantee is a substantive overclaim, but the established range property and the intended algorithm can be retained with a limited weakening."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let us denote the sampling procedure of \\cref{algo:roar-bk} as $\\mu$.",
+          "tag": "thm:dobk_for_least_square_problems"
+        },
+        {
+          "quote": "\\State \\label{step:roar-bk}$r = b - A x_{j}$ and pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$ where $i=1,2,\\dots m$",
+          "tag": "algo:roar-bk"
+        },
+        {
+          "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}. Appendix at \\cite{ReRBK} outlines the analysis of the convergence of $x^{(\\mu)}$ to $x_\\star$ as $m \\rightarrow \\infty$.",
+          "tag": "thm:dobk_for_least_square_problems"
+        }
+      ],
+      "failure_explanation": "The theorem defines $\\bar W=\\mathbb{E}_{S\\sim\\mu}[W(S)]$ and $\\bar P=\\mathbb{E}_{S\\sim\\mu}[P(S)]$ as fixed matrices and then uses a fixed-sampling expectation recursion. However, if $\\mu$ is the ROR-BK sampling procedure, it includes the dynamic block selected from the current residual, so $\\mu$ depends on the current iterate $x_t$. Consequently $\\bar W$ and $\\bar P$ are not constant, and the linear recursion $\\mathbb{E}[x_{t+1}]=(I-\\bar P)\\mathbb{E}[x_t]+A^T\\bar W b$ is not justified. The proof cites an external fixed-sampling result without verifying its hypotheses. Additionally, $x^{(\\mu)}$ is defined only as an argmin and may not be unique, so the stated convergence target is ambiguous.",
+      "failure_location": {
+        "quote": "Consider the ROR-BK algorithm, namely \\cref{algo:roar-bk} with $M(A_S) = (A_S A_S^\\top + \\tilde{\\lambda} I)^{-1}$ and $\\mu$ be the sampling rule defined earlier.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Either restrict the theorem to the fixed random block sampling component and explicitly exclude the dynamic block, or develop a new convergence analysis for the state-dependent sampling rule and specify the unique minimum-norm weighted least-squares solution.",
+      "overall_effect": "The claimed convergence guarantee for ROR-BK as a weighted least-squares solver is not established for the actual algorithm, because the dynamic residual-based block makes the sampling state-dependent.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "Fixed-sampling convergence theorem does not apply to state-dependent ROR-BK sampling",
+      "why_classification": "The theorem's proof relies on a fixed-sampling framework that does not cover the state-dependent dynamic block central to ROR-BK; repairing it requires a new analysis or a substantial restriction of the claimed result."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n03a",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

@@ -1,0 +1,124 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:Phi_smooth",
+        "thm:outer_bound",
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "there exist constants $ C > 0 $, $ \\theta \\in [1/2,1)$, and $ \\sigma > 0 $ such that for any $x \\in \\Omega$,",
+          "tag": "ass:Lip_Smo_KL"
+        },
+        {
+          "quote": "where $C, \\theta, \\gamma, \\sigma, L_f$ are given in Assumption~\\ref{ass:Lip_Smo_KL}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The assumption lists C, theta, and sigma as the constants, but the level set L(x) uses gamma, and later gamma is treated as given in the assumption. Thus the local KL condition is ill-defined because gamma is never introduced or quantified.",
+      "failure_location": {
+        "quote": "\\mathcal{L}(x) := \\{y : 0< F^*(x)-F(x, y) \\leq \\gamma\\, \\dist(0, \\partial \\Psi(x))^\\sigma\\}.",
+        "tag": "ass:Lip_Smo_KL"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add 'and gamma > 0' to the list of constants in Assumption \\ref{ass:Lip_Smo_KL}(iii) and specify its range.",
+      "overall_effect": "All results relying on the local KL condition, including the Holder smoothness theorem and the complexity bounds, depend on an undefined parameter.",
+      "primary_affected_tag": "ass:Lip_Smo_KL",
+      "target_type": "other",
+      "title": "Undefined parameter gamma in local KL assumption",
+      "why_classification": "A short local addition of the missing positive parameter preserves every substantive claim."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the proximal operators of $p$ and $q$ can be computed exactly.",
+          "tag": "ass:Lip_Smo_KL"
+        },
+        {
+          "quote": "the total number of evaluations of the proximal operators of $p$ and $q$, and the gradient $\\nabla f$ performed by Algorithm~\\ref{algo_implement:whole} is at most $\\widehat{K}_\\epsilon$, $\\widehat{N}_\\epsilon$, and $\\widehat{K}_\\epsilon + \\widehat{N}_\\epsilon$",
+          "tag": "thm:operations"
+        }
+      ],
+      "failure_explanation": "The update minimizes over the ball B(x^k,r), so it is a ball-constrained proximal step, not the standard proximal operator of p. The paper only assumes exact computation of the unconstrained proximal operators of p and q. Computing this constrained argmin generally requires solving an additional subproblem, so it cannot be counted as one evaluation of the proximal operator of p.",
+      "failure_location": {
+        "quote": "x^{k+1} = \\mathop{\\arg\\min}_{x \\in \\cB(x^k, r)} \\Big\\{ \\langle \\nabla_x f(x^{k}, y^{k}), x \\rangle + \\frac{L_k}{2} \\|x - x^k\\|^2 + p(x) \\Big\\}.",
+        "tag": "algo_implement:whole"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Either add an oracle assumption for the ball-constrained proximal step and restate the complexity in terms of that oracle, or modify the algorithm and analysis to use only unconstrained proximal steps.",
+      "overall_effect": "The first-order oracle complexity bound in Theorem thm:operations, which counts proximal p evaluations, is unsupported. The algorithm may not be implementable under the stated oracle model.",
+      "primary_affected_tag": "algo_implement:whole",
+      "target_type": "algorithm",
+      "title": "Ball-constrained proximal step not covered by the stated prox oracle",
+      "why_classification": "The advertised first-order oracle complexity in terms of proximal p evaluations is materially invalidated; repairing it requires changing the oracle model or the algorithm."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:outer_bound",
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Algorithm~\\ref{algo_implement:whole} generates a pair $(x^k, y^k)$ in at most $\\widehat{K}_\\epsilon$ iterations such that $x^k$ is an $(\\epsilon, \\gamma \\epsilon^\\sigma/(4L_f))$-stationary point",
+          "tag": "thm:outer_bound"
+        }
+      ],
+      "failure_explanation": "The algorithm contains an infinite for-loop with no termination test or return statement. As written, it does not stop or output a pair in at most \\hat K_epsilon iterations.",
+      "failure_location": {
+        "quote": "\\FOR{$k=0,1,2,\\dots$}",
+        "tag": "algo_implement:whole"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Insert a stopping condition that returns (x^k,y^k) when x^k is an (epsilon,r)-stationary point, or when the equivalent subgradient-distance and step-size conditions used in the proof hold.",
+      "overall_effect": "The algorithmic guarantee that the procedure generates a pair within a bounded number of iterations is not realized by the pseudocode as written.",
+      "primary_affected_tag": "algo_implement:whole",
+      "target_type": "algorithm",
+      "title": "Algorithm lacks a termination and return statement",
+      "why_classification": "Adding the missing termination check is a short local repair that preserves the mathematical result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:EB",
+        "thm:Phi_smooth"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$ q:\\mathbb{R}^m \\to \\mathbb{R} \\cup \\{+\\infty\\} $ is proper closed convex",
+          "tag": "ass:Lip_Smo_KL"
+        }
+      ],
+      "failure_explanation": "A proper closed convex function need not have a closed domain; for example, q(y)=1/y on (0,infty) and infinity otherwise is proper closed convex, but its domain (0,infty) is not closed. Thus the claim that dom F(x,cdot) is closed does not follow from the assumptions. This is used to conclude the limit point y^* belongs to dom F.",
+      "failure_location": {
+        "quote": "In addition, notice from Assumption \\ref{ass:Lip_Smo_KL} that $\\dom\\,F(x, \\cdot)$ is closed.",
+        "tag": "lem:QG"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the closedness claim with a direct argument that the sequence q(Y(t_k)) is bounded and q is closed, so y^* belongs to dom F(x,cdot).",
+      "overall_effect": "The proof of Lemma lem:QG has an invalid step. Consequently, the derivation of the quadratic growth estimate, and the later use of Lemma lem:EB in Theorem thm:Phi_smooth, rely on an unsupported claim.",
+      "primary_affected_tag": "lem:QG",
+      "target_type": "formal_result",
+      "title": "False closedness of domain in Lemma QG proof",
+      "why_classification": "The lemma is true and the gap is a short local argument; all substantive conclusions survive."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2507.01932",
+  "question_id": "Q1",
+  "run_name": "dsv41flash-max-full200-n01b",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "9790ebe19e8cb3d7b5443908f87fa50a6ad237df9c1698f138bec10372c5e633",
+  "status": "ok"
+}

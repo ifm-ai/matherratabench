@@ -1,0 +1,198 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $\\lambda_i u_i = 0$ and $\\mu_i(u_i - C_{k(i)}) = 0$ such that",
+          "tag": null
+        },
+        {
+          "quote": "Applying complementary slackness yields the characterization in",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Here λ_i ≥ 0 is the multiplier of u_i ≥ 0 and μ_i ≥ 0 that of u_i ≤ C. For a minimization the correct stationarity condition is G_i − s_iρ = λ_i − μ_i. As written, at α_k = 0 (so μ_k = 0) it gives G_k − ρ = −λ_k ≤ 0, i.e. τ_k ≥ −ρ. That is the opposite of Table 1's τ_k ≤ −ρ, and every other row of the table is reversed in the same way. Table 1 is correct, but it is not derivable from the condition as stated.",
+      "failure_location": {
+        "quote": "G_i - s_i\\rho = \\mu_i - \\lambda_i",
+        "tag": "eq:kkt-stationarity"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the right-hand side by λ_i − μ_i, or equivalently write the Lagrangian with the correct multiplier signs.",
+      "overall_effect": "The stated derivation of the KKT characterization is invalid. Later sections use Table 1 directly, which is correct, so they are unaffected.",
+      "primary_affected_tag": "eq:kkt-stationarity",
+      "target_type": "other",
+      "title": "Sign error in KKT stationarity condition; Table 1 does not follow from it",
+      "why_classification": "A local sign fix restores consistency, and every downstream claim already rests on the correct table."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the KKT conditions still bound $-\\rho$ from",
+          "tag": null
+        },
+        {
+          "quote": "A descent direction exists if and only if $\\tau_i > \\tau_j$.",
+          "tag": null
+        },
+        {
+          "quote": "$[\\tau_{j^*}, \\tau_{i^*}]$ (from~\\eqref{eq:mvp} and Table~\\ref{tab:kkt}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "By Table 1, at optimality every i in Iup has τ_i ≤ −ρ and every j in Idown has τ_j ≥ −ρ. Hence max_Iup τ = τ_{i*} ≤ −ρ ≤ τ_{j*} = min_Idown τ, consistent with Δ ≤ 0 at an optimum. The display asserts the opposite, which is impossible whenever Δ < 0 at convergence. The shrinking section makes the same misreading when it claims, 'from (mvp) and Table', that the optimal −ρ lies in [τ_{j*}, τ_{i*}] at a non-optimal iterate. Table 1 describes the optimum only and does not support that claim.",
+      "failure_location": {
+        "quote": "\\;\\geq\\; -\\rho \\;\\geq\\;",
+        "tag": "eq:bias-bounds"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Reverse the inequality to τ_{i*} ≤ −ρ ≤ τ_{j*} at optimality. Present the shrinking interval as a heuristic rather than a consequence of Table 1.",
+      "overall_effect": "The stated KKT bracket for b is wrong. The midpoint estimator is unaffected because it is symmetric. The justification of the shrinking thresholds is unsupported.",
+      "primary_affected_tag": "eq:bias-bounds",
+      "target_type": "other",
+      "title": "Reversed KKT bounds on the threshold −ρ",
+      "why_classification": "A local correction suffices; the bias estimate, the algorithm and the guarantees are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Free variables ($0 < u_i < C_{k(i)}$) are never frozen.",
+          "tag": null
+        },
+        {
+          "quote": "remove from $\\Aactive$, stop updating $\\tau_k$ and $\\tau_{N+k}$.",
+          "tag": null
+        },
+        {
+          "quote": "update $\\mathrm{counter}$ per \\eqref{eq:s1}--\\eqref{eq:s4};",
+          "tag": "alg:smo"
+        }
+      ],
+      "failure_explanation": "Freezing acts on a training point, removing both α_k and α_k*, but criteria (s1)–(s4) are per variable. Two problems follow:\n- When α_k = α_k* = 0, both (s1) and (s3) apply and may disagree, so 'the applicable criterion' is undefined.\n- When one variable is at a bound and the other is free (e.g. α_k = 0, α_k* free), (s1) can be met. Then k is frozen together with a free variable, contradicting the stated rule.",
+      "failure_location": {
+        "quote": "For each $k \\in \\Aactive$, increment $\\mathrm{counter}_k$ if the",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Freeze k only if neither of its variables is free and every bound variable of k meets its own criterion, or shrink at the level of individual variables.",
+      "overall_effect": "The active-set procedure is ambiguous and can freeze KKT-relevant variables. This causes premature inner termination and extra unshrinking cycles. The final reconstruction check still guards correctness.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Per-training-point shrinking rule is ill-defined and can freeze free variables",
+      "why_classification": "A routine specification fix; correctness is protected by unshrinking and no guarantee changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$t = 1, 2, \\ldots, \\mathrm{maxiter}$}",
+          "tag": "alg:smo"
+        },
+        {
+          "quote": "else $\\hat{b} \\leftarrow (\\tau_{i^*}+\\tau_{j^*})/2$",
+          "tag": "alg:smo"
+        }
+      ],
+      "failure_explanation": "The only loop is the for-loop over t, which has already exited, so 'continue outer loop' has no target. Control flow after unshrinking is undefined. An exit caused by reaching maxiter without Δ ≤ tol is not distinguished from convergence. The algorithm may therefore return an uncertified iterate, or re-loop with no iteration bound. The midpoint fallback uses i* and j* selected over the shrunk set before reconstruction, not the full-set extremizers from (full-violation).",
+      "failure_location": {
+        "quote": "continue outer loop",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Wrap the loop in an outer repeat-until with a global iteration budget. Recompute i* and j* over the full sets after reconstruction. Report non-convergence when the budget is exhausted.",
+      "overall_effect": "As written, the algorithm does not deliver its contract of a certified ε_tol-optimal (α, α*, b).",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Unshrinking branch jumps to a nonexistent outer loop; termination and final bias underspecified",
+      "why_classification": "A standard control-flow fix restores the intended procedure with no change to the method or its guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\Omega^*_{k\\ell} = K(\\mathbf{x}_k, -\\mathbf{x}_\\ell)$",
+          "tag": null
+        },
+        {
+          "quote": "need not be positive semi-definite, so $\\eta_s < 0$ is possible.",
+          "tag": null
+        },
+        {
+          "quote": "For $a = -1$, $\\Omega_s$ may fail to be positive",
+          "tag": null
+        },
+        {
+          "quote": "symmetric-kernel variant~(m2, Section~\\ref{sec:m2}), $\\eta$ may be negative",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Ω* is a cross-kernel matrix, not a Gram matrix. For the RBF kernel with x_2 = −x_1 ≠ 0, Ω* = [[e^{−4γ‖x_1‖²}, 1], [1, e^{−4γ‖x_1‖²}]] has negative determinant. The premise is therefore false, and the a = +1 PSD and convergence claim is unsupported as argued.\n\nThe valid argument assumes K(−x,−x′) = K(x,x′), which holds for RBF. It writes K(x,x′) + aK(x,−x′) = ½⟨φ(x)+aφ(−x), φ(x′)+aφ(−x′)⟩, which is PSD for both a = ±1. So the claims that a = −1 (with RBF) can give η_s < 0, needs a fallback, and falls outside the convergence proof are also wrong. Without this invariance, Ω_s need not even be symmetric for either sign.",
+      "failure_location": {
+        "quote": "follows from the fact that $\\Omega$ and $\\Omega^*$ are individually PSD.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Assume a symmetric kernel with K(−x,−x′) = K(x,x′). Prove Ω_s ⪰ 0 for both signs via the feature map φ(x) + aφ(−x). Extend the convergence statement to a = −1 and drop the claims of negative curvature.",
+      "overall_effect": "The m2 convergence guarantee for a = +1 rests on a false premise. The statements excluding a = −1 from the guarantees and requiring the negative-curvature fallback are incorrect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Incorrect PSD analysis of the symmetric kernel matrix Ω_s",
+      "why_classification": "It needs a replacement argument plus an added kernel condition, and several m2 statements must be revised. The core results survive, and are in fact strengthened."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Rewriting criteria~\\eqref{eq:s3} and~\\eqref{eq:s4} in terms of $\\tau_k$",
+          "tag": "lem:asymmetry"
+        },
+        {
+          "quote": "yielding a smaller effective active set and",
+          "tag": null
+        },
+        {
+          "quote": "The asymmetry in Lemma~\\ref{lem:asymmetry} is the direct consequence of",
+          "tag": null
+        },
+        {
+          "quote": "heuristic adapted to the sample-dependent bounds is derived and shown to",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims that the shrinking asymmetry yields smaller active sets and practical convergence acceleration. Lemma lem:asymmetry only re-expresses (s3)–(s4) through the identity τ_{N+k} = τ_k + 2y_kε/100. The tests on α_k* still act on the variable's own score τ_{N+k} and have exactly the standard SMO form, so the set of frozen variables is unchanged; nothing about active-set size or speed follows.\n\nThe gap comes from the ε-tube term in q, not from the sample-dependent bounds. Standard ε-SVR has the same asymmetry with gap 2ε. No analysis or experiment in the source supports the acceleration claim.",
+      "failure_location": {
+        "quote": "(Lemma~\\ref{lem:asymmetry}) provides a practical convergence",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Withdraw the claim or state it as a conjecture, and attribute the gap to the tube term. Alternatively, supply empirical or analytical evidence of acceleration.",
+      "overall_effect": "The advertised practical benefit of the MAPE-adapted shrinking, in the abstract, computational remarks and conclusion, is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unsupported claim that the MAPE-induced shrinking asymmetry accelerates convergence",
+      "why_classification": "The repair withdraws an advertised contribution, but the formal algorithmic results are unaffected."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "claude-opus-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

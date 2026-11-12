@@ -1,0 +1,174 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Theorem  \\ref{linearoptcond} establishes that $(\\wvx, \\widehat{\\vomega})$ is a minimizer of the model \\eqref{constrain_model}.",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "A vector $\\widehat{\\vx}$ minimizes \\eqref{constrain_model} locally or globally if and only if $\\abs{\\wvx_i}\\neq \\mu$ for all $i$ and there exists $\\wvy\\in\\rr^m$ such that ",
+          "tag": "linearoptcond"
+        },
+        {
+          "quote": "0, & \\text{if } |\\vx_i| \\leq \\mu,\\",
+          "tag": "porpoptw"
+        }
+      ],
+      "failure_explanation": "The proof invokes Theorem \\ref{linearoptcond} to declare the limit a minimizer, but that theorem requires |x̂_i| ≠ μ for all i, which is never established for the limit; the filter H_μ maps a component with |x̂_i| = μ to 0 (inactive), so a BCD fixed point can sit exactly on the non-differentiable point. Counterexample: A = [1 1] ∈ R^{1×2} has spark(A)=2=m+1; take b = 2μ and any initialization with ω̂⁰ = H_μ(x̂⁰) = (0,0) and Q_μ(x̂⁰,ω̂⁰) < 2 (e.g. x̂⁰ = (0.6μ,0.6μ), Q⁰ = 0.72μ²). The x-update returns the unique feasible minimizer x̂¹ = (μ,μ) and H_μ(x̂¹) = (0,0), so the sequence is constant and converges to ((μ,μ),(0,0)); yet Φ_μ(μ,μ) = 2 > Φ_μ(0,2μ) = 1 and Φ_μ(t,2μ−t) < 2 for t near μ on the feasible line, so the limit is not even a local minimizer. The proof also passes to the limit in the stationarity system indexed by ω̂^{k_j−1} while writing the limit with ω̂ = lim ω̂^{k_j}, never showing the two coincide (H_μ is discontinuous at ±μ). Hence the stated conclusion is false as written.",
+      "failure_location": {
+        "quote": "Then, the sequence $\\{(\\wvx^{k},\\widehat{\\vomega}^{k})\\}_k$ is bounded and converges to the minimizer of model \\eqref{constrain_model} in a finite number of steps.",
+        "tag": "covgergalg1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Weaken the statement to finite convergence to a fixed point of the iteration that satisfies the stationarity system, and add a nondegeneracy hypothesis (no iterate component attains ±μ); under it the paper's own invocation of Theorem \\ref{linearoptcond} then gives local minimality, and boundedness follows from the finitely many binary patterns.",
+      "overall_effect": "The headline noise-free guarantee (Theorem covgergalg1, echoed in the abstract and the experimental claim 'confirming finite step convergence') is unreliable: the algorithm is only shown to terminate at a fixed point of the iteration, which need not be a local or global minimizer of \\eqref{constrain_model}.",
+      "primary_affected_tag": "covgergalg1",
+      "target_type": "formal_result",
+      "title": "Noise-free finite-convergence theorem claims convergence to a minimizer, but BCD fixed points on the breakpoint ±μ need not be minimizers",
+      "why_classification": "The repair is a limited weakening plus a standard nondegeneracy hypothesis, leaving a recognizably comparable finite-convergence result; no new proof architecture is needed, but the unconditional 'converges to the minimizer' guarantee is not preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\big(A^\\top A + \\tfrac{2}{\\mu^2}\\mathrm{diag}(\\mathbf{1}-\\widehat\\vomega^{(k-1)})\\big)\\wvx^k=A^\\top\\vb-A^\\top\\widehat\\vy^{k}.",
+          "tag": "covgergalg1"
+        },
+        {
+          "quote": "The norm of $\\vx$ is bounded by\n$\\|\\vx\\|_2 \\leq \\|(A^\\top A + \\lambda D)^{-1}\\|_2 \\|\\vc\\|_2$.",
+          "tag": "thm:uniqueness_boundedness"
+        }
+      ],
+      "failure_explanation": "Theorem thm:uniqueness_boundedness bounds the solution of one system with a prescribed right-hand side c; here the right-hand side is A^⊤b − A^⊤ŷ^k, where ŷ^k is itself an output of the iteration whose boundedness is never established in the proof. The citation therefore yields no uniform bound over k, so the claimed boundedness of {(x̂^k,ω̂^k)} does not follow. (The conclusion is true — ω̂^k is binary with ‖ω̂^k‖₀ < spark(A), so only finitely many deterministic closed-form updates occur — but the paper gives no such argument.)",
+      "failure_location": {
+        "quote": "According to Theorem \\ref{thm:uniqueness_boundedness} and the update rule in \\eqref{updateforw}, the sequence $\\{(\\wvx^k,\\widehat{\\vomega}^k)\\}_k$ is bounded.",
+        "tag": "covgergalg1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Supply the missing one-sentence argument: ω̂^k is binary with ‖ω̂^k‖₀ ≤ Q_μ(x̂⁰,ω̂⁰) < spark(A), so only finitely many matrices diag(1−ω̂^{k−1}) occur, and each closed-form update \\eqref{updateforx_I1}–\\eqref{updateforw} is a bounded deterministic function of them.",
+      "overall_effect": "The boundedness part of Theorem covgergalg1 is unsupported as written; the rest of the paper does not otherwise rely on this step.",
+      "primary_affected_tag": "covgergalg1",
+      "target_type": "formal_result",
+      "title": "Boundedness of the BCD sequence inferred from a result that bounds a single linear-system solution",
+      "why_classification": "A short, local, routine argument completes the step and every substantive claim and guarantee is preserved, so the issue is minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "A vector $\\widehat{\\vx}$ is a local or global minimizer of \\eqref{obj_singleu}  if and only if $\\abs{\\wvx_i}\\neq \\mu$ for all $i$, and there exists $\\widehat{\\vomega}\\in\\rr^n$ such that ",
+          "tag": "noise_optcond"
+        },
+        {
+          "quote": "0, & \\text{if } |\\vx_i| \\leq \\mu,\\",
+          "tag": "porpoptw"
+        }
+      ],
+      "failure_explanation": "The proof only derives, at the subsequence limit, the stationarity relation αA^⊤(Ax̂−b) + (2/μ²)(1−ω̂)∘x̂ = 0 and then cites Theorem \\ref{noise_optcond}, whose hypothesis |x̂_i| ≠ μ is never established. It also asserts ω̂ = H_μ(x̂) 'similar to' the noise-free proof, although H_μ is discontinuous at ±μ, so the limit of ω̂^k = H_μ(x̂^k) need not equal H_μ(x̂). At any BCD fixed point with a borderline component (|x̂_i| = μ, ω̂_i = 0), the stationarity system forces αa_i^⊤(Ax̂−b) = −2x̂_i/μ², while the outward one-sided derivative of φ_μ at ±μ is 0, so G_μ(x̂ + teᵢ) − G_μ(x̂) = −2x̂_it/μ + O(t²) < 0 for small t > 0: the limit is not a local minimizer of \\eqref{obj_singleu}. Thus the stated convergence 'to the minimizer' is unproven (and false whenever such a fixed point is reached).",
+      "failure_location": {
+        "quote": "According to Theorem \\ref{noise_optcond}, the limit point $(\\wvx,\\widehat{\\vomega})$ is a minimizer of model \\eqref{obj_singleu}.",
+        "tag": "convergalg2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add a nondegeneracy hypothesis (no iterate/limit component attains ±μ) and weaken the conclusion to 'a local minimizer when the hypothesis holds', mirroring the repair of Theorem \\ref{covgergalg1}; the paper's own optimality theorem then applies.",
+      "overall_effect": "The finite-step convergence guarantee for the noisy model (Theorem \\ref{convergalg2}, advertised in the abstract and conclusions) is unreliable; only boundedness, finite termination, and stationarity of the bivariate reformulation are supported.",
+      "primary_affected_tag": "convergalg2",
+      "target_type": "formal_result",
+      "title": "Noisy-case convergence theorem applies the optimality condition outside its hypothesis",
+      "why_classification": "A limited weakening plus one added hypothesis, using the paper's existing optimality characterization, resolves the issue without new proof architecture, while the unconditional 'converges to the minimizer' claim is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \n$\\mathcal{K}+1=\\{i\\mid \\abs{(\\wvx_{k})_i}\\leq c_{k+1}\\}$, $c_{k+1}=\\tfrac{\\mu_{k}}{\\rho}$, and $\\rho>1$ is a constant.",
+          "tag": "updatemu"
+        },
+        {
+          "quote": "the number of elements in $\\widehat{x}^{j}$ with absolute values exceeding $\\mu$ may exceed $m$, potentially leading to singular matrices.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The radicand's denominator is m − n + card(𝒦+1) = card(𝒦+1) − (n − card(𝒦+1)), which is nonpositive whenever more than m entries of x̂_k exceed c_{k+1} = μ_k/ρ. That is exactly the situation the strategy is advertised to fix ('the number of elements ... with absolute values exceeding μ may exceed m'), and it also occurs whenever the current iterate already has card(ℐ₁) = m 'large' entries plus any entry in (μ_k/ρ, μ_k]. There the update is undefined (division by zero or square root of a negative number), so step 4 of Algorithm \\ref{continuescheme} cannot be executed. Moreover, the rule is only asserted ('we can easily obtain' from Lemmas \\ref{mudecre_objincre} and \\ref{upperbound_lema2_rev}): neither lemma yields it, and no argument shows the updated μ preserves the promised invertibility.",
+      "failure_location": {
+        "quote": "\\mu_{k+1}=\\min\\{\\max\\{c_{k+1}, \\sqrt{\\tfrac{\\sum_{i\\in\\mathcal{K}+1}(\\wvx_{k})_i^2}{m-n+\\mathrm{card}(\\mathcal{K}+1)}}\\}, \\mu_{k}\\},",
+        "tag": "updatemu"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Guard the rule (define μ_{k+1} = c_{k+1}, or skip the update, whenever m − n + card(𝒦+1) ≤ 0) and state the operating assumption under which the update is claimed to preserve invertibility; no formal theorem changes.",
+      "overall_effect": "Algorithm \\ref{continuescheme}'s μ-update is ill-defined in precisely the high-count regime it is advertised to stabilize; the promised numerical-stability guarantee of the continuation strategy is unsupported. No formal theorem depends on this step.",
+      "primary_affected_tag": "updatemu",
+      "target_type": "algorithm",
+      "title": "Continuation update rule for μ is undefined in the regime it targets and is asserted without derivation",
+      "why_classification": "A local guard or an explicit operating-range assumption restores a well-defined heuristic; no formal result or advertised guarantee depends on the rule, so the loss is negligible."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "If $\\mu$ satisfies $ \\mu< |\\wvx_i|$ for all $i \\in \\mathrm{supp}(\\wvx)$, then $\\wvx$ is a local minimizer of $\\min_{\\vx\\in\\cS} \\Phi_{\\mu}(\\vx)$.",
+          "tag": "TH:s-sparse"
+        }
+      ],
+      "failure_explanation": "The prose asserts the local-optimality property for any s-sparse solution, with no condition on μ, while the proven result (Theorem \\ref{TH:s-sparse}) requires μ < |x̂_i| for all i in the support; without it the claim is false, since entries below μ are shrunk by the penalty and such a sparse vector is not a local minimizer. Additionally, 'differentiability at convergence points' attributes to algorithm limits a property (Theorems \\ref{THdifferentiable_refined}, \\ref{Gfuncontinus}) proven only at optimal solutions; per ISSUE-001/ISSUE-003 the algorithm's limit need not be a minimizer, so this restatement claims more than the formal content supports.",
+      "failure_location": {
+        "quote": "Theoretically, we have proven that any $s$-sparse solution remains local optima under TH, differentiability at convergence points, and finite-step convergence of the proposed block coordinate descent algorithm under spark conditions.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restore the qualifier in the conclusions text (local optimality holds for s-sparse solutions whose nonzero magnitudes all exceed the chosen μ); no formal result changes.",
+      "overall_effect": "The conclusions section advertises an unconditional s-sparse local-optimality guarantee and differentiability at algorithm outputs; the paper only establishes the threshold-conditioned local optimality and differentiability at optima.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Conclusion overstates the s-sparse local-optimality result by dropping the threshold hypothesis",
+      "why_classification": "Reinserting the hypothesis into the prose fully restores fidelity; no mathematical content is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "SNR   L1   TL1   L1L2   L0   MCP   Lp   TH\n30 1.6593 3.6506 2.1794 0.4138 3.7203 4.0526 0.4270",
+          "tag": null
+        },
+        {
+          "quote": "Although the $L_0$ model exhibits competitive performance at higher noise levels, its effectiveness does not improve significantly as the noise decreases.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Conclusion asserts that for noisy observations the TH method 'maintains the lowest RRE the entire range of SNR levels'. The paper's own reported results contradict this: in the right panel of Figure \\ref{vary_SNR} (oversampled DCT matrix A₂), at SNR = 30 dB the L₀ method attains a mean RRE of 0.4138 while TH attains 0.4270, so TH is not lowest there; the experiments subsection itself only claims superiority 'especially in low-noise conditions' and concedes L₀'s competitiveness at higher noise. The prose therefore claims more than the reported results establish.",
+      "failure_location": {
+        "quote": "For noisy observations, it maintains the lowest RRE the entire range of SNR levels.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restrict the claim to the regime the data support (lowest RRE at sufficiently high SNR / low noise, as the experiments section itself states).",
+      "overall_effect": "The summary claim of uniformly lowest RRE across the whole SNR range is false by the paper's own measurements; the honest scope is lowest RRE at low noise levels for the tested matrices.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Conclusion claims lowest RRE over the entire SNR range, contradicted by the paper's own reported results",
+      "why_classification": "A local rewording of the summary sentence removes the overclaim; no theorem, guarantee, or rate is affected."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2504.04509",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "806db391bc2a12e7e296de5a289b045ed6046db853e63982b09093bf18596081",
+  "status": "ok"
+}

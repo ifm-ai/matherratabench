@@ -1,0 +1,146 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "alg:compilation",
+        "prop:deformation_as_evaluation",
+        "alg:projection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{z = z_{\\min}}^{z_{\\max}} \\frac{(-1)^z [z+1]_q!}{\\prod_{i=1}^4 [z - a_i]_q! \\prod_{y=1}^3 [b_y - z]_q!}",
+          "tag": "eq:racah_6j"
+        },
+        {
+          "quote": "\\mathcal{M}_{z+1} = \\mathcal{M}_z \\cdot \\mathcal{R}_z,",
+          "tag": null
+        },
+        {
+          "quote": "\\State $\\mathcal{R}_z \\gets$ compute cyclotomic factorization of the ratio via Eq.~\\eqref{eq:ratio_Rz}",
+          "tag": "alg:compilation"
+        }
+      ],
+      "failure_explanation": "For the summand T_z = (-1)^z [z+1]_q!/(prod_i[z-a_i]_q! prod_y[b_y-z]_q!), the exact ratio is T_{z+1}/T_z = -[z+2]_q / (prod_i [z+1-a_i]_q * prod_y [b_y-z]_q): the factors [z+1-a_i]_q belong in the DENOMINATOR, and the b-factors in the denominator are [b_y - z]_q, not [b_y-(z+1)]_q. Eq. (eq:ratio_Rz) instead puts prod_i[z+1-a_i]_q in the numerator and [b_y-z-1]_q in the denominator. Counterexample: for the admissible symbol with all j_i = 1 (a_i = 3, b_y = 4, z in {3,4}), the true ratio is R_3 = T_4/T_3 = -[5]_q, while Eq. (10) gives -[5]_q [1]_q^2/[0]_q^3, undefined since [0]_q = 0; in general the displayed formula is singular at z = z_max - 1, where the true ratio is finite, and iterating it never reproduces T_z.",
+      "failure_location": {
+        "quote": "\\mathcal{R}_z =\n- \\frac{[z+2]_q \\prod_{i=1}^4 [z+1-a_i]_q}\n{\\prod_{y=1}^3 [b_y-(z+1)]_q}.",
+        "tag": "eq:ratio_Rz"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the numerator/denominator placement in Eq. (eq:ratio_Rz) by R_z = -[z+2]_q/(prod_i[z+1-a_i]_q prod_y[b_y-z]_q). This is a forced one-line correction; the definition of the DCR, both algorithms, and all downstream claims then hold unchanged.",
+      "overall_effect": "Algorithm alg:compilation builds the ratio sequence 'via Eq. (10)' and Definition (DCR) stores exactly these ratios, so the compiled DCR encodes a different series than Eq. (eq:racah_6j). Algorithm alg:projection evaluates that wrong series in every target field, and Proposition prop:deformation_as_evaluation's equality S(q) = Pi_q(S_DCR) fails; the compilation-evaluation guarantee of the whole framework is unsupported as specified.",
+      "primary_affected_tag": "eq:ratio_Rz",
+      "target_type": "other",
+      "title": "Update ratio Eq. (eq:ratio_Rz) is not the ratio of consecutive 6j summands",
+      "why_classification": "A single forced formula replacement repairs the root; no inference, construction, rate, or guarantee beyond the corrected formula needs to be changed, so every substantive claim survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "alg:projection"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Both components have integer exponents and are evaluated exactly by integer arithmetic. The entire square root is resolved at the exponent level, without field extension and without any polynomial computation.",
+          "tag": null
+        },
+        {
+          "quote": "and $(\\mathcal{M}_{\\mathrm{root}},\\, \\mathcal{M}_{\\mathrm{rad}})$ are the square and square-free parts of the global geometric prefactor (as in Eq.~\\eqref{eq:sqrt_decomp})",
+          "tag": null
+        },
+        {
+          "quote": "$\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})} \\cdot \\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm root}) \\cdot S_{\\rm sum}$",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "Since $\\Pi_q$ is multiplicative, the result follows.",
+          "tag": null
+        },
+        {
+          "quote": "from which evaluation in any target field is realized as a ring homomorphism.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The DCR stores only exponent data; for the paper's flagship amplitudes (Eq. (eq:racah_6j)) it contains the radical component M_rad, whose evaluation alpha = Pi_T(M_rad) is just a radicand. The amplitude requires sqrt(alpha), which (i) has two possible values, so the same parameter-independent DCR projects to two amplitudes differing by sign, and (ii) generally has no square root in the advertised exact field T = Q(zeta_{2h}) (e.g. a single odd power of q in the square-free part gives alpha = zeta_{2h}^{odd}, whose square root zeta_{4h} is not in Q(zeta_{2h})). Hence Pi_q(S_DCR) in Proposition prop:deformation_as_evaluation is not a well-defined single value, and the proof's argument ('each summand ... whose evaluation under Pi_q reproduces the original expression ... Since Pi_q is multiplicative, the result follows') never addresses the radical component at all. The prose claims evaluation 'realized as a ring homomorphism' with 'the entire square root resolved at the exponent level, without field extension'; the framework as written determines the amplitude only up to an unencoded sign and may require the quadratic extension T(sqrt(Pi_T(M_rad))), so the claimed equality is not established for exactly the amplitudes the paper targets.",
+      "failure_location": {
+        "quote": "S(q) = \\Pi_q(\\mathcal{S}_{\\mathrm{DCR}}),",
+        "tag": "prop:deformation_as_evaluation"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Augment the DCR with an explicit square-root branch/sign datum (fixed, e.g., by continuity from the classical limit) and restate evaluation as: the ring homomorphism Pi_T applies to the radical-free part, while the radical is evaluated in the quadratic extension T(sqrt(Pi_T(M_rad))) under the recorded branch; qualify Proposition prop:deformation_as_evaluation accordingly.",
+      "overall_effect": "The guarantee that one parameter-independent DCR object reproduces S(q) under a field projection (Prop. prop:deformation_as_evaluation, abstract, Sec. 3.4, Conclusion) fails for all recoupling amplitudes with nontrivial geometric prefactors; the exact-field projection contract S in T of Algorithm alg:projection is not well defined (branch choice, possible field extension), undermining the advertised 'no algebraic field extensions' capability.",
+      "primary_affected_tag": "prop:deformation_as_evaluation",
+      "target_type": "formal_result",
+      "title": "Radical branch not encoded: DCR does not define a single evaluation, contradicting the ring-homomorphism projection claim",
+      "why_classification": "A contained fix (branch convention plus a limited weakening of the 'single canonical object / ring homomorphism' claim) preserves the construction, all complexity bounds and all numerical guarantees; it is more than minor because a central advertised structural claim (canonical, ring-homomorphic, extension-free evaluation) must be withdrawn or weakened, but no advertised regime or rate is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Consider the Turaev-Viro partition function over a triangulated $3$-manifold $\\mathcal{M}$, which requires a coherent summation over all admissible spin colorings $\\{j\\}$:",
+          "tag": null
+        },
+        {
+          "quote": "where $|V|$ is the number of vertices, $\\mathcal{A}$ is a global normalization constant, and $\\tau$ indexes the constituent tetrahedra.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Turaev-Viro invariant carries one quantum-dimension factor per edge, TV_k(M) = A^{-|V|} sum over admissible edge colorings of (prod_e dim_q(j_e)) (prod over tetrahedra of {6j}); the paper's Eq. (eq:TV) contains only the product of 6j symbols times a single coloring-independent constant A^{-|V|}. The missing per-edge weights are essential: the Pachner-move invariance rests on bubble identities of the form sum_j dim_q(j) {6j}{6j'} = (product of theta factors), in which the quantum dimensions are exactly the edge weights Eq. (14) lacks. As written, the displayed formula is not the Turaev-Viro invariant and is not topologically invariant.",
+      "failure_location": {
+        "quote": "\\mathrm{TV}_k(\\mathcal{M}) = \\mathcal{A}^{-|V|} \\sum_{ \\{j\\} }\\prod_{\\tau \\in \\Delta_3(\\mathcal{M})} \\begin{Bmatrix} 6j \\end{Bmatrix}_q^{\\tau},",
+        "tag": "eq:TV"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Insert the missing edge factors prod_e dim_q(j_e) (and the level-k admissibility constraints on the colorings) into Eq. (eq:TV); no other part of the paper needs modification.",
+      "overall_effect": "The only displayed state-sum definition in the macroscopic analysis (Section 6.3) is not TV_k(M); statements about amortized compilation 'for the Turaev-Viro partition function' rest on an incorrect formula, although the DCR construction/amortization argument itself is unaffected.",
+      "primary_affected_tag": "eq:TV",
+      "target_type": "other",
+      "title": "Displayed Turaev-Viro state sum omits the edge quantum-dimension weights",
+      "why_classification": "NA"
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Interestingly, the DCR architecture removes repeated algebraic recomputation, isolating the exponential cost inherent in topological state sums.",
+          "tag": null
+        },
+        {
+          "quote": "Due to the inherent symmetries of the lattice and the constraints of admissibility, this number is typically smaller than the total combinatorial volume.",
+          "tag": null
+        },
+        {
+          "quote": "This separation of structure and evaluation renders large-scale topological state sums computationally tractable.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims that severing compilation from evaluation 'renders large-scale topological state sums computationally tractable'. What the paper establishes is only a per-configuration guarantee: Theorem thm:added-1 and Proposition prop:added-1 bound the construction and evaluation of a single q-hypergeometric series, and the amortization argument covers only repeated evaluation of the same local objects. The dominant cost of TV_k(M) in Eq. (eq:TV) is the sum over exponentially many admissible colorings, which the DCR does not touch; the paper itself concedes the exponential cost is merely 'isolated', and the only support for tractability is the unquantified word 'typically'. Nothing established supports the claim that large-scale state sums become tractable.",
+      "failure_location": {
+        "quote": "By severing the compilation of the local geometric weights from the global topological summation, the DCR renders such large-scale computations tractable.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Weaken the claim to what is established: compilation is amortized across repeated evaluations of each geometrically distinct local configuration, while the exponential coloring sum itself is untouched (as the paper's own sentence about 'isolating the exponential cost' states).",
+      "overall_effect": "The macroscopic-complexity narrative (end of Section 6.3 and the Conclusion) asserts a scalability guarantee for global state sums that no theorem, bound, or experiment in the paper delivers; only amortization of repeated evaluations of fixed local amplitudes is established.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Overclaim: DCR 'renders large-scale topological state sums computationally tractable'",
+      "why_classification": "A local rewording of the two overreaching sentences brings the prose in line with the established per-series guarantees; no formal result, algorithm, rate, or benchmark claim is lost, so the least resolution is minor."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2604.13196",
+  "question_id": "Q1",
+  "run_name": "glm53flash-max-std-full200-20261010",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f27f4d9edd84cc6caa93d0bb9705e7cb9c415e35fb2a71b7e9470c22f26222de",
+  "status": "ok"
+}
