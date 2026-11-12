@@ -6,7 +6,7 @@ paper and lists the non-typo issues it finds, giving each a severity, a target
 type, and a location. A judging model then checks which annotated (gold) issues
 the agent recovered.
 
-This repository accompanies our **MathErrataBench blog post [TODO: add link]**.
+This repository accompanies our [MathErrataBench blog post](https://ifm.ai/blog/matherratabench/).
 Browse the 200 papers in **[PAPERS.md](paper-list-info/PAPERS.md)**, or filter
 **[papers.csv](paper-list-info/papers.csv)** in a spreadsheet. Both list titles,
 authors, input versions, arXiv links, and issue counts.
@@ -548,11 +548,20 @@ gold data.
 
 ## License
 
-The code and benchmark annotations are available under the Apache License, Version 2.0 (Apache-2.0).
-[Apache License text](https://www.apache.org/licenses/LICENSE-2.0)
-
-Paper sources are downloaded separately from arXiv.
+This repository is available under the Apache License, Version 2.0. See
+[LICENSE](LICENSE). Paper sources are downloaded separately from arXiv.
 
 ## Citation
 
-**[TODO: BibTeX entry for the blog post or paper.]**
+If you use MathErrataBench, please cite the blog post:
+
+```bibtex
+@article{rebrova2026matherratabench,
+  author  = {Rebrova, Elizaveta and Sreenivasan, Kartik and Yurochkin, Mikhail},
+  title   = {{MathErrataBench}: Can {LLMs} find the issues in numerical
+             analysis preprints?},
+  journal = {IFM Blog},
+  year    = {2026},
+  note    = {https://ifm.ai/blog/matherratabench/}
+}
+```
