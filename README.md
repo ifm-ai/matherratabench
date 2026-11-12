@@ -529,10 +529,8 @@ To recompute the scores, run this from the repository root:
 python3 scoring/reproduce_blog_results.py
 ```
 
-The script builds the same paper reports as `evaluate.py` and uses the same
-scoring functions. Combining the eleven runs, it reproduces the pooled recovery
-of 645 of 717 gold issues and the 85 of 200 papers in which every model missed
-at least one issue.
+See the [blog-results README](blog-results/README.md) for what the script
+checks and prints.
 
 ## Reporting gold errors
 
@@ -548,8 +546,13 @@ gold data.
 
 ## License
 
-This repository is available under the Apache License, Version 2.0. See
-[LICENSE](LICENSE). Paper sources are downloaded separately from arXiv.
+The code, gold annotations and saved results in this repository are released
+under the Apache License, Version 2.0; see [LICENSE](LICENSE). The papers are
+not included: `prepare.py` downloads their sources from arXiv. The annotations
+and saved model answers quote short excerpts from the papers as evidence. Those
+excerpts remain the work of the papers' authors and are not covered by the
+Apache license; each paper's license is recorded as `licence_url` in
+[gold-manifest.json](data-preparation/gold-manifest.json).
 
 ## Citation
 

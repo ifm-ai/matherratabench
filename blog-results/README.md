@@ -12,7 +12,8 @@ From the repository root:
 python3 scoring/reproduce_blog_results.py
 ```
 
-The script checks every file against its recorded SHA-256, builds the same
+The script checks every answer, judgment and gold file against its recorded
+SHA-256, builds the same
 paper reports as `evaluation/evaluate.py`, and scores them with
 `scoring/metrics.py`. It prints the scores, and stops with an error if any of
 them differs from those recorded in `blog_results_index.json`. Combining the
@@ -39,8 +40,10 @@ blog-results/
 | `<run-id>/model_run_index.json` | The run's settings and all 200 papers, with their arXiv versions and which answers and judgments exist. |
 | `blog_results_index.json` | The 11 runs to score, the gold manifest's fingerprint, and the expected scores to compare against. |
 
-A paper with no answer file counts as a review that found nothing. A paper
-with an answer but no judgment had no findings to judge.
+A paper with no answer file had no scoreable answer: the model's output was
+missing or could not be parsed, and its gold issues count as missed. A paper
+with an answer but no judgment reported no issues, so there was nothing to
+judge.
 
 ## Runs
 
