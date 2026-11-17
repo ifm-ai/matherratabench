@@ -29,6 +29,9 @@ import run_judge_luna as judge_runner
 REPORT_SCHEMA = "matherratabench-paper-evaluation-v1"
 INDEX_SCHEMA = "matherratabench-evaluation-reports-v1"
 PLAN_SCHEMA = "matherratabench-evaluation-plan-v1"
+# Plan settings a resume may change: they affect how the judge is run, not what it is asked.
+# --retries is here so that a paper whose attempts ran out can be given more (see README).
+RESUMABLE_PLAN_KEYS = {"jobs", "retries", "timeout_seconds", "codex_bin"}
 
 
 class EvaluationError(ValueError):
@@ -317,11 +320,19 @@ def evaluate(args):
     if url.scheme != "https" or not url.hostname or url.username or url.password or url.query or url.fragment:
         raise EvaluationError("Judge API base URL must be HTTPS without embedded credentials, query or fragment")
     plan = plan_for(args, bundle)
+    manifest_path = args.output / "evaluation_manifest.json"
     if args.output.exists():
         if not args.resume:
             raise EvaluationError("Output already exists; choose a new directory or use --resume with the same configuration")
-        if read(args.output / "evaluation_manifest.json") != plan:
-            raise EvaluationError("Resume configuration, input data, or implementation differs from the saved manifest")
+        if manifest_path.exists() or any(args.output.iterdir()):  # else: a start interrupted before any write
+            saved = read(manifest_path)
+            changed = sorted(key for key in saved.keys() | plan.keys()
+                             if key not in RESUMABLE_PLAN_KEYS and saved.get(key) != plan.get(key))
+            if changed:
+                raise EvaluationError("Resume configuration, input data, or implementation differs from the saved "
+                                      "manifest in: " + ", ".join(changed))
+            if isinstance(saved.get("retries"), int) and args.retries < saved["retries"]:
+                raise EvaluationError(f"--retries can only be raised on a resume (saved: {saved['retries']})")
     elif args.resume:
         raise EvaluationError("--resume requires an existing matching output directory")
     with tempfile.TemporaryDirectory(prefix="matherratabench-evaluate-") as temp:
@@ -340,10 +351,15 @@ def evaluate(args):
                (args.extra_luna_attempts > 0 or args.fallback_attempts > 0))
     if ready and uses_api and not os.environ.get("OPENAI_API_KEY"):
         raise EvaluationError("Set OPENAI_API_KEY privately for API judging or Responses API escalation")
-    if not args.output.exists():
-        args.output.mkdir(parents=True)
-        write(args.output / "evaluation_manifest.json", plan)
-        create_inputs(args, bundle, args.output / "judge-inputs")
+    if not manifest_path.exists():
+        args.output.mkdir(parents=True, exist_ok=True)
+        write(manifest_path, plan)
+    if not (args.output / "prepared.json").exists():
+        # Also reached on a resume after an interrupted start. The plan matched, so the inputs are
+        # the same; build_inputs is atomic, so judge-inputs/ is either complete or absent.
+        if not (args.output / "judge-inputs").exists():
+            create_inputs(args, bundle, args.output / "judge-inputs")
+        semantic.load_input_manifest(args.output / "judge-inputs/manifest.json")
         write(args.output / "prepared.json", {"judge_input_manifest_sha256": digest(args.output / "judge-inputs/manifest.json")})
     else:
         if read(args.output / "prepared.json")["judge_input_manifest_sha256"] != digest(args.output / "judge-inputs/manifest.json"):
@@ -353,6 +369,9 @@ def evaluate(args):
     if ready:
         result = judge_runner.main(judge_arguments(args, args.output / "judge-inputs/manifest.json",
                                                   args.output / "judge-run", resume=run_path.exists()))
+        if result == 2:  # the runner stopped with an error; 1 only means some papers failed
+            raise EvaluationError("The judge stopped with the error above; no reports were written. "
+                                  "Fix it and rerun with --resume")
         if not run_path.exists():
             raise EvaluationError("Judge failed before creating its run manifest")
     elif not run_path.exists():

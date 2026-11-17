@@ -372,13 +372,21 @@ never picks whichever prediction's labels agree best with gold.
 
 To continue an interrupted evaluation, rerun it with `--resume` and the same
 paths, inputs, and configuration. Validated decisions are reused, and the code
-must match the saved manifest. Each completed run writes a new report
+must match the saved manifest. A resume may change `--jobs`,
+`--timeout-seconds` and `--codex-bin`, raise `--retries`, or use an updated
+Codex CLI. The saved manifests keep the original values, and
+`judge-run/invocations/` records the settings of each run. Ctrl-C stops Codex
+attempts at once; with the API runner it waits for requests already sent to
+return or time out. Either way, an interrupted attempt counts toward its
+paper's attempt budget. Each completed run writes a new report
 generation (`reports/0001`, `0002`, …), leaving earlier ones intact.
 
 If any eligible gold issue remains unresolved because a prediction or required
 judgment is unavailable, the command saves the reports and exits with a nonzero
 status. For judge failures, check the records in `judge-run/`. Resuming uses the
-remaining attempt budget. Use
+remaining attempt budget; to give papers whose attempts ran out more, resume
+with a larger `--retries`. Like any change to the judge settings, this changes
+the measurement for those papers. Use
 `--unresolved-policy bounds` (step 4) to report a range when judge decisions are
 missing. Missing predictions already count as zero recovery under the default
 scoring policy.
