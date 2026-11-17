@@ -1,0 +1,315 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "a one-dimensional input $x$, $M$ hidden layers each with $N$ nodes, a linear activation function",
+          "tag": null
+        },
+        {
+          "quote": "0, 0, \\dots, 0",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With a one-dimensional input $x$ and linear activation, the first hidden layer computes $x\\kappa g(z_i)$, not the constant affine term $\\kappa g(z_i)$ required by the integral operator $\\mathcal{T}f=g+\\int Kf$. The stated biases are zero, so the construction does not implement the stated operator.",
+      "failure_location": {
+        "quote": "\\kappa g(z_1), \\dots, \\kappa g(z_{N})",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Move $\\kappa g(z_i)$ to the first-layer biases or use a constant-1 first input while keeping $x$ only for the final kernel layer.",
+      "overall_effect": "Every FNN construction used in the paper, and all error estimates that assume the FNN replicates the intended fixed-point iteration, are unreliable as written.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Fredholm NN first layer injects x-dependent g weights",
+      "why_classification": "The repair is a local architectural correction that preserves the intended FNN contract and downstream analysis."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "producing the estimate $\\beta_M(x).",
+          "tag": "prop-poisson"
+        }
+      ],
+      "failure_explanation": "The proposition is supposed to define a PFNN built from the FNN estimate $\\beta_M$ and quadrature, but $b_{M+1}$ and $b_O$ are written in terms of the exact unknown boundary density $\\beta(x^\\star)$ and exact boundary/volume integrals. These quantities are not available from the preceding FNN step as stated.",
+      "failure_location": {
+        "quote": "- \\beta({x}^{\\star}), \\dots, - \\beta({x}^{\\star})",
+        "tag": "prop-poisson"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace $\\beta(x^\\star)$ by the FNN estimate $\\beta_M(x^\\star)$ and replace the exact integrals by the same quadratures used in $D_2,D_3,D_4$.",
+      "overall_effect": "The Poisson PFNN construction is not a well-defined executable construction, and downstream error bounds that assume a discretized $\\beta_M$ are unsupported.",
+      "primary_affected_tag": "prop-poisson",
+      "target_type": "formal_result",
+      "title": "Poisson PFNN biases use exact unknown beta and exact integrals",
+      "why_classification": "The correction is local but must be made consistently in the construction, numerics, and error decomposition; as written the constructive claim fails."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=& \\int_{\\partial \\Omega} \\frac{\\partial \\Phi(x,y)}{\\partial n_y} d\\sigma_y + \\int_{\\partial B(x,\\epsilon)} \\frac{\\partial \\Phi(x,y)}{\\partial n_y} d\\sigma_y - \\int_{\\Omega - B(x,\\epsilon)} \\Phi(x,y) dy.",
+          "tag": "semi-linear-pot"
+        },
+        {
+          "quote": "\\int_{\\partial \\Omega} \\frac{\\partial \\Phi(x^*,y)}{\\partial n_y} d\\sigma_y = -\\frac{1}{2} + \\int_{\\Omega} \\lambda \\Phi(x^*,y) dy.",
+          "tag": "semi-linear-pot"
+        },
+        {
+          "quote": "+ \\int_{\\mathcal{D}} \\Phi({x},{y}) f({y}) d {y}",
+          "tag": "semi-linear-pot"
+        }
+      ],
+      "failure_explanation": "The Step 1 identity is not a valid application of the divergence theorem for $\\mathcal{L}=\\Delta-\\lambda$: it starts with an integral of $\\mathcal{L}\\Phi$ over the boundary and then replaces the $\\lambda$-volume term by an incorrect combination. The boundary Step 2 gives a $-1/2$ jump constant whose $\\lambda\\to0$ limit contradicts the Laplace double-layer limit $+1/2$. The stated bias also uses $f(y)$ in a volume integral over $\\mathcal{D}$ instead of the source $\\psi(y)$ over $\\Omega$.",
+      "failure_location": {
+        "quote": "0 = \\int_{\\partial \\Omega} \\mathcal{L}\\Phi(x,y) d\\sigma_y = \\int_{\\Omega - B(x,\\epsilon)} \\Delta_y \\Phi(x, y) dy - \\lambda \\int_{\\partial B(x,\\epsilon)} \\frac{\\partial \\Phi(x,y)}{\\partial n_y} d\\sigma_y.",
+        "tag": "semi-linear-pot"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must rederive the Helmholtz double-layer identities with the correct $\\lambda$ terms and correct the volume potential to use the PDE source term.",
+      "overall_effect": "The Helmholtz potential representation, the claimed final PFNN bias, and the error terms built from it are invalid.",
+      "primary_affected_tag": "semi-linear-pot",
+      "target_type": "formal_result",
+      "title": "Helmholtz PFNN proof uses invalid Green identities and wrong volume term",
+      "why_classification": "The root proof is fundamentally incorrect and the advertised Helmholtz representation requires a new nontrivial potential-theoretic derivation."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "for some $q \\leq 1$",
+          "tag": null
+        },
+        {
+          "quote": "= \\frac{1}{4 \\pi},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The recalled bound contains $1/(1-q)$ and $\\mathrm{e}^{-(1-q)v_M}$, which require $q<1$, but the stated hypothesis only assumes a non-expansive operator with $q\\le 1$. For the unit-circle Poisson BIE, the boundary kernel is the constant $1/(4\\pi)$, so the integral part has sup-norm Lipschitz constant $1$; the FNN error bound is therefore outside its stated hypotheses for the main Poisson example.",
+      "failure_location": {
+        "quote": "\\left\\|f-f_M\\right\\|_{\\mathcal{A}} \\leq \\frac{\\mathrm{e}^{1-q}}{1-q}\\left( \\left\\|T g-g\\right\\|_{\\mathcal{A}} + \\frac{D(b-a)^2}{2n} \\right)\\mathrm{e}^{-(1-q) v_M},",
+        "tag": "prop:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, impose $q<1$ or prove an effective contraction/error bound for the Krasnoselskii-Mann map when the underlying integral operator has $q=1$.",
+      "overall_effect": "The FNN component $\\|\\beta-\\beta_M\\|$ used in the PFNN error bounds is not established for the advertised Poisson disc construction.",
+      "primary_affected_tag": "prop:added-1",
+      "target_type": "formal_result",
+      "title": "FNN error bound stated for non-expansive q<=1 but requires q<1",
+      "why_classification": "Adding $q<1$ excludes the advertised Poisson disc regime; proving the needed bound for $q=1$ is a new nontrivial convergence analysis."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left\\| \\int_{\\Omega} \\lambda \\Delta \\Phi(x, y) dy \\right\\|_{\\Omega}",
+          "tag": "error-bounds-thrm"
+        },
+        {
+          "quote": "+ D_2(\\partial \\Omega) + D_4(\\partial \\Omega),",
+          "tag": "error-bounds-thrm"
+        }
+      ],
+      "failure_explanation": "The proof bounds integrals involving $\\mathcal{D}\\Phi$ and $\\partial\\Phi/\\partial n_y$ by unsigned integrals after asserting non-negativity that is not valid for the difference kernel $\\mathcal{D}\\Phi$. The stated interior bound also contains an isolated $\\|\\int_\\Omega \\lambda\\Delta\\Phi\\|$ term not produced by the error decomposition, and the boundary bound invokes $D_2(\\partial\\Omega)$ although $D_2$ is defined as a volume-integral discretization error.",
+      "failure_location": {
+        "quote": "where for the last steps we recall that the normal derivative of the fundamental solution is non-negative (see calculations for the potential above).",
+        "tag": "error-bounds-thrm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, reprove the estimates using absolute kernel norms and terms that match the PFNN representation, and formulate a valid boundary estimate.",
+      "overall_effect": "The main a priori interior and boundary error bounds for the PFNN are not established, and results depending on them are unreliable.",
+      "primary_affected_tag": "error-bounds-thrm",
+      "target_type": "formal_result",
+      "title": "PFNN error theorem proof does not establish stated bounds",
+      "why_classification": "The central error-analysis theorem fails at multiple proof steps; repairing it requires a new coherent estimate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Delta u_{n+1}(x) - \\lambda u_{n+1}(x) = -\\lambda u_n(x) + F(x, u_n(x))",
+          "tag": "iteration"
+        },
+        {
+          "quote": "Approximate the integral with respect to the Poisson source term by:",
+          "tag": "alg:nl-algo"
+        }
+      ],
+      "failure_explanation": "Step 1 constructs the linear PDE for $u_{n+1}$, but Step 4 says the PFNN estimates $u_n$, so the loop does not advance the fixed-point iterate. The source term is also described as Poisson, whereas the iteration solves the Helmholtz linearization $\\Delta-\\lambda$.",
+      "failure_location": {
+        "quote": "Step 4. Solve the PDE using the PFNN to estimate $u_n(r_i, \\theta_j)$ for $i \\in \\{1, \\ldots M_r\\}$, $j \\in \\{1, \\ldots M_{\\theta} \\}$. }",
+        "tag": "alg:nl-algo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Change Step 4 to estimate $u_{n+1}$ and replace the reference to a Poisson source term by the Helmholtz linearization with the corresponding fundamental solution.",
+      "overall_effect": "As written, the RPFNN algorithm is not a well-defined implementation of the claimed monotone fixed-point scheme.",
+      "primary_affected_tag": "alg:nl-algo",
+      "target_type": "algorithm",
+      "title": "Recurrent PFNN algorithm indexes and operator source term are inconsistent",
+      "why_classification": "The correction is a local index and wording fix that preserves the intended algorithm and theorem."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left\\|\\tilde{u}_n - u \\right\\|_{\\Omega} \\leq  \\epsilon^{RPFNN}_{\\Omega} + q^n\\left\\| u_0 - u  \\right\\|_{\\Omega},",
+          "tag": "error-recurrent"
+        }
+      ],
+      "failure_explanation": "If each PFNN step approximates $T(\\tilde u_n)$ with error $\\epsilon$ and $u_{n+1}=T(u_n)$, the recurrence gives $\\|\\tilde u_{n+1}-u_{n+1}\\| \\le \\epsilon + q\\|\\tilde u_n-u_n\\|$. Unrolling yields an accumulated term $\\epsilon(1+q+\\dots+q^{n-1})$, not a single $\\epsilon$. The proof omits this accumulation.",
+      "failure_location": {
+        "quote": "Substituting the error bound (\\ref{error-domain}) and using the known error bound for the fixed point iterations results in (\\ref{error-recurrent}).",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Add the accumulated per-step error terms, or assume a decaying $\\epsilon_n$ and include their weighted sum, giving a bound of the form $\\epsilon_{\\mathrm{acc}}+q^n\\|u_0-u\\|$.",
+      "overall_effect": "The stated RPFNN error guarantee is false or unsupported; per-step PFNN errors are undercounted.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Recurrent error bound omits accumulation of per-step PFNN errors",
+      "why_classification": "The repair is a contained recurrence argument, but the advertised constant changes, especially when $q$ is close to $1$."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Delta u(x) = 2x_1,",
+          "tag": "ex1"
+        }
+      ],
+      "failure_explanation": "For $u=\\frac14 x_1(x_1^2+x_2^2-1)$, one computes $\\Delta u = 2x_1 - \\frac12$, not $2x_1$. The stated function solves a different Poisson right-hand side.",
+      "failure_location": {
+        "quote": "u(x) = \\frac{1}{4}x_1(x_1^2 + x_2^2 -1).",
+        "tag": "example-poisson"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Use $u=\\frac23 x_1(x_1^2+x_2^2-1)$ for $\\Delta u=2x_1$ with zero boundary data, or change the PDE source to $2x_1-\\frac12$ and recompute the example.",
+      "overall_effect": "The forward Poisson numerical example and its reported errors are referenced to an incorrect analytical solution.",
+      "primary_affected_tag": "example-poisson",
+      "target_type": "other",
+      "title": "Poisson example analytical solution has wrong coefficient",
+      "why_classification": "The correction is local but invalidates the stated benchmark solution and requires re-evaluating the reported example."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "- \\frac{\\sqrt{\\lambda} K_0' \\left( \\sqrt{\\lambda} |x - y| \\right)}{2\\pi |x - y|} \\big( y_1 (y_1 - x_1) + y_2 (y_2 - x_2) \\big).",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{\\partial \\Phi(x,y)}{\\partial n_y} = \\frac{\\sqrt{\\lambda} K_1 \\left( \\sqrt{\\lambda} |x - y| \\right)}{4\\pi |x - y|}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "On the unit circle, $y_1(y_1-x_1)+y_2(y_2-x_2)=|x-y|^2/2$. Hence the stated derivative simplifies to $\\sqrt{\\lambda}\\,|x-y| K_1(\\sqrt{\\lambda}|x-y|)/(4\\pi)$, not $\\sqrt{\\lambda} K_1(\\sqrt{\\lambda}|x-y|)/(4\\pi |x-y|)$. The stated formula has the wrong singular behavior and contradicts the claimed finite $1/(4\\pi)$ limit.",
+      "failure_location": {
+        "quote": "We therefore have a complete approach to numerically construct the kernel for the BIE, which takes into account the underlying mathematical theory of the fundamental solution.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Correct the algebra to the $|x-y|K_1(\\sqrt{\\lambda}|x-y|)$ factor and redo the singular-limit statement for the Helmholtz double-layer kernel.",
+      "overall_effect": "The claimed numerically constructed Helmholtz BIE kernel, and the PFNN weights based on it, are incorrect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Helmholtz boundary kernel formula has wrong algebraic factor",
+      "why_classification": "This is a nontrivial calculation error in the Helmholtz implementation; fixing it changes the kernel and its numerical treatment."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Create grid $\\{x^b_i\\}_{i=1, \\dots N'}$ and set the PFNN with nodes corresponding to $\\{x^b_i\\}$  and depth $M$.",
+          "tag": "alg:inverse"
+        }
+      ],
+      "failure_explanation": "The PFNN/FNN architecture uses a grid of boundary points to discretize the BIE. The described inverse example says the underlying PFNN uses a $\\phi$-grid of size 100 corresponding to interior nodes, without specifying the required boundary grid, so the algorithm is not instantiated as stated.",
+      "failure_location": {
+        "quote": "with a $\\phi-$grid of size $100$ corresponding to the interior nodes",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Specify the boundary grid $\\{x^b_i\\}$ used for the PFNN and use the interior $\\phi$-grid only for loss evaluation.",
+      "overall_effect": "The inverse source algorithm and reported inverse results are not supported by the stated hyperparameters.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Inverse example specifies interior phi-grid for PFNN nodes",
+      "why_classification": "A local missing specification can be corrected without changing the method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "7.73E-03",
+          "tag": "tab:error_metrics_inverse"
+        }
+      ],
+      "failure_explanation": "The prose reports average test $L_\\infty = 7.73\\times10^{-6}$, while Table \\ref{tab:error_metrics_inverse} reports the interior test $L_\\infty$ mean as $7.73\\times10^{-3}$. The two values cannot both describe the same test-grid $L_\\infty$.",
+      "failure_location": {
+        "quote": "The average test MSE and $L_{\\infty}$ over all models are $1.72$E$-06$ and $7.73$E$-06$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-011",
+      "least_adequate_overall_repair": "Correct the prose or table value and reconcile the percentile intervals.",
+      "overall_effect": "The reported accuracy of the inverse example is materially inconsistent.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Inverse test L_infty prose contradicts table",
+      "why_classification": "This is a local numerical-reporting inconsistency, not a defect in the theoretical construction."
+    }
+  ],
+  "issues_found": 11,
+  "paper_id": "2507.06038",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "389a8005f089222555182f5ffa9fb86b596d9286bdad6356894f4744eb7d14b7",
+  "status": "ok"
+}

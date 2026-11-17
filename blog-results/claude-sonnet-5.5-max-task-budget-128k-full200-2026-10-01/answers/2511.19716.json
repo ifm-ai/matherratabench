@@ -1,0 +1,157 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Fix an SPD matrix $\\bfM$ and an open neighborhood $\\mathcal U\\subset\\mathbb R^d$.",
+          "tag": null
+        },
+        {
+          "quote": "Moreover, it is not guaranteed to be positive definite in nonconvex settings, which complicates its direct use as a preconditioner.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "All theorems are for iteration (alg:PSGD) with one fixed, deterministic SPD matrix M. The constants (L-hat, c-hat, mu-hat_PL, K, K_G) and the norms ||.||_M, ||.||_{M^{-1}} are defined for that M, and the one-step descent inequalities telescope only because the norm does not change between iterations. Adam, AdaGrad, RMSProp and L-BFGS use a data-dependent M_k that changes every step, so the constants and norms change from step to step and the telescoping argument is not available. The paper's own appendix notes that the Hessian and GGN/FIM preconditioners are not SPD in general (indefinite or only semidefinite), which violates the SPD hypothesis. Nothing in the source extends the analysis to these cases.",
+      "failure_location": {
+        "quote": "The framework applies to both diagonal/adaptive and curvature-aware preconditioners",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the claim to fixed (or frozen) SPD preconditioners. Describe adaptive and curvature-aware methods only as heuristic motivation, or add damping so M is SPD and a stated assumption that M_k is frozen or slowly varying.",
+      "overall_effect": "The advertised scope (adaptive and curvature-aware methods, and the 'design principle' read off the bounds) is not established. The theorems cover only a fixed SPD preconditioner.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed coverage of adaptive and curvature-aware preconditioners, though all theory assumes one fixed SPD M",
+      "why_classification": "The theorems stay valid and the claim can be reworded. But the advertised coverage is lost, and any real extension to time-varying M_k would need a new argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Although we did not directly measure the local constants $(\\hat L,\\hat\\mu_{\\mathrm{PL}},K)$ on this run",
+          "tag": null
+        },
+        {
+          "quote": "We individually optimized learning rates for each method-task combination through grid search",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The bounds relate the rate and floor to (L-hat, mu-hat_PL, K) at a given fixed learning rate. Only the synthetic quadratic computes these quantities. In the SciML runs the constants are not measured, and each method uses its own tuned learning rate, so the rate and floor comparisons do not isolate the predicted dependence on M. The explanations offered (GGN 'whitens' noise and reduces K, the Hessian is misaligned) are post-hoc and unchecked. The experiments are therefore consistent with the theory but do not validate the predicted behavior.",
+      "failure_location": {
+        "quote": "Experiments on a quadratic diagnostic and three SciML benchmarks validate the predicted rate–floor behavior.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Reword to say that the quadratic diagnostic validates the bounds and the SciML runs are qualitatively consistent. Optionally estimate the constants on the SciML problems.",
+      "overall_effect": "The empirical support for the design principle on SciML problems is overstated. Only the quadratic diagnostic tests the bounds.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "SciML experiments are said to validate the predicted rate-floor behavior without measuring the constants",
+      "why_classification": "A local rewording of the claim fixes it, and no theorem is affected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $F$ be twice differentiable and $\\bfM^{-1}=\\bfP\\bfP^\\top$. Then:",
+          "tag": "lemma:bound"
+        }
+      ],
+      "failure_explanation": "For general twice-differentiable F, a Lipschitz gradient is equivalent to |eigenvalues| <= L-hat, not to eigenvalues <= L-hat. Example: F(w) = -w^2 with M = 1 has Hessian eigenvalue -2 <= 1, but the gradient -2w is not 1-Lipschitz. So the 'if' direction of (i) fails. The proof's step 'Lipschitz continuity of the gradient for f ... is equivalent to ... eigenvalues bounded above by L-hat' has the same gap. The statement is valid only when the Hessian is also bounded below by -L-hat, for instance under the strong convexity of part (ii). The repeated lemma lem:added-1 and the Euclidean Remark rmk:condNum carry the same defect.",
+      "failure_location": {
+        "quote": "all eigenvalues of $\\bfP^\\top\\nabla^2F(\\bfw)\\bfP$ are $\\le \\hat L$",
+        "tag": "lemma:bound"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add the hypothesis that F is convex (or replace the bound by |eigenvalue| <= L-hat) in part (i), and make the same change in lem:added-1.",
+      "overall_effect": "As written, the spectral reading of L-hat is wrong in the generality stated. The main strongly convex theorems are not affected, because they assume Lipschitz continuity directly and strong convexity gives a lower eigenvalue bound.",
+      "primary_affected_tag": "lemma:bound",
+      "target_type": "formal_result",
+      "title": "Lemma on spectral characterization of M-Lipschitz gradients is false without convexity (upper eigenvalue bound only)",
+      "why_classification": "A one-line hypothesis fix restores the lemma, and no downstream theorem depends on the unrestricted version."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:4thmainthm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\Omega_\\infty:=\\{\\tau=\\infty\\}$. On $\\Omega_\\infty$ we have $\\bw_k\\in\\mathcal N_r$ for all $k$, so",
+          "tag": "thm:3rdmainthm"
+        },
+        {
+          "quote": "Multiply \\eqref{eq:stopped-one-step} by $\\mathbf 1_{\\Omega_\\infty}$ and take expectations",
+          "tag": "thm:4thmainthm"
+        },
+        {
+          "quote": "Dividing by $\\mathbb P(\\Omega_\\infty)$ gives",
+          "tag": "thm:4thmainthm"
+        }
+      ],
+      "failure_explanation": "Inequality (eq:cond-step) bounds E[. | F_k], where F_k = sigma(xi_1..xi_{k-1}). The event {tau = infinity} depends on xi_k, xi_{k+1}, ..., so it is not F_k-measurable. Hence E[S_{k+1} | F_k, Omega_infty] is not bounded by (1-rho)S_k + rho C. Conditioning on never exiting biases the future noise draws, and the assumptions E[g_k | F_k] and E||g_k||^2 <= ... no longer apply. Likewise E[S_{k+1} 1_{Omega_infty}] differs from E[1_{Omega_infty} E[S_{k+1} | F_k]], so multiplying the one-step inequality by 1_{Omega_infty} and taking expectations (Theorem 4's proof) is unjustified. The recursion for x_k = E[S_k | Omega_infty] with the same rho and C is therefore unsupported. A valid argument gives bounds for E[S_k 1_{tau>k}]. Converting to a conditional statement given tau = infinity costs a factor P(tau>k)/P(tau=infinity), up to 1/P(tau=infinity).",
+      "failure_location": {
+        "quote": "Restricting \\eqref{eq:cond-step} to $\\Omega_\\infty$ gives",
+        "tag": "thm:3rdmainthm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use the F_k-measurable events {tau>k}. Prove E[S_k 1_{tau>k}] <= C P(tau>k) + (1-rho)^{k-1}(...), or state the result conditional on {tau>k}. Convert to {tau=infinity} with an explicit 1/P(tau=infinity) factor, giving a weaker but comparable bound.",
+      "overall_effect": "The conditional geometric convergence to the floor C (Theorem 3) and the conditional O(1/k) rate with constant nu (Theorem 4) are not proved with the stated constants.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "Rate 'conditional on tau=infinity' obtained by conditioning a one-step inequality on a future event",
+      "why_classification": "The rate structure survives with modified constants and a contained new argument. The exact stated conditional bounds are lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:4thmainthm"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where we have used $\\mathbf 1_{\\{k<\\tau\\}}\\le 1$ to relax the $K$–term.",
+          "tag": "thm:3rdmainthm"
+        },
+        {
+          "quote": "Moreover, the exit time $\\tau$ satisfies the basin-stability bound",
+          "tag": "thm:3rdmainthm"
+        },
+        {
+          "quote": "so $(Y_{k\\wedge\\tau})_{k\\ge1}$ is a supermartingale and",
+          "tag": "thm:4thmainthm"
+        }
+      ],
+      "failure_explanation": "The proof shows E[Y_{k+1} | F_k] <= (1 - rho 1_{k<tau}) Y_k with Y_k = F(w_k) - F_* - C, and concludes that Y_{k^tau} is a supermartingale. That requires E[Y_{k+1} | F_k] <= Y_k. But (1-rho)Y_k > Y_k whenever Y_k < 0, i.e. whenever F(w_k) - F_* < C, which is the late-stage regime. In that regime the noise term makes E[F] increase toward the floor. Theorem 4's version has the same defect: the term -m alpha_k Y_k is positive when Y_k < 0. The conclusion is false, not just unproved. Take F(w) = (a/2)w^2 in 1-D, M = 1, g = aw + sigma*eps with Rademacher eps, w_1 = 0, r = sigma/(2a), r_+ large, and any fixed step with 0 < alpha < 1/(4a). All hypotheses and the step-size conditions of Theorem 3 hold, with mu = 1, K_G = 1, K = sigma^2, L-hat = mu-hat_PL = alpha_QG = a. The theorem gives P(tau = infinity) >= 1 - 0 = 1. But the stationary support of the iterates is [-sigma/a, sigma/a], which exceeds r. From any point in N_r there is probability at least 2^{-n} of exiting within n steps, so tau < infinity almost surely. For Theorem 4, the same setup with r < alpha_1*sigma gives exit at step 2 with probability 1.",
+      "failure_location": {
+        "quote": "so $(Y_{k\\wedge\\tau})_{k\\ge1}$ is a supermartingale",
+        "tag": "thm:3rdmainthm"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace the infinite-horizon bound with one that accounts for persistent noise, because the claimed bound cannot hold from the minimizer. Options are a finite-horizon bound that grows with k and K, or extra assumptions that make the noise vanish near S. For diminishing steps, a nonnegative supermartingale S_k + c*sum_{j>=k} alpha_j^2 gives a weaker bound with an additive noise term.",
+      "overall_effect": "The headline 'explicit lower bound on the probability that iterates remain in the basin' is unsupported and false as stated, for both fixed and harmonic step sizes. The comments on stability governed by alpha_QG*r^2 inherit this. The extra step-size condition involving r^2 plays no role in the argument.",
+      "primary_affected_tag": "thm:3rdmainthm",
+      "target_type": "formal_result",
+      "title": "Basin-stability bound rests on a false supermartingale claim; the infinite-horizon exit-probability bound is false",
+      "why_classification": "The stability guarantee is a central contribution and its stated form is false. Any valid replacement changes the guarantee type or needs new assumptions and a new proof."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2511.19716",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e917ba1144e6fa4c2415186c265b16ef399f1891d6a4e98601ba893f94692732",
+  "status": "ok"
+}

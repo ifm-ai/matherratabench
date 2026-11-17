@@ -1,0 +1,169 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\forall \\Psi^{(\\mathcal{K})} \\in H_0(\\Omega_{\\mathcal{K}}).",
+          "tag": "def-NumSol-SLDG"
+        },
+        {
+          "quote": "The field function \\(u(x, t)\\) to be solved is approximated by a \\(P\\)-th order DG polynomial, i.e.,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims to establish existence, uniqueness and stability for the CSLDG/SLDG method, whose solution is a P-th order polynomial (Q^k) on each cell. The scheme actually analysed (Definition def-NumSol-SLDG) tests against every Psi in the infinite-dimensional space H_0(Omega_K). With all L^2 test functions, the identity forces U^{n+1} on Omega_K to equal the exact conservative pushforward of the previous iterate, U^{n+1}(y)=U~^n(Phi^{-1}(y))|det DPhi^{-1}|. This is not a polynomial and not a Galerkin projection. The polynomial schemes of Sections 2.2 and 4, which carry the paper's numerics, are never analysed. For them one would need the L^2-projection onto the local polynomial space, and the projection step is absent from the argument.",
+      "failure_location": {
+        "quote": "In this paper, the existence and uniqueness of the numerical solution for CSLDG, as well as the numerical stability of this scheme,",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restate the discrete problem on the local polynomial spaces V_h (test functions in V_h). Show that U^{n+1}_K is the L^2(Omega_K)-projection of the transported previous iterate. Existence and uniqueness then follow from the invertible orthonormal mass matrix, and stability from the projection being a contraction plus the transport bound.",
+      "overall_effect": "The advertised well-posedness and stability of the SLDG numerical solutions is not established for the scheme that is actually implemented and tested. The theorems concern an idealised exact-transport recursion.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Analysed 'numerical solution' is not the polynomial DG scheme (test/solution space is all of H_0, not a finite-dimensional space)",
+      "why_classification": "The repair is a contained new argument (projection plus the existing transport bound). The headline results survive in recognisably comparable form."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "This implies \\(\\Psi\\left(\\mathbf{x}_* + \\int_{t^*}^{t_2} \\mathbf{A}(\\mathbf{s}(\\tau), \\tau) \\, \\mathrm{d}\\tau\\right) \\neq 0\\),",
+          "tag": "lemma-psi-supp"
+        }
+      ],
+      "failure_explanation": "The proof asserts that every point of supp{psi}, which is a closure, has psi nonzero. It also asserts that every point of supp{Psi} has Psi nonzero. Both are false: boundary points of the support and interior zeros of Psi lie in the support with value 0. The proof must work with the nonzero set and its closure. It must also use that the flow map is a homeomorphism commuting with closure. This is also never stated, and the characteristic starting point s(t*)=x is not specified in the lemma.",
+      "failure_location": {
+        "quote": "we have \\(\\psi(\\mathbf{x}^*, t^*) \\neq 0\\).",
+        "tag": "lemma-psi-supp"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the pointwise 'nonzero' arguments by: nonzero set of psi(.,t*) equals the flow preimage of the nonzero set of Psi. Since the flow map is a homeomorphism, closures correspond.",
+      "overall_effect": "The lemma's conclusion, supp psi(.,t*) = CODE(Omega), is true. Its proof as written contains invalid implications.",
+      "primary_affected_tag": "lemma-psi-supp",
+      "target_type": "formal_result",
+      "title": "Support lemma proof treats the support as the set where the function is nonzero",
+      "why_classification": "A short local rewrite fixes the proof and leaves the statement and all uses unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma-psi-Omega-LP",
+        "Lemma-f-H*",
+        "thm-NumericalScheme-Existence",
+        "thm-NumericalSolution-Stability",
+        "thm-NumericalSolution-Uniqueness"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that once \\(t_1\\) and \\(t_2\\) are fixed, \\(\\int_{t_1}^{t_2} \\mathbf{A}(\\mathbf{s}(\\tau), \\tau) \\, \\mathrm{d}\\tau\\) is a constant.",
+          "tag": "lemma-psi-Omega-LP"
+        }
+      ],
+      "failure_explanation": "The shift integral_{t1}^{t2} A(s(tau),tau)dtau is evaluated along the characteristic with s(t1)=x*, so it depends on x*. The map x* -> x is the characteristic flow map, with Jacobian exp(integral of div A), not 1. Hence dx != dx*. Counterexample: d=1, A=x. Then psi(x,t1)=Psi(x e^{t2-t1}) and ||psi||_{L^2}^2 = e^{-(t2-t1)}||Psi||_{L^2}^2. The equalities in both L^P lemmas hold only for divergence-free A. The same wrong step is used for the Lagrangian cell norm.",
+      "failure_location": {
+        "quote": "Considering the \\(L^P\\)-norm over the entire space \\(\\mathbb{R}^d\\), the domain of integration remains unchanged as \\(\\mathbb{R}^d\\) before and after the change of variables.",
+        "tag": "lemma-psi-Rd-LP"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the equalities by two-sided bounds with the Jacobian: ||psi||_{L^P}^P = integral |Psi|^P |det D(flow)^{-1}| dx <= J_max ||Psi||^P. J_max is finite because A is C^1 on a bounded region for T<T*. Re-run the dependent proofs with these constants.",
+      "overall_effect": "The boundedness constant in Lemma-f-H* is justified by an equality that is false. The stability estimate ||psi||=||Psi|| in the stability proof is unsupported for general A, so the stated constants and the uniqueness argument rest on a false lemma.",
+      "primary_affected_tag": "lemma-psi-Rd-LP",
+      "target_type": "formal_result",
+      "title": "Change of variables ignores the Jacobian: L^P-norm 'invariance' of psi is false for non-divergence-free A",
+      "why_classification": "The fix is a contained Jacobian lemma with re-derivation of the constants. The architecture and conclusions survive, though the stability constants change."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop-L2-Rd-Uh-Ui",
+        "prop-Uh-tildeU-L2-Rd",
+        "thm-NumericalSolution-Stability",
+        "thm-NumericalSolution-Uniqueness"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\operatorname{supp}\\{f\\} \\subset\\subset {\\color{blue}{\\Omega}}",
+          "tag": null
+        },
+        {
+          "quote": "This also implies that \\(\\operatorname{supp}\\{\\Psi^{(\\mathcal{K})}\\} = \\Omega_{\\mathcal{K}}\\).",
+          "tag": "def-NumSol-SLDG"
+        }
+      ],
+      "failure_explanation": "H_0(Omega) is defined by supp f compactly contained in Omega. It is then asserted to be a Hilbert space, but compactly supported L^2 functions are a dense non-closed subspace of L^2(Omega). The paper also uses supp = Omega_K (equality), which contradicts compact containment: Proposition prop-L2-Rd-Uh-Ui moves between 'subset subset' and 'supp U_h = Omega'. The existence proof sets U_K = W chi_{Omega_K}, where W is only an L^2(R^d) Riesz representer, and concludes U_K in H_0(Omega_K). This has no compact support in Omega_K. The proof also assumes supp{U_0}=Omega for an arbitrary U_0 in L^2(Omega). Uniqueness of W is claimed for an identity that only constrains W on Omega_K.",
+      "failure_location": {
+        "quote": "U^1_{\\mathcal{K}}(\\mathbf{x}) = W^{1}_{\\mathcal{K}}(\\mathbf{x}) \\cdot \\chi_{\\Omega_{\\mathcal{K}}}(\\mathbf{x}),",
+        "tag": "thm-NumericalScheme-Existence"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace H_0(Omega_K) by L^2(Omega_K) extended by zero (or the local polynomial space). Drop the compact-support and supp = Omega_K conventions and the uniqueness claim for W. The Riesz and projection arguments then go through.",
+      "overall_effect": "The claimed membership U^n_h in H_0(Omega), the test-function admissibility Psi = U-W in H_0, and the Hilbert-space framework are unsupported as stated.",
+      "primary_affected_tag": "thm-NumericalScheme-Existence",
+      "target_type": "formal_result",
+      "title": "Solution space H_0 inconsistent: compact support vs supp = Omega_K; U_K = W*chi is not in H_0; H_0 not a Hilbert space",
+      "why_classification": "The repair is a systematic change of function space with a re-check of the propositions. The proof structure is kept."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\( C = \\max\\{C_0, C_1 \\cdot C_0, \\ldots, \\prod_{i=0}^{k-1} C_{i}\\}>0 \\).",
+          "tag": "thm-NumericalSolution-Stability"
+        }
+      ],
+      "failure_explanation": "The per-step constants C_k are asserted to exist ('it is known') but are never estimated. The final constant is the product of N of them. Nothing prevents this product from growing without bound as Delta t -> 0 (N -> infinity) if C_k>1. The dependence of C on Delta t then makes the claim vacuous: for fixed Delta t any bounded linear recursion is trivially stable. A bound that does not deteriorate as Delta t -> 0 (e.g. each C_k <= exp(c Delta t)) is needed, and is neither proved nor derivable from the paper's (incorrect) lemmas.",
+      "failure_location": {
+        "quote": "it is known that there exists \\( C_0 {\\color{red}{> 0}} \\) such that",
+        "tag": "thm-NumericalSolution-Stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Quantify C_k via the Jacobian bound of ISSUE-003 (C_k <= exp(integral of |div A| over [t_k,t_{k+1}])). Add a bound for the periodic/zero-extension overlap constant. Then show the product is bounded by exp(integral of |div A| over [0,T]), independently of N.",
+      "overall_effect": "The claim of unconditional stability, ||U^n|| <= C||U_0|| with C depending only on T and A, is not established.",
+      "primary_affected_tag": "thm-NumericalSolution-Stability",
+      "target_type": "formal_result",
+      "title": "Stability constant unquantified: 'unconditional stability' not shown uniform in the number of steps",
+      "why_classification": "The missing estimate is a contained argument once the Jacobian lemma is repaired. The theorem survives with a uniform constant."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "RHS^x_r(c)\\left(\\left[\\Phi\\right]^y_s\\right)^{-1}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper contrasts its method with earlier schemes that output 1D values at nodes and must interpolate to switch direction. Its own update obtains the modal coefficients as [beta]=RHS*[Phi]^{-1}. Here RHS holds integral-invariant outputs at K_y+1 nodes in the non-evolved direction, and [Phi] is the nodal Vandermonde-type matrix. Inverting [Phi] is exactly nodal-to-modal interpolation in that direction. The scheme is algebraically the same node-and-reconstruct structure, so the advertised distinction and advantage are not real. The claim that the approach applies to arbitrary-order splitting is also asserted without any analysis of splitting order.",
+      "failure_location": {
+        "quote": "Therefore, no interpolation is needed during dimension switching;",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "State that the nodal-to-modal conversion is an interpolation (exact for polynomials of degree <= K_y) carried out by [Phi]^{-1}. Restrict the claimed benefit to bookkeeping or efficiency, and drop or support the 'arbitrary-order' statement.",
+      "overall_effect": "The stated novelty of the separated-variable implementation is overstated. The formulas themselves remain a valid reformulation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that the splitting needs no interpolation is false: coefficients are recovered by inverting the nodal Vandermonde matrix",
+      "why_classification": "The method is unaffected, but the central advertised advantage must be reworded to a comparable weaker claim."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2503.15673",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "525df8e17c05c705096d52d73001beee2508713e4af53e7492a856a404054906",
+  "status": "ok"
+}

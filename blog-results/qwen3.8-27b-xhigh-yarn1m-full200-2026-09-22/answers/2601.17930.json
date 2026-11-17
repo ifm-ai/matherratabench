@@ -1,0 +1,95 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $1\\le \\ell\\le n-1$ and $k\\in\\{0,1,\\dots,2^\\ell-1\\}$",
+          "tag": "lem:binary-shift"
+        }
+      ],
+      "failure_explanation": "The lemma asserts the identity b_{ell+1}(2k+2) = 0 b_ell(k+1) for all k in {0,...,2^ell-1}. At k = 2^ell - 1, the left side requires b_{ell+1}(2^{ell+1}), which is outside the domain {0,...,2^{ell+1}-1} of b_{ell+1}, and the right side requires b_ell(2^ell), outside the domain of b_ell. Both expressions are undefined at this boundary value, making the stated identity ill-formed. The proof's remark 'follows analogously' does not address this domain issue.",
+      "failure_location": {
+        "quote": "b_{\\ell+1}(2k+2)=0\\,b_\\ell(k+1).",
+        "tag": "lem:binary-shift"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the third identity to k in {0,...,2^ell-2}, or delete it since it is not invoked anywhere in the paper.",
+      "overall_effect": "The lemma as stated is not a well-formed mathematical claim at the boundary. The identity is not used in any downstream result (the dyadic refinement corollary only needs 2k and 2k+1), so no other result is affected.",
+      "primary_affected_tag": "lem:binary-shift",
+      "target_type": "formal_result",
+      "title": "Third binary-shift identity undefined at boundary k = 2^ell - 1",
+      "why_classification": "The repair is a one-line domain restriction or deletion of an unused identity. No substantive claim, rate, or guarantee is lost; no downstream result depends on the third identity."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$1$ & $100$ & $000$ & $100$\\\\",
+          "tag": "ex:graycode_m3"
+        },
+        {
+          "quote": "(j(1),\\dots,j(7))=(3,2,3,1,3,2,3).",
+          "tag": "ex:graycode_m3"
+        }
+      ],
+      "failure_explanation": "The paper's convention is b_m(k) = z_1...z_m with z_1 the least significant bit, so gamma(k) = sum z_r 2^{r-1}. From the (correct) table, g_1 = 100 gives gamma(1) = 1, so d_1 = gamma(1) XOR gamma(0) = 1, not 4. The paper's values (4,2,4,1,4,2,4) correspond to computing gamma(k) with z_1 as the most significant bit (i.e., sum z_r 2^{m-r}), contradicting the stated convention. The correct sequence is (d_1,...,d_7) = (1,2,1,4,1,2,1) and (j(1),...,j(7)) = (1,2,1,3,1,2,1).",
+      "failure_location": {
+        "quote": "(d_1,\\dots,d_7)=(4,2,4,1,4,2,4),",
+        "tag": "ex:graycode_m3"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Recompute gamma(k) using the paper's LSB-first convention (gamma(k) = sum z_r 2^{r-1}), yielding the correct d_k and j(k) sequences. The Gray-code table itself is correct and needs no change.",
+      "overall_effect": "The example gives readers incorrect flip indices and bit-position data for the m=3 Gray code. No other labelled result depends on the example's numerical values.",
+      "primary_affected_tag": "ex:graycode_m3",
+      "target_type": "formal_result",
+      "title": "Gray-code example computes d_k and j(k) with wrong bit ordering",
+      "why_classification": "The fix is a local recomputation of integer values from the (already correct) binary table. The example's illustrative purpose is preserved, and no theorem, proposition, or algorithm depends on these specific numbers."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "alg:ucry_gray_ladder"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "S_{2^m-1}(\\mathbf u)=\\sum_{r=1}^m u_r\\,2^{m-1}\\equiv 0\\pmod 2",
+          "tag": "prop:ucr_gray_ladder"
+        },
+        {
+          "quote": "so the net trailing toggle is $X^{S_{2^m-1}(\\mathbf u)}=\\rI$ and no residual Pauli factor remains.",
+          "tag": "prop:ucr_gray_ladder"
+        },
+        {
+          "quote": "(for $m=1$ the ladder reduces to the standard two-gate controlled-$\\RY$ synthesis and the same conclusion holds)",
+          "tag": "prop:ucr_gray_ladder"
+        }
+      ],
+      "failure_explanation": "The proof claims each control bit r flips exactly 2^{m-1} times among the 2^m - 1 Gray-code transitions, implying the cumulative parity S_{2^m-1}(u) = 0 for all u. In fact, for the binary-reflected Gray code, bit r flips 2^{m-r} times, so S_{2^m-1}(u) = <u, g_{2^m-1}> = u_m, which equals 1 on half the branches. Consequently the branch-restricted unitary is RY(phi_u) X^{u_m}, not RY(phi_u). The circuit formula (eq:ucr_ladder) lacks the final CNOT correction, so it does not equal UCRY(phi). The m=1 special case is also wrong: the formula gives RY(alpha_0) CNOT RY(alpha_1), which yields RY(phi_1) X on branch u=1, not RY(phi_1).",
+      "failure_location": {
+        "quote": "along the Gray-code ladder each control index $r\\in\\{1,\\dots,m\\}$ appears exactly $2^{m-1}$ times",
+        "tag": "prop:ucr_gray_ladder"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Append a final CNOT from q_{1+m} to q_1 in the circuit formula (giving 2^m CNOTs total), and correct the proof's flip-frequency argument to show S_{2^m-1}(u) = u_m rather than 0. The Walsh-Hadamard angle formula and the overall Gray-code ladder architecture remain unchanged.",
+      "overall_effect": "The stated circuit formula for the ancilla-free UCRY decomposition is incorrect: it applies an extra X to the target on all branches where the most-significant control bit is 1. The algorithm alg:ucry_gray_ladder, which directly implements this formula, produces the wrong unitary. The gate-count guarantee (2^m - 1 CNOTs) is also off by one.",
+      "primary_affected_tag": "prop:ucr_gray_ladder",
+      "target_type": "formal_result",
+      "title": "UCRY Gray-code ladder circuit has unaccounted trailing X gate",
+      "why_classification": "The proposition's circuit formula is demonstrably false on half the computational branches. The fix requires correcting the combinatorial argument in the proof (the false flip-frequency claim must be replaced) and adding a gate to the formula, which changes the stated complexity guarantee. However, the repair is a standard, well-known correction (one additional CNOT) that preserves the overall architecture, angle-transform method, and ancilla-free property; no new proof framework is needed."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2601.17930",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "0b9161609b7de732b5826bec7e476f364931220bd5e231e1557b7a0cd3889ba2",
+  "status": "ok"
+}

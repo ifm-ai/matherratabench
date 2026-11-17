@@ -1,0 +1,184 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "pro2",
+        "thm-error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\|\\nabla \\bmf{v}\\|_{\\bmf{L}^{\\infty}}\n\\leq\nC \\|\\nabla \\bmf{v}\\|_{\\bmf{L}^2}^{\\frac{1}{2}}\n(\\|\\nabla \\bmf{v}\\|_{\\bmf{L}^2}^2 + \\|\\Delta \\bmf{v}\\|_{\\bmf{L}^2}^2 + \\|\\nabla \\Delta \\bmf{v}\\|_{\\bmf{L}^2}^2)^{\\frac{1}{4}},\\\\",
+          "tag": "Sobolev-inequality"
+        },
+        {
+          "quote": "C \\|\\nabla\\Delta\\bmf{\\Phi}\\|_{\\bmf{L}^{2}} \\|\\nabla\\tilde{\\bmf{m}}\\|_{\\bmf{L}^{\\infty}}\\|\\Delta^2\\tilde{\\bmf{m}}\\|_{\\bmf{L}^{2}}",
+          "tag": "equ:LL-auxiliary-problem-stable-H3-1"
+        }
+      ],
+      "failure_explanation": "In 2D, H²(Ω) does not embed into L^∞(Ω); one needs the logarithmic Brezis–Gallouet correction. The stated bound ‖v‖_{L^∞} ≤ C(‖v‖_{L²}²+‖Δv‖_{L²}²)^{1/2} is therefore false. Similarly, the inequality for ‖∇v‖_{L^∞} applies a 1D Gagliardo–Nirenberg interpolation in 2D, which is also invalid without a logarithmic factor. The H³ estimate in Lemma lem-m-H2 relies on these false pointwise bounds to control terms such as ‖∇m̃‖_{L^∞}·‖Δ²m̃‖_{L²}, so the proof of the lemma is invalid.",
+      "failure_location": {
+        "quote": "$\\|\\bmf{v}\\|_{\\bmf{L}^{\\infty}}\n\\leq\nC (\\|\\bmf{v}\\|_{\\bmf{L}^2}^2 + \\|\\Delta \\bmf{v}\\|_{\\bmf{L}^2}^2)^{\\frac{1}{2}},\\\\",
+        "tag": "Sobolev-inequality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the false pointwise inequalities with valid 2D estimates (e.g., the Brezis–Gallouet inequality with its logarithmic factor, or assume m̃ ∈ H^s with s > 3 so that standard Sobolev embedding gives L^∞ control), and redo the H³ and H⁴ energy estimates using the corrected bounds.",
+      "overall_effect": "The H³ stability bound for the auxiliary solution m̃ is not established. Without it, the regularity of m̃ needed in the FVEM error estimate (Proposition pro2) and hence in the main error theorem (Theorem thm-error) is unsupported, breaking the entire spatial convergence analysis chain.",
+      "primary_affected_tag": "lem-m-H2",
+      "target_type": "formal_result",
+      "title": "False 2D Sobolev inequalities invalidate H³ stability proof of auxiliary problem",
+      "why_classification": "The false inequalities are central to the only proof of the auxiliary regularity lemma. Repairing them requires reworking the energy estimates with nonstandard (logarithmic) interpolation, and the resulting constant may depend on the H³ norm in a non-uniform way, potentially weakening or invalidating the downstream error bounds. No local fix preserves the stated estimates without new technical content."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "pro2",
+        "thm-error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bmf{\\Phi} \\times \\Delta \\tilde{\\bmf{m}}\n    +\n    \\nabla\\bmf{\\Phi} \\times \\nabla \\tilde{\\bmf{m}}",
+          "tag": "equ:LL-auxiliary-problem"
+        },
+        {
+          "quote": "\\mathcal{A}_h(\\bmf{\\Phi}; \\tilde{\\bmf{m}}_h, I_h^*\\bmf{v}_h)\n  =\n  a_h(\\tilde{\\bmf{m}}_h,I_h^*\\bmf{v}_h)\n  +\n  b_h(\\bmf{\\Phi};\\tilde{\\bmf{m}}_h,I_h^*\\bmf{v}_h).",
+          "tag": "auxiliary"
+        }
+      ],
+      "failure_explanation": "The continuous auxiliary problem contains the term Φ × Δm̃, which after integration by parts gives the boundary flux Φ × (∇m̃·n). The discrete bilinear form b_h(Φ; m̃_h, I_h^* v_h) should therefore be Σ ∫ Φ_h × (∇m̃_h · n) · v dS, making the scheme linear in m̃_h with Φ as known data. However, the definition of b_h uses the second argument (m̃_h) in both factors of the cross product, so b_h(Φ; m̃_h, I_h^* v_h) = Σ ∫ m̃_h × (∇m̃_h · n) · v dS is quadratic in m̃_h. The 'auxiliary' scheme is in fact as nonlinear as the original LL scheme, defeating the purpose of the linear-auxiliary / fixed-point framework.",
+      "failure_location": {
+        "quote": "b_h(\\bmf{m}_h;\\bmf{m}_h,I_h^*\\bmf{v}_h)\n \\!=\n \\!\\!\\!\\sum_{\\bmf{x}_i\\in\\mathcal{N}_h}\\!\\!\\!\\int_{\\partial V_i}\\!\\!\\!(\\bmf{m}_h \\! \\times \\! (\\nabla \\bmf{m}_h \\cdot\\bmf{n})) \\cdot I_h^*\\bmf{v}_h\\,\\mr{d}S\\!",
+        "tag": null
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct b_h so that the first factor of the cross product is the nodal interpolation of Φ (i.e., b_h(Φ; m̃_h, I_h^* v_h) = Σ ∫ I_h Φ × (∇m̃_h · n) · v dS). Then re-verify the well-posedness, coercivity, and error estimates for the resulting linear auxiliary scheme, and re-establish the fixed-point convergence to the discrete LL solution.",
+      "overall_effect": "The auxiliary discrete problem is not a linear parabolic scheme as claimed. The FVEM error estimate (Proposition pro2), which is derived for a linear-in-m̃_h scheme, does not apply to the nonlinear scheme actually written. The fixed-point iteration connecting the auxiliary problem to the LL equation is therefore misformulated, and the main error theorem (Theorem thm-error) loses its foundation.",
+      "primary_affected_tag": "auxiliary",
+      "target_type": "formal_result",
+      "title": "Discrete auxiliary scheme is nonlinear in m̃_h because b_h ignores its Φ argument",
+      "why_classification": "The correction is a local change in the definition of b_h (replacing m̃_h by I_h Φ in the first cross-product factor). The overall architecture (linear auxiliary problem → FVEM error → fixed-point → LL error) survives. The repair requires re-checking the standard FVEM estimates for the corrected linear scheme, which is a contained modification, not a new proof architecture."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "in which $|\\bmf{m}_{0}| = |\\bmf{g}| = 1$ holds in a point-wise sense.",
+          "tag": null
+        },
+        {
+          "quote": "&\\bmf{m}_h(t)|_{\\partial\\Omega} = \\bmf{0},",
+          "tag": "equ:LL-semi-discretized1"
+        }
+      ],
+      "failure_explanation": "The simplified LL equation (equ:simplicity-LL-dimensionless) is derived under the constraint |m| = 1 at every point (used to obtain m·Δm = −|∇m|²). Imposing the homogeneous Dirichlet condition m|_{∂Ω} = 0 contradicts |m| = 1 on ∂Ω, so no solution of the LL equation satisfies both. The theorem asserts an error estimate ‖m − m_h‖ ≤ Ch^s for 'm, the solution of the LL equation with homogeneous Dirichlet BC,' but such an m does not exist. The discrete scheme (equ:LL-semi-discretized1) likewise enforces m_h = 0 on ∂Ω, so the discrete problem is not a discretization of the constrained LL equation either.",
+      "failure_location": {
+        "quote": "Let $\\bmf{m}$ and $\\bmf{m}_h$ be the solutions of \\eqref{equ:simplicity-LL-dimensionless} with a homogeneous Dirichlet boundary condition and \\eqref{equ:LL-semi-discretized1}, respectively.",
+        "tag": "thm-error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either (a) replace the homogeneous Dirichlet condition with a physically admissible boundary condition (|m|=1 on ∂Ω) and redo the FVEM scheme, Ritz projection, and error analysis for the constrained problem, or (b) explicitly state that the theorem applies to the unconstrained PDE (equ:simplicity-LL-dimensionless) with m=0 on ∂Ω, in which case the result is not an error estimate for the LL equation and the abstract's claims must be revised.",
+      "overall_effect": "The main spatial error theorem is stated for a problem that has no solution. The estimates ‖m−m_h‖_{L²} ≤ Ch² and ‖m−m_h‖_{H¹} ≤ Ch do not apply to the Landau–Lifshitz equation, which is the paper's stated target. The remark attempting to extend to |g|=1 boundary data does not resolve the incompatibility at the homogeneous level used throughout the analysis.",
+      "primary_affected_tag": "thm-error",
+      "target_type": "formal_result",
+      "title": "Theorem thm-error states an error estimate for the LL equation with m|_{∂Ω}=0, which is incompatible with |m|=1",
+      "why_classification": "The theorem's stated problem is empty: the LL equation and m|_{∂Ω}=0 are mutually exclusive. No one-line correction restores a valid error estimate for the LL equation; the entire boundary treatment, the FVEM scheme, the Ritz projection, and the fixed-point connection must be redone for a compatible constraint. The advertised spatial convergence for the LL equation is lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lim_{l\\rightarrow \\infty}\\|\\bmf{m}_h-\\tilde{\\bmf{m}}_h^l\\|_{\\bmf{L}^2} = 0,\\quad\n\\lim_{l\\rightarrow \\infty}\\|\\bmf{m}_h-\\tilde{\\bmf{m}}_h^l\\|_{\\bmf{H}^1} = 0.",
+          "tag": "thm-error"
+        },
+        {
+          "quote": "\\lim_{l \\rightarrow \\infty} \\|\\tilde{\\bmf{m}}^{l+1}-\\tilde{\\bmf{m}}^l\\|_{\\bmf{H}^2} \\rightarrow 0.",
+          "tag": "lem-con"
+        }
+      ],
+      "failure_explanation": "The proof claims that setting Φ = m̃_h^l in the auxiliary scheme makes it identical to the LL FVEM scheme, and then asserts lim_{l→∞}‖m_h − m̃_h^l‖ = 0. However, (i) the auxiliary scheme (even after correcting the b_h issue) is a linear scheme with data Φ, while the LL scheme is nonlinear; they are not 'equivalent' for any finite l. (ii) The convergence m̃_h^l → m_h requires a discrete fixed-point argument (stability of the FVEM with respect to the data Φ, plus the continuous convergence ṁ^l → m), neither of which is established. Lemma lem-con only shows ‖ṁ^{l+1} − ṁ^l‖_{H²} → 0 in the continuous setting, which does not transfer to the discrete level without additional work. The step is a nontrivial gap in the proof.",
+      "failure_location": {
+        "quote": "Choose $\\bmf{\\Phi} = \\tilde{\\bmf{m}}_h^l$, and\nthe FVEM scheme \\eqref{auxiliary} is equivalent to the FVEM scheme \\eqref{equ:LL-semi-discretized1},\ni.e.",
+        "tag": "thm-error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must provide a discrete fixed-point convergence argument showing that the sequence {m̃_h^l} converges to m_h (the unique solution of the discrete LL scheme) in both L² and H¹, including a stability estimate for the FVEM with respect to the data Φ that is uniform in l, or alternatively prove that m_h is the unique fixed point of the discrete iteration and that the iteration is contractive in a suitable discrete norm.",
+      "overall_effect": "The triangle-inequality decomposition m − m_h = (m − ṁ^l) + (ṁ^l − m̃_h^l) + (m̃_h^l − m_h) is not closed: the first two terms are controlled, but the third term ‖m̃_h^l − m_h‖ is not shown to vanish as l → ∞. The claimed error bounds ‖m − m_h‖_{L²} ≤ Ch² and ‖m − m_h‖_{H¹} ≤ Ch are therefore not established by the given argument.",
+      "primary_affected_tag": "thm-error",
+      "target_type": "formal_result",
+      "title": "Proof of thm-error asserts unproven equivalence between auxiliary and LL FVEM schemes",
+      "why_classification": "The missing discrete fixed-point convergence is a nontrivial argument that the source does not supply. Without it, the main theorem's proof is incomplete and the advertised spatial error estimates for the LL equation are not established. The gap cannot be closed by a local fix; it requires a new stability/uniqueness analysis for the discrete nonlinear scheme."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "S_h\n=\n\\{v\\in C(\\bar{\\Omega}):\\ v|_K\\ \text{is piecewise linear for all}\\, K\\in T_h\\}",
+          "tag": null
+        },
+        {
+          "quote": "\\bmf{m}^{n+1}\n    =\n    \\frac{\\bmf{\\hat{m}_h}}{|\\bmf{\\hat{m}_h}|}.",
+          "tag": null
+        },
+        {
+          "quote": "Owing to the Lemma \\ref{lem-t} and the fact that $\\bmf{m}_h \\cdot \\partial_t \\bmf{m}_h =0$,",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The FVEM space S_h consists of continuous piecewise-linear vector fields. A non-constant piecewise-linear map into R³ cannot satisfy |m_h(x)| = 1 for every x (the constraint defines a smooth manifold S², while m_h is a polyhedral map). The projection step m^{n+1} = m̂_h/|m̂_h| ensures |m_h(x_i)| = 1 only at the mesh nodes, not between them. The energy proof uses m_h · ∂_t m_h = 0 (a consequence of |m_h| = 1 point-wise) to drop the gyroscopic term, but this identity fails for the actual FVEM solution. The hypothesis of the proposition is therefore unsatisfiable by any non-trivial discrete solution.",
+      "failure_location": {
+        "quote": "the discrete magnetization $\\bmf{m}_h$ satisfies $|\\bmf{m}_h| = 1$ in a point-wise sense. We then obtain\n    $d_tF[\\bmf{m}_h] \\leq 0$.",
+        "tag": "energy-dissipation"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either (a) restrict the energy law to the nodal values (i.e., prove dissipation of a fully discrete energy based on |m_h(x_i)| = 1) and show the gyroscopic term vanishes in the discrete inner product, or (b) modify the scheme to enforce |m_h| = 1 on each element (e.g., via a local projection that preserves linearity), or (c) derive an energy inequality for the projected solution that includes a controllable remainder term from the constraint violation.",
+      "overall_effect": "The discrete energy dissipation law d_tF[m_h] ≤ 0 is stated under a hypothesis that the FVEM solution cannot meet. The gyroscopic term (m_h × ∂_t m_h, I_h^* ∂_t m_h) is not zero for piecewise-linear m_h, so the energy identity used in the proof is incorrect. The advertised discrete energy dissipation property of the method is not established.",
+      "primary_affected_tag": "energy-dissipation",
+      "target_type": "formal_result",
+      "title": "Discrete energy dissipation assumes |m_h|=1 point-wise, impossible for FVEM solution",
+      "why_classification": "The hypothesis |m_h| = 1 point-wise is incompatible with the function space S_h, so the proposition as stated has no admissible solution. The proof's key step (m_h · ∂_t m_h = 0) is invalid for the FVEM output. Restoring a valid discrete energy law requires either changing the scheme or the energy functional, which is a substantive modification of the method's guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bmf{m}_0(\\bmf{x})=\\left\\{\n\t\t\\begin{aligned}\n\t\t    &(0,0,-1)^T, & \\quad  |\\bmf{x}|\\geq 0.5,\\\\\n\t\t    &\\left(\\frac{2 x A}{A^2+|\\bmf{x}|^2},\\frac{2 y A}{A^2+|\\bmf{x}|^2},\\frac{A^2-|\\bmf{x}|^2}{A^2+|\\bmf{x}|^2}\\right)^T,\t& \\quad \\mr{otherwise},\n\t\t\\end{aligned}\\right.",
+          "tag": null
+        },
+        {
+          "quote": "where $A=(1-2|\\bmf{x}|^2)^4$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The prose claims the blow-up is studied from a 'smooth initialization.' However, at the interface |x| = 0.5, the 'otherwise' branch gives m_3 = (A² − |x|²)/(A² + |x|²) with A = (1 − 2·0.25)⁴ = (0.5)⁴ = 1/16, so A² = 1/256 and m_3 = (1/256 − 1/4)/(1/256 + 1/4) = −63/65 ≈ −0.969, while the boundary branch gives m_3 = −1. The initial data has a jump discontinuity at |x| = 0.5, so it is not smooth (not even continuous). The subsequent numerical observation of blow-up may be driven by this initial discontinuity rather than by the smooth blow-up mechanism cited in the literature.",
+      "failure_location": {
+        "quote": "With a smooth initialization, the solution of the LL equation would blow up in a finite-time evolution.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the piecewise initial condition with a smooth (C^∞) one that satisfies |m_0| = 1 and is known to produce blow-up (e.g., the smooth profile used in the cited references), or explicitly state that the initialization is discontinuous and that the observed blow-up may be due to the initial jump.",
+      "overall_effect": "The blow-up experiment does not validate the claimed smooth-initialization blow-up scenario. The observed singularity at the origin could be an artifact of the discontinuous initial data, undermining the paper's stated purpose of studying the blow-up phenomenon from smooth data.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Blow-up example initial condition is discontinuous, contradicting 'smooth initialization' claim",
+      "why_classification": "The fix requires choosing a different (smooth) initial condition from the blow-up literature and re-running the experiment, or amending the prose to remove the 'smooth initialization' claim. This is a contained correction to the numerical experiment setup that does not affect the theoretical results, but it does weaken the validation claim for the blow-up phenomenon."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2502.04871",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "2b131bc1b1397a331131c3d4692b968114c3c19f26ad93efd8aaee7851565283",
+  "status": "ok"
+}

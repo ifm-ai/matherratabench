@@ -1,0 +1,286 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:control_suboptimality"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat{V}(x(T)) - \\hat{V}(x(0)) \\geq -\\int_0^T",
+          "tag": "thm:suboptimality"
+        },
+        {
+          "quote": "J(x_0; \\hat{u}) \\leq \\hat{V}(x_0) + \\epsilon \\cdot T(x_0)",
+          "tag": "thm:suboptimality"
+        }
+      ],
+      "failure_explanation": "Along the closed loop under u-hat one has running cost + d(V-hat)/dt = R(x). Hence J = V-hat(x_0) - V-hat(x(T)) + the integral of R. The hypothesis R >= -epsilon therefore gives J >= V-hat(x_0) - V-hat(x(T)) - epsilon*T, a lower bound on J. Rearranging 'V-hat(x(T)) - V-hat(x(0)) >= -int(cost) - epsilon T' gives int(cost) >= V-hat(x(0)) - V-hat(x(T)) - epsilon T, not '<= ... + epsilon T'. Locally, V-hat = 0.25x^2 for f=x, g=1, q=x^2 has R = 1.375x^2 >= 0 (epsilon = 0) yet yields the unstable closed loop x' = 0.5x. Separately, T is used both as a finite horizon and as T -> infinity, so epsilon*T(x_0) is not controlled. T(x) is defined under the optimal control while the integration is along the closed loop of u-hat. Convergence x(T) -> 0 is never established from the hypotheses.",
+      "failure_location": {
+        "quote": "\\leq \\hat{V}(x(0)) - \\hat{V}(x(T)) + \\epsilon T",
+        "tag": "thm:suboptimality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the hypothesis by a two-sided residual |R| <= epsilon (or an upper bound on R), fix a finite horizon T, assume or prove convergence or a terminal bound for V-hat(x(T)), and redo the integration with the correct sign. This does not cover SDP outputs that only enforce R >= 0.",
+      "overall_effect": "The advertised suboptimality guarantee for the controller obtained from a one-sided HJB-inequality solution (the only kind the SDP enforces) is unsupported and false in general. The corollary built on it fails too.",
+      "primary_affected_tag": "thm:suboptimality",
+      "target_type": "formal_result",
+      "title": "Suboptimality 'upper bound' proof reverses the inequality; a one-sided residual gives only a lower bound on J",
+      "why_classification": "The stated guarantee is false for the paper's own constraint type. Every repair changes the hypothesis class, so it no longer applies to the SDP solutions that are the paper's object."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:control_suboptimality"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "which satisfies all HJB constraints but provides no useful control law",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem asserts 0 <= V-hat - V*. The 'proof' only sketches V-hat >= V* - epsilon*T, which is a different statement, and gives no argument. For any control, running cost + dV/dt >= H(V-hat) >= -epsilon, so V* >= V-hat - epsilon*T. Solutions of the inequality H >= 0 are underestimators of V*, not overestimators. The paper itself notes that V ≡ 0 satisfies all the HJB constraints, and then V-hat - V* = -V* < 0.",
+      "failure_location": {
+        "quote": "Any suboptimal control achieves at least this cost, so $\\hat{V}(x) \\geq V^*(x) - \\epsilon \\cdot T(x)$ follows from standard perturbation arguments.",
+        "tag": "thm:suboptimality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Drop the claim 0 <= V-hat - V*. State and prove the correct one-sided relation V-hat - V* <= epsilon*T (finite-horizon, with the terminal term handled), or add a supersolution hypothesis that actually yields an upper bound.",
+      "overall_effect": "The two-sided sandwich in the theorem is false. The corollary's use of V-hat >= V* is wrong.",
+      "primary_affected_tag": "thm:suboptimality",
+      "target_type": "formal_result",
+      "title": "Claimed lower bound 0 <= V-hat - V* is unsupported and contradicts the direction of the HJB inequality",
+      "why_classification": "A contained correction replaces the false half of the sandwich with the true opposite-direction bound, with a new short argument. A comparable but weaker theorem survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "J(x_0; \\hat{u}) \\leq V^*(x_0) + 2\\epsilon \\cdot T(x_0).",
+          "tag": "cor:control_suboptimality"
+        }
+      ],
+      "failure_explanation": "From J <= V-hat + epsilon*T, a lower bound V-hat >= V* - epsilon*T cannot give J <= V* + 2 epsilon*T; that needs an upper bound on V-hat. The claimed 'tighter' bound is a non sequitur: V-hat >= V* makes J - V* <= (V-hat - V*) + epsilon*T larger, not smaller. The best that follows is 2 epsilon*T, and only if an upper bound V-hat - V* <= epsilon*T is available. The 'supersolution' label is also wrong, since H >= 0 is the subsolution direction.",
+      "failure_location": {
+        "quote": "For the stated bound, note that if $\\hat{V}$ is a supersolution (i.e., satisfies the HJB inequality), then $\\hat{V}(x) \\geq V^*(x)$, giving the tighter bound",
+        "tag": "cor:control_suboptimality"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "State J - V* <= 2 epsilon*T(x_0), derived from the theorem's corrected bounds V* <= J <= V-hat + epsilon*T and V-hat <= V* + epsilon*T, and drop the 'supersolution' argument.",
+      "overall_effect": "The stated constant (epsilon*T rather than 2 epsilon*T) is unsupported. The inference is invalid regardless of the sign error in the theorem.",
+      "primary_affected_tag": "cor:control_suboptimality",
+      "target_type": "formal_result",
+      "title": "Corollary's bound J - V* <= epsilon*T does not follow from its own proof",
+      "why_classification": "The repair is short but loses the advertised constant. It also depends on the corrected theorem."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For stabilizable/detectable pairs, we have $q(x) \\geq c_3 \\|x\\|^2$ for some $c_3 > 0$ near the origin.",
+          "tag": "thm:stability"
+        },
+        {
+          "quote": "The convergence rate $\\beta$ satisfies $\\beta \\geq \\lambda_{\\min}(P) / \\lambda_{\\max}(P)$ asymptotically near the origin.",
+          "tag": "thm:stability"
+        }
+      ],
+      "failure_explanation": "H(V-hat) >= 0 gives grad V^T f >= -q + (1/2)grad V^T g D^-1 g^T grad V. Therefore dV/dt = grad V^T f - grad V^T g D^-1 g^T grad V >= -q - (1/2)(...), the opposite of the claimed '<='. No Lyapunov decrease follows. As stated, with P merely positive definite, V-hat = 0.25x^2 (f=x, g=1, q=x^2) satisfies hypotheses 1-3 locally but gives x' = 0.5x. Even if P is the stabilizing ARE solution, the argument must go through the linearization, not the stated chain. Step 3 claims q >= c3||x||^2 from detectability, which is false when Q = Hess q(0) is singular (e.g. q = x1^4 + x2^2). The rate claim beta >= lambda_min(P)/lambda_max(P) is not what the proof gives (beta = c3/(2 c2)).",
+      "failure_location": {
+        "quote": "\\leq -q(x) - \\frac{1}{2}\\nabla \\hat{V}^\\top g D^{-1} g^\\top \\nabla \\hat{V}",
+        "tag": "thm:stability"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Take P to be the stabilizing ARE solution and prove local exponential stability from the Hurwitz closed-loop linearization, using grad V-hat(x) = Px + O(||x||^2) and C^1 smoothness of f and g. Replace the unsupported rate with the closed-loop-matrix rate, and drop the c3 step.",
+      "overall_effect": "The exponential-stability certificate and the asserted rate lack a valid proof as written. The hypotheses are also not met by the SDP, which enforces constraints only at finitely many points.",
+      "primary_affected_tag": "thm:stability",
+      "target_type": "formal_result",
+      "title": "Exponential stability proof uses the wrong direction of the HJB inequality; unsupported q >= c3||x||^2 and rate claim",
+      "why_classification": "A different, standard linearization argument gives local exponential stability under the same data. The rate claim must be weakened, but a comparable local result survives."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For $V^* \\in H^s(\\Omega) \\cap \\mathcal{H}_\\kappa$",
+          "tag": "thm:convergence"
+        },
+        {
+          "quote": "\\leq C' \\|V^* - \\hat{V}\\|_{\\mathcal{H}_\\kappa} = O(h^{s-1})",
+          "tag": "thm:convergence"
+        }
+      ],
+      "failure_explanation": "The theorem assumes only V* in H^s, but Step 2 uses V* in H^s ∩ H_kappa. The Gaussian RKHS is far smaller than H^s, so the extra membership is not implied. An O(h^s) rate for the native-space norm of the best approximation is not a result of Wendland's theory, and 'see Wendland' does not supply it. Native-norm error is not controlled by Sobolev smoothness of order s. The final chain also gives O(h^s) from the stated Step 2 but concludes O(h^{s-1}). Finally, p* is an abstract approximant, unrelated to the SDP solution, whose objective is min ||p||^2.",
+      "failure_location": {
+        "quote": "\\|V^* - \\hat{V}\\|_{\\mathcal{H}_\\kappa} = O(h^s)",
+        "tag": "thm:convergence"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Use a kernel whose native space is norm-equivalent to H^s (e.g. Sobolev/Matérn) and cite the corresponding derivative error estimate. Or assume V* in the Gaussian RKHS and state the correct (faster) rate. Either way, state that the result concerns the best approximant, not the SDP solution.",
+      "overall_effect": "The advertised convergence rate for the method is unsupported. Nothing connects it to the SDP output.",
+      "primary_affected_tag": "thm:convergence",
+      "target_type": "formal_result",
+      "title": "Convergence-rate theorem: rate for the RKHS-norm best approximation is unsupported, V* in H^s does not give V* in the Gaussian RKHS, and the stated chain is inconsistent",
+      "why_classification": "Changing the kernel or the hypothesis gives a recognizably comparable approximation-theory statement. The SDP-solution convergence is not obtained, but the isolated claim as stated can be repaired with a contained argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(positive definite since $A$ is stable by assumption)",
+          "tag": "thm:giesl_reduction"
+        },
+        {
+          "quote": "Since $P \\succ 0$ (positive definite for stabilizable systems under Assumption~\\ref{ass:standing})",
+          "tag": "rem:riccati_significance"
+        }
+      ],
+      "failure_explanation": "For stable A, the Lyapunov solution is P ⪰ 0 and P ≻ 0 iff (A, Q^{1/2}) is observable. Detectability is automatic for stable A and gives only P ⪰ 0. With Q = Hess q(0) = 0 (allowed by Assumption 2.1, since only q>0 for x≠0 and detectability are required) one gets P = 0. Likewise the ARE solution under stabilizable plus detectable assumptions is only positive semidefinite. The same false implication is used in Remark 3.5 and in the Giesl discussion ('eliminates trivial solutions since P ≻ 0') to claim the Hessian constraint excludes V ≡ 0.",
+      "failure_location": {
+        "quote": "the Lyapunov equation has a unique positive definite solution $P \\succ 0$.",
+        "tag": "thm:giesl_reduction"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Add the standard hypothesis Q ≻ 0 (or observability of (A, Q^{1/2})) to the standing assumptions and to the statements that use P ≻ 0.",
+      "overall_effect": "The claim that the Hessian constraint rules out the trivial solution, and the P ≻ 0 hypothesis used for stability, are unsupported under the standing assumptions.",
+      "primary_affected_tag": "thm:giesl_reduction",
+      "target_type": "formal_result",
+      "title": "False claim that detectability/stability gives P ≻ 0 (Lyapunov and Riccati solutions)",
+      "why_classification": "A standard local assumption restores every claim without changing the method or results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "choosing $Q = 2$ yields the Riccati solution",
+          "tag": null
+        },
+        {
+          "quote": "a polynomial value function $V^*(x) = x^2 + 0.25x^4$ satisfies the HJB equation exactly",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With f = x + x^3 and V*' = 2x + x^3, formula (state_cost) gives q = (2x^2 + 2x^4 + 0.5x^6) - (2x^2 + 3x^4 + x^6) = -x^4 - 0.5x^6 <= 0. This violates q >= 0 and q > 0 for x ≠ 0 (Assumption 2.1), so V* is not the value function of a legitimate cost. Also q''(0) = 0, so Q = 0 and the true ARE solution is P = 2 = Hess V*(0), not the imposed P = 1+sqrt(3) from Q = 2. The 2D example (f = x(1+||x||^2), the same V*) has the same flaw. The SDP's Hessian constraint (2.732) and LMIs (using q) therefore describe different problems, and the comparison with V* in the reported errors is meaningless. Near 0, H(V) ≈ -x^2 < 0 for any V with Hessian 2.732, making feasibility doubtful.",
+      "failure_location": {
+        "quote": "q(x) = \\frac{1}{2}\\left(\\frac{\\partial V^*}{\\partial x}\\right)^2 - \\frac{\\partial V^*}{\\partial x}f(x),",
+        "tag": "eq:state_cost"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Choose a legitimate positive-definite q (e.g. q = (1/2)x^TQx with the Hessian of V* matching P), or build q from a V* whose Hessian equals the ARE solution and for which q >= 0, then rerun and re-report the numerics.",
+      "overall_effect": "The reported approximation errors against V*, the 'exact optimal solution' claims, and the validation of the Riccati constraint on the 1D/2D examples are unreliable.",
+      "primary_affected_tag": "eq:state_cost",
+      "target_type": "other",
+      "title": "1D (and 2D) test problems are inconsistent: the defined q is negative, Q = 2 does not match q, and V* has Hessian 2 not P",
+      "why_classification": "The test problems must be redesigned and rerun, but the method and theory are not changed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "with $Q = 2I_2$ and $R = 1$",
+          "tag": null
+        },
+        {
+          "quote": "u^*(x) = -R^{-1} g(x)^\\top \\nabla V(x)",
+          "tag": null
+        },
+        {
+          "quote": "The absolute error $|\\hat V - V_{\\mathrm{quad}}|$ remains small across the domain",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The listed P solves the standard ARE for cost ∫(x^T Q x + u^T R u) with Q = 2I, R = 1 (verified entrywise). The value function for that cost is x^T P x, with Hessian 2P. The paper's framework (cost q + (1/2)u^T D u, constraint Hess V(0) = P, u* = -D^{-1}g^T grad V) corresponds to V ≈ (1/2)x^T P x. The imposed Hessian P therefore differs from the Hessian 2P of the stated reference, so the kernel solution cannot be both 'preserving the Riccati curvature' and close to V_quad. A bound '< 1.0' near the origin is implausible. The stated cost, ARE and feedback formula do not match the framework's D, q conventions.",
+      "failure_location": {
+        "quote": "the quadratic reference $V_{\\mathrm{quad}}(x) = x^\\top P x$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "State the example in the paper's convention (D = 2R, q = x^T Q x, Hessian of V = 2P_std) or compare against (1/2)x^T P x, and recompute the error table.",
+      "overall_effect": "The Van der Pol error comparison and the statement that the SDP reproduces the LQR value are not consistent with the paper's own definitions.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Van der Pol: cost/Hessian conventions inconsistent; reference V_quad = x^T P x has Hessian 2P, not P",
+      "why_classification": "A consistent rescaling and recomputation of the comparison fixes it, with no change to the method or theory."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\|\\nabla^2 V(0) - P\\|_F \\approx 5.67 \\times 10^{-1}$ in Frobenius norm",
+          "tag": null
+        },
+        {
+          "quote": "\\|\\nabla^2 V(0)-P\\|_F \\approx 1.0",
+          "tag": null
+        },
+        {
+          "quote": "correct local behavior near the equilibrium, enforced by the Riccati Hessian constraint, is sufficient for guaranteed stabilization across all tested initial conditions",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The text claims Hessian error within 1e-1 in 2D, but the paper reports 0.567. It claims Van der Pol is within epsilon = 0.5, but reports 1.0. In 2D the gradient at 0 is ≈ 4.4e-3, not 0. The computed solutions therefore violate the hard equalities (and the relaxed epsilon-version in Van der Pol is not the SDP of Theorem 3.5) assumed by Theorem 3.9. Both stability and optimality theorems also assume the HJB inequality for all x in Omega or near 0, while the SDP enforces it only at finitely many collocation points. No fill-distance or Lipschitz argument bridges this. Local stability gives only a neighborhood of unspecified radius r, so 'guaranteed stabilization' from radius 1–1.5 initial states and 'theoretical guarantees' are overclaims; the evidence is empirical.",
+      "failure_location": {
+        "quote": "The constraint is satisfied to machine precision in 1D, within $10^{-1}$ Frobenius norm in 2D, and within tolerance $\\varepsilon = 0.5$ for the Van der Pol system---sufficient for ensuring exponential stabilization.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Restate the numerical claims as empirical, correct the reported tolerances, and either add a rigorous finite-collocation-to-pointwise argument with an estimate of the region of attraction or remove the 'guarantee' wording.",
+      "overall_effect": "The abstract, summary and conclusion claims of rigorous stability/optimality guarantees for the computed controllers are unsupported. The numerics are empirical evidence only.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed guarantees and constraint satisfaction contradicted by reported residuals; theorem hypotheses not met by computed solutions",
+      "why_classification": "Weakening the claims is local. Retaining a guarantee would need a new argument, but a comparable (empirical) result survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\dot{x}_2 = -x_1 + \\mu (1 - x_1^2) x_2 + u",
+          "tag": null
+        },
+        {
+          "quote": "\\kappa(x,y) = (1 + x^\\top y)^4",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Van der Pol dynamics are a cubic polynomial, the kernel is a degree-4 polynomial kernel, and the value-function space is finite-dimensional polynomial. The example is polynomial and tests nothing beyond polynomial systems. The same overclaim appears in 'scales efficiently ... to nonlinear nonpolynomial systems' and 'Even for nonpolynomial dynamics'.",
+      "failure_location": {
+        "quote": "The Van der Pol results confirm that the kernel-based LMI formulation generalizes beyond polynomial systems.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Remove the nonpolynomial claim, or add a genuinely nonpolynomial test system with a non-polynomial kernel.",
+      "overall_effect": "The advertised scope (nonpolynomial systems) is not established. The claimed scalability rests only on n = 1 and n = 2 examples.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Van der Pol example does not support the claim of generalization to nonpolynomial systems",
+      "why_classification": "Deleting or narrowing the sentence removes the false scope claim, and the core method and results are unaffected."
+    }
+  ],
+  "issues_found": 10,
+  "paper_id": "2603.01084",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "ae1bd8b81e57f8cdcc0b3f2717fbddf2f6278b8b00cfe06a2537efea483c8066",
+  "status": "ok"
+}

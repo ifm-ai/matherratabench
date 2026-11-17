@@ -1,0 +1,126 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Typically, the term \\(\\text{Cost}\\big(\\solvpd\\big)\\) dominates on the right hand side.",
+          "tag": null
+        },
+        {
+          "quote": "Again, in typical situations the terms \\(\\text{Cost}\\big(\\solvp\\big)\\) dominates.",
+          "tag": null
+        },
+        {
+          "quote": "Note that this is a high level analysis and the actual performance may depend on additional computational factors",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper only derives upper bounds (eq:costasm, eq:costnaivead, eq:costid). A smaller upper bound for one method does not give a smaller true cost or worst-case cost. By the paper's own remarks, the dominant term in each bound is the solver cost, which is the same order for ASM, AD and ID (the paper says Cost(solver_pd)=Cost(solver_p) in typical solvers). ASM's bound Cost(solver_pd)+ωCost(L) is not shown to be below AD's bound (1+ω)Cost(solver_p)+ωCost(F), since nothing relates Cost(L) to Cost(solver_p)+Cost(F). So 'obvious' and 'much lower' are unsupported, apart from the comparison with ID's extra Hessian and linear-solve terms.",
+      "failure_location": {
+        "quote": "it is obvious that the worst case computational cost of \\myref{alg:asm} is lower, and possibly much lower, than either automatic differentiation or implicit differentiation",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the claim by a precise statement that ASM adds only O(Cost(L)) to the solver cost, so it is no costlier than AD and ID up to the comparison of bounds. Drop 'obvious' and 'much lower', or add a lower-bound argument or concrete setting where the gap is real.",
+      "overall_effect": "The advertised computational advantage over automatic and implicit differentiation is not established by the given analysis. Only the weaker statement holds that ASM's bound is no larger than ID's bound, with comparable dominant terms for AD.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Cost comparison: ASM declared 'obviously' cheaper (even 'much lower') by comparing upper bounds whose dominant terms coincide",
+      "why_classification": "It is a side remark about heuristic costs. Rewording the claim, or adding a short comparison of the bounds, removes it without affecting any theorem."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theo:mainsmooth"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "to finish the proof, it remains to show that \\(\\consv_f\\) has the chain rule property along continuously differentiable",
+          "tag": "theo:main"
+        },
+        {
+          "quote": "Note that \\(\\consv_{\\Lcal}\\) is a partial conservative field for \\(\\Lcal\\), which ignores the dependency in \\(\\dvar, \\dvarr\\).",
+          "tag": "theo:main"
+        }
+      ],
+      "failure_explanation": "The proof invokes [Pauwels–Bolte, Thm 2 and Lemma 6], which needs D_f itself to be definable, graph closed, locally bounded with nonempty compact values, leaving only the chain rule to check. The proof instead verifies these properties for the auxiliary map D_L. D_L is defined with D_F, whereas D_f in the theorem uses conv D_F. D_L is defined on all multipliers, so its local boundedness has nothing to do with Proposition locboundp. Graph closedness of D_f needs a closed graph of solpd (hence of Mult) and a limit of selected multipliers. Lemma sclosedgraph only treats solp, and closedness of Mult/solpd is never shown. That conv D_F is also a conservative field (so the chain rule transfers to D_f) is not noted.",
+      "failure_location": {
+        "quote": "It is also immediate that \\(\\consv_\\Lcal\\) is definable, graph closed, locally bounded, and compact valued by Proposition \\ref{prop:locboundp}.",
+        "tag": "theo:main"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add a short lemma showing that solpd and Mult have closed graphs (using Lemma sclosedgraph, Proposition locboundp and graph closedness of conv D_F), so that D_f is graph closed, locally bounded and compact valued. Also note that conv D_F is conservative and run the chain-rule argument with it.",
+      "overall_effect": "As written, the proof does not establish that D_f is a legitimate conservative field (graph closed, locally bounded, compact valued). The chain-rule computation remains valid for selections of D_L.",
+      "primary_affected_tag": "theo:main",
+      "target_type": "formal_result",
+      "title": "Proof of main theorem checks the closed-graph/compactness hypotheses for D_L, not for D_f (and uses a non-convexified D_F)",
+      "why_classification": "The missing verification follows from ingredients already in the paper by a short routine argument, with no change of method or result."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "theo:mainsmooth"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let \\(\\varphi\\colon \\Rell \\to \\R\\) be a locally Lipschitz function and",
+          "tag": "def:conservative"
+        },
+        {
+          "quote": "The value function \\(f\\), defined in \\eqref{eq:fvdef}, is continuous on \\(\\Rq\\).",
+          "tag": "lem:fcont"
+        }
+      ],
+      "failure_explanation": "A conservative field is defined only for locally Lipschitz functions. The Clarke inclusion in the theorem, and the earlier inclusion (eq:clarkesubdiffvf), also need f to be locally Lipschitz so that its Clarke subdifferential exists. Neither the theorem nor the proof shows that f is locally Lipschitz; the only regularity proved is continuity (Lemma fcont). Local Lipschitz continuity of f needs an extra argument, e.g. the Aubin property of R combined with local boundedness of solp and a compactness/covering step. Without it the statement 'D_f is a conservative field for f' is not meaningful.",
+      "failure_location": {
+        "quote": "the continuity of \\(f\\) given by Lemma~\\myref{lem:fcont}",
+        "tag": "theo:main"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add a lemma proving that f is locally Lipschitz. Use the Aubin property of R from the proof of Lemma rinnersemicontinuous at every point of the compact set solp(θ), a finite cover, local boundedness of solp, and Lipschitz continuity of F on bounded sets. Then cite it in Theorem main and in Section 4.2.",
+      "overall_effect": "The hypothesis of the definition of conservative field is unverified for f. The conclusions D_f conservative and ∂^c f ⊂ conv D_f are unsupported as written, and so is the use of the Clarke subdifferential of f in Section 4.2.",
+      "primary_affected_tag": "theo:main",
+      "target_type": "formal_result",
+      "title": "Local Lipschitz continuity of the value function f is never established (only continuity)",
+      "why_classification": "The repair is a contained new lemma built from tools already in the paper. It preserves all claims but needs a nontrivial uniform-constant covering argument, which goes beyond a one-line fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theo:counterex"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "such that \\(r_k > 0\\), \\(r_k \\xrightarrow[k \\to \\infny]{} 0\\), and",
+          "tag": "lem:fnctcounterex"
+        }
+      ],
+      "failure_explanation": "The function ḡ = f̄ + Σ_k r_k φ(‖z−z_k‖/r_k) has bumps of height ~r_k and slope of order 1 near each z_k. Differentiability at a point z̄ ∈ C needs the bump heights to be o(‖z−z̄‖), i.e. r_k = o(dist(z_k,C)). The proof imposes only r_k→0 and pairwise disjointness of the balls, and gives no differentiability argument at points of C. With r_k = dist(z_k,C)/2, for instance, ḡ(z_k)/‖z_k−z̄‖ stays bounded away from 0 along z_k→z̄ ∈ C, so ḡ is not differentiable at z̄. As specified, the construction does not give a differentiable function.",
+      "failure_location": {
+        "quote": "is differentiable and locally Lipschitz on \\(\\Rell\\)",
+        "tag": "lem:fnctcounterex"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Require r_k ≤ dist(z_k,C)/k (and disjointness). Then add the short estimate that at z̄ ∈ C the bump contribution is ≤ sup φ·‖z−z̄‖/(k−1) with k→∞ as z→z̄, giving differentiability with gradient 0 there, and check local Lipschitz continuity.",
+      "overall_effect": "The claim that F is differentiable (and 'differentiable, locally Lipschitz, path differentiable') in the non-definable counterexample is not supported by the stated construction. The sharpness example for definability then depends on an unverified property.",
+      "primary_affected_tag": "lem:fnctcounterex",
+      "target_type": "formal_result",
+      "title": "Fractal counterexample: differentiability of the constructed function on C not justified; chosen radii r_k only satisfy r_k→0",
+      "why_classification": "A local modification of the choice of radii plus a short estimate repairs the lemma. The construction, the Clarke-subdifferential computation and the counterexample all survive unchanged."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2603.26503",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "77d6a61f95e2e09b164f5bf32862a7bfd3b5566da08bbf5136ba0359bf07b10c",
+  "status": "ok"
+}

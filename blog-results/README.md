@@ -16,8 +16,8 @@ The script checks every answer, judgment and gold file against its recorded
 SHA-256, builds the same paper reports as `evaluation/evaluate.py`, and scores
 them with `scoring/metrics.py`. It prints the scores, and stops with an error if
 any of them differs from those recorded in `blog_results_index.json`. Combining the
-eleven runs, it reproduces the pooled recovery of 645 of 717 gold issues and
-the 85 of 200 papers in which every model missed at least one issue. The
+thirteen runs, it reproduces the pooled recovery of 658 of 717 gold issues and
+the 81 of 200 papers in which every model missed at least one issue. The
 [results page](../scoring/results.md) lists each model's scores, defines the
 metrics, and explains why some runs have fewer than 200 answers or judgments.
 
@@ -34,10 +34,10 @@ blog-results/
 
 | File | What it contains |
 |---|---|
-| `<run-id>/answers/<paper-id>.json` | The model's parsed findings for one paper: description, location, proposed repair, severity, target type, and primary tag. 2,155 files across the 11 runs. |
-| `<run-id>/judgments/<paper-id>.json` | The accepted judge response for one paper: for each eligible gold issue, whether it was recovered, which findings support the match, and the judge's reasoning. 2,115 files. |
+| `<run-id>/answers/<paper-id>.json` | The model's parsed findings for one paper: description, location, proposed repair, severity, target type, and primary tag. 2,518 files across the 13 runs. |
+| `<run-id>/judgments/<paper-id>.json` | The accepted judge response for one paper: for each eligible gold issue, whether it was recovered, which findings support the match, and the judge's reasoning. 2,478 files. |
 | `<run-id>/model_run_index.json` | The run's settings and all 200 papers, with their arXiv versions and which answers and judgments exist. |
-| `blog_results_index.json` | The 11 runs to score, the gold manifest's fingerprint, and the expected scores to compare against. |
+| `blog_results_index.json` | The 13 runs to score, the gold manifest's fingerprint, and the expected scores to compare against. |
 
 A paper with no answer file had no scoreable answer: the model's output was
 missing or could not be parsed, and its gold issues count as missed. A paper
@@ -52,10 +52,23 @@ judge.
 | `gpt-sol-medium-full200-2026-09-06` | GPT-5.6 Sol | medium | 200 | 200 |
 | `claude-opus-5.5-max-task-budget-128k-full200-2026-10-01` | Claude Opus 5.5 | max | 199 | 196 |
 | `claude-fable-5.1-medium-full200-2026-09-10` | Claude Fable 5.1 | medium | 199 | 199 |
+| `claude-sonnet-5.5-max-task-budget-128k-full200-2026-10-01` | Claude Sonnet 5.5 | max | 199 | 199 |
 | `glm-5.3-max-full200-2026-10-01` | GLM-5.3 | max | 196 | 196 |
 | `kimi-k3-max-full200-2026-09-29` | Kimi-K3 | max | 199 | 197 |
 | `mimo-v2.6-pro-rl-max-full200-2026-10-14` | MiMo-V2.6-Pro-RL | max | 198 | 194 |
 | `k2-horizon-high-full200-2026-09-29` | K2-Horizon-375B-A23B | high | 195 | 195 |
 | `deepseek-v4.1-flash-max-full200-2026-10-02` | DeepSeek-V4.1-Flash | max | 198 | 196 |
 | `glm-5.3-flash-max-std-full200-2026-10-10` | GLM-5.3-Flash | max | 176 | 174 |
+| `qwen3.8-27b-xhigh-yarn1m-full200-2026-09-22` | Qwen3.8-27B (YaRN 1M) | xhigh | 164 | 164 |
 | `gemini-3.8-flash-medium-full200-2026-09-09` | Gemini-3.8-Flash | medium | 195 | 168 |
+
+The Sonnet 5.5 run includes the accepted escalation judgment for `2503.01696`
+from `results/luna8-v4-medium-200-20261006-escalation/` in the upstream
+repository. Its index records that judgment's exact path and checksums. Together
+with the 198 accepted judgments from the original snapshot, this gives 199
+accepted judgments for 199 scoreable answers; one paper has no scoreable answer.
+
+The Qwen run uses YaRN 1M context. All 164 scoreable answers have accepted
+judgments from the original snapshot, with no escalation. The other 36 papers
+have no scoreable answer after incomplete reasoning responses. Both runs retain
+all 200 papers in their indexes and all eligible gold issues in the denominators.

@@ -1,0 +1,172 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "consists of all such control processes on $[0,1]$ that are square-integrable on $\\Omega\\times [0,1]$",
+          "tag": null
+        },
+        {
+          "quote": "d\\left( \\ln\\frac{1}{\\delta} - (1-\\delta) \\right)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The bridge drift (xi-X_t)/(1-t) is used to claim X_1=xi a.s. and to call this control 'optimal' (with a non-uniqueness discussion). The paper's own computation in the proof of the convergence theorem gives E int_0^{1-delta}|theta|^2 dt ~ d ln(1/delta) -> infinity, so this control is not square-integrable and not in Theta. No admissible control attains X_1=xi (that would need infinite relative entropy). The control problem has value G(xi) only as an infimum, which is not attained in Theta.",
+      "failure_location": {
+        "quote": "This yields the equivalence of the optimization problem \\eqref{opt-prob} and the stochastic control problem \\eqref{sto-control-prob}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "State that inf over Theta of E[G(X_1)] equals min G but is not attained. Justify this with the truncated bridge control used later, and say the unregularized problem has no admissible optimizer.",
+      "overall_effect": "The motivating 'equivalence', the nonuniqueness argument about optimal controls, and the stated reason for regularizing are not valid as written for the admissible class Theta. The later theorems use truncated bridges and are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Brownian-bridge control is not admissible, so the claimed equivalence of the unregularized control problem and min G fails",
+      "why_classification": "Local rewording; the later analysis and results are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "as the approximation of the global minimizer of $G$",
+          "tag": null
+        },
+        {
+          "quote": "0  \\leq \\mathbb E\\left[ G(X_1^{0,x_0;\\tilde\\theta^{\\eps}})  + \\frac{\\eps}{2} \\int_0^T |\\tilde    \\theta^{\\eps}_t|^2 dt\\right] - G(\\xi)",
+          "tag": "thm-convergence"
+        }
+      ],
+      "failure_explanation": "The theorems bound E[G(X_1)] (and, under growth conditions and uniqueness of the minimizer, E|X_1-xi|^eta or P(|X_1-xi|>gamma)). The algorithm outputs the empirical mean of terminal states, possibly after convex-combination restarts. For nonconvex G, G(E[X_1]) is not controlled by E[G(X_1)]. With several global minimizers (explicitly allowed) the mean of a terminal distribution split among them need not be a minimizer. The restart/coupling step has no theory at all. The probability bounds also require a unique minimizer plus growth conditions that the algorithm description never assumes.",
+      "failure_location": {
+        "quote": "its accuracy is mainly guaranteed by Theorems \\ref{thm-convergence} and \\ref{thm-convergence-2}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict the claim to the value E[G(X_1)] and to unique-minimizer cases with growth conditions. Alternatively output a sampled terminal state (or the best sampled state) rather than the mean, and drop the guarantee claim for the coupled iterations.",
+      "overall_effect": "The advertised theoretical guarantee for the practical Euclidean method (the mean output and its restarts) is not established. Only the value of the regularized control problem is controlled.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Guarantee claimed for Algorithm 1's output (mean of terminal states) is not supported by the theorems",
+      "why_classification": "Needs a contained rewording or a modest additional argument; the theorems themselves stand and the method is not abandoned."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{step $m = 0$ to $M-1$}",
+          "tag": "alg:particle_method"
+        },
+        {
+          "quote": "\\State Compute drift $\\hat{\\theta} \\leftarrow \\frac{E - X_t^{(i)}}{\\tau}$",
+          "tag": "alg:particle_method"
+        }
+      ],
+      "failure_explanation": "With Delta t = T/(M-1) and M steps m=0,...,M-1, the last step starts at t=(M-1)Delta t = T, so tau=T-t=0. The drift (E-X)/tau is then 0/0, and the final state is propagated to T+Delta t, not T. This contradicts the scheme in the text (Delta t=1/M, t_k=k Delta t). The sums also run to an undefined K instead of S. Algorithm 2 guards the singular drift with 'if tau>delta'; Algorithm 1 does not.",
+      "failure_location": {
+        "quote": "\\State $\\Delta t \\leftarrow T/(M-1)$",
+        "tag": "alg:particle_method"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Use Delta t = T/M, so the last step has tau = Delta t > 0. Replace K by S.",
+      "overall_effect": "As written the procedure is ill-defined at the last step and does not simulate the SDE on [0,1]. The numerical examples using it are not reproducible as specified.",
+      "primary_affected_tag": "alg:particle_method",
+      "target_type": "algorithm",
+      "title": "Algorithm 1 time grid overshoots the horizon and divides by zero at the last step",
+      "why_classification": "One-line routine fix; the method and conclusions are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:value_convergence"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\E[|\\Delta X_r|^2] \\leq \\E[|\\xi_1 - \\xi_2|^2], \\forall\\, r\\in[t,1].$",
+          "tag": "prop-well-posedness-mfc"
+        },
+        {
+          "quote": "\\leq \\tilde{C}(\\hat L, M) (1 + \\E[|\\xi|^2]) |t-s|",
+          "tag": "prop-well-posedness-mfc"
+        }
+      ],
+      "failure_explanation": "Convexity gives only E<DeltaY_r,DeltaX_r> >= 0, an expectation statement, and hence only E|deltaX_r|^2 <= E|phi|^2. The pathwise bound |deltaX_1| <= |phi(xi)| a.s. is claimed without support, yet it feeds the estimate of E|deltaY_t| through the pointwise bounds on the derivatives of G. The conclusion is an L^1 (operator-type) bound E|deltaY_t| <= 2K_G ||phi||_{L^2}. 'By the arbitrariness of phi' this does not give the pointwise kernel bounds |d^2_{mu mu}V|<=2K_G and |d_x d_mu V|<=2K_G for all x,y; a kernel can be large on small-mass sets with bounded operator norm. The x-derivative bound is likewise obtained from an L^2-Lipschitz estimate in the initial random variable. The time-Lipschitz step bounds V(t,mu)-V(s,mu) by control cost alone (also missing the factor eps/2) and ignores the change in the terminal cost term.",
+      "failure_location": {
+        "quote": "$|\\delta X_1|\\leq |\\phi(\\xi)|$ a.s.",
+        "tag": "prop-well-posedness-mfc"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Give a proper stability analysis of the linearized McKean-Vlasov FBSDE yielding pointwise bounds on the Lions derivatives (or restate the bounds as operator-norm bounds and check that the residual estimate only needs those). Also prove time regularity correctly using the space-Lipschitz bound.",
+      "overall_effect": "The advertised eps-uniform estimates (hence the eps-uniformity of L_eps in the particle approximation theorem) and the time regularity needed to conclude classical solvability are not established.",
+      "primary_affected_tag": "prop-well-posedness-mfc",
+      "target_type": "formal_result",
+      "title": "Epsilon-uniform bounds on second Lions derivatives rest on invalid steps (a.s. bound, operator norm to pointwise kernel bound)",
+      "why_classification": "Needs a contained but nontrivial new argument or a limited weakening. The eps-dependent particle estimate under the smoothness assumption is unaffected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "C_2N^{-1/d}, & \\text{if } d > 4,",
+          "tag": "rmk:sampling_error"
+        }
+      ],
+      "failure_explanation": "The cited theorem gives E[W_p^p] ~ N^{-1/2} for p>d/2, so for p=2 and d<4 one has E[W_2] ~ N^{-1/4} (with a log factor at d=4), not N^{-1/2-alpha}. A rate faster than N^{-1/2} is impossible in general: for mu=Bernoulli(1/2) on {0,1} in d=1, W_2 = sqrt(|p_hat-1/2|), whose expectation is of order N^{-1/4}. The stated d>4 rate N^{-1/d} is consistent with the correct exponent, but the d<=4 case is not.",
+      "failure_location": {
+        "quote": "C_{\\alpha }N^{-1/2-\\alpha}",
+        "tag": "rmk:sampling_error"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the d<=4 case by the correct rates for p=2: N^{-1/4} for d<4 and N^{-1/4} log(1+N) for d=4, under adequate moments.",
+      "overall_effect": "The quoted sampling-error rate for the general-initial-measure term in the corollary is overly optimistic for d<=4. The corollary itself, stated with E[W_2], is unaffected.",
+      "primary_affected_tag": "rmk:sampling_error",
+      "target_type": "prose_claim",
+      "title": "Misstated Fournier-Guillin rate for E[W_2(empirical, mu)] when d<=4",
+      "why_classification": "Local correction of a cited rate in a remark; no theorem depends on it."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "G(\\mu) = \\frac{1}{2} \\iint_{\\bR^{2d}} \\left(\\frac{|x-y|^2}{2}-\\ln(|x-y|)\\right) \\, d\\mu(x) \\, d\\mu(y).",
+          "tag": null
+        },
+        {
+          "quote": "minus the minimum value ($=0.75$) of $G$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the stated G, a uniform measure on a disk of radius R has energy R^2/4 - (1/2)ln R + 1/8. This is minimized at R=1 with value 0.375, and it satisfies the Euler-Lagrange condition. Uniform on the unit circle has energy 1/2, which is larger. The minimizer is therefore the uniform unit disk (consistent with the file name F_UnitDisk), not the circle, and the minimal energy is 0.375, not 0.75. The value 0.75 corresponds to dropping the factor 1/2 in G.",
+      "failure_location": {
+        "quote": "it is the uniform probability measure supported on a unit circle, with minimal energy equal to $0.75$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Correct the minimizer (uniform unit disk) and minimum value (0.375 for the stated G, or 0.75 if the factor 1/2 is removed) and recompute the errors relative to the correct value.",
+      "overall_effect": "The reference minimizer and minimum value used to judge the example are wrong. The reported 'error' G - 0.75, the 1/N extrapolation to a vanishing error, and the claim that the output approximates the circle law are not valid as stated.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Wrong minimizer and minimal energy stated for the 2D Newtonian swarm example",
+      "why_classification": "Confined to an illustrative example; correcting the reference value and caption leaves all theory intact."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2601.01248",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "2e0dc5a1b1022fe148ff3d932499137e629ddbfa4da37497228cd4c61b1dd23f",
+  "status": "ok"
+}

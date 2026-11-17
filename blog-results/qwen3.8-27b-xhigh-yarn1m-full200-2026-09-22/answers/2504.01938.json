@@ -1,0 +1,93 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where $\\mLambda_t = (\\Lambda_t(y, x))_{x, y \\in \\sX}$ is the \\emph{rate matrix} of the continuous-time Markov chain satisfying the following two conditions: (1) $\\Lambda_t(x, x) = - \\sum_{y \\neq x} \\Lambda_t(y, x)$",
+          "tag": null
+        },
+        {
+          "quote": "the intensity $\\lambda_t(y, x) = \\Lambda_t(y, x) (1 - \\delta_x(y))$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "By the paper's own convention, Λ_t(y,x) is the rate of jumping from state x to state y (the column-sum-zero condition confirms this: Σ_y Λ_t(y,x)=0 for each x). The loss integrand should weight each candidate jump target y by the forward rate from the current state x_t to y, i.e. Λ_t(y, x_t). The source instead uses Λ_t(x_t, y), which is the rate from y to x_t. For asymmetric rate matrices (e.g. the masked rate matrix discussed in the same section) the two entries differ, so the displayed loss is not the correct score-matching objective.",
+      "failure_location": {
+        "quote": "\\sum_{y \\neq x} \\left(\\hat s^\\theta_t(x_t, y) - \\frac{p_{t|0}(y|x_0)}{p_{t|0}(x_t|x_0)} \\log \\hat s^\\theta_t(x_t, y) \\right) \\Lambda_t(x_t, y)",
+        "tag": "eq:discrete_diffusion_loss"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace Λ_t(x_t, y) with Λ_t(y, x_t) in eq:discrete_diffusion_loss. For the two symmetric rate matrices explicitly discussed (uniform and, in the relevant off-diagonal entries, masked) the value is unchanged; for general rate matrices the correction restores the correct forward-jump weighting.",
+      "overall_effect": "The displayed training loss for discrete diffusion in Section 2.2 is incorrect for general (non-symmetric) rate matrices. The framework-derived score-matching loss (cor:score_matching, eq:score_matching) and its appendix derivation are unaffected because they use the correct forward rate λ_t(y,x_t).",
+      "primary_affected_tag": "eq:discrete_diffusion_loss",
+      "target_type": "other",
+      "title": "Discrete diffusion loss uses transposed rate matrix entry",
+      "why_classification": "The fix is a single index swap in a review equation in the Preliminaries section. The paper's own framework loss (cor:score_matching) is derived correctly in the appendix and does not depend on this displayed formula. No theorem, bound, or algorithmic guarantee is altered."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\gL^{h, \\lambda} f = h^{-1} \\gL(h f) - h^{-1} f \\gL h = \\gL f + h^{-1} \\Gamma(h, f)",
+          "tag": "thm:doob"
+        },
+        {
+          "quote": "\\Gamma_t^*(p_t, f) := \\gL_t^*(p_t f) - p_t \\gL_t^* f - f \\gL_t^* p_t",
+          "tag": "thm:time_reversal"
+        }
+      ],
+      "failure_explanation": "The standard carré du champ is Γ_std(h,f) = gL(hf) − h gL f − f gL h, and the identity gL^{h,λ}f = gL f + h⁻¹Γ_std(h,f) follows by direct expansion. The paper instead defines Γ(h,f) = h gL(h⁻¹f) − f gL h⁻¹. For gL = ½d²/dx², h(x)=x, f(x)=x: the left side h⁻¹gL(hf)−h⁻¹f gL h = 1/x, while gL f + h⁻¹Γ_paper(h,f) = 0 + (1/x)(−1/x²) = −1/x³. The displayed identity is therefore false with the paper's Γ. The paper also uses the standard definition Γ_t^*(p_t,f) = gL_t^*(p_t f) − p_t gL_t^* f − f gL_t^* p_t in the time-reversal theorem, making the two definitions inconsistent within the same paper. The main Radon–Nikodym derivative formula in thm:doob is correct and independent of this Γ definition.",
+      "failure_location": {
+        "quote": "where $\\Gamma(h, f) = h \\gL(h^{-1} f) - f \\gL h^{-1}$ is the carr\\'e du champ operator associated with the generator $\\gL$.",
+        "tag": "thm:doob"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the definition Γ(h,f) = h gL(h⁻¹f) − f gL h⁻¹ with the standard carré du champ Γ_std(h,f) = gL(hf) − h gL f − f gL h (consistent with the Γ_t^* definition already used in thm:time_reversal). The identity gL^{h,λ}f = gL f + h⁻¹Γ_std(h,f) then holds by direct expansion. No change to the RN-derivative formula or any downstream result is needed.",
+      "overall_effect": "The 'In particular' clause of thm:doob presents a false algebraic identity. A reader applying gL^{h,λ}f = gL f + h⁻¹Γ_paper(h,f) with the paper's Γ would obtain incorrect generators. The main RN-derivative statement and all downstream change-of-measure results (thm:change_of_measure, cor:error_bound) are unaffected because they do not invoke this particular identity.",
+      "primary_affected_tag": "thm:doob",
+      "target_type": "formal_result",
+      "title": "Doob h-transform theorem uses a non-standard carré du champ making the conservative-case identity false",
+      "why_classification": "The correction is a local redefinition of one auxiliary quantity in a supporting clause of a theorem whose main statement (the RN derivative) is already correct. No downstream result depends on the erroneous identity, and the fix requires no new construction or argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat s_t^{\\mathrm{jump}}(\\vy_t^{(k)}, \\vy) = \\dfrac{\\hat s_t^{\\mathrm{jump}}(\\vy^{\\mathrm{ref}}, \\vy)}{\\hat s_t^{\\mathrm{jump}}(\\vy^{\\mathrm{ref}}, \\vy_t^{(k)}}}",
+          "tag": null
+        },
+        {
+          "quote": "\\cev \\lambda^\\varphi_t(\\vy, \\vx) = \\dfrac{\\varphi_{T-t}(\\vy)}{\\varphi_{T-t}(\\vx)} \\lambda_{T-t}(\\vx, \\vy)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Two defects are present. First, the score-ratio identity above uses ŝ_t (time t), but the reuse formula in the denominator uses ŝ_{T-t} (time T−t); these are different functions unless φ_t = φ_{T-t}. Second, even after correcting the time index, the claimed equality is false in general: J[Āλ^φ_t(·,x)] = φ_t(x)^{-1}∫φ_t(y)λ(y−x)dy depends on x through the shifted Lévy kernel λ(y−x), while the RHS evaluates the integral at the fixed reference point y^{ref}. The two integrals ∫φ_t(y)λ(y−x)dy and ∫φ_t(y)λ(y−y^{ref})dy are equal only if φ_t is constant or λ is a pure mass (not a Gaussian kernel). The formula therefore does not hold for the Gaussian Lévy measure used in the experiment.",
+      "failure_location": {
+        "quote": "\\gJ[\\cev \\lambda^\\varphi_t(\\cdot, \\vy_t^{(k)})] = \\dfrac{\\gJ[\\cev \\lambda^\\varphi_t(\\cdot, \\vy^{\\mathrm{ref}})]}{\\hat s_{T-t}^{\\mathrm{jump}}(\\vy^{\\mathrm{ref}}, \\vy_t^{(k)})}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Remove or correct the reuse identity. A valid approach is to evaluate J[Āλ^φ_t(·,x)] = φ_t(x)^{-1}∫φ_t(y)λ(y−x)dy independently for each sample x (e.g. by the FFT-based quadrature the paper already describes), or to state explicit conditions (e.g. φ_t approximately constant on the support of λ) under which the reuse is a controlled approximation rather than an exact equality.",
+      "overall_effect": "The stated computational shortcut for evaluating the jump intensity integral in the backward simulation is not valid. A practitioner following the formula would obtain incorrect Poisson means for jump counts, leading to biased backward trajectories. The theoretical guarantees (thm:numerical_error, cor:error_bound) are unaffected because they bound the exact backward process, not this approximate computation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Jump-model integral-reuse formula is algebraically incorrect and has a time-index inconsistency",
+      "why_classification": "The formula is a practical computational suggestion in the experiments section, not a theorem or a step in any proof. The theoretical error bounds and score-matching losses are derived from the exact generators and are unaffected. The repair is to delete or qualify a single displayed identity; no architectural change to the framework is required."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2504.01938",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "cf5b5c001c791381ac52a18fb3f17bb5a5ea493d6c7f3e34b4660c227d98ab39",
+  "status": "ok"
+}

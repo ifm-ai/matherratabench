@@ -1,0 +1,260 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "(\\tilde{\\lambda}I_r)^{-1}M\\{M^T (\\tilde{\\lambda}I_r)^{-1}M+(I_n)^{-1} \\}M^T(\\tilde{\\lambda}I_r)^{-1}",
+          "tag": "thm:woodberry_identity"
+        },
+        {
+          "quote": "As R.H.S of \\cref{eq:wi3}, and \\cref{eq:wi4} are identical, the lemma holds.",
+          "tag": "thm:woodberry_identity"
+        }
+      ],
+      "failure_explanation": "The Woodbury formula is (A+UCV)^{-1}=A^{-1}-A^{-1}U(C^{-1}+VA^{-1}U)^{-1}VA^{-1}. The proof drops the inverse of the bracket, giving the false expansions (wi1) and (wi2). In the scalar case M=1, lambda=1, the true value of (M^TM+lambda)^{-1} is 1/2, while the stated formula gives -1. The final 'identical' step only compares two expressions that are both wrong. The lemma statement itself is the true push-through identity, but this proof does not establish it.",
+      "failure_location": {
+        "quote": "\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T",
+        "tag": "thm:woodberry_identity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the proof by the direct check (M^TM+lambda I_n)M^T = M^T(MM^T+lambda I_r) and multiply by the two inverses, or apply Woodbury with the inverse retained.",
+      "overall_effect": "The stated proof of the lemma is invalid. The lemma is true and standard, so later uses (the error bound and the implementation switch between the k x k and n x n inverses) are not invalidated.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Woodbury identity misapplied in proof of the push-through lemma (inverse dropped)",
+      "why_classification": "True statement with a one-line standard replacement proof; no downstream claim changes."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "=I-\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "is the smallest non-zero eigenvalue of $A_\\tau^T A_\\tau$",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "We use the number of rows in a block $k=100$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The error propagator is I-M = lambda(A_tau^T A_tau+lambda I)^{-1}. Its eigenvalue is lambda/(sigma+lambda) for each eigenvalue sigma of A_tau^T A_tau, including sigma=0. Whenever A_tau^T A_tau is singular, which is always the case for blocks with fewer rows than columns (as in the experiments, and in under-determined systems), the operator has eigenvalue 1. The norm bound with lambda_min^+ therefore holds only for error components in R(A_tau^T). In general x_t-x_star is not in R(A_tau^T). If x_t-x_star lies in N(A_tau), the update leaves it unchanged, so the ratio is 1 and the claimed factor <1 fails. The factor also tends to 0 as lambda tends to 0, which would mean one-step convergence of block Kaczmarz, which is false. The 'Equivalently' expectation bound inherits the same error. Convergence to x_star is also contradicted by the large RE values in Tables 1 and 2.",
+      "failure_location": {
+        "quote": "\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2",
+        "tag": "thm:err_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the theorem by a correct statement. For example, show an expected one-step contraction E||x_{t+1}-x_star||^2 <= (1-sigma_min^+(E[P(S)]))||x_t-x_star||^2 for x_0 in R(A^T), using the averaged regularized projection E[P(S)] rather than a per-block smallest eigenvalue. Alternatively, restrict to blocks with full column rank and state this hypothesis. Either way the rate and guarantee type change.",
+      "overall_effect": "The paper's main stated convergence guarantee for sampled block updates, a uniform geometric rate in the error, is unsupported and false in the rank-deficient-block regimes the paper targets. The convergence analysis reduces to the separate expected-iterate statement in the appendix.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "Per-block contraction factor ignores the null space of the block, so the claimed geometric error bound is false",
+      "why_classification": "Every valid version needs a new averaged-projection analysis with a materially weaker rate. The advertised per-step contraction, which degenerates to one-step convergence as lambda tends to 0, cannot be kept."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\min}^{+}(A_\\tau^{T}A_\\tau)}",
+          "tag": "thm:convergence_boost"
+        },
+        {
+          "quote": "But, these dynamic blocks can yield more ill-conditioned least-square problems.",
+          "tag": null
+        },
+        {
+          "quote": "We show through \\cref{thm:convergence_boost} that this addition enhances the convergence of the earlier proposed SOBK method.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In (errbound5) the bounds are ||x_t-x_star||^2 minus ||r_S||^2/lambda^+_{min}(A_S^T A_S) (lower) or ||r_S||^2/lambda^+_{max}(A_S^T A_S) (upper). Both the residual and the spectral quantities depend on the chosen row set S. Maximizing ||r_S||^2 over S therefore does not minimize either bound. 'Bounded for a given system' does not make the quantities constant across candidate sets, and the paper itself notes that dynamic blocks can be worse conditioned. The exact decrease is ||A_S^dagger r_S||^2, which the greedy rule does not maximize. A lower bound that is reduced says nothing about guaranteed progress. 'Sufficiently small lambda' is never quantified relative to lambda^+_min, and the proof also contains a typo in the displayed relation, which writes x_{t+1} where x_t is meant. Nothing compares the dynamic block with random or SOBK blocks, so the claimed enhancement of SOBK is not proved. The algorithm description's claim that the rule 'minimizes the 2-norm of the current residue' is likewise unsupported.",
+      "failure_location": {
+        "quote": "as $\\lambda_{\\min}^{+}, \\lambda_{\\min}^{-}$ are bounded for a given system",
+        "tag": "thm:convergence_boost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Downgrade the result to a heuristic remark. Alternatively, state the correct exact decrease ||A_S^dagger r_S||^2 and prove a comparison under explicit assumptions, such as comparable spectra of the candidate blocks, for the greedy choice versus a random block.",
+      "overall_effect": "The theoretical justification for the residue-based block, advertised as improving on SOBK, is not established. The theorem is only a heuristic.",
+      "primary_affected_tag": "thm:convergence_boost",
+      "target_type": "formal_result",
+      "title": "Selecting largest-residual rows is not shown to minimize the error bounds; no comparison with SOBK is established",
+      "why_classification": "Fixable with a contained weakening or a new comparison lemma under extra assumptions; the algorithm and the experiments are unaffected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "FABGMRES with an inner iteration of ROR-BK (\\cref{algo:fabgmres_dobk}) gives a solution $x_k \\in \\mathcal{R}(A^T)$ minimizing $\\norm{b-Ax_k}_2$.",
+          "tag": null
+        },
+        {
+          "quote": "$y_k = \\arg\\min_{y \\in \\mathbb{R}^k} \\|\\beta e_1 - \\tilde{H}_k y\\|_2$",
+          "tag": "algo:fabgmres_dobk"
+        }
+      ],
+      "failure_explanation": "The proof only shows x_k is in R(A^T). That makes x_k the minimum-norm vector among those with the same residual, or the minimum-norm solution if x_k already solves Ax=b. It does not show that x_k minimizes ||b-Ax||. FGMRES minimizes the residual only over the k-dimensional flexible subspace, so at finite k the residual is generally not minimal (for a consistent system, not zero). The remark's claim of a minimum residual-norm solution is a non sequitur. It also requires the inner starting vectors z_0 to lie in R(A^T).",
+      "failure_location": {
+        "quote": "it is the minimum residual-norm solution, since $x_k \\in \\mathcal{R}(A^T) \\perp \\mathcal{N}(A)$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restate the remark as: x_k lies in R(A^T), and if the residual vanishes (or the normal equations hold) then x_k = A^dagger b.",
+      "overall_effect": "The remark overstates what is established. Only x_k in R(A^T), and equality with A^dagger b upon exact convergence (Ax_k=b), are supported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Range-space membership does not imply that the FABGMRES iterate minimizes the residual",
+      "why_classification": "A short local restatement preserves the genuine content (range-space property and minimum-norm solution at convergence)."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus the order of arithmetic operations in each iteration is given by the evaluation of residue at $\\mathcal{O}(mn)$.",
+          "tag": null
+        },
+        {
+          "quote": "pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$",
+          "tag": "algo:roar-bk"
+        },
+        {
+          "quote": "as we avoid the more cumbersome re-evaluation of the inverse.",
+          "tag": null
+        },
+        {
+          "quote": "refer to \\# of blocks and regularization parameter",
+          "tag": "algo:roar-bk"
+        },
+        {
+          "quote": "We use the number of rows in a block $k=100$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The residue-based block A_I changes with the iterate at every outer iteration, so (A_I A_I^T+lambda I)^{-1} cannot be precomputed and stored. It must be formed each iteration at cost O(n k_I^2 + k_I^3), where k_I = floor(m/k) is the dynamic block size. This is not O(mn) unless k_I^2 is at most of order m. The stated cost and the explanation of ROR-BK's speed advantage ('we avoid re-evaluation of the inverse') hold only for the fixed blocks. The symbol k also means the number of blocks in Algorithm 1 (dynamic block size floor(m/k)) but the number of rows per block in the experiments (k=100), and 'number of blocks k' elsewhere. So the dynamic block size actually used in the experiments is ambiguous.",
+      "failure_location": {
+        "quote": "If the inversion is pre-computed and stored, each ROR-BK update costs $\\mathcal{O}(nk)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "State the per-iteration cost as O(mn + n k_I^2 + k_I^3) including the dynamic block solve, fix the meaning of k (number of blocks versus rows per block), and adjust the efficiency explanation to cover only the fixed-block updates.",
+      "overall_effect": "The stated complexity per iteration and the efficiency rationale versus TA-ReBlocK-U are incorrect or incomplete. The experimental parameters (block count and size) are ambiguous. The measured timings themselves are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Per-iteration cost analysis ignores recomputation of the inverse for the dynamic block; k used with conflicting meanings",
+      "why_classification": "Local correction of a cost statement and notation; the algorithm and the empirical results are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\textbf{4.72}",
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab2"
+        },
+        {
+          "quote": "\\textbf{1.20}",
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab3"
+        },
+        {
+          "quote": "\\textbf{5.92}",
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab1"
+        },
+        {
+          "quote": "215.15",
+          "tag": "tab:dobk_vs_sobk_vs_rerbk_tab2"
+        }
+      ],
+      "failure_explanation": "The tables' own CPU speed-ups over SOBK range from 1.48 to 4.72, so the stated maximum 4.53 is below a tabulated value. Those over TA-ReBlocK-U range from 1.20 (abtaha2, 0.32 s versus 0.27 s) to 58.78, so the stated minimum 1.42 is above a tabulated value and 59.38 is not attained. Several tabulated iteration speed-ups also contradict the iteration counts shown. In Table 1 for lp-pds-02, 16707.55/2429.7 is about 6.88, not 5.92. In Table 2 for the 60000x20000 randn case, 859.80/215.15 is about 4.00 and 2053.15/215.15 is about 9.54, not 3.81 and 9.11.",
+      "failure_location": {
+        "quote": "ROR-BK is between \\textbf{1.44} and \\textbf{4.53} times faster than SOBK, and \\textbf{1.42} to \\textbf{59.38} times faster than the TA-ReBlocK-U method",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Recompute and correct the stated ranges and the inconsistent table entries (or the underlying iteration counts) from the reported data.",
+      "overall_effect": "The headline quantitative summary overstates the minimum advantage over TA-ReBlocK-U and understates the maximum over SOBK. Some table entries are internally inconsistent. The qualitative conclusion that ROR-BK is faster is unchanged.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Reported speed-up ranges do not match the tables, and some tabulated speed-ups disagree with the tabulated iteration counts",
+      "why_classification": "Numerical reporting corrections only; the comparative conclusion survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We compare the proposed Regularized Orthogonality and Residue based Block-Kaczmarz method (ROR-BK) with",
+          "tag": null
+        },
+        {
+          "quote": "This method can also be introduced as a \\emph{pre-solver} for widely used iterative methods like CG, GMRES if needed.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The conclusion asserts significant improvement of FABGMRES, and use as a pre-solver for CG/GMRES. The only FABGMRES-related content is the algorithm listing and a range-space remark. All experiments compare ROR-BK only as a stand-alone solver against SOBK and TA-ReBlocK-U, with no FABGMRES or GMRES runs and no analysis of outer-iteration convergence. The inner problem Az=v_k is also not shown to be consistent in the over-determined case, where the consistency assumption behind the analysis fails.",
+      "failure_location": {
+        "quote": "the FABGMRES method for solving consistent linear systems can be significantly improved",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Reword the claim as a proposal or future work (e.g. 'can potentially be used'), or add FGMRES experiments.",
+      "overall_effect": "The advertised application as a GMRES inner solver or pre-solver is unsupported in the source.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed improvement of FABGMRES and pre-solver use has no supporting analysis or experiments",
+      "why_classification": "Rewording the peripheral claim resolves it; the core solver results are unaffected."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Consider the ROR-BK algorithm, namely \\cref{algo:roar-bk} with $M(A_S) = (A_S A_S^\\top + \\tilde{\\lambda} I)^{-1}$ and $\\mu$ be the sampling rule defined earlier.",
+          "tag": "thm:dobk_for_least_square_problems"
+        },
+        {
+          "quote": "pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$",
+          "tag": "algo:roar-bk"
+        },
+        {
+          "quote": "Let us denote the sampling procedure of \\cref{algo:roar-bk} as $\\mu$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The cited result concerns regularized block Kaczmarz with i.i.d. blocks drawn from a fixed distribution, for which E[x_{t+1}] = (I - P_bar)E[x_t] + const is linear in E[x_t]. Algorithm 1 interleaves this with a residue-based block I chosen from the current iterate x_j. That update is data-dependent and nonlinear in x_j, so the mean recursion does not hold. The weights W_bar and P_bar are defined only from the sampling rule mu and ignore this step. The theorem statement nevertheless says it is about Algorithm 1 as a whole, and the proof is a bare citation. Applicability to the algorithm as stated is therefore unsupported.",
+      "failure_location": {
+        "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}.",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Restrict the theorem to the iteration using only the mu-sampled regularized block updates (no residue-based block). Alternatively, supply an argument covering the greedy step, e.g. by treating it as an additional contraction that preserves the fixed point.",
+      "overall_effect": "The weighted-least-squares convergence-in-mean guarantee is established at most for the sampled-block part of the method, not for ROR-BK as defined.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "Cited expected-iterate convergence result is applied to the full ROR-BK algorithm with its iterate-dependent greedy block, with no verification of hypotheses",
+      "why_classification": "A limited restriction to the sampled-block iteration keeps a recognizably comparable result; covering the greedy step would need a contained new argument."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

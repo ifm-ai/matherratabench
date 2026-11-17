@@ -1,0 +1,189 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_theorem1",
+        "Thf",
+        "finalerror",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(B\\) is the \\(N \\times N\\) diagonal random sampling matrix with i.i.d. Bernoulli random variables with success probability \\(m/N\\)",
+          "tag": null
+        },
+        {
+          "quote": "$(S_iX,S_iY)\\leftarrow \\sqrt{\\frac{N}{m_{i}}}B_i(S_0X,S_0Y)$",
+          "tag": "Alg-SRHT"
+        }
+      ],
+      "failure_explanation": "A Bernoulli diagonal matrix has a random number of non-zero rows, not exactly m_i. Therefore B_i as “the m_i non-zero rows of B” is not well-defined for the fixed sketch size required by Algorithm Alg-SRHT; the construction gives a random-size sketch instead of an m_i x N SRHT matrix.",
+      "failure_location": {
+        "quote": "which is consisted of the \\(m_i\\) non-zero rows of \\(B\\)",
+        "tag": "Alg-SRHT"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the Bernoulli diagonal/retain-nonzero-rows step by a fixed-size row-selection matrix with exactly m_i non-zero rows, or condition on and select exactly m_i rows, so that S_i is an m_i x N SRHT matrix as assumed.",
+      "overall_effect": "The implemented algorithm does not reliably provide the fixed-size sketches S_i assumed by the convergence and complexity theorems.",
+      "primary_affected_tag": "Alg-SRHT",
+      "target_type": "algorithm",
+      "title": "SRHT row construction does not yield a fixed-size sketch",
+      "why_classification": "The fix is a local construction correction to a standard fixed-size SRHT; it does not change the advertised convergence rate or complexity if the theorems are then applied to the corrected sketches."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf",
+        "finalerror",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE",
+        "a1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "where \\(W_i = I_d - \\mu (U_{X}^{\\top}\\hat{S}^{\\top}\\hat{S}U_{X})^{-1}U_{X}^{\\top}S_{i}^{\\top}S_{i}U_{X}\\).",
+          "tag": "thm:convergence_theorem1"
+        }
+      ],
+      "failure_explanation": "The matrices U_X^T hatS^T hatS U_X and U_X^T S_i^T S_i U_X are symmetric positive definite but need not commute. Hence W_i = I_d - mu A^{-1}B_i is not symmetric in general and does not admit an orthonormal eigendecomposition with tilde U_i^T. The subsequent block diagonalization and norm contraction are therefore not justified as written.",
+      "failure_location": {
+        "quote": "Let the eigenvalue decomposition of \\(W_i\\) be \\(W_i = \\tilde{U}_i \\Lambda_i \\tilde{U}_i^{\\top}\\)",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must justify the spectral or norm behavior of the nonnormal iteration matrix W_i, for example by proving a bounded-condition-number similarity to a symmetric matrix, adding hypotheses making W_i normal, or establishing the 1/3 contraction by another valid argument.",
+      "overall_effect": "The per-stage 1/3 contraction and all downstream convergence, stopping-count, and complexity results that rely on it are unsupported.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "Contraction proof assumes an orthogonal eigendecomposition of a generally non-symmetric matrix",
+      "why_classification": "The central convergence rate is obtained from an invalid spectral step; preserving the stated rate would require new nontrivial analysis or stronger assumptions not present in the source."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}} \\geq \\frac{\\mathbb{E}\\|X({\\tilde{\\beta}^{i-1}} - {\\beta})\\|}{\\mathbb{E}\\|X({\\tilde{\\beta}^{i}} - {\\beta})\\|},",
+          "tag": "lowerBoundai"
+        },
+        {
+          "quote": "it follows that $r(i-1,i)=\\sqrt{(1-2^{K+2-i}\\gamma)/(2-2^{K+2-i}\\gamma)}$ ($i=2,\\ldots,K$).",
+          "tag": "cmpxtyAlgSLSE"
+        }
+      ],
+      "failure_explanation": "The theorem statement gives r(i-1,i) as sqrt(m_{i-1} - d/m_i - d), which is not the fraction used in the proof and is numerically/dimensionally ill-defined. The proof uses sqrt((m_i-d)/(m_{i-1}-d)), while the complexity proof uses the reciprocal ratio. There is no single source-consistent definition supporting the stated lower bound.",
+      "failure_location": {
+        "quote": "where \\( r(i-1,i) = \\sqrt{m_{i-1} - d / m_{i} - d} \\) .",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the definition of r(i-1,i) consistently with the derivation; the proof uses sqrt((m_i-d)/(m_{i-1}-d)), and downstream formulas using the opposite ratio must be updated.",
+      "overall_effect": "The lower bound on the required iteration counts a_i and any stopping rule or complexity derived from it are unreliable.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "Ill-defined and inconsistent r(i-1,i) in the lower bound for a_i",
+      "why_classification": "The defect is more than a typo because there are incompatible mathematical definitions and the repair changes the a_i bound and downstream complexity; nevertheless a contained correction and re-derivation of the affected formula avoids new architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "a_K = & \\log_3\\{[1+(1+\\omega)\\sqrt{(1-2^{2}\\gamma)/(2-2^{2}\\gamma)}]/\\omega\\}",
+          "tag": "cmpxtyAlgSLSE"
+        },
+        {
+          "quote": "r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}}",
+          "tag": "lowerBoundai"
+        }
+      ],
+      "failure_explanation": "To dominate the previous-stage sketched error by the current one, the lower-bound derivation requires r(i-1,i)=sqrt((m_i-d)/(m_{i-1}-d)), which tends to sqrt(2). The complexity proof instead uses the reciprocal ratio tending to 1/sqrt(2), yielding an alpha that is too small and a first-stage cost bound 4 alpha Nd that is not supported.",
+      "failure_location": {
+        "quote": "with $\\alpha=\\log_3\\{[1+(1+\\omega)/\\sqrt{2}]/\\omega\\}$",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace 1/sqrt(2) by sqrt(2) in alpha, or prove the reciprocal-ratio bound, and recompute the first-stage cost with the corrected alpha.",
+      "overall_effect": "The advertised asymptotic upper bound on a_i and the first-stage FLOP estimate for Algorithm Alg-SRHT are false as stated.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "Complexity theorem uses the reciprocal r(i-1,i) and an unsupported alpha",
+      "why_classification": "The repair is a contained correction of a quantitative complexity constant and upper bound; it does not require a new proof architecture, but it materially changes the stated alpha and cost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "To minimize the cost of Algorithm \\ref{Alg-SRHT} in this discussion, we let $T = \\log_3(1/\\sigma)$.",
+          "tag": "cmpxtyAlgSLSE"
+        },
+        {
+          "quote": "The 2nd stage: $4[\\log_3(\\omega^{K}/\\sigma)]Nd$ with $\\omega>\\sigma^{1/K}$.",
+          "tag": "cmpxtyAlgSLSE"
+        }
+      ],
+      "failure_explanation": "The proof chooses T=log_3(1/sigma) and writes T-T^dagger=log_3(1/sigma)-sum a_i, but the algorithm and convergence statements require T>T^dagger+M. The condition omega>sigma^{1/K} only ensures log_3(1/sigma)>K log_3(1/omega), not log_3(1/sigma)>sum a_i+M, since a_i may be much larger than the lower bounds. Thus T-T^dagger can be negative or the required M full-stage iterations can dominate, so the stated second-stage cost is unsupported.",
+      "failure_location": {
+        "quote": "T-T^{\\dagger} = & \\log_3(1/\\sigma) - \\sum_{i=1}^{K} a_i",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add a feasibility condition such as sum a_i+M<log_3(1/sigma), or define T=max{log_3(1/sigma), sum a_i+M} and restate the second-stage cost with a positive-part or max expression including the required M iterations.",
+      "overall_effect": "The claimed dominant cost of the full-scale stage of Algorithm Alg-SRHT is not guaranteed by the proof.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "Second-stage iteration count and cost derivation is not feasible as stated",
+      "why_classification": "The gap is a missing condition and an incorrect iteration-count calculation in the complexity proof; a local corrected complexity statement can preserve an O(Nd) cost, but the advertised exact dominant term requires repair."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "finalerror",
+        "Thf",
+        "lowerBoundai",
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then as \\( N \\) tends to infinity, while \\( d/N \\rightarrow \\gamma \\in (0,1) \\), \\( m_i/N \\rightarrow \\xi \\in (\\gamma, 1) \\), the \\(i\\)-th relative prediction efficiency $\\mathrm{PE}(i)$ has the limit",
+          "tag": "lemma:lemma3"
+        },
+        {
+          "quote": "\\sqrt{\\frac{N- d}{m_1-d}} \\mathbb{E}\\|X(\\hat{\\beta}-\\beta )\\|",
+          "tag": "finalerror"
+        }
+      ],
+      "failure_explanation": "Lemma lemma:lemma3 only gives an asymptotic limit of PE(i) as N tends to infinity. The remark turns this into a finite-N inequality PE(i) <= (N-d)/(m_i-d), and hence a finite-N expectation bound, without proving a finite-N bound, an o(1)_N remainder, or listing the additional variance condition in the affected theorem statements. The subsequent theorems use this finite bound unconditionally.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\|X\\tilde{\\beta}^i - X\\beta\\|^2 \\leq \\frac{N - d}{m_i - d}{\\mathbb{E}\\|X\\hat{\\beta} - X\\beta\\|^2}.",
+        "tag": "remarkA7"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either prove the finite-N PE bound under explicit assumptions or restrict the dependent theorems to the asymptotic regime and include the variance/limit hypotheses, changing the meaning of the o(1) terms.",
+      "overall_effect": "The stage-1 error bound, the OLS-level convergence theorem, the a_i lower-bound derivation, and the complexity theorem lose their finite-sample justification.",
+      "primary_affected_tag": "remarkA7",
+      "target_type": "formal_result",
+      "title": "Finite-N prediction-efficiency bound in Remark A7 is not established",
+      "why_classification": "The central guarantee that the sequential sketched errors can be bounded by constants times the OLS error depends on this unsupported finite-N bound; preserving the stated finite-sample theorem would require new asymptotic or conditional proof architecture not present in the source."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2509.06856",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "981b8984cdca82ea93a1c8e2f7a3a3ff16d853374c7f5e11ece8d6b29bfd4d2f",
+  "status": "ok"
+}

@@ -1,0 +1,172 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:local_sol_order_L_inf",
+        "theorem:local_sol_order_L_inf",
+        "coroll:local_sol_order_qpoints",
+        "theorem:local_sol_order_L_p"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbf{q}_{n}(0) = \\mathbf{u}_{n}.",
+          "tag": "eq:ivp_ode_weak"
+        },
+        {
+          "quote": "therefore $\\mathbf{q}_{n}(0) \\neq \\mathbf{u}_{n}$ in the general case $\\mathbf{F} \\not\\equiv 0$.",
+          "tag": "lemma:p_ode_exact:remark:rado_l"
+        }
+      ],
+      "failure_explanation": "With q_n(τ)=Σ_p q_hat_{n,p} φ_p(τ), the imposed initial condition requires Σ_p ψ_p q_hat_{n,p}=u_n. Substituting the SNAE gives q_n(0)=u_n+Δt_n Σ_q (Σ_p ψ_p a_{pq}) F(q_hat_{n,q},t(τ_q)). The source itself computes this column vector in the Rado remark, and it is not forced to be zero for the GL basis; for N=1 the coefficients a=κ^{-1}μ give a^Tψ≠0, so q_n(0)≠u_n for general state-dependent F (e.g. F=λu).",
+      "failure_location": {
+        "quote": "\\hat{\\mathbf{q}}_{n, p} = \\mathbf{u}_{n} + {\\Delta t}_{n}\\sum\\limits_{q = 0}^{N} a_{pq}\\mathbf{F}(\\hat{\\mathbf{q}}_{n, q}, t(\\tau_{q})),",
+        "tag": "eq:snae_lstdg"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must replace (eq:snae_lstdg) by a system that enforces q_n(0)=u_n (or prove the current system does) and rederive the local-solution properties.",
+      "overall_effect": "The local DG predictor, as given by (eq:snae_lstdg), is not the solution of the stated local IVP with q_n(0)=u_n. This undermines the local solution claims, subgrid resolution, and all theorems that use q_n as the cell-local exact solution.",
+      "primary_affected_tag": "eq:snae_lstdg",
+      "target_type": "algorithm",
+      "title": "ADER-DG predictor system does not enforce q_n(0)=u_n",
+      "why_classification": "A basic input-output invariant of the local predictor fails. Correcting it changes the construction and requires reanalysis of the local approximation results, not a local typo fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The $r = 0$ in $C(N)$ corresponds to the relation: $\\sum_{q = 0}^{N} a_{pq} = \\tau_{p}$.",
+          "tag": "lemma:cn_cond:remark:cn_r0"
+        },
+        {
+          "quote": "\\frac{1}{2}-\\frac{\\sqrt{3}}{6} & \\frac{1}{3} & -\\frac{1-\\sqrt{3}}{2}\\\\",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed N=1 table has first-row sum 1/3-(1-√3)/2=(3√3-1)/6, not τ_0=(3-√3)/6. This violates the r=0 C(N) condition that the paper proves for the method and the definition a=κ^{-1}μ. The N=2 table has the same type of row-sum violation, so the explicit coefficient tables are false as written.",
+      "failure_location": {
+        "quote": "In cases $N = 1$, $2$, $3$, the Butcher tables take the form:",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the displayed tables with coefficients actually computed from a=κ^{-1}μ for N=1,2,3, or withdraw the false explicit radical tables; the main definitions and proofs can remain if corrected tables are supplied.",
+      "overall_effect": "The explicit low-order Butcher coefficients do not represent the ADER-DG/RK method defined by κ and μ. Any use of these tables would implement a different method and contradict Lemma cn_cond.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Displayed low-order Butcher tables are incorrect",
+      "why_classification": "This is a contained but nontrivial explicit-coefficient error. It does not by itself require new global proof architecture, but correcting or removing the tables is more than a one-line typo and contradicts proven simplifying conditions."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "coroll:order_ader_dg_nodes",
+        "coroll:rk_is_not_coll",
+        "cor:added-3"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "D(L): &\\ \\sum\\limits_{q = 0}^{N} w_{q} a_{qp} \\tau_{q}^{r} = \\frac{w_{p}}{r+1}\\left(1 - \\tau_{p}^{r+1}\\right),\\quad 0 \\leq p \\leq N,\\ 0 \\leq r < L.",
+          "tag": "eq:simp_cond"
+        },
+        {
+          "quote": "The approximation order of the IRK-GL-ADER-DG method is $p_{\\rm RK} = 2N + 1$.",
+          "tag": "theorem:order_rk"
+        }
+      ],
+      "failure_explanation": "For N=1, C(1) gives row sums A1=τ and D(1) as defined gives w^T A = w^T(1-τ). With B(2), w^Tτ=1/2 and w^Tτ^2=1/3, so w^T A τ=1/6. A third-order RK method requires the order condition w^T A τ=1/3. Thus the invoked implication from B(2N+2), C(N), D(N) to order 2N+1 is not valid for the definitions in the paper, and the N=1 case shows the claimed order 3 is not established.",
+      "failure_location": {
+        "quote": "B(2N+2)\\, \\wedge\\, C(N)\\, \\wedge\\, D(N)\\ \\Rightarrow\\ p_{\\rm RK} = 2N+1,",
+        "tag": "theorem:order_rk"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No source-supported repair preserving p_RK=2N+1 identified; at minimum, the missing RK order conditions must be proved or the order claim must be weakened to the order actually established and the abstract/conclusion adjusted.",
+      "overall_effect": "The central node approximation order 2N+1 and associated superconvergence claims are unsupported. The corollaries that the ADER-DG node solution has order 2N+1, that the method is not collocation because p>s, and the Padé-residual alternative proof of the order all become unreliable.",
+      "primary_affected_tag": "theorem:order_rk",
+      "target_type": "formal_result",
+      "title": "Order theorem 2N+1 is not supported by the stated B,C,D conditions",
+      "why_classification": "The advertised central rate changes materially; the source does not contain an argument that recovers the missing order conditions."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:local_sol_order_L_inf",
+        "coroll:local_sol_order_qpoints",
+        "theorem:local_sol_order_L_p"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The local solution $q_{n}$ (\\ref{eq:local_sol}) is the exact solution of the ODE",
+          "tag": "lemma:p_ode_exact"
+        },
+        {
+          "quote": "which is also applicable for sufficiently smooth functions $\\mathbf{F}(\\mathbf{u}, t)$ due to the Lemma~\\ref{lemma:p_ode_exact}.",
+          "tag": "lemma:local_sol_order_L_inf"
+        },
+        {
+          "quote": "in the case $\\mathbf{u}\\in\\mathcal{C}_{0}(\\Omega)$",
+          "tag": "theorem:local_sol_order_L_inf"
+        }
+      ],
+      "failure_explanation": "The displayed bound is the Lagrange interpolation error for the interpolant of the exact local solution \tilde u at the nodes. It applies to q_n only if q_n matches \tilde u at the nodes (or an equivalent stage-error estimate is proved). The source does not establish such a stage-order estimate for nonlinear F(u,t); Lemma p_ode_exact covers only du/dt=f(t) and is invoked outside its hypotheses. The assembly theorem also assumes only u∈C0, which is insufficient for an (N+1)-derivative interpolation bound.",
+      "failure_location": {
+        "quote": "\\frac{{\\Delta t}_{n}^{N+1}}{(N+1)!}\\max\\limits_{t\\in\\Omega_{n}}\\left|\\frac{d^{N+1}\\tilde{\\mathbf{u}}(t)}{dt^{N+1}}\\right| \\equiv B_{n} {\\Delta t}_{n}^{N+1},",
+        "tag": "lemma:local_sol_order_L_inf"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must add appropriate smoothness hypotheses and prove a stage-order/DG consistency estimate of the form ||q_n-\tilde u||_{L∞}=O(Δt_n^{N+1}) for nonlinear F.",
+      "overall_effect": "The local DG predictor order N+1 in L∞, the assembled local solution order in L∞ and Lq, and the nodal local-solution order are not established as written and are unreliable for nonlinear ODE systems.",
+      "primary_affected_tag": "lemma:local_sol_order_L_inf",
+      "target_type": "formal_result",
+      "title": "Local solution order N+1 proof assumes an unjustified interpolation estimate",
+      "why_classification": "A central local-resolution claim lacks an essential nontrivial argument; adding a standard local smoothness condition does not supply the missing stage-error estimate."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:added-2",
+        "theorem:l2_stab_rk",
+        "coroll:ader_dg_stabs"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The matrix $a = \\kappa^{-1}\\cdot\\mu$ in the denominator is invertible and $\\mathrm{rank}(a) = N+1$.",
+          "tag": "theorem:pade_approx"
+        },
+        {
+          "quote": "Therefore the numerator of $R(z)$ is a polynomial $P_{N, N+1}(z)$ of degree $N-1$.",
+          "tag": "theorem:pade_approx"
+        },
+        {
+          "quote": "It follows that $R(z)$ is the $(N, N+1)$-Pad\\'{e} approximation $R_{N, N+1}(z)$ of $\\exp(z)$.",
+          "tag": "theorem:pade_approx"
+        }
+      ],
+      "failure_explanation": "If a is full rank N+1, det(I-za) has degree N+1, not N. If rank(a-1w^T)=N, the numerator det(I-za+z1w^T) has degree N, not N-1. Moreover, degree/rank alone does not show that R(z) has the Taylor expansion of exp(z) through order 2N+1, which is required to identify R as the (N,N+1)-Padé approximation.",
+      "failure_location": {
+        "quote": "The denominator of $R(z)$ is a polynomial $R_{N, N+1}(z)$ of degree $N$.",
+        "tag": "theorem:pade_approx"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the degree statements and add a rigorous argument that R(z) matches the Taylor expansion of exp(z) through order 2N+1 (or otherwise directly establishes the Padé identity); then re-establish the dependent L-stability claims.",
+      "overall_effect": "The Padé characterization of the stability function is not proved. The alternative A-stability corollary based on Padé, the L-stability theorem, and the stability summary's L-stability claim become unsupported.",
+      "primary_affected_tag": "theorem:pade_approx",
+      "target_type": "formal_result",
+      "title": "Padé theorem proof has wrong degree statements and lacks Taylor-expansion justification",
+      "why_classification": "This is a local proof gap in a linear-stability theorem. A contained replacement argument can restore the claimed Padé result without changing the main method architecture, although the source currently does not contain that argument."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2508.13824",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "3e175dd2e259a3e49b58cc7560cd52a083f3c7164ec3322e77f97936ff6880de",
+  "status": "ok"
+}

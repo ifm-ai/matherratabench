@@ -1,0 +1,190 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "we have $\\eta = 2(1 - \\exp(-\\gamma\\|x_p - x_q\\|^2)) \\ge 0$, with $\\eta = 0$",
+          "tag": null
+        },
+        {
+          "quote": "\\eta = \\Omega_{pp} - 2\\Omega_{pq} + \\Omega_{qq},",
+          "tag": "eq:eta"
+        }
+      ],
+      "failure_explanation": "The case split ignores pairs with p=q. The pair i*=N+p, j*=p is allowed by the definitions of I_up and I_down once both alpha_p>0 and alpha_p^*>0. It has Delta=2y_p*eps/100>0 and eta=Omega_pp-2Omega_pp+Omega_pp=0 for every kernel, including RBF with distinct points. Such intermediate states (both variables positive) are not excluded, since the first steps always raise an alpha together with an alpha*. So eta=0 does occur for m1, and 'eta=0 only if x_p=x_q' is incomplete.",
+      "failure_location": {
+        "quote": "This case cannot arise for the RBF kernel (m1) with distinct",
+        "tag": "rem:degenerate"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "State that eta=0 also occurs for the pair (N+p,p) (p=q) and for duplicate points, and that the eta<=0 branch is therefore used in m1 as well.",
+      "overall_effect": "Only the stated scope of the degenerate-case remark is wrong. The algorithm still takes delta*=delta_max when eta=0, which is valid, so the solver itself is unaffected.",
+      "primary_affected_tag": "rem:degenerate",
+      "target_type": "formal_result",
+      "title": "Claim that eta<=0 cannot occur for RBF with distinct points ignores the pair (N+p,p)",
+      "why_classification": "A one-sentence correction suffices. No result, rate or algorithm step changes."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\;\\geq\\; -\\rho \\;\\geq\\;",
+          "tag": "eq:bias-bounds"
+        },
+        {
+          "quote": "$\\tau_k \\le -\\rho$",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "$\\tau_k \\ge -\\rho$",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "$[\\tau_{j^*}, \\tau_{i^*}]$ (from~\\eqref{eq:mvp} and Table~\\ref{tab:kkt}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Table 1 shows every i in I_up has tau_i <= -rho and every j in I_down has tau_j >= -rho. At a KKT point therefore tau_{i*} <= -rho <= tau_{j*}, so Delta<=0. The paper states the opposite order, tau_{i*} >= -rho >= tau_{j*}, which would force Delta>=0 at an optimum. This contradicts the stopping rule Delta<=eps_tol and Table 1. The shrinking section repeats the reversed order by saying -rho lies in [tau_{j*}, tau_{i*}], and that interval is empty at near-optimal iterates.",
+      "failure_location": {
+        "quote": "\\max_{i \\in \\Iup} \\tau_i = \\tau_{i^*}",
+        "tag": "eq:bias-bounds"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Reverse the inequalities to tau_{i*} <= -rho <= tau_{j*} at optimality. Restate the shrinking interval as [tau_{i*}, tau_{j*}] up to the tolerance.",
+      "overall_effect": "The justification for the no-free-SV bias bounds and the shrinking-interval rationale are wrong as stated. The midpoint formula and criteria (s1)-(s4) still match the standard LIBSVM choices.",
+      "primary_affected_tag": "rem:bias-degenerate",
+      "target_type": "formal_result",
+      "title": "KKT bounds on -rho and the interval [tau_j*, tau_i*] are reversed relative to Table 1",
+      "why_classification": "Flipping the inequalities and the interval is a local fix. The midpoint rule and all claimed guarantees survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$t = 1, 2, \\ldots, \\mathrm{maxiter}$}",
+          "tag": "alg:smo"
+        },
+        {
+          "quote": "else $\\hat{b} \\leftarrow (\\tau_{i^*}+\\tau_{j^*})/2$",
+          "tag": "alg:smo"
+        }
+      ],
+      "failure_explanation": "The only loop is the for-loop over t. Reconstruction and the full-violation test are placed after it, and the block says 'continue outer loop' when Delta^full > eps_tol, but no outer loop exists. As written, after unshrinking control falls through to the bias computation and returns a point that was not certified optimal. The prose promise 'Otherwise, the solution is certified optimal' is therefore not implemented. The fallback bias also uses i*, j* from the last iteration over the active set. They are not recomputed over all 2N variables after reconstruction, so they are stale.",
+      "failure_location": {
+        "quote": "continue outer loop",
+        "tag": "alg:smo"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Wrap the main loop, reconstruction and test in an outer while loop. Recompute i*, j* over the full index set before the midpoint bias fallback.",
+      "overall_effect": "The pseudocode does not implement the described shrink/unshrink cycle or its optimality certificate. The returned alpha, alpha* and b-hat may be non-optimal.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Unshrinking step refers to a nonexistent outer loop; termination and bias use stale quantities",
+      "why_classification": "The intended behaviour is stated in the text, and the fix is routine control-flow restructuring with no change to the method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "applicable criterion among~\\eqref{eq:s1}--\\eqref{eq:s4} is met,",
+          "tag": null
+        },
+        {
+          "quote": "Free variables ($0 < u_i < C_{k(i)}$) are never frozen.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Criteria (s1)-(s4) are stated per dual variable and apply only to variables at a bound. Freezing removes the whole training point k and stops updating both tau_k and tau_{N+k}. A typical margin support vector has alpha_k free and alpha_k^*=0. Only (s3) is 'applicable', and if it holds the counter increments and k is frozen together with its free alpha_k. This contradicts the stated rule that free variables are never frozen. The rule for combining the criteria of the two variables of a point (both must hold) is not given.",
+      "failure_location": {
+        "quote": "For each $k \\in \\Aactive$, increment $\\mathrm{counter}_k$ if the",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Freeze point k only if both alpha_k and alpha_k^* are at bounds and each satisfies its criterion (s1)-(s4). Never freeze a point with a free variable.",
+      "overall_effect": "The active-set rule is ill-defined or unsafe for points with one free and one bound variable. It can freeze variables with stale tau, which the later full reconstruction must undo. Efficiency suffers, but the final certification test is unaffected.",
+      "primary_affected_tag": "alg:smo",
+      "target_type": "algorithm",
+      "title": "Per-variable shrinking criteria applied to per-sample freezing; free variables can be frozen",
+      "why_classification": "A local rule clarification fixes it. Method, conclusion and the final reconstruction safeguard remain unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "follows from the fact that $\\Omega$ and $\\Omega^*$ are individually PSD.",
+          "tag": null
+        },
+        {
+          "quote": "need not be positive semi-definite, so $\\eta_s < 0$ is possible.",
+          "tag": null
+        },
+        {
+          "quote": "semi-definite, so the formal convergence proof does not extend to this",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Omega*_{kl}=K(x_k,-x_l) is not PSD in general. For RBF with x_1=x≠0 and x_2=-x, Omega*=[[c,1],[1,c]] with c=exp(-4*gamma*||x||^2)<1, which has determinant c^2-1<0. So the stated argument for a=+1 is invalid. Omega_s is symmetric only if K(x,-x')=K(x',-x). Under the natural invariance K(-x,-x')=K(x,x') (e.g. RBF), (Omega_s)_{kl}=<P_a phi(x_k),P_a phi(x_l)> with P_a=(1+aR)/2 an orthogonal projection. Hence Omega_s is PSD for both a=+1 and a=-1. The claim that for a=-1 eta_s<0 is possible and the convergence proof fails is therefore unfounded for RBF-type kernels, and the a=+1 PSD claim rests on a false premise.",
+      "failure_location": {
+        "quote": "For $a = +1$ (even symmetry), $\\Omega_s \\succeq 0$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "State the invariance assumption K(-x,-x')=K(x,x'). Prove Omega_s=<P_a phi,P_a phi> is PSD for a=±1, and revise the m2 remarks and convergence paragraph accordingly. The fallback then becomes only a numerical safeguard.",
+      "overall_effect": "The m2 convergence discussion rests on a wrong justification (a=+1) and wrongly excludes a=-1 from the guarantees. The 'fallback required for a=-1' narrative is unsupported.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False premise that Omega* is PSD; PSD status of Omega_s mischaracterised for a=+1 and a=-1",
+      "why_classification": "It needs a short new lemma (the projection argument) and a revision of the m2 convergence discussion. The conclusions are strengthened rather than lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "faster iterations in practice.",
+          "tag": null
+        },
+        {
+          "quote": "\\text{freeze if } \\tau_{N+k} > \\tau_{i^*},",
+          "tag": null
+        },
+        {
+          "quote": "Free variables ($0 < u_i < C_{k(i)}$) are never frozen.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The paper claims the gap 2*y_k*eps/100 makes alpha* variables at zero freeze early and yields a smaller active set, hence faster iterations and a 'practical convergence acceleration'. The 'asymmetry' of Lemma lem:asymmetry is only a change of coordinates from tau_{N+k} to tau_k. In their own coordinates, (s3) and (s4) have exactly the same form as (s2) and (s1). Freezing is per training point: both tau_k and tau_{N+k} stop updating, so for a non-support vector with alpha_k=alpha_k^*=0 both (s1) and (s3) must hold. Condition (s1) does not involve the gap, so a larger gap does not make the point freeze earlier. The 'harder' effect for alpha*=C_k acts in the opposite direction. No analysis or experiment is given for acceleration.",
+      "failure_location": {
+        "quote": "acceleration for datasets with heterogeneous target magnitudes.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Remove or weaken the acceleration claim to a heuristic remark, or add an argument or experiment showing the effect on active-set size.",
+      "overall_effect": "The abstract's and conclusion's claim of a practical acceleration from the MAPE-induced asymmetry is unsupported. The algebraic rewriting in Lemma lem:asymmetry remains correct.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unsupported claim that the shrinking 'asymmetry' accelerates convergence",
+      "why_classification": "The advertised practical benefit must be dropped or newly substantiated. The core derivation (SMO with sample-dependent bounds) is unaffected."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

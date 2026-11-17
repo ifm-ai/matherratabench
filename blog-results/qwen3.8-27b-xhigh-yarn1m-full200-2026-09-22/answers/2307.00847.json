@@ -1,0 +1,195 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Real symmetric matrix $A \\in \\mathbb{R}^{n\\times n}$, real vector $\\boldsymbol{v} \\in \\mathbb{R}^{n\\times 1}$, number of Lanczos iterations $m$.",
+          "tag": "alg:Lanc"
+        },
+        {
+          "quote": "\\State Obtain $\\tilde{\\boldsymbol{v}}_{2} = A\\boldsymbol{v}_{1} - \\alpha_1 \\boldsymbol{v}_{1}$.",
+          "tag": "alg:Lanc"
+        }
+      ],
+      "failure_explanation": "The input allows arbitrary real vectors. If v is an eigenvector, or if the Lanczos process breaks down before m+1 vectors, then a residual is zero, the corresponding beta is zero, and the algorithm divides by zero. Thus the procedure is not well-defined for all stated inputs.",
+      "failure_location": {
+        "quote": "\\State Obtain $\\boldsymbol{v}_k = \\tilde{\\boldsymbol{v}}_{k}/\\beta_{k-1}$.",
+        "tag": "alg:Lanc"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a breakdown check: if beta_{k-1}=0, stop the iteration and form the tridiagonal matrix from the available vectors/nodes (or otherwise define the quadrature), or explicitly restrict the input to non-breakdown vectors.",
+      "overall_effect": "The executable SLQ procedure built on this Lanczos algorithm can be undefined in breakdown cases, so the algorithm does not fully satisfy its stated input-output contract.",
+      "primary_affected_tag": "alg:Lanc",
+      "target_type": "algorithm",
+      "title": "Lanczos pseudocode divides by zero on breakdown",
+      "why_classification": "This is a standard local pseudocode repair for a degenerate case; the mathematical quadrature and non-degenerate guarantees survive without new proof architecture."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\For{$i = 1$ to $N$}",
+          "tag": "alg:SLQ"
+        },
+        {
+          "quote": "\\Return $\\left[\\log \\det A \\right]_L = \\frac{n}{N} \\Gamma$.",
+          "tag": "alg:SLQ"
+        }
+      ],
+      "failure_explanation": "The variable Gamma is read in an update before any initialization. As written, the returned value depends on an undefined prior value of Gamma, so the algorithm is not executable as stated.",
+      "failure_location": {
+        "quote": "\\State $\\Gamma \\gets \\Gamma + \\sum_{k=1}^{m+1} \\tau_k^{(i)}  \\log (\\theta_k^{(i)})$.",
+        "tag": "alg:SLQ"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Initialize Gamma to 0 before the For loop.",
+      "overall_effect": "The output contract of the SLQ algorithm is ill-defined until an accumulator initialization is supplied.",
+      "primary_affected_tag": "alg:SLQ",
+      "target_type": "algorithm",
+      "title": "Gamma accumulator is used before initialization",
+      "why_classification": "A one-line forced repair restores the intended accumulator and does not change the mathematical claims or complexity guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $A\\in \\mathbb{R}^{n\\times n}$ be a real symmetric positive definite matrix with eigenvalues in $[\\lambda_{\\min},\\lambda_{\\max}]$, $\\lambda_{\\max}<1$",
+          "tag": "thm:ours"
+        }
+      ],
+      "failure_explanation": "The formal theorem only controls the relative error for matrices with eigenvalues in (0,1). Scaling A to cA gives a relative-error guarantee for log det(cA), but log det(A) = log det(cA) - n log c. The absolute error is unchanged while the relative error with respect to log det(A) can be arbitrarily worse when |log det(A)| is small. Hence the prose claim that the assumption is mild by simple scaling is unsupported.",
+      "failure_location": {
+        "quote": "This assumption is mild since for any SPD matrix with $\\lambda_{\\max} > 1$, it can be simply scaled to have eigenvalues $\\lambda \\in (0,1)$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Delete or qualify the sentence, or add a nontrivial argument showing that the relative guarantee for a scaled matrix transfers to the original log determinant under explicit additional conditions.",
+      "overall_effect": "Readers may be led to believe that the relative-error theorem extends to general SPD matrices via scaling; the paper does not establish that extension.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Scaling claim does not transfer the relative log-determinant error bound",
+      "why_classification": "The defect is in a prose scope claim; the formal theorem remains as stated, and a local qualification suffices."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left|\\tr_{N}(f(A))-\\left[\\log \\det A \\right]_L\\right|\\leq \\frac{4nM_{\\rho_2}}{(\\rho_2^{2}-\\rho_2)\\rho_2^{2m}},",
+          "tag": "eq2"
+        },
+        {
+          "quote": "let $K_{\\rho_2}=8 M_{\\rho_2}/(\\rho_2^{2}-\\rho_2)$ and the Lanczos step $m$ satisfies",
+          "tag": "thm:ours"
+        }
+      ],
+      "failure_explanation": "The deterministic quadrature error bound contains the factor n. To force it below (epsilon/2) log(kappa/lambda_max^n), the required m must contain n inside the logarithm, e.g. log(n K_{rho2}/(epsilon log(...))). The stated m-bound omits n, so it is generally insufficient. For example, with lambda_max=0.5, lambda_min=0.1, n=10 and small epsilon, the stated m can fail to make the deterministic error small enough.",
+      "failure_location": {
+        "quote": "m\\geq \\frac{1}{2\\log(\\rho_2)}\\cdot \\log\\left(\\frac{K_{\\rho_2}}{\\epsilon \\log \\left( \\sqrt[n]{\\kappa} / \\lambda_{\\max} \\right)}\\right),",
+        "tag": "thm:ours"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Include the missing factor n in the m-condition, for instance by defining K_{rho2}=8 n M_{rho2}/(rho2^2-rho2) or by requiring m >= (1/(2 log rho2)) log(n K_{rho2}/(epsilon log(...))).",
+      "overall_effect": "The relative-error probability guarantee in thm:ours is not valid as stated, and any MVM estimates derived from its m-bound may be too optimistic.",
+      "primary_affected_tag": "thm:ours",
+      "target_type": "formal_result",
+      "title": "Relative-error Lanczos-step bound omits a factor of n",
+      "why_classification": "The repair is local but necessarily weakens the advertised m-complexity by a log n term; no new global architecture is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:ours_updated"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $A\\in \\mathbb{R}^{n\\times n}$ be a real symmetric positive definite matrix with eigenvalues in $[\\lambda_{\\min},\\lambda_{\\max}]$, $\\lambda_{\\max}<1$, and $\\kappa = \\lambda_{\\max}/\\lambda_{\\min}$",
+          "tag": "thm:ours"
+        }
+      ],
+      "failure_explanation": "The hypotheses allow lambda_max = lambda_min < 1, i.e. kappa = 1. In that case the denominator lambda_max - lambda_min is zero, so rho_2, K_{rho2}, and the stated m-bound are undefined. Scalar SPD matrices are therefore in the stated scope but not handled.",
+      "failure_location": {
+        "quote": "\\rho_2 = \\frac{\\lambda_{\\max}+\\sqrt{2\\lambda_{\\min}\\lambda_{\\max}-\\lambda_{\\min}^{2}}}{\\lambda_{\\max}-\\lambda_{\\min}},",
+        "tag": "thm:ours"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add the hypothesis kappa > 1 (lambda_max > lambda_min) and either exclude the scalar case explicitly or state a trivial separate bound/limiting interpretation for it.",
+      "overall_effect": "Both relative-error theorems are ill-defined for the degenerate case lambda_min = lambda_max, even though that case is otherwise trivial.",
+      "primary_affected_tag": "thm:ours",
+      "target_type": "formal_result",
+      "title": "rho_2 is undefined when kappa=1",
+      "why_classification": "Adding a standard nondegeneracy condition or treating the scalar case separately is a local repair; the nontrivial claims survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{\\alpha>1} \\, \\log\\left(C \\alpha\\right) \\left(\\alpha/(\\alpha-1) \\right)^2.",
+          "tag": "optimization"
+        },
+        {
+          "quote": "which is obtained through taking the derivative of the objective function and making it equal to 0.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For F(alpha)=log(C alpha)(alpha/(alpha-1))^2, differentiating gives F'(alpha)=F(alpha)(alpha-3)/(alpha(alpha-1)) whenever log(C alpha)>0. Thus the interior stationary point is alpha=3, not alpha=2 log(C alpha)+1. The displayed equation is therefore generally false, may have no solution, and does not characterize the claimed minimizer. The theorem consequently does not establish the advertised minimized allocation of m and N.",
+      "failure_location": {
+        "quote": "If $\\alpha^* = 2\\log \\alpha^* + 2 \\log C + 1$, the Lanczos iteration step $m$ and the query number $N$ satisfy",
+        "tag": "thm:ours_updated"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the equation with the correct first-order condition for the optimization (for example alpha*=3 in the regime where log(C alpha)>0, with the boundary case log(C alpha)<=0 handled separately) and use that corrected alpha* in m and N.",
+      "overall_effect": "The optimized parameter alpha* used in thm:ours_updated and in the experimental MVM comparison is not justified as a minimizer; the claim that the product of m and N is minimized is unsupported.",
+      "primary_affected_tag": "thm:ours_updated",
+      "target_type": "formal_result",
+      "title": "Incorrect first-order condition for the optimized alpha",
+      "why_classification": "The repair requires correcting a nontrivial optimization argument and the chosen parameter, but it is contained and still leaves a comparable optimized bound."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "when $N$, the number of queries, satisfies $N\\geq (24/\\epsilon^{2})\\cdot \\log(2/\\eta)$, one may obtain",
+          "tag": null
+        },
+        {
+          "quote": "$\\frac{1}{\\alpha} + \\frac{1}{\\beta} = 1, \\alpha > 1, \\beta > 1,$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Earlier, the stochastic trace-estimator concentration is stated with constant 24 for an error tolerance of (epsilon/2)|tr(f(A))|. In the reallocation, the stochastic tolerance is epsilon/beta |tr(f(A))| with beta=alpha/(alpha-1). The same concentration argument then requires N >= 24 beta^2 epsilon^{-2} log(2/eta), not 6 beta^2 epsilon^{-2} log(2/eta). The stated constant is a factor of four too small, so the claimed probability bound does not follow.",
+      "failure_location": {
+        "quote": "N \\ge (6/\\epsilon^2)\\cdot (\\alpha^*/(\\alpha^*-1))^2\\cdot \\log(2/\\eta), ",
+        "tag": "thm:ours_updated"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Change the constant 6 to 24 in both the displayed optimized N-bound and thm:ours_updated, or re-derive a valid concentration constant for the allocated tolerance.",
+      "overall_effect": "The relative-error probability guarantee in thm:ours_updated is invalid as stated, and the optimized MVM comparison relying on its N-bound is unreliable.",
+      "primary_affected_tag": "thm:ours_updated",
+      "target_type": "formal_result",
+      "title": "Stochastic sample-complexity constant is too small in the optimized theorem",
+      "why_classification": "This is a local constant-factor repair; the optimization structure and relative-error guarantee survive, with the N requirement increased by a constant factor."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2307.00847",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "c42e539abecf88a44de72f2dedfec14703df372008f57b75de751f59b08fac16",
+  "status": "ok"
+}

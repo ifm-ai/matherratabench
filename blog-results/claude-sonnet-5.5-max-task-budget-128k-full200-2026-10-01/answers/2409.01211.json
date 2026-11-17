@@ -1,0 +1,93 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "v^h_{i+1, j} + v^h_{i-1, j} + v^h_{i, j+1} + v^h_{i, j-1} - 4v^h_{i, j}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In the discrete Laplacian the neighbour coefficients are +1/h^2, so the off-diagonal entries of the system matrix are positive and the diagonal is negative. The claim that they are all negative is false, and so is the L_0-type description built on it. The argument offered for stability and O(h^2) convergence of the Euclidean scheme therefore relies on an incorrect property. The cited external argument is also stated for the bounded Dirichlet problem, not for the R^2 problem posed in the same paragraph.",
+      "failure_location": {
+        "quote": "the off-diagonal elements of the discrete matrix associated with the discrete FDM system~\\eqref{eq:FDM} are all negative",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "State the correct sign pattern (positive off-diagonals, negative diagonal, zero row sums on the interior), or replace the sentence by the energy/dissipativity argument used later. Restrict the claim to the bounded Dirichlet problem.",
+      "overall_effect": "The preliminary claim that the Euclidean FDM scheme is stable and converges with order at least O(h^2) is unsupported as written. It is only motivational and does not feed any labelled theorem.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Euclidean FDM stability argument rests on a false sign claim for the off-diagonal entries",
+      "why_classification": "It is a local correction in an illustrative preliminary paragraph and affects none of the main results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence-theta"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Z_2 = \\overline{1, M}",
+          "tag": null
+        },
+        {
+          "quote": "\\xi_{i,j}\\in [-D,D]\\times [1/D,D]",
+          "tag": "alg:theta-heat-hyperbolic"
+        }
+      ],
+      "failure_explanation": "For the second grid the nodes are (i rho(h), e^{jh}) with j in Z, and H^2_D = [-D,D]x[1/D,D] contains the strip 1/D<=x_2<1 (j<0). The restricted space, however, is defined with Z_2 = {1,...,M}, so only x_2>=e^h is covered. With the zero convention, the row j=1 uses v_{i,0}=0 where the true neighbour is the interior node x_2=1, and the whole strip x_2<1 is dropped. This produces O(1) consistency error and truncation error that the tail control (which only handles the complement of H^2_D) does not absorb. The remark also contradicts the Algorithm, which uses all j with xi_{i,j} in H^2_D, and the node counts in the tables, which correspond to roughly 2M+1 rows.",
+      "failure_location": {
+        "quote": "\\|\\Delta^{(2)}_{h,D} \\Pi_{h,D} u(t) - \\Pi_{h,D} \\Delta_g u(t)\\|_{\\ell_{h,D}^2} \\leq h^2 C_{\\gamma,\\zeta,T}",
+        "tag": "rem:consistency-second-laplace-sos"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redefine Z_2 = {-M',...,M} with M' = floor(log D / h) so the grid covers [1/D,D] consistently with the algorithm, and recheck the zero Dirichlet boundary convention and tail terms at both ends.",
+      "overall_effect": "The consistency estimate for Delta^(2)_{h,D} as defined is not established, and the convergence statement for the second Laplacian is not supported for the scheme as defined. The numerics appear to use a different (full-range) index set from the one analysed.",
+      "primary_affected_tag": "rem:consistency-second-laplace-sos",
+      "target_type": "formal_result",
+      "title": "Truncated second grid omits the part of H^2_D with x_2<1, so the claimed O(h^2) consistency fails",
+      "why_classification": "The repair is a contained redefinition of the index set plus a recheck of the boundary tail estimate, and the result and rate remain comparable."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence-theta"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left({\\rm id}+\\tau (1-\\theta)\\right)U+ \\tau f((k+\\theta)\\tau,\\xi_{i,j})",
+          "tag": "alg:theta-heat-hyperbolic"
+        },
+        {
+          "quote": "where $k_{\\tau,T}=\\left\\lfloor \\frac{T}{\\tau}\\right\\rfloor$",
+          "tag": "thm:convergence-theta"
+        }
+      ],
+      "failure_explanation": "With a repeat-until-(k tau > T) loop the update is executed floor(T/tau)+1 times, so the output approximates u at time (floor(T/tau)+1)tau > T. Even when T is a multiple of tau it is u(T+tau), which differs from u(T) by order tau. The theorem, however, analyses exactly k_{tau,T}=floor(T/tau) steps and compares with Pi_h u(T), and claims O(h^2+tau^2) for Crank-Nicolson, so the stated guarantee does not apply to the algorithm as written. Separately, the explicit part (id+tau(1-theta)) lacks the operator Delta_h, which the proof's error recursion presupposes.",
+      "failure_location": {
+        "quote": "\\Repeat{$k\\tau > T$}{",
+        "tag": "alg:theta-heat-hyperbolic"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Change the stopping rule to run exactly floor(T/tau) steps (or add a final partial step) and write (id+tau(1-theta)Delta_h) in the update.",
+      "overall_effect": "The output contract of the algorithm (U approximating u(T) with the stated order) is not met by the pseudocode, and the O(tau^2) claim for theta=1/2 would fail for the output as written.",
+      "primary_affected_tag": "alg:theta-heat-hyperbolic",
+      "target_type": "algorithm",
+      "title": "Algorithm stops one step past T and omits Delta_h in the explicit part, contradicting the analysed scheme",
+      "why_classification": "The fix is a one-line change to the loop condition and the update formula, and the theorem and its proof stand unchanged."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2409.01211",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "1bd264ce0744fe3d6f170f7113e3acb5dc2934bc252abd7335b9302e0a2a9d1d",
+  "status": "ok"
+}

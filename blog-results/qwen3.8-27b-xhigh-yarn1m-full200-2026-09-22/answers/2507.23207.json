@@ -1,0 +1,306 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "This is done by computing a partially truncated core tensor via a tensor-times-matrix (TTM) product at each step, i.e., $\\T{G} =\\T{G} \\times_i \\M{Q}_i^T$",
+          "tag": null
+        },
+        {
+          "quote": "\\STATE Update core $\\T{G} \\leftarrow \\T{G} \\times_i \\M{Q}_i^\\top$",
+          "tag": "alg:sthosvd"
+        }
+      ],
+      "failure_explanation": "ST-HOSVD must compute the basis for mode i from the current core G_{(i)} after previous truncations. Using the original unfolding X_{(i)} does not implement the sequential truncation described in the text.",
+      "failure_location": {
+        "quote": "\\STATE Compute $\\M{Q}_i$, $\\M{Q}_i$ =  leading $r_i$ left singular vectors of $\\M{X}_{(i)}$",
+        "tag": "alg:sthosvd"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace X_{(i)} by the current core unfolding G_{(i)} in the ST-HOSVD loop.",
+      "overall_effect": "The deterministic ST-HOSVD baseline as written would produce the wrong factor matrices and is not the algorithm claimed.",
+      "primary_affected_tag": "alg:sthosvd",
+      "target_type": "algorithm",
+      "title": "ST-HOSVD uses original unfolding instead of current core",
+      "why_classification": "A one-line local correction restores the stated algorithm without changing any theorem, rate, or global argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $\\M{M}\\in \\R^{M \\times N}$ be a matrix, for which we want to compute a low-rank approximation with target rank $r\\le \\min\\{M,N\\}$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem allows r=N, but then N-r=0 and the logarithm defining Gamma is undefined. No full-column-rank boundary case is handled.",
+      "failure_location": {
+        "quote": "\\Gamma \\equiv \\frac{1}{\\ell } \\left(1 +  C_{K,d} \\ln^d(8\\ell/\\delta)\\right)\\ln\\left(\\frac{4(N-r)}{\\delta}\\right).",
+        "tag": "thm:rrf"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add r<N (or N-r>=1) as a hypothesis, or define Gamma=0 and treat the full-rank case separately.",
+      "overall_effect": "The stated high-probability error bound is not well-defined for r=N, and results invoking this theorem with a rank equal to the ambient dimension are unsupported.",
+      "primary_affected_tag": "thm:rrf",
+      "target_type": "formal_result",
+      "title": "Range-finder theorem undefined at r=N",
+      "why_classification": "The defect is a local degenerate boundary case; excluding or handling r=N preserves the main non-full-rank guarantee."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Proceeding as in the proof, we have the inequality \n\n\\[ \\ell \\ge 8\\epsilon^{-2} \\Delta \\ln(4r/\\delta)= 8\\epsilon^{-2} (r + 2^drC_{K,d}\\ln^d(8/\\delta) + r(2d)^dC_{K,d} \\sqrt{\\ell}) \\ln(4r/\\delta). \\]",
+          "tag": null
+        },
+        {
+          "quote": "This removes the dependence on $N$ but gives a worse result in $r$ and $\\epsilon$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The active alternative-bound derivation only solves the lower-tail condition for W^T Omega to be invertible. It does not bound the upper-tail term involving Z^T Omega, whose Chernoff dimension is N-r. Thus the claimed N-independent sample complexity for the full range-finding error is not established.",
+      "failure_location": {
+        "quote": "An alternative argument in \\cref{sec:altbound}, gives $$\\ell \\in \\mc{O}(r^2\\ln^2 (r/\\delta) +  r\\ln^d(1/\\delta)\\ln(r/\\delta)),$$",
+        "tag": "rem:lowbound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict the remark to the lower-tail/invertibility bound, or add the missing upper-tail argument that removes the N-dependence.",
+      "overall_effect": "The advertised alternative sample bound in the remark is unreliable as a guarantee for the range-finder error.",
+      "primary_affected_tag": "rem:lowbound",
+      "target_type": "formal_result",
+      "title": "Alternative N-independent sample bound unsupported",
+      "why_classification": "The claimed bound requires a nontrivial additional argument or must be withdrawn; the existing derivation proves less than the advertised sample complexity."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\[ \\Gamma = \\frac{\\strank(\\M{Z}) }{\\ell } \\left(1 +  C_{K,d} \\ln^d(8\\ell/\\delta)\\right)\\ln\\left(\\frac{4(N-r)}{\\delta}\\right).\\]",
+          "tag": "thm:tantheta"
+        },
+        {
+          "quote": "\\[  \\prob\\left\\{ \\| \\M{Z}\\t\\M{\\Omega}\\|_2^2 \\geq {(1+\\varepsilon)\\mu_{\\max} } \\right\\} \\leq \\frac{\\delta}{4} + (N-r)(f(\\varepsilon))^{\\mu_{\\max}/\\Delta}  \\qquad \\varepsilon \\geq 0.\\end{equation}",
+          "tag": "thm:tantheta"
+        }
+      ],
+      "failure_explanation": "Let A=1+C_{K,d}\\ln^d(8\\ell/\\delta), B=\\ln(4(N-r)/\\delta), and x=\\strank(Z)A/\\ell. The displayed Chernoff bound is at most \\delta/4 only if \\varepsilon^2/(2+\\varepsilon) \\ge xB. The claimed choice \\varepsilon=2xB satisfies this only when xB\\ge1; when xB<1 the exponent is too small. Thus the stated root is not a valid solution.",
+      "failure_location": {
+        "quote": "Set the upper bound equal to $\\delta/4$, solve the quadratic equation for $\\varepsilon$, and choose the positive root to get $\\varepsilon = 2 \\Gamma$, where $\\Gamma$ is defined in the statement of the theorem.",
+        "tag": "thm:tantheta"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Choose \\varepsilon as the actual positive root of \\varepsilon^2/(2+\\varepsilon)=xB (or a valid upper bound such as max{2xB,2\\sqrt{2xB}}) and update Gamma/sample bounds accordingly.",
+      "overall_effect": "The upper-tail bound in the lemma is unproved, undermining the range-finder and downstream Tucker guarantees that rely on it.",
+      "primary_affected_tag": "thm:tantheta",
+      "target_type": "formal_result",
+      "title": "Incorrect Chernoff inversion in KRP tan-theta lemma",
+      "why_classification": "The repair is a contained correction of a Chernoff inversion, but it changes the central lemma's constants/guarantees and propagates to main results."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "q  \\ge \\ell_r \\ge & \\> r (1 + C_{K,d}\\ln^d(16\\ell_r/\\delta))\\ln(8r/\\delta)",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "\\ell \\geq  8(r + rC_{K,d}\\ln^d(8\\ell/\\delta))\\ln(4r/\\delta), \\end{equation}",
+          "tag": "thm:rrf"
+        },
+        {
+          "quote": "\\ln\\frac{4(m^d-\\ell_l)}{\\delta}",
+          "tag": "thm:added-1"
+        }
+      ],
+      "failure_explanation": "The stated \\ell_r does not imply the hypothesis of thm:rrf (it is smaller by a factor of about 8 and uses different logarithms/probability allocations). The later tantheta-type step also applies a bound designed for a matrix with N-r columns to Z=Q_perp Q_perp^T M, which has n^d columns, and uses m^d-\\ell_l in the proof while the theorem's Gamma_l uses m^d-\\ell_r.",
+      "failure_location": {
+        "quote": "The assumptions on $\\ell_r$ ensure that, by \\cref{thm:rrf}, $\\prob\\{\\mc{E}^c\\}\\le \\delta/2$.",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Strengthen \\ell_r and \\ell_l to satisfy thm:rrf and a correctly dimensioned tantheta-type bound (with rank \\ell_r and the appropriate column count of Z), and correct the parameters in the proof.",
+      "overall_effect": "The single-view block-structured approximation guarantee is not established under the stated sample sizes.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "Single-view theorem uses insufficient and mismatched sample bounds",
+      "why_classification": "The theorem can be salvaged by strengthening hypotheses and fixing the lemma application, but the stated sample bounds are mathematically insufficient."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\REQUIRE Tensor $\\T{X}$, target rank $\\V{r} = (r_1,r_2,\\dots,r_d)$, oversampling parameter $p$",
+          "tag": "alg:rhosvd_krp"
+        },
+        {
+          "quote": "\\ENSURE $\\hat{\\T{X}} = [\\T{G}; \\{\\M{Q}_i\\}_{i=1}^d]$",
+          "tag": "alg:rhosvd_krp"
+        }
+      ],
+      "failure_explanation": "Each Q_i is an ell_i-column QR factor with ell_i=r_i+p, and the algorithm never truncates Q_i to r_i columns. The ENSURE approximation therefore has mode ranks ell_i, not the stated target ranks r_i.",
+      "failure_location": {
+        "quote": "\\STATE\\label{line:rhosvd:qr} Compute thin QR $\\M{Y}_{(i)} = \\M{Q}_i \\M{R}$",
+        "tag": "alg:rhosvd_krp"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Add a post-processing/truncation step to rank r_i with a proof, or state explicitly that the algorithm returns an ell_i-rank approximation.",
+      "overall_effect": "The algorithm's target-rank output contract is not met; the analysis only bounds the oversampled approximation.",
+      "primary_affected_tag": "alg:rhosvd_krp",
+      "target_type": "algorithm",
+      "title": "RHOSVD-KRP does not return target-rank factors",
+      "why_classification": "This is a local algorithm-contract omission; the proven oversampled error bound survives if the output rank is clarified or standard truncation is added."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\REQUIRE Tensor $\\T{X}$, target rank $\\V{r} = (r_1,r_2,\\dots,r_d)$, oversampling parameter $p$",
+          "tag": "alg:rst_krp"
+        },
+        {
+          "quote": "\\ENSURE $\\hat{\\T{X}} = [\\T{G}; \\{\\M{Q}_i\\}_{i=1}^d]$",
+          "tag": "alg:rst_krp"
+        }
+      ],
+      "failure_explanation": "The sequential algorithm keeps Q_i with ell_i=r_i+p columns and never truncates to r_i, so the returned Tucker approximation has mode ranks ell_i rather than the stated target ranks.",
+      "failure_location": {
+        "quote": "\\STATE\\label{line:rst:qr} Compute thin QR $\\M{Y}_{(i)} = \\M{Q}_i \\M{R}$",
+        "tag": "alg:rst_krp"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Add truncation/post-processing to rank r_i with justification, or change the statement to return an ell_i-rank approximation.",
+      "overall_effect": "The algorithm does not deliver the advertised target-rank output as written.",
+      "primary_affected_tag": "alg:rst_krp",
+      "target_type": "algorithm",
+      "title": "RSTHOSVD-KRP does not return target-rank factors",
+      "why_classification": "The issue is a local algorithmic contract omission; the existing analysis for the oversampled output can be retained if the output rank is clarified."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$n_i^{\\circgt} := \\prod_{k=i+1}^d n_k$, $n_i^{\\circlt} := \\prod_{k=1}^{i-1}n_k$ and $n_i^{\\circneq} := \\prod_{k\\neq i}^{d}n_k$.",
+          "tag": null
+        },
+        {
+          "quote": "$\\M{\\Omega}^{(j)} \\in \\R^{\\ell_j \\times \\ell_i}$ for $j < i$",
+          "tag": "alg:rst_krp"
+        }
+      ],
+      "failure_explanation": "The quantity \\ell_i^{\\circlt} is never defined. The algorithm's compressed dimension for modes before i is naturally \\prod_{j<i}\\ell_j, but the theorem uses an undefined symbol, making the sample-size condition and Gamma ill-defined.",
+      "failure_location": {
+        "quote": "Q \\equiv \\min\\{n_i, \\ell_i^{\\circlt} n_i^{\\circgt}\\} \\geq \\ell_i \\geq  8(r_i + r_i C_{K,d-1}\\ln^{d-1}(8d \\ell_i/\\delta))\\ln(4r_id/\\delta) .",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Define \\ell_i^{\\circlt}=\\prod_{j<i}\\ell_j (with \\ell_1^{\\circlt}=1) and use it consistently in the theorem and proof.",
+      "overall_effect": "The RSTHOSVD-KRP theorem statement is not well-defined as written.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "RSTHOSVD theorem uses undefined \\ell_i^{\\circlt}",
+      "why_classification": "This is a missing local definition that can be inserted without changing the mathematical architecture of the result."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mc{E}_t = \\left\\{ \\sum_{i=1}^t\\| (\\M{I}- \\M{Q}_i\\M{Q}_i^\\top ) \\M{G}_{(i)}^{(i-1)} \\|_F^2 \\le \\sum_{i=1}^t(1 + 2r_i(1+2\\Gamma_i)) \\sum_{j=r_i+1}^{n_i} \\sigma_j^2 (\\M{X}_{(i)})\\right\\}.",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "The events E_t are cumulative inequalities. They are not nested: an earlier summand can violate its individual bound while a later small summand keeps the cumulative total below the cumulative bound. The subsequent law-of-total-probability argument assumes E_t subset E_{t+1} and conditional control, which is invalid.",
+      "failure_location": {
+        "quote": "We know by \\cref{thm:rrf}, $\\prob\\{ \\mc{E}_1 \\} \\ge 1 -\\delta/d$ and note that $ \\mc{E}_1 \\subseteq \\dots \\subseteq \\mc{E}_t \\subseteq \\mc{E}_{t+1} \\subseteq \\dots \\subseteq \\mc{E}_d$.",
+        "tag": "thm:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Replace E_t by individual mode events and condition on their intersection, or define genuinely nested events, then apply the conditional KRP range-finder bounds.",
+      "overall_effect": "The high-probability error guarantee for RSTHOSVD-KRP is not proved.",
+      "primary_affected_tag": "thm:added-2",
+      "target_type": "formal_result",
+      "title": "RSTHOSVD probability induction uses non-nested events",
+      "why_classification": "The proof's inductive probability argument fails and must be rebuilt around valid events, though the theorem statement may survive with a corrected proof."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "NA"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\REQUIRE $\\T{X}=\\T{F}\\times_1 \\M{A} \\times_2 \\M{B} \\times_3 \\M{C}$, $\\T{Y} = \\T{G} \\times_1 \\M{U} \\times_2 \\M{V} \\times_3 \\M{W}$",
+          "tag": "alg:randHadaTucker"
+        },
+        {
+          "quote": "\\STATE $\\M{U}_1 = \\text{orth}(\\M[\\hat]{X})$",
+          "tag": "alg:randHadaTucker"
+        },
+        {
+          "quote": "\\STATE $\\M{U}_2 = \\text{orth}(\\M[\\hat]{Y})$",
+          "tag": "alg:randHadaTucker"
+        },
+        {
+          "quote": "\\STATE $\\M{U}_3 = \\text{orth}(\\M[\\hat]{Z})$",
+          "tag": "alg:randHadaTucker"
+        }
+      ],
+      "failure_explanation": "In the REQUIRE, X, Y, and Z are tensors, not matrices. The algorithm defines sketch matrices Xhat, Yhat, Zhat and orthonormal bases U_1, U_2, U_3, but the core line uses X^T, Y^T, Z^T. If these refer to the sketches, the core is multiplied by R-transforms rather than the orthonormal bases; the intended core should use U_i^T(A krt U), etc.",
+      "failure_location": {
+        "quote": "\\STATE $\\T{H} = (\\T{F}\\kron\\T{G}) \\times_1 \\M{X}^{\\t}(\\M{A}\\krt \\M{U}) \\times_2 \\M{Y}^{\\t}(\\M{B}\\krt \\M{V}) \\times_3 \\M{Z}^{\\t}(\\M{C}\\krt \\M{W}) \\label{line:hosvd:truncate}",
+        "tag": "alg:randHadaTucker"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Replace X, Y, Z in the core line by U_1, U_2, U_3 with the correct transposes, or define the intended matrix factors and prove equivalence.",
+      "overall_effect": "The randomized Hadamard recompression algorithm is not well-defined and, as written, would not produce the stated Tucker approximation.",
+      "primary_affected_tag": "alg:randHadaTucker",
+      "target_type": "algorithm",
+      "title": "Hadamard recompression core line uses undefined matrices",
+      "why_classification": "This is a local undefined-symbol/incorrect-core-construction defect; a direct correction to the core line can restore the algorithm without changing the overall method."
+    }
+  ],
+  "issues_found": 10,
+  "paper_id": "2507.23207",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "35f9666b0e59513382f1e39876245c9aa4f2c7bded3e783f01beb294b5f7ba3d",
+  "status": "ok"
+}

@@ -1,0 +1,286 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The average numbers $s$ reported indicate the corresponding front constants in the $\\mathcal{O}(n^2 \\log n)$ scaling of arithmetic operations",
+          "tag": "tab:svd1"
+        },
+        {
+          "quote": "indicates that it did not achieve the desired tolerance in relative error even after using $2n^3$ arithmetic operations required in the conventional multiplication",
+          "tag": "tab:svd1"
+        },
+        {
+          "quote": "The presented numerical results demonstrate the utility of this approach for tolerances in relative error of $\\sim$ 1\\%.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "An O(n^2 log n) cost needs the front constant s to be independent of n. The paper measures s only at n=700 and gives no argument or data on how s grows with n. Many 1% entries have s of about 60-77 (General&General, Type-3, Kappa, Bus matrices, and the CD columns), so about 400-500 of 700 components are needed. At that point the cost exceeds the 2n^3 of direct multiplication. Many 1% entries are '-', and the FFT and low-rank methods mostly fail at 1%. The scaling claim therefore holds at most for special structured or low-rank classes, not for general dense matrices.",
+      "failure_location": {
+        "quote": "The proposed methods scale as $\\mathcal{O}(n^2 \\log n)$ in arithmetic operations for $n \\times n$ matrices for usable tolerances in relative error $\\sim$ 1\\%.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the claim to the matrix classes where small s is observed, state it as an empirical observation at the tested sizes, and add scaling experiments in n or a bound on s.",
+      "overall_effect": "The headline complexity and accuracy guarantee in the abstract and conclusion is overstated for general dense matrices. No theorem backs the front-constant independence of n.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "O(n^2 log n) scaling at ~1% error is not supported by the reported experiments",
+      "why_classification": "The repair is a limited weakening of the advertised scope. The methods and the structured-class results survive, but the general-matrix efficiency claim is lost."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "arranging the cycles of matrix $A$ into columns of $\\Tilde{A}$ and applying Fast Fourier Transform (FFT) on its columns",
+          "tag": null
+        },
+        {
+          "quote": "R_k\\hat{e}_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}",
+          "tag": null
+        },
+        {
+          "quote": "\\frac{1}{n} \\left( \\mathbf{1}^T (AD^{-k} \\circ C^{j}) \\mathbf{1} \\right)",
+          "tag": "thm:added-2"
+        }
+      ],
+      "failure_explanation": "Column j of Ã holds cycle j, so column j of WÃ is the DFT of cycle j, indexed by frequency k. The first column of R_k collects the k-th frequency coefficient across all cycles j, so it is the k-th row of WÃ, not the k-th column. By the formula of Theorem thm:added-2 (R_k(j,0) = ω^{jk}·(1/n)Σ_r A(r,r−j)ω^{−rk}), the correct phase is D^k, not (D^k)^{-1}, and the unitary W adds a √n factor. Using the k-th column mixes up the cycle and frequency indices, so the output R[·] is not the circulant decomposition.",
+      "failure_location": {
+        "quote": "\\State \\( R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)} \\)",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Use the k-th row of FFT(Ã) (transposed), with the correct phase D^k and normalization, in Step 4 and the accompanying formula.",
+      "overall_effect": "The stated output R of the decomposition algorithm, and the selection of dominant components in the multiplication algorithm, are not those of Theorem th:circulant_decomposition as written.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "FFT circulant-extraction step indexes the wrong axis and phase",
+      "why_classification": "The fix is a local index, phase and normalization correction. The complexity and the method are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "L[j] \\gets \\Lambda_j",
+          "tag": "algo:circulant_decomposition_fft"
+        },
+        {
+          "quote": "W\\bm l_k \\circ W(D^k\\bm b)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The derivation in the text shows that R_kD^kB is computed in the Fourier domain as (W l_k) ∘ (C^k W b), where l_k is the first column of the circulant R_k. Step 4 of the algorithm builds Ã from the circulants R_{A_t}D^t. Step 5, however, uses L_A[t] = Λ_t, the diagonal of the t-th cycle. That is the cycle-decomposition object, and Λ_tC^tB would need only a row permutation and scaling, not an FFT-domain Hadamard product. The row-wise product Λ_t·(C^t FFT(B)) is not W R_tD^tB, so Step 5 does not compute ÃB. The right-multiplication term ΔA·B̃ uses L_B[t] in the same way, and its formula is not derived anywhere.",
+      "failure_location": {
+        "quote": "L_A[t] (C^t \\text{FFT}(B))",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace L_A[t] and L_B[t] by FFT(R_A[t]) and FFT(R_B[t]) with the correct normalization, and derive the right-multiplication analogue (row FFT of ΔA, diagonal scaling, column permutation C^t).",
+      "overall_effect": "The returned matrix of the main circulant multiplication algorithm is not the first-order approximation M of eq:first_order_expansion. The numerical CD results rest on a procedure that is inconsistent with the derivation.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "Step 5 of the circulant multiplication algorithm uses the cycle diagonals instead of the circulant components",
+      "why_classification": "Both product terms need re-derivation with correct normalization, including a derivation for right multiplication that is absent. The structure and cost claims survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the Lipschitz constant $L = 2 \\norm{D_1}^2_F \\norm{D_2}^2_2$",
+          "tag": "th:concentrationprob"
+        },
+        {
+          "quote": "\\frac{(n - 2)t^2}{96 \\norm{D_1}^4_F \\norm{D_2}_2^4}",
+          "tag": "th:concentrationprob"
+        }
+      ],
+      "failure_explanation": "With L = 2‖D_1‖_F²‖D_2‖_2², the theorem's exponent (n−2)t²/(24L²) equals (n−2)t²/(96‖D_1‖_F⁴‖D_2‖_2⁴). The proof's final display says 96, while the corollary statement claims 48. The stated bound is strictly stronger than the one derived. The proof also applies the theorem on O(n), which is not among the listed groups (SO, SO⁻, SU, U, Sp), and uses a real transpose while Haar unitary matrices are assumed.",
+      "failure_location": {
+        "quote": "\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4}",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Change 48 to 96, and apply the theorem separately on SO(n) and SO⁻(n) (or state the real case explicitly).",
+      "overall_effect": "The stated tail bound is unproved as written. The valid conclusion has constant 96.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration corollary states constant 48 but its proof yields 96",
+      "why_classification": "A constant fix and a routine remark restore a correct, essentially equivalent statement."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:estimated_relative_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "the Lipschitz constant $L = 2 \\norm{D_1}^2_F \\norm{D_2}^2_2$",
+          "tag": "th:concentrationprob"
+        },
+        {
+          "quote": "We know that $Var[\\norm{AB}_F]$ and $Var[\\norm{\\Delta A.\\Delta B}_F]$ $\\to 0$ for large $n$ and a random distribution of the entries",
+          "tag": "th:estimated_relative_error"
+        }
+      ],
+      "failure_explanation": "The corollary bounds an absolute deviation t. The conclusion needs a relative deviation, t = δ·E[‖D_1QD_2‖_F²] = δ‖D_1‖_F²‖D_2‖_F²/n. The condition L²/n→0 is not scale invariant, since rescaling D_1 changes it but not the relative concentration. It is also insufficient. Take D_1 = D_2 = diag(1,0,…,0). Then L = 2 and L²/n = 4/n → 0, yet ‖D_1QD_2‖_F² = Q_11², which has mean 1/n and fluctuations of the same order, so it is not concentrated. Relative concentration requires a large stable rank of the singular-value profile.",
+      "failure_location": {
+        "quote": "Thus from \\eqref{concentration}, we have ${\\norm{D_1 Q D_2}^2_F} \\approx \\mathbf{E}[\\norm{D_1 Q D_2}^2_F]$ with very high probability when $L^2/n \\to 0$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "State a relative-deviation bound and a condition on the stable rank (‖D‖_F²/‖D‖_2² growing faster than √n) under which concentration holds, and restrict later uses to that regime.",
+      "overall_effect": "The justification that the product norms are nearly deterministic, used in the proposition's proof, fails for low-rank or fast-decaying spectra. Those are exactly the cases targeted by truncated SVD.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed concentration of ‖D_1QD_2‖_F^2 'when L^2/n→0' is false and not scale-invariant",
+      "why_classification": "A corrected, contained concentration statement with an added hypothesis suffices. The set of matrices for which the a priori estimate is justified shrinks."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "& \\approx \\frac{9}{16}\\text{for } n \\gg 1",
+          "tag": "th:uniform_distribution_norms"
+        },
+        {
+          "quote": "When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": "th:uniform_distribution_norms"
+        }
+      ],
+      "failure_explanation": "The proof computes the exact second-moment ratio E‖AB‖_F²/(E‖A‖_F²·E‖B‖_F²) = 1/n + 9(n−1)/(16n). This equals 9/16 only as n→∞ (it equals 1 at n=1). The proof then passes from second to first moments, and from E‖A‖_F² to the random ‖A‖_F, without justification, and concludes only '≈'. The stated exact equality is false at finite n and is unproved even asymptotically (no concentration argument is given). The right side also contains random norms inside an expectation identity.",
+      "failure_location": {
+        "quote": "\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restate as an asymptotic approximation, E‖AB‖_F² = (9/16 + O(1/n))·E‖A‖_F²·E‖B‖_F², and add a short concentration argument for the norms, or label the first-moment version as heuristic.",
+      "overall_effect": "Only a heuristic large-n approximation is established. The Case-2 constant 3/4 used for the a priori error estimate rests on it.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Uniform-entries theorem asserts exact equality but proves only an asymptotic second-moment ratio",
+      "why_classification": "The proof's computation is essentially correct, and a weakened statement keeps the usable content."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We know that $Var[\\norm{AB}_F]$ and $Var[\\norm{\\Delta A.\\Delta B}_F]$ $\\to 0$ for large $n$ and a random distribution of the entries",
+          "tag": "th:estimated_relative_error"
+        },
+        {
+          "quote": "where $c \\approx 1$ are constants for a given type of matrices.",
+          "tag": null
+        },
+        {
+          "quote": "A priori estimates of relative error do not exactly overlap with observations as Type-2 matrices neither belong to class-1 or class-2",
+          "tag": "fig:SVD_results2"
+        }
+      ],
+      "failure_explanation": "The denominator estimates come from Lemma th:expected_norm_square (Haar singular vectors) and Theorem th:uniform_distribution_norms (i.i.d. uniform entries). The proposition applies them to arbitrary A, B (Toeplitz, Hankel, images, Bus, Kappa, periodic matrices) and to the residues ΔA, ΔB. The residues are deterministic outputs of a truncation and are neither Haar nor i.i.d. The numerator is simply asserted to behave like a normal distribution, with no computation giving the 1/√n factor. The step E[X/Y] ≈ E[X]/E[Y] cites a variance-vanishing property that is not established for these matrices. The constant c is left undetermined. The claimed 'expected' relative error is therefore unsupported outside the random models.",
+      "failure_location": {
+        "quote": "in the numerator can be approximated by that of a normal distribution as the entries of the residue matrices are equally likely to be of either signs",
+        "tag": "th:estimated_relative_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "State the result explicitly for the random models with proven assumptions, including a justification for the residues. Otherwise present it as a heuristic and drop the guarantee-style claims about a priori suitability.",
+      "overall_effect": "The 'a priori' error estimate, and the claim that suitability of a decomposition can be ascertained in O(n^2) before multiplying, are heuristic only. They are unproven for the structured matrices used in the experiments.",
+      "primary_affected_tag": "th:estimated_relative_error",
+      "target_type": "formal_result",
+      "title": "A priori relative-error estimate applies random-matrix lemmas to deterministic, structured matrices and residues",
+      "why_classification": "Establishing it even for a limited model class needs a new argument for the residue matrices. The alternative is a clear weakening to a heuristic, which cuts the advertised a priori guarantee."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "results in lower relative errors than this conventional low rank multiplication",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Selecting c columns of A by their 2-norms gives a c-column subset, whose span is generally unrelated to the top-c left singular subspace. For example, for a matrix with equal-norm columns the norms carry no singular-value information. The claim that these columns 'implicitly represent' the largest singular components is therefore false as stated. The deduction that top-SVD zeroth-order multiplication must give lower errors than the sampling method relies on it. The optimality of the truncated SVD (Eckart-Young) is for approximating A, not for the product AB.",
+      "failure_location": {
+        "quote": "implicitly represents up to $c$ largest singular value components of $A$ as the column indices $k$ are chosen based on their 2-norm",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Remove the claimed equivalence and present the comparison as purely empirical, or give a precise bound relating the sampled approximation to SVD truncation errors.",
+      "overall_effect": "The theoretical explanation for the comparison with the randomized low-rank multiplication is unsupported. Only the empirical table backs the ordering.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Norm-based column sampling is claimed to capture the largest singular components",
+      "why_classification": "Dropping or qualifying the explanatory sentence leaves the experimental comparison intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:added-2"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{n(n+1)} \\left( \\beta_1 \\beta_2 - \\frac{\\alpha_1^2 \\alpha_2^2}{n} \\right)",
+          "tag": "lem:added-2"
+        }
+      ],
+      "failure_explanation": "The proof asserts E[|Q_ij|²|Q_kl|²] = 1/(n(n+1)) for all (i,j)≠(k,l). For Haar matrices this value holds only when exactly one of i=k, j=l holds. When i≠k and j≠l the value is 1/(n²−1). The formula for E[S²] is therefore wrong. Test D_1=D_2=I_n: S=‖Q‖_F²=n is deterministic, so E[S²]=n². The lemma gives n(n²+1)/(n+1) ≠ n², and Lemma lem:added-2 gives Var(S)=n(1−n)/(n+1)<0 for n≥2, which is impossible. The subsequent Taylor expansion of E√S then exceeds √E[S], contradicting Jensen.",
+      "failure_location": {
+        "quote": "Now using the fact that for Haar distributed matrices we have",
+        "tag": "lem:added-1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Recompute E[S²] with the correct Weingarten moments (2/(n(n+1)) on the diagonal, 1/(n(n+1)) for same row or column, 1/(n²−1) for disjoint index pairs), then redo the variance and the E√S expansion.",
+      "overall_effect": "The variance of ‖AB‖_F², the corrected E√S expansion and the variance-vanishing justification built on them are unreliable.",
+      "primary_affected_tag": "lem:added-1",
+      "target_type": "formal_result",
+      "title": "Fourth-moment lemma uses a false constant value for E|Q_ij|^2|Q_kl|^2, yielding negative variance",
+      "why_classification": "The fix is a contained recomputation with standard Haar moments. The lemma and its corollaries change, but the architecture of the paper does not."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "details generating matrices with low-rank (1), dominant low-rank components (2), and linear decay of singular values (3), respectively",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For i=0,…,n−1, e^{−i/n} ranges only over [e^{−1},1]. The singular values are nearly flat, so Type-1 matrices are essentially full rank and not low rank. With k≈5⌈log n⌉ components the residual carries about 95% of the Frobenius energy, so a first-order error of the form ε_Aε_B is near 1. This contradicts the tabulated Type-1 values (s=3 to 7 suffices for 1-5% error) and the low-rank label. Type-2 is built from a Type-1 matrix plus noise and inherits the inconsistency.",
+      "failure_location": {
+        "quote": "S[i]=$e^{\\frac{-i}{n}}$, and S[i]=$\\frac{n-i}{n}$ for $i=0,1,2,\\dots,(n-1)$ were used for generating Type-1 and Type-3 matrices respectively.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "Correct the generator (for example a rapidly decaying spectrum such as e^{-i}) or the labels, and confirm that the reported results correspond to the matrices actually generated.",
+      "overall_effect": "The description of the Type-1 and Type-2 experiments, and their interpretation as low-rank and dominant-low-rank cases, cannot be reconciled with the stated generator.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Type-1 'low-rank' test matrices are generated with a nearly flat spectrum",
+      "why_classification": "The error is confined to a test-matrix definition and the experimental description. No theorem or method is affected."
+    }
+  ],
+  "issues_found": 10,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

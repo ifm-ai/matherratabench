@@ -1,0 +1,116 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:msgfem:local",
+        "th:msgfem:evaldecay",
+        "th:msgfem:global"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bilWF{\\pu_\\ddindex\\evec}{\\pu_\\ddindex\\psi}{\\osdomain_\\ddindex}  = \\eval \\bilIP{\\evec}{\\psi}{\\osdomain_\\ddindex} \\quad\\text{for all $\\psi \\in \\harmSpace$.}",
+          "tag": "eq:gevp"
+        },
+        {
+          "quote": "which has negative divergence and yields an indefinite problem with a grid P\\'{e}clet number of approximately $3\\,000$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The left-hand form is B_{ω_j^*}(χ_jφ,χ_jψ). For interior-supported functions, B(u,v)-B(v,u) = -2∫uv div b. With u=χ_jφ and v=χ_jψ this is -2∫χ_j^2 φψ div b, which is not zero when div b≠0. Its symmetric part is ∫A∇u·∇v + ∫uv div b, which is not positive semidefinite if div b has negative part, as in the paper's own rotating-velocity example. Hence the eigenproblem is not, in general, a symmetric positive (semi-)definite generalized eigenproblem, and the claimed real non-negative spectrum and SVD-based spectral approximation argument do not follow.",
+      "failure_location": {
+        "quote": "Note that, despite being based on the non-symmetric convection-diffusion equations, the above eigenvalue problem consists of two symmetric positive (semi-)definite bilinear forms, yielding only real and non-negative eigenvalues.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified for the advertised non-div-free regime; at minimum, the eigenproblem claim and dependent spectral theory must be restricted to divergence-free (or otherwise symmetric/coercive) cases, or replaced by a valid non-symmetric eigenvalue problem with a new analysis.",
+      "overall_effect": "The spectral coarse-space construction and the continuous MS-GFEM error/decay estimates are unsupported for the advertised non-divergence-free convection-diffusion regime. The divergence-free/coercive special cases may survive, but the general conservative-form extension does not.",
+      "primary_affected_tag": "eq:gevp",
+      "target_type": "other",
+      "title": "Local eigenproblem is claimed to be symmetric positive (semi-)definite in general",
+      "why_classification": "The defect invalidates the central spectral construction for a regime explicitly used in the paper. A comparable result would require excluding the non-div-free case or introducing essentially new non-symmetric eigenvalue theory, so the loss is major."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\velField\\equiv0$ ($\\peclet_h=0$)",
+          "tag": "fig:transport:eigenfunctions:interior"
+        }
+      ],
+      "failure_explanation": "The remark quantifies the constants in the eigenvalue decay theorem with a factor containing 1/||b||_L^2(Ω)^2. The velocity field is allowed to be zero, and the paper explicitly considers pure-diffusion cases with b≡0. In that case the displayed constant C_j is undefined, so the quantification is false as written.",
+      "failure_location": {
+        "quote": "\\frac{\\diffMin \\norm{\\divergence \\velField}_{\\Lp{\\infty}}}{\\norm{\\velField}^2_{\\Lpd{\\infty}}}",
+        "tag": "rm:constants"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add a separate diffusion-only case or replace the denominator by a bounded quantity such as max{||b||_L^∞^2,1}, with the corresponding limiting constant.",
+      "overall_effect": "The explicit constants given in the remark are not valid in the diffusion-only case. The existence of constants in the decay theorem is not itself disproved, but the remark's claim of quantification fails.",
+      "primary_affected_tag": "rm:constants",
+      "target_type": "formal_result",
+      "title": "Explicit decay constant is undefined for zero velocity",
+      "why_classification": "This is a local ill-defined formula in a quantification remark; a short case split or bounded denominator restores the claim without changing the main theorem's content or rate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{(I - \\msgfemOperator)\\fwpTest}_{a,\\osdomain_\\ddindex} \\leq \\vartheta \\norm{\\fwpTest}_{a,\\osdomain_\\ddindex} \\quad \\text{for all $\\fwpTest \\in \\Hone$,}",
+          "tag": "th:msgfem:iteration"
+        },
+        {
+          "quote": "which maps a function $w \\in \\Hone$ to the MS-GFEM solution",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The available MS-GFEM contraction estimate applies to the homogeneous/affine Dirichlet solution space: w must be the kind of function for which G w is the MS-GFEM approximation of w itself. For arbitrary w∈H^1 with nonzero Dirichlet trace, w is not the exact solution of the MS-GFEM problem with right-hand side B(w,·) under the same boundary lift, so the estimate ||w-Gw||_a ≤ vartheta||w||_a is not established. The proof also states a local-norm inequality over ω_j instead of the global a-norm needed for the contraction. Thus the stated any-H^1 initial-guess convergence is stronger than what the argument supports.",
+      "failure_location": {
+        "quote": "converges for any initial guess $\\fwp^{(0)} \\in \\Hone$ strictly monotonically:",
+        "tag": "th:msgfem:iteration"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict the theorem to initial guesses in u^e+H^1_D (or H^1_D for the homogeneous formulation) and correct the proof to use the global a-norm inequality ||(I-G)v||_{a,Ω} ≤ vartheta||v||_{a,Ω}.",
+      "overall_effect": "The continuous iterative MS-GFEM theorem overstates its admissible initial data. The contraction with rate vartheta is supported only for initial guesses in the natural affine space u^e+H^1_D (or H^1_D for the homogeneous problem), not for all H^1.",
+      "primary_affected_tag": "th:msgfem:iteration",
+      "target_type": "formal_result",
+      "title": "Iteration theorem claims convergence for arbitrary H^1 initial guesses",
+      "why_classification": "The repair is a standard boundary-space restriction and a norm correction. It leaves the convergence rate, the continuous divergence-free setting, and the practical preconditioner scope essentially intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\discCoarseRestriction\\transpose\\discBilForm_S^{-1}\\discCoarseRestriction\\left(\\vec{\\rhsF} - \\discBilForm\\vec{\\fwp}^{(k+\\frac{1}{2})}\\right),",
+          "tag": "eq:discrete:RAS2"
+        }
+      ],
+      "failure_explanation": "Let P_F=Σ_j R_j^T χ_j B_j^{-1}R_j and P_S=R_S^T B_S^{-1}R_S. The two-step iteration applies the coarse operator to the updated residual f-Bv^{k+1/2}=r-BP_F r, so the effective preconditioner is P_F + P_S(I-BP_F). The defined matrix, however, is P_F + P_S(I-P_F), missing the factor B on the fine-level correction in the coarse residual. Therefore the single-line preconditioned iteration and the described restricted additive Schwarz plus coarse correction do not implement the same operator.",
+      "failure_location": {
+        "quote": "\\left(\\mat{I} - \\sum_{\\ddindex=1}^\\nDoms \\discRestriction\\transpose \\discPU \\discBilForm_\\ddindex^{-1}\\discRestriction \\right),",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Correct the preconditioner definition to P_F + P_S(I - B P_F), or equivalently rewrite the single-line iteration to match the two-step residual update.",
+      "overall_effect": "The formally defined two-level hybrid RAS preconditioner has the wrong input-output contract. Any discrete interpretation or guarantee tied to the displayed matrix M B is inconsistent with the two-step algorithm actually described and presumably used numerically.",
+      "primary_affected_tag": "eq:discrete:RAS",
+      "target_type": "algorithm",
+      "title": "Preconditioner matrix does not match the described two-step RAS iteration",
+      "why_classification": "The intended method is clear from the two-step equations, and the fix is a local formula correction. It does not require new proof architecture and does not change the advertised continuous theory or numerical algorithm if the split iteration is used."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2509.17531",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "10d5e7cc895eb71bc1c68a4a297aef9c190ad8b22b3542cc47b43a3abea14ccf",
+  "status": "ok"
+}

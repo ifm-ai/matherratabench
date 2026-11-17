@@ -1,0 +1,110 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|u\\|_2 < q\\tau_{\\mathcal{M}}(v)",
+          "tag": "deftubularm"
+        },
+        {
+          "quote": "satisfies $q\\in [0,1)$",
+          "tag": "assumpm"
+        },
+        {
+          "quote": "In the exact manifold case when $q=0$, Theorem \\ref{thmGeneralization} gives rise to the min-max regression error",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The tube is defined with a strict inequality ||u|| < q*tau(v). For q=0 this requires ||u|| < 0, so M(0) is empty. The domain M(q) is then empty, no distribution P is supported on it, and f is defined nowhere. The paper nevertheless allows q in [0,1) and says q=0 recovers regression on the manifold itself and the minimax rate. As written, the definition does not cover that case.",
+      "failure_location": {
+        "quote": "When $q=0$, one recovers the exact manifold regression model",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Use a non-strict inequality ||u|| <= q*tau(v) for q=0, or restrict the theorems to q in (0,1) and treat q=0 separately (M(0)=M). The oracle construction and proofs go through unchanged.",
+      "overall_effect": "The advertised q=0 special case (exact manifold regression, minimax rate) is not covered by the stated definition and assumptions. Theorems 1 and 2 are vacuous at q=0. Results for q in (0,1) are unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Tubular region is empty at q=0, so the exact-manifold/minimax claims are not covered as written",
+      "why_classification": "This is a one-symbol or one-sentence local fix. The method, rates and scope all survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemadd",
+        "lemcmulti",
+        "lemsq",
+        "lempp",
+        "lemrpower",
+        "lemdiv",
+        "repetatildei",
+        "approxetai",
+        "thmApprox",
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The next lemma shows the way to zero out the contiguous tokens in the embedding matrix while keep other tokens unchanged via a feed-forward network.",
+          "tag": null
+        },
+        {
+          "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $M$ only from columns $D+1$ to $2D$.",
+          "tag": "lemadd"
+        }
+      ],
+      "failure_explanation": "The Gating Lemma only states that an FFN keeps tokens t<=k and zeroes the data rows of all tokens t>k. In every arithmetic lemma the proof needs a different map. The offset M (or DM) must be subtracted from exactly one column, or from the window of columns D+1..2D. The tokens before the window must stay unchanged, and the zero tokens after it must remain zero. A prefix-zeroing FFN cannot do this: with k=D it erases the computed values, and with k>=2D it removes nothing. The stated lemma neither provides the needed window-selective subtraction nor a weight bound for it. All the elementary operations (sum, add, scale, square, product, power, division) rely on this step.",
+      "failure_location": {
+        "quote": "Then we apply the Gating Lemma \\ref{Gatinglemma} to have a $\\mathcal{FFN}(3)$ to subtract off the constant $DM$ in the $D+1$-th column.",
+        "tag": "lemsumD"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State and prove a window-gating lemma. It should give an FFN that subtracts a prescribed constant from the data row of columns in a prescribed interval and acts as the identity elsewhere. It would use the positional encodings I_t, in the same spirit as the cited Gating Lemma, with a weight bound of the same order. Then re-cite it in the arithmetic lemmas.",
+      "overall_effect": "The exactness of the basic arithmetic blocks, and hence of the transformer constructions for eta_i and f-hat, is not established by the cited lemmas. The weight bounds that feed kappa and the covering-number estimate are also unsupported.",
+      "primary_affected_tag": "lemsumD",
+      "target_type": "formal_result",
+      "title": "Gating Lemma used for an operation it does not provide (selective constant subtraction on a column window)",
+      "why_classification": "The repair needs a new but contained lemma modelled on the existing one. The architecture, rates and claims are not lost, but the fix is more than a local edit."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thmGeneralization"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|{\\rm T}(\\theta;\\cdot)\\|_{L^{\\infty}(\\mathbb{R}^D)}\\leq R",
+          "tag": "TNC"
+        },
+        {
+          "quote": "\\|T(\\theta;\\cdot)-\\hat{f}\\|_{\\mathcal{L}^{\\infty}(\\mathcal{M}(q))}\\leq\\delta^\\alpha",
+          "tag": "thmApprox"
+        }
+      ],
+      "failure_explanation": "The class T(...,R,kappa) requires |T(x)| <= R for all x in R^D. The proof only controls |T-f| <= epsilon on M(q). Since |f| <= R, this gives |T| <= R+epsilon at best, even on M(q). Off M(q) there is no control: the truncated series c*sum(1-c*||eta~||_1)^k can be evaluated where ||eta~||_1 exceeds the range on which |1-c*||eta~||_1| < 1 was ensured, and the weights g(z_i) multiply it. So membership of the constructed network in the stated class is not established. The bias step in Theorem 2 and the use of the covering and oracle inequality (which need outputs bounded by R) rely on this membership.",
+      "failure_location": {
+        "quote": "there exists a transformer network ${\\rm T}(\\theta;\\cdot)\\in\\mathcal{T}(L_{\\rm T}, m_{\\rm T},d_{embed},\\ell,L_{\\rm FFN},w_{\\rm FFN},R,\\kappa)$",
+        "tag": "thmApprox"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Append a final clipping layer (two ReLU units or an FFN) that truncates the output to [-R,R], or enlarge the class bound to R+1 and clip. Since |f|<=R on M(q), clipping does not increase the error on M(q) and gives a global bound.",
+      "overall_effect": "The existence claim in Theorem 1 is stated for a class that the constructed network may not belong to. The bias bound inf_T ||T-f||^2 <= O(eps^2) in Theorem 2, and the applicability of the oracle inequality with the R-bounded class, are therefore not rigorously justified.",
+      "primary_affected_tag": "thmApprox",
+      "target_type": "formal_result",
+      "title": "Constructed network is not shown to satisfy the class's global output bound ||T||_{L^infty(R^D)} <= R",
+      "why_classification": "A routine one-layer modification restores the class membership with the same orders of L_T, m_T, ell and kappa, so all claims survive."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2505.03205",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e251cd718a4c2fe4d9791d1e58d8251eec6a75089c28852e7c9426637e3b810a",
+  "status": "ok"
+}

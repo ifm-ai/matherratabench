@@ -1,0 +1,279 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "algo:cd_matrix_multiplication"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $W(p,q) = \\frac{1}{\\sqrt{n}}e^{-i \\frac{2\\pi pq}{n}}$",
+          "tag": null
+        },
+        {
+          "quote": "arranging the cycles of matrix $A$ into columns of $\\Tilde{A}$ and applying Fast Fourier Transform (FFT) on its columns i.e. $W\\Tilde{A}$",
+          "tag": null
+        },
+        {
+          "quote": "R_k\\hat{e}_1 = (D^k)^{-1}(W\\Tilde{A})^{(k)}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "With the cycle arrangement used in the paper, the first column of R_k is obtained from row k of W\\tilde A with a factor n^{-1/2} and phase D^k, not from column k multiplied by (D^k)^{-1}. For example, for n=2 and A=[[1,2],[3,4]], the stated step gives the first column of R_0 as (5/sqrt(2), -3/sqrt(2)) instead of (2.5, 2.5).",
+      "failure_location": {
+        "quote": "\\( R[j] \\gets \\text{first column $R_j$= }(D^{j})^{-1}U^{(j)} \\)",
+        "tag": "algo:circulant_decomposition_fft"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the construction of \\tilde A and correct Step 4 to extract R_k first columns from the appropriate row of W\\tilde A with the correct scaling and phase; correct the equivalent prose formula.",
+      "overall_effect": "The circulant decomposition algorithm does not compute the claimed circulant components, so the CD-based multiplication and its stated efficiency/error guarantees are unreliable.",
+      "primary_affected_tag": "algo:circulant_decomposition_fft",
+      "target_type": "algorithm",
+      "title": "FFT-based circulant decomposition uses wrong axis and scaling for R_k first columns",
+      "why_classification": "The fix is a local FFT indexing/scaling correction; the claimed decomposition and O(n^2 log n) method can be preserved."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\( {\\tilde{A}} \\gets \\sum_{t \\in In_A} (R_{A_t}D^t) \\)\\Comment{$R_{A_t}$ is the circulant matrix with first column as $R_A[t]$}",
+          "tag": "algo:cd_matrix_multiplication"
+        },
+        {
+          "quote": "W\\bm l_k \\circ W(D^k\\bm b) = W \\bm l_k \\circ WD^kW^{*}W\\bm b =  W\\bm l_k \\circ C^kW\\bm b",
+          "tag": null
+        },
+        {
+          "quote": "\\( T_A[i] = \\| R_A[i] \\|_2 \\quad \\text{for} \\quad i = 0, \\dots, n-1 \\)",
+          "tag": "algo:cd_matrix_multiplication"
+        }
+      ],
+      "failure_explanation": "Step 4 stores R_A[t] as the first column of the circulant component, but Step 5 uses L_A[t] (the cycle output) and an ordinary product instead of the spectral Hadamard product involving W R_A[t] and C^t FFT(B). The second line has the same problem with L_B[t]. The operations are not well-defined as written and do not evaluate \\tilde A B or \\Delta A \\tilde B.",
+      "failure_location": {
+        "quote": "\\( {\\tilde{A}}B \\gets \\text{IFFT}\\left (\\sum_{t \\in In_A}( L_A[t] (C^t \\text{FFT}(B)) \\right)) \\)",
+        "tag": "algo:cd_matrix_multiplication"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Rewrite Step 5 to use R_A[t] and R_B[t] with the correct FFT-based formulas, including the Hadamard product for \\tilde A B and the analogous row-FFT formula for \\Delta A \\tilde B.",
+      "overall_effect": "The CD first-order multiplication algorithm fails its input-output contract, so the advertised O(n^2 log n) evaluation and CD numerical results are unsupported.",
+      "primary_affected_tag": "algo:cd_matrix_multiplication",
+      "target_type": "algorithm",
+      "title": "Circulant multiplication algorithm uses wrong stored vectors and omits required FFT/Hadamard operations",
+      "why_classification": "The repair is contained to the algorithm but requires correcting the FFT-based product formulas for both first-order terms; no new global proof architecture is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Require $\\mathbf{A} \\in \\mathbb{C}^{n \\times n}$ (input matrix), $k$ (sparsity parameter), $n$ (matrix dimension)",
+          "tag": "alg:topk"
+        },
+        {
+          "quote": "\\For{$i \\gets 1$ to $n$}",
+          "tag": "alg:topk"
+        },
+        {
+          "quote": "\\Require $\\mathbf{A} \\in \\mathbb{C}^{m \\times n}$, $\\mathbf{B} \\in \\mathbb{C}^{n \\times p}$ (input matrices), ",
+          "tag": "alg:mul_topk"
+        },
+        {
+          "quote": "Similarly, let $\\Tilde{F}(B)$ denote the truncated Fourier transform of $B$ using the $k$ dominant frequencies.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In \\tilde B = WB, frequency indices are rows, so truncating each column of B to its k dominant frequencies requires selecting top-k entries per column. alg:topk selects top-k entries per row and assumes a square n-by-n input; calling it on an n-by-p matrix with p as the dimension selects the wrong entries or is ill-defined.",
+      "failure_location": {
+        "quote": "\\State $\\tilde{B}_{\\text{approx}}\\gets \\text{Algorithm} \\ref{alg:topk}(\\tilde{B},k,p)$",
+        "tag": "alg:mul_topk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Generalize the top-k routine to rectangular matrices and apply column-wise selection to \\tilde B (for example via its transpose), while using row-wise selection for \\tilde A.",
+      "overall_effect": "The FFT sparsification algorithm does not implement the stated row/column Fourier truncation, so its approximation and reported FFT-based results are unreliable.",
+      "primary_affected_tag": "alg:mul_topk",
+      "target_type": "algorithm",
+      "title": "Fourier sparsification applies row-wise top-k to column-transformed B",
+      "why_classification": "This is a local correction to the selection step and dimension handling; the intended method and its claimed complexity can be preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We can rewrite the product \\( AB \\) as \\( A W^* W B \\).",
+          "tag": null
+        },
+        {
+          "quote": "\\State $\\tilde{A} \\gets AW^*$ \\Comment{Row FFT of A}",
+          "tag": "alg:mul_topk"
+        },
+        {
+          "quote": "\\State $\\tilde{B} \\gets WB$ \\Comment{Column FFT of B}",
+          "tag": "alg:mul_topk"
+        }
+      ],
+      "failure_explanation": "The prose uses AW^*WB = AB, which is consistent with a unitary W. Under that normalization, when k=n the top-k filters are identity and the algorithm should return AB, but it returns AB/n. The stated return is therefore inconsistent with the derivation and contract.",
+      "failure_location": {
+        "quote": "\\State Return: $M \\gets \\frac{1}{n}(\\tilde{A}_{approx}\\tilde{B}+\\Delta A\\tilde{B}_{\\text{approx}})$",
+        "tag": "alg:mul_topk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Remove the 1/n factor if W is unitary, or specify the FFT normalization explicitly and use the corresponding scaling so that k=n returns AB.",
+      "overall_effect": "All products computed by the FFT sparsification algorithm are scaled incorrectly, making the reported relative errors and guarantees for that method invalid.",
+      "primary_affected_tag": "alg:mul_topk",
+      "target_type": "algorithm",
+      "title": "Fourier sparsification product returns an extra 1/n factor",
+      "why_classification": "A single normalization correction suffices; the intended sparsified multiplication method can be preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "and $Q_1,Q_2,Q_3,Q_4$ be Haar distributed unitary matrices",
+          "tag": "th:expected_norm_square"
+        },
+        {
+          "quote": "\\mathbf{E}[|Q_{i,j}|^4]  = \\frac{2}{n(n+1)}",
+          "tag": "lem:added-1"
+        }
+      ],
+      "failure_explanation": "For complex Haar-unitary matrices, the Frobenius norm expansion requires |Q_ij|^2, and E[Q_ij^2] is not 1/n in general. The proof as written is valid for real orthogonal matrices but not for the stated unitary case.",
+      "failure_location": {
+        "quote": "&= \\sum_{i,j} D^2_1(i)\\mathbf{E}[ Q^2_{ij}] D^2_2(j),",
+        "tag": "th:expected_norm_square"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace Q_ij^2 by |Q_ij|^2 in the proof, or state the lemma for real Haar-orthogonal matrices.",
+      "overall_effect": "The lemma's proof is invalid as written for complex unitary random singular vectors, weakening the support for subsequent concentration/error arguments if complex matrices are intended.",
+      "primary_affected_tag": "th:expected_norm_square",
+      "target_type": "formal_result",
+      "title": "Expected norm lemma uses E[Q_ij^2] for unitary Q",
+      "why_classification": "The conclusion can be preserved by a local notation/hypothesis fix; no change to the main claimed estimate is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "So the function has the Lipschitz constant $2 \\norm{D_1^2}_F \\norm{D_2^2}_2$.",
+          "tag": null
+        },
+        {
+          "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{24L^2} \\right),",
+          "tag": "elizabeths"
+        },
+        {
+          "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{96 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)",
+          "tag": "th:concentrationprob"
+        }
+      ],
+      "failure_explanation": "With L = 2||D_1||_F^2 ||D_2||_2^2, the cited concentration theorem gives denominator 24L^2 = 96||D_1||_F^4 ||D_2||_2^4, not 48. The corollary as stated is stronger than the proof.",
+      "failure_location": {
+        "quote": "\\leq \\exp\\left( -\\frac{(n - 2)t^2}{48 \\norm{D_1}^4_F \\norm{D_2}_2^4} \\right)",
+        "tag": "th:concentrationprob"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Change 48 to 96 in the corollary statement, or correct the Lipschitz constant so that the stated bound follows.",
+      "overall_effect": "The stated concentration bound is false as written; any argument relying on that exact constant inherits the mismatch.",
+      "primary_affected_tag": "th:concentrationprob",
+      "target_type": "formal_result",
+      "title": "Concentration corollary has a factor-two constant error",
+      "why_classification": "A local constant correction restores consistency without changing the qualitative concentration result."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:estimated_relative_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "When $\\|A\\|_F,\\|B\\|_F$ are known quantities, $\\mathbf{E}[\\|AB\\|_F]\\approx \\frac{3}{4}\\|A\\|_F\\|B\\|_F$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof only derives an asymptotic/approximate relation for E[||AB||_F^2] and then heuristically takes square roots under the informal condition that the norms are known. The theorem statement is an exact equality with a deterministic left side and a random right side, which is false already for n=1 and not proved for large n.",
+      "failure_location": {
+        "quote": "For two random matrices $A$ and $B$ with entries $\\sim$ $U(0,a)$, $\\mathbf{E}[\\norm{AB}_F] = \\frac{3}{4}\\norm{A}_F \\norm{B}_F$.",
+        "tag": "th:uniform_distribution_norms"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Restate the theorem as an asymptotic or approximate conditional claim, or claim only the squared-expectation ratio, adding expectations/concentration hypotheses where needed.",
+      "overall_effect": "The formal theorem is invalid as stated; the unsigned-entry case of the relative-error proposition rests on an unsupported version of this claim.",
+      "primary_affected_tag": "th:uniform_distribution_norms",
+      "target_type": "formal_result",
+      "title": "Uniform-product theorem states an exact equality not established by the proof",
+      "why_classification": "A limited weakening to an approximate/asymptotic statement is supported, but the exact formal claim must be withdrawn."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We know that $Var[\\norm{AB}_F]$ and $Var[\\norm{\\Delta A.\\Delta B}_F]$ $\\to 0$ for large $n$ and a random distribution of the entries (as in \\cref{th:concentrationprob}, for example).",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{E}\\left[\\frac{\\norm{\\Delta A .\\Delta B}_F}{\\norm{AB}_F}\\right] \\approx  \\frac{\\mathbf{E}[\\norm{\\Delta A .\\Delta B}_F]}{\\mathbf{E}[\\norm{AB}_F]}",
+          "tag": null
+        },
+        {
+          "quote": "While the expectation $\\mathbf{E}[\\norm{\\Delta A .\\Delta B}_F]$ in the numerator can be approximated by that of a normal distribution as the entries of the residue matrices are equally likely to be of either signs",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof cites concentration for Haar singular vectors but does not establish that the residue matrices \\Delta A and \\Delta B from truncated SVD/CD decompositions have the required random, independent, or concentrated structure. It also replaces the expectation of a ratio by a ratio of expectations without a concentration argument and gives no derivation of E[||\\Delta A \\Delta B||_F] or the constants c and c/sqrt(n).",
+      "failure_location": {
+        "quote": "The expected relative error in the first-order multiplication of $A$ and $B$ can be reasonably approximated by,",
+        "tag": "th:estimated_relative_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must restrict to an explicit random matrix model, prove concentration for AB and \\Delta A\\Delta B, derive the numerator expectation and constants, or demote the proposition to a heuristic statement.",
+      "overall_effect": "The central theoretical a priori error estimate, and the paper's claim that relative product error scales like the product of relative decomposition errors, is unsupported.",
+      "primary_affected_tag": "th:estimated_relative_error",
+      "target_type": "formal_result",
+      "title": "Relative-error proposition lacks a valid proof for residues and constants",
+      "why_classification": "The proposition is a main theoretical guarantee; preserving it requires new proof content, while a supported resolution would materially weaken the advertised error estimate."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "p_k=\\frac{\\norm{A^{(k)}}_2\\norm{B_{(k)}}_2}{\\sum_n \\norm{A^{(k)}}_2\\norm{B_{(k)}}_2}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The appendix defines the sampling probability p_k using the product of the 2-norm of column k of A and the 2-norm of row k of B. The results prose says indices are chosen based on the 2-norm of columns of A, which is not what the algorithm specifies and can be false when B row norms vary.",
+      "failure_location": {
+        "quote": "One may observe that the randomized low rank multiplication summing $c= \\lceil s \\log n \\rceil$ outer products, implicitly represents up to $c$ largest singular value components of $A$ as the column indices $k$ are chosen based on their 2-norm.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Correct the prose to say indices are sampled with probability proportional to \\norm{A^{(k)}}_2\\norm{B_{(k)}}_2, and qualify any claim about implicitly capturing largest SVD components as heuristic.",
+      "overall_effect": "The explanation of why the conventional randomized low-rank method approximates dominant SVD components of A is materially misleading.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Prose misstates sampling rule for randomized low-rank multiplication",
+      "why_classification": "This is a local wording correction; it does not change the algorithm or the main approximation guarantees."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2504.19308",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "83b9bb937ebb3c1f1a4062da57533f6a0b3ee9ad879ee52f61848ede1a91505c",
+  "status": "ok"
+}

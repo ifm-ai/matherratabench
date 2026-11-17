@@ -1,0 +1,135 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:G:bound",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "step \\step{1} uses the fact that $\\gamma_{t}\\leq \\frac{\\alpha_t}{ \\mu (1+\\tau_t^2)} \\leq \\frac{2 \\alpha_t}{ \\mu (1+\\tau_t)^2}$",
+          "tag": "lemma:sum:tail"
+        },
+        {
+          "quote": "\\text{if OptEMA-M} \\\\n06:\\ \\quad \\text{Set EMA weights: } (\\alpha_t, \\beta_t) = \\begin{cases}\n(\\rho_t^{-1/2}, \\beta)   & \\text{if OptEMA-M}",
+          "tag": "lemma:sum:tail"
+        }
+      ],
+      "failure_explanation": "From gamma_t <= alpha_t/(mu*(1+tau_t^2)) one obtains alpha_t >= mu*gamma_t*(1+tau_t^2). Since (1+tau_t)^2 <= 2(1+tau_t^2), this gives alpha_t >= mu*gamma_t*(1+tau_t)^2/2, i.e., 1-alpha_t <= 1 - mu*gamma_t*(1+tau_t)^2/2. The proof instead uses 1-alpha_t <= 1 - 2*mu*gamma_t*(1+tau_t)^2, which requires alpha_t >= 2*mu*gamma_t*(1+tau_t)^2, a bound that does not follow from the stepsize definition. The coefficient is overstated by a factor of 4, making the telescoping argument in step 1 an invalid inference.",
+      "failure_location": {
+        "quote": "\\EEE[ B_t + \\|\\s_{t-1}\\|^2 - 2\\gamma_t \\mu (1+\\tau_t)^2 \\|\\s_{t-1}\\|^2 ]",
+        "tag": "lemma:sum:tail"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the coefficient 2*gamma_t*mu*(1+tau_t)^2 in step 1 with mu*gamma_t*(1+tau_t)^2/2 (or equivalently mu*gamma_t*(1+tau_t^2)), and adjust the constant C_w accordingly. The structural telescoping argument and logarithmic form of the bound are unaffected.",
+      "overall_effect": "The proof of Lemma sum:tail contains an invalid intermediate inequality. The lemma's conclusion (logarithmic bound on the weighted tracking error) remains true with an adjusted constant C_w, but the written proof does not establish it. Downstream results that invoke Lemma sum:tail (G:bound, M:sum:m, Theorem the:it:EMA:M) inherit this proof gap.",
+      "primary_affected_tag": "lemma:sum:tail",
+      "target_type": "formal_result",
+      "title": "Factor-of-4 error in negative coefficient in proof of Lemma sum:tail",
+      "why_classification": "The error is a constant-factor mistake in one intermediate step of a proof. The lemma's conclusion holds with a slightly larger constant C_w; no structural change, new lemma, or weakening of the final rate is needed. The fix is local and routine."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:M:sum:s",
+        "lemma:M:sum:m",
+        "the:it:EMA:M"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\EEE[\\|\\g_t\\|^2] ~\\leq~ 2\\sigma^2 + \\EEE[ 4 L( f(\\x_t) - f_* )].",
+          "tag": "lemma:G:bound"
+        },
+        {
+          "quote": "step \\step{2} uses Inequality (\\ref{eq:bound:g_t}).",
+          "tag": "lemma:G:bound"
+        }
+      ],
+      "failure_explanation": "The available bound is E[||g_t||^2] <= 2sigma^2 + 4L*E[f(x_t)-f_*], an inequality in expectation. The proof then writes ln(e + sum||g_t||^2) <= ln(e + 4T*(sigma^2 + L*max f_hat_t)), effectively replacing the expectation bound with a pathwise (or deterministic) bound sum||g_t||^2 <= 4T*(sigma^2+L*max f_hat_t). This is not justified: E[||g_t||^2] <= X does not imply sum||g_t||^2 <= T*X almost surely, and applying Jensen to the concave logarithm gives E[ln(1+X)] <= ln(1+E[X]), which requires bounding E[sum||g_t||^2], not the pathwise sum. The step is an invalid inference.",
+      "failure_location": {
+        "quote": "\\EEE[ \\left( \\hat{f}_1 + c_1 C_w + \\tfrac{4 c_2}{\\mu} \\right) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))] , \\nn",
+        "tag": "lemma:G:bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the pathwise step with a Jensen-based argument: since ln is concave, E[ln(e+sum||g_t||^2)] <= ln(e+E[sum||g_t||^2]) <= ln(e+4T*(sigma^2+L*max_t E[f_hat_t])). This yields the self-referential bound A_T <= c*ln(e+c'*T*A_T) that Lemma log:up is designed to resolve. The repair is a contained argument within the same proof and preserves all stated conclusions.",
+      "overall_effect": "The proof of Lemma G:bound (logarithmic bounds on E[f(x_t)-f_*] and E[||g_t||^2]) is invalid as written. Since this lemma is invoked in the proofs of Lemma M:sum:s, Lemma M:sum:m, and Theorem the:it:EMA:M, all of these results lack a valid proof chain in the source. The stated conclusions may still be true, but they are not established by the provided arguments.",
+      "primary_affected_tag": "lemma:G:bound",
+      "target_type": "formal_result",
+      "title": "Proof of Lemma G:bound uses an expectation bound as a pathwise bound inside a logarithm",
+      "why_classification": "The proof gap requires a nontrivial repair step (replacing a pathwise inequality with a Jensen-based expectation argument and verifying the self-referential bound closes via Lemma log:up). However, the repair is local to the proof of one lemma, does not change any stated conclusion, and does not require new proof architecture. The dependent theorems' statements remain valid."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lamma:bound:sum:nabla",
+        "the:it:EMA:V"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\EEE[\\|\\g_t\\|^2] ~\\leq~ \\EEE[2\\|\\g_t - \\nabla f(\\x_t)\\|^2 + 2\\|\\nabla f(\\x_t)\\|^2] ~\\leq~ 2\\sigma^2 + \\EEE[ 4 L( f(\\x_t) - f_* )]. \\label{eq:gggg}",
+          "tag": "lemma:G:bound:2"
+        },
+        {
+          "quote": "step \\step{2} uses Inequality (\\ref{eq:gggg}).",
+          "tag": "lemma:G:bound:2"
+        }
+      ],
+      "failure_explanation": "Identical to ISSUE-002: the proof has E[||g_t||^2] <= 2sigma^2 + 4L*E[f_hat_t] (eq:gggg) and then writes ln(e+sum||g_t||^2) <= ln(e+4T*(sigma^2+L*max f_hat_t)), treating the expectation bound as a pathwise bound. This invalid inference does not go through: one cannot conclude sum||g_t||^2 <= 4T*(sigma^2+L*max f_hat_t) from a per-step expectation inequality. The same Jensen-for-concave-ln repair is needed.",
+      "failure_location": {
+        "quote": "\\EEE[\\big( \\hat{f}_1 + c_3  +  \\tfrac{c_1 + 2 c_2}{\\alpha^2} \\big) \\cdot \\ln (e + 4T(\\sigma^2+L \\big(\\max_{t=1}^T \\hat{f}_t \\big)))] , \\nn",
+        "tag": "lemma:G:bound:2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Same as ISSUE-002: replace the pathwise logarithmic step with E[ln(e+sum||g_t||^2)] <= ln(e+E[sum||g_t||^2]) via Jensen, bound E[sum||g_t||^2] using eq:gggg summed over t, and close the self-referential bound with Lemma log:up. The stated conclusions of the lemma and downstream theorem are preserved.",
+      "overall_effect": "The proof of Lemma G:bound:2 is invalid as written. This lemma is used in the proof of Lemma lamma:bound:sum:nabla, which in turn is used in Theorem the:it:EMA:V. The main convergence guarantee for OptEMA-V therefore lacks a valid proof chain in the source.",
+      "primary_affected_tag": "lemma:G:bound:2",
+      "target_type": "formal_result",
+      "title": "Proof of Lemma G:bound:2 uses an expectation bound as a pathwise bound inside a logarithm",
+      "why_classification": "Same rationale as ISSUE-002: the repair is a contained nontrivial argument (Jensen + self-referential closure) within a single proof, does not change any stated result, and does not require new proof architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\x_{t+1} &= \\x_t - \\varrho_t \\g_t \\label{eq:update}",
+          "tag": null
+        },
+        {
+          "quote": "10:\\ \\quad \\text{Update parameters: } \\x_{t+1} = \\x_t - \\theta \\gamma_t \\cdot \\frac{\\m_{t}}{\\varepsilon+ \\sqrt{\\v_{t}}}. \\\\",
+          "tag": null
+        },
+        {
+          "quote": "the gradients are uniformly bounded, i.e., there exists a constant $G > 0$ such that $\\|\\nabla f(\\x)\\| \\le G$ for all $\\x$.",
+          "tag": "assump:bounded"
+        }
+      ],
+      "failure_explanation": "The theorem's statement claims the result holds for 'the sequence {x_t} generated by OptEMA.' The main OptEMA (Algorithm alg:main-1, line 09) uses the update x_{t+1} = x_t - theta*gamma_t*m_t/(epsilon+sqrt(v_t)), involving a first-moment EMA m_t and element-wise second-moment normalization. The algorithm analyzed in the proof (eq:update) is x_{t+1} = x_t - varrho_t*g_t, a scalar-stepsize full-gradient descent with no momentum and no element-wise adaptive scaling. These are structurally different algorithms. Furthermore, the proof requires bounded gradients (Assumption assump:bounded), which the paper's main claims explicitly exclude ('without the bounded-gradient condition'). The proof establishes O(log T/sqrt(T)) for the scalar algorithm but does not prove the stated result for the main OptEMA.",
+      "failure_location": {
+        "quote": "Under Assumptions \\ref{assump:smooth} and \\ref{assump:bounded}, the sequence $\\{\\x_t\\}$ generated by OptEMA satisfies:",
+        "tag": "thm:main"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Either (a) rename the scalar algorithm in the appendix to distinguish it from the main OptEMA and restate thm:main as being about that specific variant, or (b) remove the appendix section since it does not contribute to the main results. Option (a) is the minimal repair: change the theorem statement to 'the sequence {x_t} generated by the normalized AdaGrad variant defined above' and remove the identification with 'OptEMA.'",
+      "overall_effect": "Theorem thm:main does not establish a convergence guarantee for the main OptEMA algorithm. The appendix section 'Convergence Analysis of OptEMA' presents a result for a different, simpler algorithm under stronger assumptions, which contradicts the paper's central narrative of being Lipschitz-free and not requiring bounded gradients. The main theorems (the:it:EMA:M, the:it:EMA:V) are unaffected since they are proved independently.",
+      "primary_affected_tag": "thm:main",
+      "target_type": "formal_result",
+      "title": "Theorem thm:main analyzes a different algorithm than the main OptEMA",
+      "why_classification": "The theorem's proof is internally valid for the scalar algorithm it analyzes, so no new proof architecture is needed. However, the statement misidentifies the algorithm, and the required bounded-gradient assumption contradicts the paper's advertised scope. The repair is a contained rewording (renaming the algorithm in the statement) but it withdraws a substantive promise (that the result applies to the main OptEMA without bounded gradients), making it more than a trivial typo."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2603.09923",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "7b0dd08a3822424a13d5abe6787b30dbd3aaca288887f32f89d091821f7ea682",
+  "status": "ok"
+}

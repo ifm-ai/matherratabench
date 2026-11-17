@@ -1,0 +1,263 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "x_{k+1} & = x_{k} + B^\\dagger (B x_{k} - b_{B})\\label{eq:update_rule_block_kaczmarz}",
+          "tag": "eq:update_rule_block_kaczmarz"
+        },
+        {
+          "quote": "This results in an orthogonal projection onto the space defined by the constraint \\( \\{ x : \\langle A_{(i_k)}, x \\rangle = b_{i_k} \\} \\).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a scalar row A=(1), b=1 and x=0, the displayed update gives x_1=-1, while the orthogonal projection onto A x=b gives x_1=1. The same sign error appears in the block update, which should add B^\\dagger(b_B-Bx_k), not B^\\dagger(Bx_k-b_B).",
+      "failure_location": {
+        "quote": "x_{k+1} &= x_{k} - \\frac{b_{i_k} - \\langle A_{(i_k)}, x_{k} \\rangle}{\\|A_{(i_k)}\\|_2^2} A_{(i_k)} \\label{eq:update_rule_kaczmarz}",
+        "tag": "eq:update_rule_kaczmarz"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Change the signs in the recalled scalar and block updates to x_k + (b_i-<A_i,x_k>)A_i/||A_i||^2 and x_k + B^\\dagger(b_B-Bx_k).",
+      "overall_effect": "The recalled baseline Kaczmarz and block-Kaczmarz projection formulas are false. The proposed regularized ROR-BK update later uses the correct sign, so the main algorithm is not directly altered.",
+      "primary_affected_tag": "eq:update_rule_kaczmarz",
+      "target_type": "other",
+      "title": "Sign error in recalled Kaczmarz and block-Kaczmarz projection updates",
+      "why_classification": "A one-line sign correction restores the standard projection formulas and loses no substantive claim of the proposed method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We use the number of rows in a block $k=100$",
+          "tag": null
+        },
+        {
+          "quote": "\\For{$k = 1,2,\\ldots$ until convergence}",
+          "tag": "algo:fabgmres_dobk"
+        },
+        {
+          "quote": "pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$",
+          "tag": "algo:roar-bk"
+        }
+      ],
+      "failure_explanation": "The ROR-BK algorithm requires k as the number of blocks and samples t=1,...,k, while the implementation section uses k as the number of rows per block. In the FAB-GMRES algorithm, the same symbol k is reused as the GMRES iteration index, overwriting the block count needed for the inner ROR-BK preconditioner.",
+      "failure_location": {
+        "quote": "\\Require $A, b, x_0, \\tilde{\\lambda},k$. \\Comment{ $k$, $\\tilde{\\lambda}$ refer to \\# of blocks and regularization parameter.}",
+        "tag": "algo:roar-bk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Introduce separate parameters, e.g. s for rows per block and K for number of blocks, and rename the GMRES loop index; update the algorithm statements and implementation description accordingly.",
+      "overall_effect": "The parameter contracts for ROR-BK and FAB-GMRES are ill-defined as written because block size, block count, and GMRES iteration count are conflated.",
+      "primary_affected_tag": "algo:roar-bk",
+      "target_type": "algorithm",
+      "title": "Overloaded use of k as block count, block size, and GMRES iteration",
+      "why_classification": "The issue is a local naming/parameter-contract repair; no substantive mathematical claim is lost if the intended parameters are renamed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "where the \\((i,j)^{th}\\) entry of $C$ is defined as $\\frac{|\\langle\\bar{A_i}, \\bar{A_j}\\rangle|}{\\|\\bar{A_i}\\|\\|\\bar{A_j}\\|}$",
+          "tag": null
+        },
+        {
+          "quote": "Centroid vectors are just a sum of row vectors in the given block.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "If a block centroid \\bar A_i is the zero vector, the denominator \\|\\bar A_i\\| is zero and C(i,j) is undefined. The algorithm gives no exclusion or fallback for such blocks.",
+      "failure_location": {
+        "quote": "Compute the cosine value $C(i,j)$ of the effective angle between blocks $A_i$ and $A_j$ by the centroid coordinates, and the corresponding symmetric matrix $C$.",
+        "tag": "algo:roar-bk"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add a hypothesis that all block centroids are nonzero, or define a fallback value for C(i,j) when a centroid norm is zero.",
+      "overall_effect": "The probability distribution and sampling step can be undefined for valid sparse matrices whose block rows sum to zero.",
+      "primary_affected_tag": "algo:roar-bk",
+      "target_type": "algorithm",
+      "title": "Block-centroid cosine C is undefined when a centroid is zero",
+      "why_classification": "This is a degenerate-case/undefined-denominator fix that can be handled locally without changing the main method or conclusions."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "&=\\frac{1}{\\tilde{\\lambda}}I_r-\\frac{1}{\\tilde{\\lambda}^3}M\\{M^TM+\\tilde{\\lambda}I_n\\}M^T\\label{eq:wi1}",
+          "tag": "eq:wi1"
+        },
+        {
+          "quote": "M^T(MM^T+\\tilde{\\lambda}I_r)^{-1}=(M^TM+\\tilde{\\lambda}I_n)^{-1}M^T",
+          "tag": "thm:woodberry_identity"
+        }
+      ],
+      "failure_explanation": "The Woodbury expansion used omits the inverse of the middle factor. The standard identity is (λI_r+MM^T)^{-1}=λ^{-1}I_r-λ^{-1}M(I_r+λ^{-1}M^TM)^{-1}M^Tλ^{-1}. The displayed equalities are false for general M, although the lemma statement itself is true.",
+      "failure_location": {
+        "quote": "&=(\\tilde{\\lambda}I_r)^{-1}-(\\tilde{\\lambda}I_r)^{-1}M\\{M^T (\\tilde{\\lambda}I_r)^{-1}M+(I_n)^{-1} \\}M^T(\\tilde{\\lambda}I_r)^{-1}",
+        "tag": "thm:woodberry_identity"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the two displayed Woodbury expansions with the correct Woodbury formulas, or prove the identity by SVD.",
+      "overall_effect": "The lemma is not established by the proof as written; downstream use of the identity lacks a valid source-based justification.",
+      "primary_affected_tag": "thm:woodberry_identity",
+      "target_type": "formal_result",
+      "title": "Woodbury lemma proof uses an invalid matrix inversion formula",
+      "why_classification": "The lemma statement is correct and the repair is a short standard correction; no substantive conclusion is lost."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Here, $\\lambda_{\\min}^{+}(A_\\tau^T A_\\tau)$ is the smallest non-zero eigenvalue of $A_\\tau^T A_\\tau$.",
+          "tag": "thm:err_bound"
+        },
+        {
+          "quote": "&=I-\\tilde{\\lambda}(A_\\tau^TA_\\tau+\\tilde{\\lambda}I)^{-1}\\label{eq:errbound2}",
+          "tag": "eq:errbound2"
+        }
+      ],
+      "failure_explanation": "The regularized update error matrix is λ(A_τ^TA_τ+λI)^{-1}, which has eigenvalue 1 on null(A_τ). The claimed factor λ/(λ_min^+(A_τ^TA_τ)+λ) is therefore not a uniform norm bound unless the error has no component in null(A_τ); the theorem does not assume x_0∈R(A_τ^T) or the needed full-range condition. Example: A=[1 0;0 1], two row blocks, b=0, x_0=e_2, λ=1; selecting block [1 0] leaves the error norm 1, violating the stated factor 1/2.",
+      "failure_location": {
+        "quote": "&\\le \\frac{\\tilde{\\lambda}}{\\lambda_{\\min}^{+}(A_\\tau^TA_\\tau)+\\tilde{\\lambda}}\\|x_t-x_\\star\\|_2\\label{ew:errbound3}",
+        "tag": "thm:err_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must establish a valid contraction on the invariant subspace, e.g. use squared-error expectations, assume the union of sampled block ranges spans R(A^T) and the initial error lies there, and derive a correct rate.",
+      "overall_effect": "The advertised exponential mean-error convergence bound for ROR-BK is false or unsupported; any guarantee based on it is unreliable.",
+      "primary_affected_tag": "thm:err_bound",
+      "target_type": "formal_result",
+      "title": "Regularized ROR-BK error bound is false for nullspace components",
+      "why_classification": "A central convergence guarantee fails as stated, and no comparable rate follows from the source without new analysis or major weakening."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\min}^{+}(A_\\tau^{T}A_\\tau)}\\lesssim \\|x_{t+1}-x_\\star\\|_2^2 & \\lesssim \\|x_t-x_\\star\\|_2^2-\\frac{\\|A_\\tau x_t-b\\|_2^{2}}{\\lambda_{\\max}^{+}(A_\\tau^{T}A_\\tau)}\\label{eq:errbound5}",
+          "tag": "eq:errbound5"
+        },
+        {
+          "quote": "reduces the upper and lower bounds of the error thus improving convergence in general.",
+          "tag": "thm:convergence_boost"
+        }
+      ],
+      "failure_explanation": "The derived bounds contain ratios ||A_S e||^2/λ_max(S) and ||A_S e||^2/λ_min(S). Maximizing only the numerator over candidate row sets S does not maximize these ratios when the eigenvalues depend on S. For example, S1 may have larger residual but much larger λ_max than S2, giving a smaller reduction in the upper bound.",
+      "failure_location": {
+        "quote": "we minimize the above upper and lower bounds of the error $\\|x_{t+1}-x_\\star\\|_2^2$ in \\cref{eq:errbound5}, as $\\lambda_{\\min}^{+}, \\lambda_{\\min}^{-}$ are bounded for a given system",
+        "tag": "thm:convergence_boost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restrict the claim to block candidates with uniformly bounded/comparable λ_min^+ and λ_max^+, or change the selection to maximize the appropriate ratios, and prove the resulting bound.",
+      "overall_effect": "The theorem's claim that residue-greedy blocks improve convergence in general is not supported; the advertised acceleration over SOBK is unreliable as a formal result.",
+      "primary_affected_tag": "thm:convergence_boost",
+      "target_type": "formal_result",
+      "title": "Greedy residual block selection does not minimize the derived error bounds",
+      "why_classification": "A contained weakening or added eigenvalue-comparability assumption can salvage a comparable result, but the general greedy-improvement claim is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "it is the minimum residual-norm solution, since $x_k \\in \\mathcal{R}(A^T) \\perp \\mathcal{N}(A)$.",
+          "tag": null
+        },
+        {
+          "quote": "\\State $x_k = x_0 + u_k$",
+          "tag": "algo:fabgmres_dobk"
+        }
+      ],
+      "failure_explanation": "The proof only shows x_k∈R(A^T). A finite GMRES iterate minimizes the residual over the constructed Krylov subspace, not over all vectors in R(A^T); membership in R(A^T) alone does not make it the minimum-residual-norm solution of Ax=b.",
+      "failure_location": {
+        "quote": "If $z_0$ (the initial solution with which ROR-BK as an inner-iteration starts) and $x_0 \\in \\mathcal{R}(A^{T})$, FABGMRES with an inner iteration of ROR-BK (\\cref{algo:fabgmres_dobk}) gives a solution $x_k \\in \\mathcal{R}(A^T)$ minimizing $\\norm{b-Ax_k}_2$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Weaken the remark to state the invariance x_k∈R(A^T) and, if appropriate, asymptotic convergence to the minimum-norm solution; remove the finite-k global minimization claim.",
+      "overall_effect": "The stated FAB-GMRES guarantee that the finite iterate is the minimum-residual-norm solution is false.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "FAB-GMRES remark falsely claims finite iterate is minimum-residual-norm",
+      "why_classification": "The repair requires changing the advertised guarantee type, but the invariance claim already proved in the source survives."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The initial solution $x_0$ from \\cref{algo:initial_solution} is in $\\mathcal{R}(A^{T})$, and $\\frac{\\|b-Ax_0\\|}{\\|b\\|} \\le 1$.",
+          "tag": "thm:initial_solution"
+        },
+        {
+          "quote": "Compute $y \\leftarrow$ sum of a set of rows in $A$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The algorithm does not ensure \\tilde b=Ay is nonzero. If the chosen row sum gives \\tilde b=0, the formula for x_0 divides by zero and the stated guarantee is ill-defined.",
+      "failure_location": {
+        "quote": "$x_0 \\leftarrow \\frac{\\langle b, \\tilde{b} \\rangle}{\\|\\tilde{b}\\|_2^2}y$",
+        "tag": "thm:initial_solution"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Add the hypothesis \\tilde b≠0, with a fallback, and state that the row set is chosen to satisfy it; the proof then works.",
+      "overall_effect": "The initial-solution guarantee fails for degenerate choices of A or row sets unless an extra nonzero condition is imposed.",
+      "primary_affected_tag": "thm:initial_solution",
+      "target_type": "formal_result",
+      "title": "Initial solution construction divides by \tilde b without ensuring \tilde b≠0",
+      "why_classification": "This is a local omitted non-degeneracy condition; the main method and conclusions survive once the condition is stated."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "x^{(\\mu)}=\\text{arg}\\text{min}_{x\\in \\mathbb{R}^{n\\times 1}} \\|Ax-b\\|_{\\bar{W}}^2",
+          "tag": "define_xr"
+        },
+        {
+          "quote": "The proof follows from the Theorem 4.1 in \\cite{ReRBK}. Appendix at \\cite{ReRBK} outlines the analysis of the convergence of $x^{(\\mu)}$ to $x_\\star$ as $m \\rightarrow \\infty$.",
+          "tag": "thm:dobk_for_least_square_problems"
+        },
+        {
+          "quote": "pick indices $\\mathcal{I}$ of top $\\left\\lfloor \\frac{m}{k} \\right\\rfloor$ squared elements $r_i^2$",
+          "tag": "algo:roar-bk"
+        }
+      ],
+      "failure_explanation": "The theorem identifies the limit as the weighted least-squares argmin, but that argmin need not be unique and the proof does not establish that the iteration's fixed point is the specific x^{(μ)} or that x_0-x^{(μ)} lies in the range of \\bar P. It also does not analyze the deterministic residue-based update in ROR-BK; the cited result is not shown to apply to the full algorithm.",
+      "failure_location": {
+        "quote": "Then the expectation of the ROR-BK iterates $x_T$ converges to $x^{(\\mu)}$ as}",
+        "tag": "thm:dobk_for_least_square_problems"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Specify x^{(μ)} as the unique minimum-norm weighted least-squares solution, assume \\bar P has no nullspace in R(A^T) or project onto its range, and either restrict the theorem to the stochastic sampled updates or provide an analysis of the residue-based updates.",
+      "overall_effect": "The weighted-least-squares convergence guarantee for ROR-BK is unsupported as stated.",
+      "primary_affected_tag": "thm:dobk_for_least_square_problems",
+      "target_type": "formal_result",
+      "title": "Weighted least-squares convergence theorem is unsupported for full ROR-BK and has non-unique target",
+      "why_classification": "A comparable theorem can survive with added uniqueness/range assumptions and a restricted or re-proved sampling model, but the stated full-algorithm guarantee is not established."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2510.02156",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6d2bb950fefda483fd259988e539aa2b32dc9dd91716db31c513a17655734e07",
+  "status": "ok"
+}

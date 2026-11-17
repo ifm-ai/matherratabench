@@ -514,7 +514,7 @@ tag overlap, not whether the agent found the same defect, report it as
 We produced the blog post's results with an earlier, private research
 repository. This release includes the parsing rules, judge prompt, and judge
 policy from a pinned revision. The [results page](scoring/results.md) lists
-the five scores for each of the eleven models, defines the metrics, and
+the five scores for each of the thirteen models, defines the metrics, and
 explains the answer and judgment counts.
 
 The answers and accepted judgments used for the post are in
