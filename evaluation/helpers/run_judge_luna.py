@@ -117,7 +117,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--resume",
         action="store_true",
-        help="Continue only when the saved manifest exactly matches this configuration.",
+        help="Continue a saved run. Its manifest must match this configuration, except the Codex path and "
+             "version and --timeout-seconds; --retries and --max-concurrency may change, but --retries only upward.",
     )
     parser.add_argument(
         "--dry-run",
@@ -325,20 +326,31 @@ def configuration_sha256(payload: dict[str, Any]) -> str:
     return sha256_bytes(encoded)
 
 
-def validate_saved_configuration(
-    saved: dict[str, Any], configuration: dict[str, Any], expected_hash: str
-) -> None:
+def resume_comparable(configuration: dict[str, Any]) -> dict[str, Any]:
+    """The settings a resume must keep. The Codex path and version and the timeout stay recorded in the
+    manifest, but they change how the judge is reached, not what it is asked, so a resume may change them."""
+    view = {key: value for key, value in configuration.items() if key != "timeout_seconds"}
+    if isinstance(view.get("codex"), dict):
+        view["codex"] = {key: value for key, value in view["codex"].items() if key not in {"path", "version"}}
+    return view
+
+
+def validate_saved_configuration(saved: dict[str, Any], configuration: dict[str, Any]) -> None:
     saved_configuration = {
         key: value
         for key, value in saved.items()
         if key not in {"configuration_sha256", "created_at"}
     }
-    if (
-        saved_configuration != configuration
-        or saved.get("configuration_sha256") != expected_hash
-        or configuration_sha256(saved_configuration) != expected_hash
-    ):
-        raise JudgeRunError("saved run manifest does not match this configuration")
+    if configuration_sha256(saved_configuration) != saved.get("configuration_sha256"):
+        raise JudgeRunError("saved run manifest is damaged: its configuration_sha256 does not match its contents")
+    old, new = resume_comparable(saved_configuration), resume_comparable(configuration)
+    changed = sorted(key for key in old.keys() | new.keys() if old.get(key) != new.get(key))
+    if changed:
+        raise JudgeRunError("saved run manifest does not match this configuration; it differs in: " + ", ".join(changed))
+    old_codex, new_codex = saved_configuration.get("codex") or {}, configuration.get("codex") or {}
+    if old_codex.get("version") != new_codex.get("version"):
+        print(f"NOTE Codex CLI changed since this run started ({old_codex.get('version')} -> "
+              f"{new_codex.get('version')}); run_manifest.json keeps the original", flush=True)
 
 
 def prepare_run_manifest(
@@ -351,14 +363,14 @@ def prepare_run_manifest(
     if args.dry_run:
         if manifest_path.is_file():
             saved = load_object(manifest_path, "run manifest")
-            validate_saved_configuration(saved, configuration, expected_hash)
+            validate_saved_configuration(saved, configuration)
         return {**configuration, "configuration_sha256": expected_hash}
 
     if args.resume:
         if not manifest_path.is_file():
             raise JudgeRunError("--resume requires an existing run_manifest.json")
         saved = load_object(manifest_path, "run manifest")
-        validate_saved_configuration(saved, configuration, expected_hash)
+        validate_saved_configuration(saved, configuration)
         return saved
 
     if output_dir.exists():
@@ -373,6 +385,24 @@ def prepare_run_manifest(
     }
     semantic.write_json_exclusive(manifest_path, manifest)
     return manifest
+
+
+def record_invocation(
+    args: argparse.Namespace, output_dir: Path, *, codex_bin: Path | None, cli_version: str | None
+) -> None:
+    """Append one record per run. The run manifest keeps the original settings; these record the
+    settings a resume may change (Codex CLI, timeout, retries, concurrency)."""
+    folder = output_dir / "invocations"
+    prior = [load_object(path, "invocation record") for path in sorted(folder.glob("*.json"))] if folder.is_dir() else []
+    used = [record["retries"] for record in prior if isinstance(record.get("retries"), int)]
+    if used and args.retries < max(used):
+        raise JudgeRunError(f"--retries can only be raised on a resume (a previous run used {max(used)})")
+    now = datetime.now(timezone.utc)
+    semantic.write_json_exclusive(folder / f"{now.strftime('%Y%m%dT%H%M%S.%fZ')}.json", {
+        "started_at": now.isoformat(), "resume": bool(args.resume), "judge_runner": args.judge_runner,
+        "codex": {"path": str(codex_bin), "version": cli_version} if codex_bin else None,
+        "retries": args.retries, "timeout_seconds": args.timeout_seconds, "max_concurrency": args.max_concurrency,
+    })
 
 
 def selected_rows(
@@ -1183,9 +1213,18 @@ def escalation_manifest_payload(
 def prepare_escalation_manifest(escalation_dir: Path, payload: dict[str, Any]) -> None:
     path = escalation_dir / "escalation_manifest.json"
     if path.is_file():
-        saved = {k: v for k, v in load_object(path, "escalation manifest").items() if k != "created_at"}
-        if saved != payload:
+        # As for the run manifest, a resume may change the timeout and the primary attempt budget (--retries).
+        def comparable(document: dict[str, Any]) -> dict[str, Any]:
+            view = {k: v for k, v in document.items() if k not in {"created_at", "timeout_seconds"}}
+            view["source_run"] = {k: v for k, v in (view.get("source_run") or {}).items() if k != "attempt_budget"}
+            return view
+        saved = load_object(path, "escalation manifest")
+        if comparable(saved) != comparable(payload):
             raise JudgeRunError("saved escalation manifest does not match this configuration")
+        old_budget = (saved.get("source_run") or {}).get("attempt_budget")
+        new_budget = (payload.get("source_run") or {}).get("attempt_budget")
+        if isinstance(old_budget, int) and isinstance(new_budget, int) and new_budget < old_budget:
+            raise JudgeRunError("--retries can only be raised on a resume")
         return
     escalation_dir.mkdir(parents=True, exist_ok=True)
     semantic.write_json_exclusive(path, {**payload, "created_at": datetime.now(timezone.utc).isoformat()})
@@ -1267,6 +1306,8 @@ def main(argv: list[str] | None = None) -> int:
             cli_version=cli_version,
         )
         prepare_run_manifest(args, output_dir, configuration)
+        if not args.dry_run:
+            record_invocation(args, output_dir, codex_bin=codex_bin, cli_version=cli_version)
         if args.escalation and not args.dry_run:
             lock = asyncio.Lock
             payload = escalation_manifest_payload(
