@@ -1,0 +1,99 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:main_end_to_end_v"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Define $a := \\alpha(1-\\widehat\\gamma)$. Assume \\(a>1/2\\).",
+          "tag": "thm:projSA_rate_template"
+        }
+      ],
+      "failure_explanation": "The theorem asserts an O(1/sqrt T) bound for Algorithm 3 under only the hypotheses of successful structure/weight learning and gamma_hat<1. The stepsizes are left unspecified. The formal proof gives the rate (t0/(T+t0))^a ||e_0|| + O(1/sqrt(T+t0)) only for alpha_t=alpha/(t+t0) with a=alpha(1-gamma_hat)>1/2, and the sum of (t+t0)^{2a-2} is bounded by (T+t0)^{2a-1}/(2a-1) only in that regime. For smaller a the bias term decays like T^{-a}, slower than T^{-1/2}. Since gamma_hat depends on unknown norm-equivalence constants, the condition is a non-trivial requirement on alpha. The stated O(1/sqrt T) is therefore not established for the algorithm as stated.",
+      "failure_location": {
+        "quote": "Assume the structural learning and weight estimation steps succeed and assume $\\widehat\\gamma<1$.",
+        "tag": "thm:main_sa_rate"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add to the main-text theorem and corollary the hypotheses alpha_t=alpha/(t+t0), t0>=max{alpha,1}, and alpha(1-gamma_hat)>1/2, as in the formal version. Note that this requires choosing a sufficiently large alpha.",
+      "overall_effect": "The main-text O(T^{-1/2}) guarantee and the T=O~(1/eps^2) budget in the end-to-end corollary hold only under an unstated stepsize condition. Otherwise the rate is T^{-a} with a<1/2.",
+      "primary_affected_tag": "thm:main_sa_rate",
+      "target_type": "formal_result",
+      "title": "Main-text SA rate theorem omits the stepsize condition a=alpha(1-gamma_hat)>1/2 that the proof needs",
+      "why_classification": "The formal appendix result already contains the missing hypothesis and its proof is correct, so the fix is to copy the condition into the main-text statements. The method, rate and scope are unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:contract_noise_bounded_iterates",
+        "lem:optionB_stability",
+        "thm:projSA_rate_template",
+        "cor:optionB_rate",
+        "cor:end_to_end_v",
+        "thm:main_sa_rate",
+        "cor:main_end_to_end_v"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "sample $\\tilde s\\sim P(\\cdot | s)$ and set $\\widehat T(v_t)(s)=r(s)+v_t(\\tilde s)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the actual oracle, the noise is xi(s)=v_t(s~)-(Pv_t)(s), so its second moment scales with ||v_t||_inf^2 (up to 4||v_t||_inf^2). It is not bounded by a constant sigma^2 uniform in t and in the history. Boundedness of the iterates is exactly what the stability lemma is meant to prove, so the hypothesis is circular. The recursion E||e_{t+1}||_q^2 <= (1-alpha_t(1-gamma_hat))^2 E||e_t||_q^2 + 4 alpha_t^2 C^2 sigma^2, the explicit rate with constant sigma, the bounds on sup E||v_t||_inf^2, and Theorem main_sa_rate all inherit this unverified premise. The theorem only says the constants depend on 'the oracle second moment bound' and never shows that Algorithm 3 satisfies it.",
+      "failure_location": {
+        "quote": "\\E\\!\\left[\\|\\widehat T(v_t)-(r+Pv_t)\\|_\\infty^2\\mid \\cF_t\\right]\\le \\sigma^2",
+        "tag": "lem:projSA_stability_template"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the uniform bound by the affine-variance bound E||xi_{t+1}||^2 <= sigma_0^2(1+||v_t||_inf^2), or directly 4||v_t||_inf^2. Convert ||v_t||_inf to ||e_t||_q on W. Redo the moment recursion as m_{t+1} <= (1-a/x)^2 m_t + c(1+m_t)/x^2 and adjust the stepsize condition. The O(T^{-1/2}) rate then survives with modified constants.",
+      "overall_effect": "The finite-time SA guarantees are proved for a noise model that Algorithm 3 does not satisfy. The explicit constants and the claim that the noise level is a fixed oracle parameter are unsupported for the generative-model estimator.",
+      "primary_affected_tag": "lem:projSA_stability_template",
+      "target_type": "formal_result",
+      "title": "Uniform conditional second-moment bound on SA noise is assumed but fails for the generative-model oracle",
+      "why_classification": "The repair needs a contained re-derivation of the moment recursion and constants, but no new architecture. The rate and structure of the results remain recognizably comparable."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathrm{Err}(t)\\;:=\\;\\|\\widehat g_t - g\\|_\\infty",
+          "tag": null
+        },
+        {
+          "quote": "Set $\\widehat g(s)\\leftarrow \\sum_{(i,k)\\in\\mathcal I}\\widehat\\theta_{i,k}\\,\\widehat b_{i,k}(s)$",
+          "tag": "alg:main_g"
+        },
+        {
+          "quote": "the projection of $g^\\star$ onto $\\ker(I-P)$ is $g$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Algorithm 4 and Theorem main_g_rate estimate g*=r+Pv*-v*, which is gauge-dependent and phase-dependent on periodic classes. Its Cesaro limit equals the true average reward g. The experiments score the output against g, the true long-run average reward vector, and describe an extra 'phase-averaging' step that appears neither in Algorithm 4 nor in any theorem. The intro claim that projecting g* gives g is stated without proof and without an estimator or error bound. For d_i>1 the quantity the algorithm converges to is g*, which differs from g, so the experiments do not test the analyzed procedure. The abstract's claim of applications to performance evaluation of average-reward RL is not backed by a guarantee for estimating g.",
+      "failure_location": {
+        "quote": "estimate class gains by phase-averaging anchor residual estimates and reconstruct $\\widehat g_t$ using",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Prove g(s)=sum_i p_i(s)*(d_i^{-1} sum_k theta*_{i,k}) with p_i=sum_k b_{i,k}, add the phase-averaging step to Algorithm 4, and propagate the existing error bound of Theorem main_g_rate to this estimator. Alternatively, evaluate the experiments against g* and drop the claim.",
+      "overall_effect": "The experimental evidence and the performance-evaluation framing rest on an unanalyzed estimator of g. The guarantees cover only g* and its coordinates.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Experiments and evaluation claims target the true gain g, but the analyzed estimator reconstructs only the gauge-dependent residual g*",
+      "why_classification": "The repair needs a short new lemma and an error-propagation argument, which is more than a local fix. The core framework is unaffected and the repair is contained."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2602.00474",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "972379f0da0ee4de13a10747348296e76d7000e64b93e768397abb525d521a6d",
+  "status": "ok"
+}

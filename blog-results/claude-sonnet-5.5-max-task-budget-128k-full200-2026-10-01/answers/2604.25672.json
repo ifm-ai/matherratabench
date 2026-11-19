@@ -1,0 +1,159 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "the stiffness-induced stability constraints inherent in traditional",
+          "tag": null
+        },
+        {
+          "quote": "For all cases, we simply employ $\\Delta t \\propto \\Delta x$ and $CFL=0.1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The abstract and introduction claim that the splitting removes the stiffness-induced time-step restriction and shows superior efficiency. The experiments are all run at CFL=0.1 with Δt∝Δx. The direct explicit DG method appears only as a reference solution. No test reports time-step sizes, step counts or CPU time for the explicit method versus the split scheme on the same problem. No test shows the explicit method failing or needing a much smaller step at this CFL. The split scheme has extra costs: three substeps, OE+BP limiting after every stage, bisection at every quadrature point, and the divergence reconstruction. The explicit transport step also still needs a CFL condition, and the paper gives no BP-CFL analysis for it. The efficiency gain is asserted, not established.",
+      "failure_location": {
+        "quote": "demonstrate the superior robustness and efficiency of the method.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add comparisons of time-step size, step count or wall-clock time against the explicit Kapila DG on at least the water-air tests, or weaken the claim to robustness only.",
+      "overall_effect": "The advertised main benefit (efficiency, i.e. circumventing the severe CFL restriction) is unsupported. The numerical section shows only that the scheme runs and agrees with references.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Efficiency / stiffness-removal advantage claimed but never tested",
+      "why_classification": "Repair needs new comparison experiments or withdrawal of a headline claim. Both are contained, but neither is a one-line routine fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "otherwise, it locally degenerates",
+          "tag": null
+        },
+        {
+          "quote": "the resulting temporal error remains subdominant to the overall error.",
+          "tag": null
+        },
+        {
+          "quote": "still exhibits the expected third-order convergence.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The splitting steps are written with backward Euler, which is first order. The hybrid scheme recovers SDIRK2 only when the predictor lies in [0,1]. Otherwise it falls back to first-order backward Euler, which is exactly the stiff, near-bound regime that motivates the method. So O(Δt²) at the interface is not established. With Δt∝Δx, a genuinely second-order temporal error C·Δt² ~ Δx² must eventually dominate the O(Δx³) spatial error of P². An asymptotic third-order rate therefore cannot be 'expected'. The 'subdominant' statement is asserted without proof and is circular. The observed rates in the one smooth test (where κ-effects may be tiny) are pre-asymptotic evidence at best.",
+      "failure_location": {
+        "quote": "Therefore, the second-order limitation of Strang splitting is thus localized to the temporal precision at the two-phase interface",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State that second order holds only where the SDIRK2 branch is active, and that the observed 3rd-order rate is pre-asymptotic for this test. Alternatively refine Δt faster than Δx to verify the spatial order.",
+      "overall_effect": "The stated temporal accuracy (second order at interfaces, high order elsewhere) and the claim that the DG(P^2) scheme is third-order accurate under Δt∝Δx are not supported by analysis.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claimed second-order temporal accuracy at interfaces and third-order convergence with Δt∝Δx unsupported",
+      "why_classification": "Rewording the claim, or adding a time-refinement test, preserves the method and its results. The source itself concedes local order degradation."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Given $z_1^n \\in [0, 1]$ and $\\Delta t_{\\mathrm{im}} > 0$,",
+          "tag": "thm:implicit_solver"
+        },
+        {
+          "quote": "\\nu_k^{n+1} &= (\\frac{1}{\\rho_k c_k^2})^{n+1}= \\frac{1}{\\gamma_k (p^{n+1}+p_{w,k})}",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "p^{n+1} &= (\\rho e)^{n}(\\gamma^{n+1}-1)-\\gamma^{n+1} p_{w}^{n+1}",
+          "tag": "imkappa"
+        },
+        {
+          "quote": "Since $\\rho > 0$, it strictly dictates",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In (imkappa), ρe is frozen at level n while z_1 varies over [0,1], so p(z_1) is a fixed rational function of z_1. ν_k=1/(γ_k(p+p_{w,k})) and ν=z_1ν_1+z_2ν_2 can then vanish, change sign or blow up inside (0,1). The theorem assumes only z_1^n∈[0,1] and puts no hypothesis on ρe^n or p^n. Take the paper's own Appendix A data: ρe=3500.5, γ_1=1.4, p_{w,1}=0, γ_2=4.4, p_{w,2}=6000. At z_1=0 one has p=-2498.3 and ν=ν_2>0. At z_1=0.5 one has p=-273.3, p+p_{w,1}<0, and Wood's 1/(ρc²)=ν≈-0.00129<0. On [0,0.5] ν_1 and ν_2 are finite, so ν crosses 0 continuously. κ=z_1z_2(ν_1-ν_2)/ν has a genuine pole there, since the numerator stays negative. Hence f and F are not continuous on [0,1] and the intermediate-value argument fails. The theorem also proves only z_1^{n+1}∈[0,1] and gives no control of p^{n+1} (which changes with frozen ρe) or of the G^p property, yet the abstract and conclusion advertise 'unconditionally BP'. Only existence is shown, not uniqueness or a selection rule, although bisection is prescribed.",
+      "failure_location": {
+        "quote": "The continuity of $F(z_1)$ guarantees the",
+        "tag": "thm:implicit_solver"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Add hypotheses (e.g. p(z_1)+p_{w,k}>0 for all z_1 in the search interval, or restriction to an admissible subinterval) under which κ is continuous. Prove the sign conditions at the interval ends. State clearly that only the z_1 bounds are guaranteed, and show or assume cell-average admissibility (p>0) after the κ step.",
+      "overall_effect": "The 'unconditionally BP' guarantee of the implicit κ-solver (and the SDIRK2 hybrid, whose BP proof is 'similar' and omitted) is not established in general. Scheme well-definedness and admissibility of the post-κ state in G^p are unproven for mixed cells with low ρe.",
+      "primary_affected_tag": "thm:implicit_solver",
+      "target_type": "formal_result",
+      "title": "Existence proof for implicit κ-step assumes continuity of f on [0,1] although frozen (ρe)^n makes ν and κ singular/sign-changing",
+      "why_classification": "A contained weakening with added hypotheses and an endpoint-sign argument is needed. This leaves a recognizably comparable result but is more than a routine local fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The solution after BP limiter satisfies \\eqref{U_ingp} and maintain the element average of the OEDG solution.",
+          "tag": null
+        },
+        {
+          "quote": "we confirm the concavity of the negative kinetic energy:",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "θ_p=(p(Ū)-ε_p)/(p(Ū)-min p(Ũ)) is the root of the chord of p between Ū and Ũ. It guarantees p≥ε_p at Ū+θ(Ũ-Ū) only if p is concave along the segment. Theorem 2.1 shows only that the numerator N(U)=E-|m|²/(2ρ)-Σz_kγ_kp_{w,k}/(γ_k-1) is concave. p=N/D with D=Σz_k/(γ_k-1) depending on z_1, so p itself is not concave. Only the superlevel set {N-εD≥0} is convex. Counterexample: γ_1=1.4, γ_2=4.4, zero momentum. Take Ū with z̄_1=0.1, N̄=1 (D̄≈0.515, p̄≈1.94). Take a Gauss-Lobatto value with z_1=0.9, N=-0.01 (D≈2.28, p≈-0.0044). Then ε_p=1e-13, θ_p≈0.9977, and N at θ_p is 1-1.01·0.9977≈-0.0077<0. The limited state has negative pressure, contradicting the claim that the limiter enforces (U_ingp).",
+      "failure_location": {
+        "quote": "\\mathbf{U}_{i,j} = \\overline{\\mathbf{U}}_{i,j}^n + \\theta_{p} \\left( \\widetilde{\\mathbf{U}}_{i,j} - \\overline{\\mathbf{U}}_{i,j}^n \\right)",
+        "tag": "BP_P"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Define θ_p via the concave functional N(U)-ε_pD(U) (positive iff p>ε_p), using the concavity already shown in Theorem 2.1's proof, and take the chord root of that functional.",
+      "overall_effect": "The stated pressure-positivity guarantee of the BP limiter is not valid in two-phase cells where D differs between the average and the extremal point. The limiter step as written can output p<0.",
+      "primary_affected_tag": "BP_P",
+      "target_type": "algorithm",
+      "title": "Pressure limiter θ_p uses a linear interpolation of p, which is not concave; positivity after limiting not guaranteed",
+      "why_classification": "A local redefinition of θ_p using an already-proved concave functional repairs the guarantee. Method, rates and scope are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\mathcal{G} = \\left\\{ \\mathbf{U} : z_1\\rho_1 > 0, z_2\\rho_2 > 0, \\ c^2(\\mathbf{U})>0,\\ z_1\\in[0,1] \\right\\}$",
+          "tag": null
+        },
+        {
+          "quote": "it represents pure phase 2 ($z_1 = 0$, $\\rho_2 = 1000$).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "G is defined with strict inequalities z_1ρ_1>0 and z_2ρ_2>0. The counterexample's U^(1)=[1.2,0,0,1000,1] has z_2ρ_2=0 and U^(2)=[0,1000,0,6001,0] has z_1ρ_1=0. Neither belongs to G, so the appendix's 'Verification of U^(1), U^(2) ∈ G' is false as stated. The midpoint computation (p≈-273.3, Wood 1/(ρc²)≈-0.00129<0) is arithmetically correct but concerns a convex combination of two non-members, which does not show non-convexity of G.",
+      "failure_location": {
+        "quote": "it represents pure phase 1 ($z_1 = 1$, $\\rho_1 = 1.2$).",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the endpoints by nearby states with small positive partial densities and 0<z_1<1. Verify they lie in G, and note that c²<0 at the midpoint persists by continuity, or recompute it.",
+      "overall_effect": "The asserted non-convexity of G, the stated motivation for introducing G^p, is not demonstrated by the given example. Theorem 2.1's own proof is unaffected.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Appendix A counterexample uses states that are not in the set G as defined",
+      "why_classification": "A short perturbation of the example plus a continuity remark fixes it. The claim and its motivation survive intact."
+    }
+  ],
+  "issues_found": 5,
+  "paper_id": "2604.25672",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6e33d4743ac4690d4731311b541c59b0314910ae99b86bef3e25e9c3e4e7b64a",
+  "status": "ok"
+}

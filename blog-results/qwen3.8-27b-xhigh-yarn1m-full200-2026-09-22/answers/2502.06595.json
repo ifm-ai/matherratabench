@@ -1,0 +1,222 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:LS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\min_{ \\bm{z} \\in\\R^s} \\norm{ \\bm{\\Psi}  \\bm{z} - \\bm{b} }_2^2.",
+          "tag": "eq:ls"
+        },
+        {
+          "quote": "for $ \\bm{\\Psi} \\in\\R^{m\\times s}$, we need $m\\geq s$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The coefficients and design matrix are complex (\\bm{c}\\in\\C^s, \\bm{\\Psi}\\in\\C^{m\\times s}), but the displayed least-squares problem minimizes over \\R^s. The pseudoinverse formula also uses (\\bm{\\Psi}^*\\bm{\\Psi})^{-1}, which exists only for full column rank; m\\geq s alone does not guarantee this.",
+      "failure_location": {
+        "quote": "\\bm{\\hat{c}} =( \\bm{\\Psi} ^* \\bm{\\Psi} )^{-1} \\bm{\\Psi} ^* \\bm{b}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the minimization domain by \\C^s and require \\bm{\\Psi} to have full column rank (or use the Moore-Penrose pseudoinverse without the inverse); this local correction preserves the intended LS guarantees.",
+      "overall_effect": "The basic least-squares construction is ill-posed as written for complex-valued surrogate coefficients and for rank-deficient designs, making the LS solver invoked in the convergence corollary unreliable.",
+      "primary_affected_tag": "eq:ls",
+      "target_type": "algorithm",
+      "title": "Least-squares solver stated with real domain and missing rank condition",
+      "why_classification": "The repair is a short, local correction of the optimization domain and rank hypothesis; it does not change the advertised rate or require a new argument."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:CS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Given a vector of weights $\\bm{w}\\in \\R^N$ with $\\bm{w}\\geq \\bm{0}$, we can replace the $\\ell^1$-norm with",
+          "tag": null
+        },
+        {
+          "quote": "\\min \\limits_{ \\bm{z} \\in \\mathbb{C}^N} \\lambda \\|  \\bm{z}  \\|_{1, \\bm{w} } + \\|  \\boldsymbol{\\Psi}  \\bm{z}  - \\bm{b}  \\|_2",
+          "tag": "eq:wSR-LASSO"
+        }
+      ],
+      "failure_explanation": "For complex vectors, \\sum_i w_i z_i is a complex linear functional, not a norm: it can be negative or complex and does not satisfy non-negativity or the triangle inequality. Thus the weighted SR-LASSO objective is not a real-valued minimization problem as intended.",
+      "failure_location": {
+        "quote": "\\| \\bm{z}\\|_{1, \\bm{w}} := \\sum\\limits_{i=1}^N w_iz_i",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Define the weighted ℓ1 norm as \\sum_i w_i |z_i|; this is the standard norm used in the cited weighted CS results and preserves the claimed rates.",
+      "overall_effect": "The weighted compressed-sensing decoder and the CS convergence corollary rely on an invalid norm, so the stated recovery guarantee is unsupported as written.",
+      "primary_affected_tag": "eq:wSR-LASSO",
+      "target_type": "algorithm",
+      "title": "Weighted ℓ1 norm defined without absolute values",
+      "why_classification": "The fix is a one-line correction to the norm definition and does not weaken the advertised sample complexity or rates."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:mainthm",
+        "cor:maincor",
+        "cor:LS",
+        "cor:CS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "The function $f$ is \\emph{holomorphic} in $\\mathcal{O}$ if the following limit exists for every $\\bm{z} \\in\\mathcal{O}$ and every $j\\in[d]$:",
+          "tag": "defn:holom"
+        },
+        {
+          "quote": "$\\tilde{\\bm{C}}(t, \\cdot)$ is holomorphic in $\\mathring{\\mathcal{K}}$ for every $t \\in [0,T]$.",
+          "tag": "ass:diffusion_matrix"
+        }
+      ],
+      "failure_explanation": "In several complex variables, existence of the complex partial derivative in each coordinate at every point does not imply joint holomorphicity; continuity or a standard complex differentiability condition is missing. The later proofs and approximation theorems invoke standard holomorphic facts (composition, extension to polyellipses) that require the stronger notion.",
+      "failure_location": {
+        "quote": "\\lim_{\\substack{h\\in\\C \\\\ h \\to 0}} \\frac{f( \\bm{z} +h \\bm{e} _j) - f( \\bm{z} )}{h}",
+        "tag": "defn:holom"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Amend Definition defn:holom to a standard definition of several complex variables holomorphicity (e.g. continuous separately complex differentiable, or complex differentiable in a neighborhood), or state that additional continuity is required.",
+      "overall_effect": "As written, the holomorphicity assumption and theorem use a notion too weak to guarantee the standard analytic properties needed for the convergence results.",
+      "primary_affected_tag": "defn:holom",
+      "target_type": "other",
+      "title": "Definition of holomorphic is only separate complex differentiability",
+      "why_classification": "Adding the standard local continuity/differentiability condition restores the intended hypothesis without changing the conclusions or rates; the functions used in the paper are meant to satisfy the stronger condition."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:maincor",
+        "cor:LS",
+        "cor:CS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "let the parametric diffusivity matrix $ \\bm{C}:[0,T] \\times \\R^{|V| \\times |V|}$ satisfy Assumption \\ref{ass:diffusion_matrix}",
+          "tag": "thm:mainthm"
+        },
+        {
+          "quote": "There exist a compact set $\\mathcal{K}\\subset \\mathbb{C}^d$, with $\\mathcal{U} \\subset \\mathcal{K}$,",
+          "tag": "ass:diffusion_matrix"
+        },
+        {
+          "quote": "\\sup_{ \\bm{z}  \\in \\mathcal{H} } \\| \\bm{M} (t, \\bm{z} )\\|_{2\\to 2}",
+          "tag": "eq:bound_term"
+        }
+      ],
+      "failure_explanation": "Assumption ass:diffusion_matrix requires \\mathcal{U}\\subset\\mathcal{K} with \\mathcal{K} a complex compact set containing the real parameter cube. The theorem states the opposite, \\mathcal{K}\\subset\\mathcal{U}; a compact subset of the real cube has empty interior in \\C^d, so the claimed holomorphic extension to \\mathring{\\mathcal{K}} and the bound over complex \\mathcal{H} are not supported. The domain of \\bm{C} is also stated as [0,T]\\times\\R^{|V|\\times|V|} rather than the parameter space [0,T]\\times\\mathcal{U}, and the bound uses \\bm{M} instead of the holomorphic extension \\tilde{\\bm{M}} on complex \\mathcal{H}.",
+      "failure_location": {
+        "quote": "for some compact $\\mathcal{K}\\subseteq\\C^d$ such that $\\mathcal{K} \\subset \\mathcal{U}$.",
+        "tag": "thm:mainthm"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Correct the theorem to assume \\bm{C}:[0,T]\\times\\mathcal{U}\\to\\C^{|V|\\times|V|}, \\mathcal{U}\\subset\\mathcal{K}, and use \\tilde{\\bm{M}} in the bound; this aligns the statement with Assumption and the proof.",
+      "overall_effect": "The central holomorphy theorem, and the corollaries that invoke it for LS and CS convergence, are not established as written.",
+      "primary_affected_tag": "thm:mainthm",
+      "target_type": "formal_result",
+      "title": "Main theorem hypotheses reverse the required containment and misstate C's domain",
+      "why_classification": "The repair is a local correction of the theorem's hypotheses and notation; the intended proof and all advertised conclusions remain valid once the statement matches the assumption."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Let $T>0$ and let the parametric diffusivity matrix $ \\bm{C}:[0,T] \\times \\R^{|V| \\times |V|}$  satisfy Assumption \\ref{ass:diffusion_matrix}.",
+          "tag": "cor:maincor"
+        },
+        {
+          "quote": "Let $0< p \\leq \\infty$, $ \\bm{c} \\in \\ell^p(\\mathbb{N}_0^d)$ and $s \\in \\N_0$.",
+          "tag": "def:best_s-term"
+        }
+      ],
+      "failure_explanation": "The corollary writes \\forall p\\in(0,q] while q appears only as the subscript of \\sigma_s(\\bm{c})_q and is never quantified. The standard best-s-term rate requires a joint range such as 0<p\\leq q\\leq\\infty. The statement also repeats the incorrect parameter domain for \\bm{C} from the main theorem.",
+      "failure_location": {
+        "quote": "$\\forall s\\in\\N_0$, and $\\forall p\\in(0,q]$ the bound",
+        "tag": "cor:maincor"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Add the missing quantifier 0<p\\leq q\\leq\\infty (or the intended equivalent) and correct \\bm{C} to have domain [0,T]\\times\\mathcal{U}; this is local and preserves the rate.",
+      "overall_effect": "As written, the corollary is not a well-formed quantitative claim about \\sigma_s(\\bm{c})_q, and its hypotheses are misstated.",
+      "primary_affected_tag": "cor:maincor",
+      "target_type": "formal_result",
+      "title": "Best s-term corollary has unquantified q and repeats C-domain error",
+      "why_classification": "The correction only fixes quantification and notation; the intended algebraic rate and scope survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "th:main_ls"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then, there exists a set $S \\subseteq \\mathbb{N}_0^d$ of cardinality $|S| \\leq \\lceil m/\\log(m/\\epsilon) \\rceil$ such that the following holds with probability at least $1 - \\epsilon$.",
+          "tag": "cor:LS"
+        },
+        {
+          "quote": "for all $0<p\\leq q \\leq \\infty$ and $s\\in\\N_0$",
+          "tag": "eq:bounderror"
+        }
+      ],
+      "failure_explanation": "The LS rate contains a free parameter p and no range. For p>2 the exponent 1/2-1/p is positive, so the term does not give convergence as m grows; the intended sparse polynomial LS guarantee applies to a restricted range (typically 0<p\\leq 2 for L^2 recovery). Thus the corollary as written overstates or leaves unspecified the claimed guarantee.",
+      "failure_location": {
+        "quote": "\\| f_v - \\hat{f_v} \\|_{L_{\\varrho}^2(\\mathcal{U})} \\leq C(\\bm{\\rho}, p) \\cdot (m/\\log (m/\\epsilon))^{\\frac{1}{2}-\\frac{1}{p}} + 2 \\cdot \\|\\bm{n} \\|_{\\infty}.",
+        "tag": "cor:LS"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "State the intended quantifier, e.g. $0<p\\leq 2$ (or $0<p\\leq q$ with q=2), in Corollary cor:LS and the corresponding auxiliary theorem.",
+      "overall_effect": "The least-squares convergence corollary is not a well-formed theorem and, if p is left unrestricted, asserts a non-convergent or growing bound outside the intended regime.",
+      "primary_affected_tag": "cor:LS",
+      "target_type": "formal_result",
+      "title": "LS convergence corollary does not quantify p",
+      "why_classification": "Adding the standard p-range is a local statement fix; the LS method and rates for the intended regime survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:LS"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "We only need to prove that the support $S$ of the best $s$-term approximation to $f$ satisfies $S \\subset \\mathbb{N}_0^d \\times \\{0\\}^\\mathbb{N}$.",
+          "tag": "th:main_ls"
+        },
+        {
+          "quote": "For this reason, the best $s$-term approximation support $S$ can be chosen in $\\mathbb{N}_0^d \\times \\{0\\}^{\\mathbb{N}}$.",
+          "tag": "th:main_ls"
+        }
+      ],
+      "failure_explanation": "The proof introduces an integral over [-1,1]^{\\mathbb{N}} and a product over infinitely many variables although the theorem is stated for \\mathcal{U}=[-1,1]^d; this object is not defined in the source. It also integrates with respect to dx rather than the probability measure \\varrho, which is invalid for the Chebyshev measure. More importantly, the argument only attempts to show that extra coordinates have zero coefficients under an ill-defined extension and does not establish the sample-complexity bound, uniqueness, or the p-range of the LS theorem.",
+      "failure_location": {
+        "quote": "\\int_{[-1,1]^{\\mathbb{N}}} \\prod_{j>d} \\psi_{\\nu_j}(x_j) dx",
+        "tag": "th:main_ls"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the proof with a valid finite-dimensional application of the cited LS theorem (or a correct adaptation using the proper product measure and a well-defined extension), and include the missing p-range; this requires a contained but nontrivial proof argument.",
+      "overall_effect": "The auxiliary theorem used to prove Corollary cor:LS is unsupported, so the least-squares convergence guarantee for the graph diffusion map lacks a valid proof in the source.",
+      "primary_affected_tag": "th:main_ls",
+      "target_type": "formal_result",
+      "title": "Auxiliary LS theorem proof uses undefined infinite-dimensional integral and wrong measure",
+      "why_classification": "The defect is more than a local typo: the proof must supply a correct finite-dimensional LS argument or valid citation. Nevertheless, a supported repair can preserve the intended LS result without changing the paper's global architecture or advertised rates."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2502.06595",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "26936f3f91a7aefa7b2cdb949cf63aa8c5c3502e118636d01fae5814b32e6852",
+  "status": "ok"
+}

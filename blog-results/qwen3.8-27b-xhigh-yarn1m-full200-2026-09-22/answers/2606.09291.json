@@ -1,0 +1,188 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "and, for every $\\tau\\in (0,\\frac{c}{2L^2})$ and $\\eta$ sufficiently small",
+          "tag": "thm:error"
+        },
+        {
+          "quote": "\\leq 1-2\\tau c+ 2\\tau^2L^2 + 4\\sqrt{\\eta}+8\\eta,",
+          "tag": "thm:error"
+        }
+      ],
+      "failure_explanation": "The proof obtains a contraction factor bounded by $1-2\\tau c+2\\tau^2L^2+4\\sqrt{\\eta}+8\\eta$. The stated hypothesis quantifies over every $\\tau\\in(0,c/(2L^2))$. As $\\tau\\to0$, this bound tends to $1+4\\sqrt{\\eta}+8\\eta>1$, so the imposed bound on $\\eta$, which is independent of $\\tau$, does not imply $\\rho<1$ for all such $\\tau$.",
+      "failure_location": {
+        "quote": "small so that $4\\sqrt{\\eta}+8\\eta<\\frac{c^2}{2L^2}$, it holds",
+        "tag": "thm:error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restate the condition so that it ensures $1-2\\tau c+2\\tau^2L^2+4\\sqrt{\\eta}+8\\eta<1$ for the chosen $\\tau$, e.g. restrict $\\tau$ to a subinterval bounded away from $0$ or make the small-$\\eta$ bound depend on $\\tau$, and adjust the theorem statement accordingly.",
+      "overall_effect": "The stated linear mean-square convergence for all sufficiently small step sizes is unsupported; results relying on this theorem, in particular the complexity corollary, are affected until the step-size condition is repaired.",
+      "primary_affected_tag": "thm:error",
+      "target_type": "formal_result",
+      "title": "Contraction condition does not rule out small step sizes",
+      "why_classification": "The fix is local and does not require new proof architecture, but it necessarily weakens the advertised quantifier over $\\tau$; hence it is more than minor."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:error",
+        "thm:complexity_gradient_estimation",
+        "cor:complexity-result"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Delta Y^{(m)}_{\\ell} \\coloneqq Y^{(m)}_{\\ell}-Y^{(m)}_{\\ell-1}",
+          "tag": "eq:delta-notation"
+        },
+        {
+          "quote": "$\\widehat{C} \\coloneqq \\frac{\\|\\EE^{\\text{ML}}_k[X_L]\\|_U^2}{\\EE^{\\text{ML}}_k[Y_L]^2}$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The denominator $\\EE^{\\mathrm{ML}}[Y_L]$ is a sample average of level differences $Y_l-Y_{l-1}$, which may be negative. Nothing in the hypotheses guarantees $\\EE^{\\mathrm{ML}}[Y_L]>1$ (or even positivity) for the random samples. The proof divides by this denominator and uses the lower bound $1$ without establishing it, so the mean-square inequality is not valid as stated.",
+      "failure_location": {
+        "quote": "where we used that $\\EE^{\\textrm{ML}} \\left[Y_L\\right] > 1$.",
+        "tag": "proposition:bound_mean_square_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "At minimum, the proof must either add a uniform lower-bound hypothesis on $\\EE^{\\mathrm{ML}}[Y_L]$ (or modify the estimator with a safe denominator/truncation) and reprove the MSE and complexity estimates under that condition, or provide a nontrivial argument ensuring the denominator is bounded away from zero with high probability.",
+      "overall_effect": "The MSE bound for the MLMC gradient estimator, the complexity theorem that uses it, and the corollary relying on both are unreliable; the adaptive sample-based constant $\\widehat C$ and the estimator itself can be ill-defined when the denominator vanishes or is too small.",
+      "primary_affected_tag": "proposition:bound_mean_square_error",
+      "target_type": "formal_result",
+      "title": "MLMC ratio denominator is not controlled",
+      "why_classification": "A conditional version with a lower-bound assumption is source-supported and local to the ratio argument, but the advertised unconditional estimator guarantee is lost and a contained probabilistic lower-bound argument or estimator modification is required."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "K \\coloneqq \\bigg\\lceil\\left|\\frac{2\\log \\varepsilon}{\\log \\rho}\\right|\\bigg\\rceil",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "\\rho^k \\eqqcolon e_k.",
+          "tag": "cor:complexity-result"
+        },
+        {
+          "quote": "e^{-2}_K",
+          "tag": "cor:complexity-result"
+        }
+      ],
+      "failure_explanation": "$e_k$ is defined as $\\rho^k$, i.e. the expected squared distance. The iteration count $K\\sim 2\\log\\varepsilon/\\log\\rho$ gives $e_K\\sim\\varepsilon^2$, not $\\varepsilon$. The proof then applies the gradient-estimation cost with powers $e_k^{-2}$ and claims $e_K\\cong\\varepsilon$, treating $e_k$ as the distance. As written, the exponents in the geometric-sum calculation do not follow from the definitions.",
+      "failure_location": {
+        "quote": "The claim then follows since $e_K\\cong\\varepsilon$.",
+        "tag": "cor:complexity-result"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Correct the bookkeeping, e.g. define $e_k=\\rho^{k/2}$ (distance) and target MSE $e_k^2$, or equivalently use $e_k=\\rho^k$ with cost powers $e_k^{-1}$ and final $e_K\\sim\\varepsilon^2$, so that the sums yield the claimed exponents.",
+      "overall_effect": "The stated asymptotic total-cost bounds of the idealized corollary are not established by the proof, although the final rates are intended to be the standard ones.",
+      "primary_affected_tag": "cor:complexity-result",
+      "target_type": "formal_result",
+      "title": "Complexity corollary proof mixes squared error and distance",
+      "why_classification": "The repair is a local notation/exponent correction that preserves the advertised final complexity rates."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sqrt{\\frac{v_{k-1,\\ell}^2}{(M_{k - 1, \\ell} - 1) \\, \\mathcal{C}_{k - 1, \\ell}}}",
+          "tag": "eq:optimal-batch-size"
+        },
+        {
+          "quote": "\\sum_{m=1}^{M_{k, \\ell}}",
+          "tag": "eq:sec-order-sum"
+        }
+      ],
+      "failure_explanation": "The formula for $M_{k,\\ell}^{\\mathrm{opt}}$ is intended to be evaluated before the current samples are drawn, but the summand uses $v_{k,\\ell'}$, which is defined from $M_{k,\\ell'}$ current-sample deviations. For $\\ell'\\neq\\ell$ (and generally) $v_{k,\\ell'}$ is not available when choosing $M_{k,\\ell'}$, making the batch-size determination circular. The formula also divides by $M_{k-1,\\ell'}-1$ without excluding $M_{k-1,\\ell'}=1$.",
+      "failure_location": {
+        "quote": "\\sqrt{\\frac{v_{k,\\ell'}^2 \\, \\mathcal{C}_{k-1, \\ell'}}{M_{k - 1, \\ell'} - 1}}",
+        "tag": "eq:optimal-batch-size"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use only delayed estimates, e.g. replace $v_{k,\\ell'}$ by $v_{k-1,\\ell'}$ (or another available pilot estimate) in the sum, and specify a convention or constraint for $M_{k-1,\\ell'}=1$.",
+      "overall_effect": "The adaptive algorithm's stated optimal batch allocation is not well defined as written, so its practical complexity guarantee and the online estimation scheme cannot be implemented directly from the formula.",
+      "primary_affected_tag": "eq:optimal-batch-size",
+      "target_type": "algorithm",
+      "title": "Optimal batch-size formula uses unavailable current-level variance estimates",
+      "why_classification": "A consistent indexing and a degenerate-case convention give a local repair that preserves the intended adaptive allocation."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\EE^{\\text{MC}}_k[\\Delta X_\\ell] \\|^2 + \\widehat{C} \\, | \\EE^{\\text{MC}}_k[\\Delta Y_\\ell] |^2",
+          "tag": "eq:squared-bias-estimate-mlmc"
+        },
+        {
+          "quote": "L_{k-1} + 1, & \\text{ if } \\widehat{\\mathrm{err}}^{\\text{num}}_k > \\varepsilon_k^2/2,",
+          "tag": "eq:optimal-level"
+        }
+      ],
+      "failure_explanation": "If $\\EE^{\\text{MC}}_k[\\Delta X_\\ell]$ estimates the consecutive-level weak-error difference of order $C h_\\ell^{\\widehat\\alpha}$, then the bias at the current finest level $L$ is of order $C h_L^{\\widehat\\alpha}=C h_\\ell^{\\widehat\\alpha}(h_L/h_\\ell)^{\\widehat\\alpha}$. The formula divides by $(h_L/h_\\ell)^{\\widehat\\alpha}$, producing an estimate with the inverse mesh-ratio scaling, so it does not estimate the intended squared bias used in the level update.",
+      "failure_location": {
+        "quote": "(((h_{\\ell-1} / h_\\ell)^{\\widehat{\\alpha}} - 1) (h_L/h_\\ell)^{\\widehat{\\alpha}})^2",
+        "tag": "eq:squared-bias-estimate-mlmc"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the extrapolation factor so that the level-ℓ difference is multiplied by $(h_L/h_\\ell)^{2\\widehat\\alpha}$ (or use a consistent cumulative bias estimator), and then the level update compares the intended bias to $\\varepsilon_k^2/2$.",
+      "overall_effect": "The adaptive level update may refine or stop based on a systematically distorted bias estimate, so the algorithm's stated online error control and optimal-complexity behavior are not guaranteed.",
+      "primary_affected_tag": "eq:squared-bias-estimate-mlmc",
+      "target_type": "algorithm",
+      "title": "Squared bias estimator extrapolates with the wrong mesh ratio",
+      "why_classification": "The correction is a local formula fix for the bias estimator; the intended adaptive algorithm and complexity argument can be preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Hence, we enforce $\\pi_0(x) \\subseteq \\pi_{s_{k,\\ell}}(x)$",
+          "tag": null
+        },
+        {
+          "quote": "\\texttt{if } \\pi_0(x) \\in \\pi_s(x) \\colon",
+          "tag": "alg:mlsgd"
+        },
+        {
+          "quote": "In other words, the distance $d = B - A$ of processes which store data to the same point",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The displayed condition only requires all processes in $\\pi_{s_{k,\\ell}}(x)$ to lie in one residue class modulo $P_{s_{k,\\ell}}$. It does not require that residue class to contain the world-communicator process $\\pi_0(x)$. For example, with $P_s=4$, $\\pi_s(x)=\\{1,5,9,13\\}$ satisfies the congruence condition, but $\\pi_0(x)=\\{0\\}$ is not a subset. Hence the claimed communication-free selection and the algorithm's no-error check do not follow.",
+      "failure_location": {
+        "quote": "A \\equiv B \\pmod{P_{s_{k,\\ell}}} \\quad \\text{for all} \\quad A, B \\in \\mathcal{P}_{s_{k,\\ell}}(x) = \\pi_{s_{k,\\ell}}(x)",
+        "tag": "eq:congruent-processes"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Strengthen the condition to require every process in $\\pi_{s_{k,\\ell}}(x)$ to be congruent to the unique process in $\\pi_0(x)$ modulo $P_{s_{k,\\ell}}$ (equivalently, enforce $\\pi_0(x)\\subseteq\\pi_{s_{k,\\ell}}(x)$), and adjust the domain-decomposition discussion accordingly.",
+      "overall_effect": "The parallel data-merging algorithm's guarantee that $\\texttt{SelectSubdomain}$ can operate without additional communication or an error is unsupported for domain decompositions satisfying only the stated congruence condition.",
+      "primary_affected_tag": "eq:congruent-processes",
+      "target_type": "other",
+      "title": "Congruence condition does not guarantee nested process sets",
+      "why_classification": "A local strengthening of the congruence/alignment condition preserves the intended communication-free update without changing the mathematical method."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2606.09291",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f995bc2781848745f7a0e9dc1ec709b3b392f7fb87821723f10dd174128e1d3c",
+  "status": "ok"
+}

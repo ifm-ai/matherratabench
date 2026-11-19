@@ -1,0 +1,165 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [],
+      "failure_explanation": "For a flow of v with Phi_* nu, change of variables and Liouville's formula give log f_{Phi_* nu}(y) = log f_nu(Phi^{-1}(y)) - int_0^1 div v_t(Phi_t(Phi^{-1}(y))) dt. The displayed formula has the opposite sign and evaluates the divergence along Phi_t(y) instead of along the backward trajectory through y. Counterexample: v(x)=lambda x in 1D. Then Phi(x)=e^lambda x and log f_{Phi_* nu}(y) = log f_nu(e^{-lambda} y) - lambda, while the display gives +lambda. The same passage says samples from Phi_* nu are obtained as x=Phi^{-1}(z), which is also the wrong direction.",
+      "failure_location": {
+        "quote": "\\log f_{\\Phi_*\\nu}(y) = \\log f_\\nu(\\Phi^{-1}(y)) + \\int_0^1 \\operatorname{div}_y v(\\Phi_t(y), t) \\, dt",
+        "tag": "eq:liouville_log_det"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the display by log f_nu(Phi^{-1}(y)) - int_0^1 div v_t(Phi_t(Phi^{-1}(y))) dt, and correct the sampling sentence to x=Phi(z).",
+      "overall_effect": "The stated likelihood representation is false as written. Later proofs use the change-of-variables formula directly, so no theorem is affected.",
+      "primary_affected_tag": "eq:liouville_log_det",
+      "target_type": "other",
+      "title": "Liouville log-density formula has wrong sign and wrong evaluation point",
+      "why_classification": "A local correction of a motivating formula; nothing downstream depends on it."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:sub_gaussian",
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{k=1}^d \\binom{d}{k} 2^k \\left\\| {D_x[\\Phi^\\theta]}^{-1}(x) - {D_x[\\Phi^{\\mu}]}^{-1}(x) \\right\\|_2^k",
+          "tag": "thm:learnability_target_class"
+        },
+        {
+          "quote": "Inserting into the determinant sensitivity bound~\\cite[Cor.~2.14]{ipsen2008} yields",
+          "tag": "lem:sub_gaussian"
+        }
+      ],
+      "failure_explanation": "The proofs bound |log|det A| - log|det B|| for A=D[Phi^theta]^{-1}(x), B=D[Phi^mu]^{-1}(x) (or theta') by sum_k C(d,k) 2^k ||A-B||^k. This contains no dependence on ||A^{-1}|| or a lower bound on |det|, so it cannot hold for general matrices. Counterexample: A=eps I, B=2 eps I gives a log-difference of d log 2 while the right side tends to 0 as eps tends to 0. A correct log-det bound is relative and needs ||A^{-1}|| = ||D Phi|| controlled. Only upper bounds on ||D[Phi]^{-1}|| (Gronwall) are established, and the step passing from a determinant difference to a log difference is not justified. The same step is used in three proofs.",
+      "failure_location": {
+        "quote": "Thus, the determinant sensitivity estimate from~\\cite[Cor.~2.14]{ipsen2008} yields",
+        "tag": "thm:learnability_target_class"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Prove a correct log-det perturbation estimate. Bound ||D Phi|| (or the Jacobian determinant from below) by Gronwall/Liouville, or bound the log-determinant difference directly through the divergence integral. Then re-derive the constants in the model-error theorem, the sub-Gaussian lemma and the concentration theorem; their exponential form should survive.",
+      "overall_effect": "The KL model-error bound (kl_target_approx_thm), the Lipschitz and sub-Gaussian constant bar L, the bounded-difference constant D, and the final PAC theorem all rest on an unproven inequality.",
+      "primary_affected_tag": "thm:learnability_target_class",
+      "target_type": "formal_result",
+      "title": "Log-determinant perturbation bound used without lower bounds on the determinants",
+      "why_classification": "It needs a contained new estimate and changed constants, but the architecture of the argument and the form of the results survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\leq \\frac{12 \\bar{L}}{\\sqrt{n}} \\int_0^\\infty \\sqrt{ \\log N(\\varepsilon, d_\\Theta, \\mathcal{H}) } \\, d\\varepsilon",
+          "tag": "thm:dudley"
+        }
+      ],
+      "failure_explanation": "eps^gen is the supremum of |Z_theta,n|, but it is set equal to E[sup Z_theta,n]. Dudley's bound controls the signed supremum, and passing to absolute values costs an extra argument and a constant factor, so the constant 48 is not justified. The integral is written over (0,infinity) with the volumetric bound (1+2 sqrt q/eps)^q, for which it diverges. The proof silently truncates at eps = sqrt q, which is legitimate only for the true covering number.",
+      "failure_location": {
+        "quote": "\\mathbb{E}\\left[\\sup_{\\theta \\in \\Theta} Z_{\\theta,n}\\right]",
+        "tag": "thm:dudley"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Apply Dudley to both Z and -Z, or to sup |Z_theta - Z_theta0| plus |Z_theta0|, truncate the entropy integral at the diameter, and adjust the numerical constant.",
+      "overall_effect": "The stated constant 48 L W^2 bar L/sqrt n in the expected generalization bound, and its reuse in the concentration theorem and the main proof, is not established as written. Only the order of the bound is unaffected.",
+      "primary_affected_tag": "thm:dudley",
+      "target_type": "formal_result",
+      "title": "Dudley step treats the supremum of |Z| as the supremum of Z and uses an unbounded entropy integral",
+      "why_classification": "Only the numerical constant changes; the rate and the structure of the argument are preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\mu \\| \\mu_{\\hat{\\theta}_n}) \\leq \\varepsilon_n^{\\mathrm{model}} + 2 \\varepsilon_n^{\\mathrm{gen}}",
+          "tag": "empirical_error_decomp"
+        }
+      ],
+      "failure_explanation": "The decomposition derived earlier (and correct by the ERM argument) has coefficient 2 on eps^gen. The proof cites it as having coefficient 1. The subsequent chain of thresholds (eps^2/(16||qoi||^2), eps^2/(32||qoi||^2), 4096) was computed with the wrong decomposition.",
+      "failure_location": {
+        "quote": "\\KL(\\mu\\| \\Phi^{\\hat{\\theta}_n}_* \\nu) \\leq \\varepsilon_n^{\\mathrm{model}} + \\varepsilon_n^{\\mathrm{gen}}",
+        "tag": "main_thm_emp_error_decomp"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Carry the factor 2 through: require eps^gen > eps^2/(32||qoi||^2) and adjust the thresholds and the constant 4096 accordingly.",
+      "overall_effect": "The explicit constants in the probability bound and in n(epsilon,delta) are not those that follow from the stated decomposition.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Main proof drops the factor 2 on the generalization error in the risk decomposition",
+      "why_classification": "A constants-only fix with no change to the argument or the conclusion."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "which tends to zero as $n \\to \\infty$, since $\\beta < \\frac{1}{2}$.",
+          "tag": "thm:learnability_sparse_grid"
+        }
+      ],
+      "failure_explanation": "Only the upper bound bar L <= c n^beta is available, so the stated assumption would give 48 L W^2 bar L/sqrt n <= 48 bar L^2/sqrt n <= c n^{2 beta - 1/2}. That tends to 0 only for beta < 1/4, not for the claimed range beta in (0,1/2). The conclusion n_2(epsilon) exists is true, but only because L_n W_n^2 grows polylogarithmically (W_n = floor(log log n)). That fact is not what the text invokes.",
+      "failure_location": {
+        "quote": "Moreover, for sufficiently large $n$, we may assume that $L_n W_n^2 \\leq \\bar{L}_{d,\\kappa,L_\\nu}(L_n,W_n)$.",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the assumption by the bound L_n W_n^2 = O((log log n)^3) and combine it with bar L/sqrt n <= c n^{beta-1/2}.",
+      "overall_effect": "As written, the inference supporting the full range beta < 1/2 in the main theorem is invalid.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Unjustified assumption L_n W_n^2 <= bar L used to conclude the vanishing of the expected generalization bound",
+      "why_classification": "A one-line replacement argument restores the stated range and all claims."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\tilde{c}_d\\cdot m^{-{1}/d} \\cdot (\\log m)^{(d-1)(1/d+1)} \\cdot \\|\\qoi\\|_{C^1} \\left(1 + \\sqrt{d} \\, e^{\\sqrt{d} \\sqrt{q} \\operatorname{Lip}_1^\\Theta}\\right) \\leq \\frac{\\varepsilon}{2}",
+          "tag": "eq:main_thm_sg_error_bd"
+        },
+        {
+          "quote": "Thus, for any architecture parameters $L_n, W_n \\in \\mathbb{N}$ and $\\varepsilon > 0$, it is possible to choose a threshold $m(n)$ for the number of quadrature points",
+          "tag": "thm:learnability_sparse_grid"
+        },
+        {
+          "quote": "for all sample sizes $n,m \\geq n(\\varepsilon,\\delta), m(\\varepsilon,\\delta)$",
+          "tag": "thm:learnability_sparse_grid"
+        }
+      ],
+      "failure_explanation": "Inequality (eq:main_thm_sg_error_bd) involves the factor exp(sqrt d sqrt q Lip_1^Theta(L_n,W_n,d)). Here q, L_n and W_n grow with n, and Lip_1 >= Lip_0 = L(2W)^{...}(d+1)^{...} tends to infinity. Hence the m needed to reach epsilon/2 depends on n and is unbounded in n. The proof fixes m at the value for n = n(epsilon,delta) and asserts the bound for all larger n. That is false for the constant being used. The theorem's claim of n-independent thresholds (PAC in the sense of defn:pac_learnability) is therefore unsupported.",
+      "failure_location": {
+        "quote": "and a threshold $m(\\varepsilon, \\delta) := m(n(\\varepsilon, \\delta))$ on the number of quadrature points such that \\eqref{eq:main_thm_sg_error_bd} holds, for all $n \\geq n(\\varepsilon,\\delta)$ and all $m \\geq m(\\varepsilon,\\delta)$",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restate the theorem with the quadrature threshold depending on n (m >= m(n,epsilon) with an explicit, very fast growth), or establish an n-independent bound on ||Phi^{theta_n}||_{C^1} for the learned maps. Adjust the PAC definition and abstract accordingly.",
+      "overall_effect": "What the proof supports is a coupled statement (m >= m(n) growing very fast with n), not the claimed independent thresholds n(epsilon,delta), m(epsilon,delta). The PAC claim of the main theorem and the abstract are overstated.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Quadrature threshold m(epsilon,delta) treated as independent of n although the quadrature constant grows with the architecture",
+      "why_classification": "The result survives as a coupled-limit consistency statement with a contained restatement and no new global architecture, but the advertised independence of the thresholds is lost."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2507.01533",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4061c0fabc84b846272339b854b6a82a9cfd5d1ef91d57be1f2279301753237e",
+  "status": "ok"
+}

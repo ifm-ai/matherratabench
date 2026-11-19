@@ -1,0 +1,268 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Accordingly, we abbreviate $\\Phi_t := \\Phi_{0,t}$ for flows starting at $t_0 = 0$, and denote by $\\Phi := \\Phi_{0,1}$ the flow map evaluated at final time $t = 1$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For a forward flow Phi_t, the pushforward density satisfies log f_{Phi_*nu}(y) = log f_nu(Phi^{-1}(y)) minus the time integral of div v along the backward path Phi_t(Phi^{-1}(y)). The displayed formula has the wrong sign and evaluates the flow at the final point y rather than at the backward path.",
+      "failure_location": {
+        "quote": "\\log f_{\\Phi_*\\nu}(y) = \\log f_\\nu(\\Phi^{-1}(y)) + \\int_0^1 \\operatorname{div}_y v(\\Phi_t(y), t) \\, dt,",
+        "tag": "eq:liouville_log_det"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Correct the sign and the flow argument in the Liouville formula, i.e. use the backward path from Phi^{-1}(y) and a minus sign in front of the divergence integral.",
+      "overall_effect": "The stated likelihood identity used to compute neuralODE log-densities is false. Any algorithmic use of this identity for the empirical log-likelihood is mis-specified, although the later consistency proofs do not directly invoke this display.",
+      "primary_affected_tag": "eq:liouville_log_det",
+      "target_type": "other",
+      "title": "Wrong Liouville change-of-density formula",
+      "why_classification": "This is a local correction of a standard identity; it does not change the main PAC architecture, rates, or theorem statements."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "f_{\\nu_i} \\in L^p([a,b]) \\text{ for some } p > 1,",
+          "tag": "thm:quadrature_error"
+        },
+        {
+          "quote": "see, \\cite[Theorem, Remark 3]{Novak1997}, where $\\tilde{c}_{d,k} > 0$ is a universal constant depending only on $d$ and $k$.",
+          "tag": "thm:quadrature_error"
+        }
+      ],
+      "failure_explanation": "The cited sparse-grid Clenshaw-Curtis estimate is used for integrals against an arbitrary factorized density nu with only L^p univariate factors, while the constant is claimed to depend only on d, k, a, and b. The cited standard result does not establish such a weighted estimate under these hypotheses.",
+      "failure_location": {
+        "quote": "For the standard domain $[-1,1]^d$, the quadrature error for functions $g \\in C^k([-1,1]^d)$ satisfies the estimate",
+        "tag": "thm:quadrature_error"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Restrict nu to the standard Lebesgue/uniform measure, or add the smooth positive weighted hypotheses needed for a weighted sparse-grid Clenshaw-Curtis estimate and supply or cite that estimate. The main result then survives only under that restricted regime.",
+      "overall_effect": "The quadrature-error guarantee in Theorem thm:quadrature_error, and its use in the main PAC theorem, is unsupported for general source measures nu.",
+      "primary_affected_tag": "thm:quadrature_error",
+      "target_type": "formal_result",
+      "title": "Sparse-grid error bound applied to arbitrary weighted measure",
+      "why_classification": "The repair either excludes a stated source-measure regime or requires a contained but nontrivial weighted quadrature argument. The core rate survives in a comparable restricted setting, so this is more than minor but not a global architectural failure."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:learnability_target_class",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "ensuring that the resulting $\\ReLU^s$-networks $v^{\\theta}$ are $(s-1)$ times continuously differentiable.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "ReQU is ReLU^2 and is only C^1. A ReQU network generally has no continuous second derivatives, so the C^ell norm for ell >= 2 is not finite or even well-defined for the approximating network. The theorem therefore claims a simultaneous approximation result in norms beyond the regularity of the stated network class.",
+      "failure_location": {
+        "quote": "there exists a neural network $h_f \\colon [0,1]^d \\to \\R^p$ with $\\ReQU$-activation, such that for $\\ell \\in \\{0,\\hdots,k\\}$,",
+        "tag": "thm:universal_approx"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Weaken the theorem to ell <= 1 (or to the maximal differentiability of ReQU networks), or replace ReQU by ReLU^s with s >= k and prove the higher-order universal approximation statement. The main result only needs the C^1 approximation part.",
+      "overall_effect": "The universal approximation theorem as stated is false for ell >= 2. The model-error theorem and main theorem depend on this approximation machinery; their C^1 use may survive, but the stated higher-norm support does not.",
+      "primary_affected_tag": "thm:universal_approx",
+      "target_type": "formal_result",
+      "title": "ReQU universal approximation claimed beyond C^1 regularity",
+      "why_classification": "A limited weakening of the universal approximation theorem preserves the C^1 model-error argument and the main PAC claim, but it necessarily loses the stated higher-order C^ell approximation content."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "To extend this to multiplication of $n$ variables, we use the identity",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For n > s, the right-hand side equals the product of the first s variables times ones, hence only the product of the first s variables. It does not equal the product of all n variables. For example, with n=4 and s=2, the displayed identity asserts x1 x2 x3 x4 = x1 x2.",
+      "failure_location": {
+        "quote": "\\prod_{i=1}^n x_i = \\prod_{i=1}^s x_i \\cdot \\underbrace{1 \\cdots 1}_{s^{\\lceil \\log_s(n) \\rceil} - n},",
+        "tag": "rmk:universal_approx_generalization"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Delete or weaken the false identity and either leave the ReLU^s extension as open or supply a correct recursive s-ary multiplication construction with explicit width/depth bounds.",
+      "overall_effect": "The remark's claimed pathway from s-wise ReLU^s product realization to n-variable multiplication is unreliable. No labelled main theorem directly depends on this identity.",
+      "primary_affected_tag": "rmk:universal_approx_generalization",
+      "target_type": "other",
+      "title": "False product identity for extending s-wise multiplication to n variables",
+      "why_classification": "The defect is contained in a remark, but the advertised generalization pathway is materially weakened; a correct recursive construction or a weaker claim is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "q := \\sum_{l=0}^{L} (d_l d_{l+1} + d_{l+1}).",
+          "tag": "defn:no_of_params"
+        }
+      ],
+      "failure_explanation": "The sum defining q has L+1 affine layers. With all layer widths bounded by W, each term is at most W^2 + W, so a valid general bound is of the form (L+1)W(W+1), not L(W+1)W. The stated bound is false, e.g. for L=0 it gives q<=0 while q>0.",
+      "failure_location": {
+        "quote": "where $q \\leq L(W+1)W$ denotes the total number of parameters.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Correct the parameter-count bound to (L+1)W(W+1) or an equivalent valid count and adjust the downstream constants. The qualitative PAC guarantees are preserved.",
+      "overall_effect": "Later simplifications such as q <= 2LW^2 and the explicit constants in the Dudley, concentration, and main theorems rely on the wrong parameter count.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Incorrect network parameter-count bound",
+      "why_classification": "This is a local off-by-one/count correction; changing constants preserves the advertised consistency and rate type."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:dudley",
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left| Z_\\theta - Z_{\\theta'} \\right| \\leq \\bar{L} \\cdot \\| \\theta - \\theta' \\|_2 = \\bar{L} \\cdot  d_\\Theta(\\theta, \\theta'),",
+          "tag": "lem:sub_gaussian"
+        }
+      ],
+      "failure_explanation": "The proof establishes only a total-range bound for the random increment Z_theta - Z_theta'. To obtain a sub-Gaussian proxy with the 1/n factor via Hoeffding's inequality, one must show per-coordinate bounded differences of order 1/n for the empirical average, or otherwise apply an empirical-process concentration argument. The displayed inference does not establish the stated proxy.",
+      "failure_location": {
+        "quote": "so using \\emph{Hoeffding's inequality}~\\cite{Hoeffding01031963}, the process $\\{Z_{\\theta,n}\\}$ is sub-Gaussian with proxy $\\frac{\\bar{L}^2}{n} d_\\Theta^2$, as claimed.",
+        "tag": "lem:sub_gaussian"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Add the standard bounded-differences argument for the centered empirical process, showing that changing one sample changes Z_theta - Z_theta' by O(Lbar ||theta-theta'||/n), and then apply Hoeffding or McDiarmid, adjusting constants if necessary.",
+      "overall_effect": "The sub-Gaussian lemma is not proved as stated, undermining the expected generalization error bound and downstream high-probability PAC estimates.",
+      "primary_affected_tag": "lem:sub_gaussian",
+      "target_type": "formal_result",
+      "title": "Sub-Gaussian lemma not proved from displayed total-range bound",
+      "why_classification": "The missing step is a standard empirical-process argument; the lemma's qualitative role and the 1/sqrt(n) scaling can be restored with routine modifications."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:concentration_bound",
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\varepsilon^{\\mathrm{gen}}_n = \\sup_{\\theta \\in \\Theta_n} \\left| \\mathbb{E}_{X \\sim \\mu} \\left[ -\\log(f_{\\mu_\\theta}(X)) \\right] - \\widehat{L}_n(\\mu_\\theta, \\chi_n) \\right|.",
+          "tag": null
+        },
+        {
+          "quote": "Using the parameter bound $q  \\leq 2LW^2$ completes the proof.",
+          "tag": "thm:dudley"
+        }
+      ],
+      "failure_explanation": "The proof equates E[epsilon_gen] with E[sup Z], but epsilon_gen is defined with an absolute value, so sup |Z|, not sup Z. At minimum a symmetrization factor is missing. Moreover the preceding bound is 48 q Lbar/sqrt(n), and q <= 2LW^2 gives 96 L W^2 Lbar/sqrt(n), not the stated 48 L W^2 Lbar/sqrt(n).",
+      "failure_location": {
+        "quote": "&= \\mathbb{E}\\left[\\sup_{\\theta \\in \\Theta} Z_{\\theta,n}\\right]",
+        "tag": "thm:dudley"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Replace the conclusion by a valid constant, including the absolute-value symmetrization and the corrected parameter count, e.g. a bound of the form C (L+1) W^2 Lbar/sqrt(n) with a larger universal C, or supply the missing sharper argument for the stated constant.",
+      "overall_effect": "The expected generalization error constant in Theorem thm:dudley is not established, and the downstream concentration and PAC constants are affected.",
+      "primary_affected_tag": "thm:dudley",
+      "target_type": "formal_result",
+      "title": "Dudley expected generalization bound uses sup Z and wrong constant",
+      "why_classification": "The defect is a constant-factor and absolute-value mismatch; the expected generalization rate and main PAC guarantee survive after adjusting constants."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:learnability_sparse_grid"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\left\\| {D_x[\\Phi^\\theta]}^{-1}(x) \\right\\|_2\\leq \\sqrt{d} \\cdot \\exp(\\sqrt{d} \\|\\tilde{v}^\\theta\\|_{C^1([0,1]^{d+1})}) \\leq  \\sqrt{d}\\exp(\\sqrt{d}\\sqrt{q}\\operatorname{Lip_1^\\Theta}).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The one-coordinate McDiarmid bound for the log f_nu term replaces ||Phi_theta^{-1}(x_j) - Phi_theta^{-1}(X_j)|| by sqrt(d), i.e. assumes the inverse flow is 1-Lipschitz. The source elsewhere proves that inverse Jacobians have exponential norms, so the inverse map can be exponentially Lipschitz. The displayed bound is therefore too small by an exponential factor.",
+      "failure_location": {
+        "quote": "\\frac{1}{n} \\cdot \\frac{L_\\nu}{\\kappa} \\cdot \\sqrt{d}. \\label{eq:first_bd_mc_diarm}",
+        "tag": "thm:concentration_bound"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Insert the Gronwall-based exponential Lipschitz bound for inverse-flow differences into the McDiarmid constant D and reapply McDiarmid, adjusting the downstream main theorem constants accordingly.",
+      "overall_effect": "The constant D in the concentration theorem is materially underestimated, making the stated high-probability generalization bound unreliable. The main PAC proof depends on this D.",
+      "primary_affected_tag": "thm:concentration_bound",
+      "target_type": "formal_result",
+      "title": "McDiarmid difference bound misses inverse-flow Lipschitz factor",
+      "why_classification": "The repair requires the nontrivial inverse-flow sensitivity estimate to fix the displayed inequality, but the qualitative concentration guarantee survives with a larger constant."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\KL(\\mu \\| \\mu_{\\hat{\\theta}_n}) \\leq \\varepsilon_n^{\\mathrm{model}} + 2 \\varepsilon_n^{\\mathrm{gen}}, \\label{empirical_error_decomp}",
+          "tag": "empirical_error_decomp"
+        }
+      ],
+      "failure_explanation": "The proof uses the empirical risk decomposition without the factor 2 that appears in the established decomposition. With the factor 2, the subsequent threshold for the generalization error, chosen from the model-error bound, is not justified as written.",
+      "failure_location": {
+        "quote": "\\KL(\\mu\\| \\Phi^{\\hat{\\theta}_n}_* \\nu) \\leq \\varepsilon_n^{\\mathrm{model}} + \\varepsilon_n^{\\mathrm{gen}}. \\label{main_thm_emp_error_decomp}",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Restore the factor 2 and rescale the model-error/generalization-error constants, for example by choosing the generalization threshold with an extra factor of 2, while keeping the same architecture and sample-size arguments.",
+      "overall_effect": "The probability calculation in the main PAC theorem is off by a constant factor; the stated final threshold is not derived from the correct decomposition.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Main PAC proof omits factor 2 in KL error decomposition",
+      "why_classification": "This is a constant-factor repair in the main proof; the advertised PAC guarantee and rates survive."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Thus, for any architecture parameters $L_n, W_n \\in \\mathbb{N}$ and $\\varepsilon > 0$, it is possible to choose a threshold $m(n)$ for the number of quadrature points (i.e., a sparsity level $\\ell(n)$ large enough) such that",
+          "tag": "thm:learnability_sparse_grid"
+        }
+      ],
+      "failure_explanation": "The quadrature error bound depends on n through the architecture-dependent C^1 bound of the learned flow, via q(L_n,W_n) and Lip_1^Theta(L_n,W_n). The proof only shows that for each n one can choose m(n). It then sets m(epsilon,delta)=m(n(epsilon,delta)) and claims this controls all larger n. Since the required quadrature count can grow with n, no single independent quadrature threshold is established.",
+      "failure_location": {
+        "quote": "a threshold $m(\\varepsilon, \\delta) := m(n(\\varepsilon, \\delta))$ on the number of quadrature points such that \\eqref{eq:main_thm_sg_error_bd} holds, for all $n \\geq n(\\varepsilon,\\delta)$ and all $m \\geq m(\\varepsilon,\\delta)$",
+        "tag": "thm:learnability_sparse_grid"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-010",
+      "least_adequate_overall_repair": "No complete source-supported repair identified; at minimum, a repair must either redefine the PAC condition to allow a quadrature threshold m(epsilon,delta,n), prove a uniform-in-n bound on the architecture-dependent quadrature constant, or modify the capacity schedule so the required quadrature nodes remain bounded.",
+      "overall_effect": "The main PAC theorem's guarantee with a fixed quadrature-point threshold for all n >= n(epsilon,delta) is unsupported. The advertised consistency under adaptive network capacity and increasing quadrature is not proven as stated.",
+      "primary_affected_tag": "thm:learnability_sparse_grid",
+      "target_type": "formal_result",
+      "title": "Main theorem fixes quadrature threshold that depends on n",
+      "why_classification": "Every supported resolution changes the central guarantee or requires a new uniform-control argument. The main theorem as stated does not survive."
+    }
+  ],
+  "issues_found": 10,
+  "paper_id": "2507.01533",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "4061c0fabc84b846272339b854b6a82a9cfd5d1ef91d57be1f2279301753237e",
+  "status": "ok"
+}

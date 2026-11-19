@@ -1,0 +1,195 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\|\\calL^{-1}\\|_2\\|\\gleOper\\|_2 = \\frac{1}{2\\sigma_{\\mathrm{min}}(\\fA)}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For L = I⊗A + A⊗I the eigenvalues are λ_i+λ_j, so σ_min(L) is generally not 2σ_min(A). It already fails for normal matrices: A=[[-ε,1],[-1,-ε]] has σ_min(A)=sqrt(1+ε²) but L has the eigenvalue -2ε, so σ_min(L)≤2ε. The same identity is reused for ||L^{-1}||_2 in the bound on ||L^{-1}Π||_2. The resulting residual-to-error bound and the constant γ are therefore not valid upper bounds for general (non-symmetric) Hurwitz A.",
+      "failure_location": {
+        "quote": "Using $\\|\\fE\\|_2\\le\\|\\fE\\|_{\\Frob}$ and $\\sigma_{\\min}(\\calL)=2\\sigma_{\\min}(\\fA)$ yields",
+        "tag": "prop1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace 2σ_min(A) by a valid lower bound on σ_min(L). One option is 2λ_min(-(A+A^T)/2), valid under dissipativity. Otherwise compute or bound σ_min(L) directly. Restate Prop. 1, Thm. 1 and the scaling accordingly, possibly restricting the class of A.",
+      "overall_effect": "The 'rigorous, computable' certificate (Prop. 1, Thm. 1, the stopping criterion, the O(n) estimate of sigma_min and the scaling (eq:52)) is unreliable for general Hurwitz A. The numerical validation of the certificate is also affected.",
+      "primary_affected_tag": "prop1",
+      "target_type": "formal_result",
+      "title": "False identity sigma_min(L)=2 sigma_min(A) invalidates the error-residual bound",
+      "why_classification": "A contained replacement lemma restores the bound, but the general-Hurwitz scope and the O(n) computability of the constant are lost or must be re-argued."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\fX_k = \\fZ_k\\fZ_k^\\T$ is the unique solution of the Lyapunov equation~\\eqref{alg:statIterGLE:lyap} in iteration $k$ of \\Cref{alg:statIterGLE}",
+          "tag": "prop2"
+        }
+      ],
+      "failure_explanation": "Prop. 2 is derived for the exact stationary iteration, in which B_k is built from the exact X_{k-1}. In Algorithm 1 with inexact solves, B_k is built from the approximate Z_{k-1}. The 'exact' X_k and X_{k-1} of the proof therefore do not satisfy the error recursion (eq31). The inequality ||X-X_k|| ≤ γ||X_k-X_{k-1}||_F is used without justification. The correct comparison is between X_k and the approximate X̃_{k-1}.",
+      "failure_location": {
+        "quote": "Let $\\fX_k$ be the exact solution of the Lyapunov equation~\\eqref{alg:statIterGLE:lyap} computed at step $k$ of \\Cref{alg:statIterGLE}.",
+        "tag": "teo1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Redo the recursion with the perturbed right-hand side to get ||X-X_k|| ≤ γ||X_k-X̃_{k-1}||. Then bound ||X_k-X̃_{k-1}|| by R_k/(2σ_min)+Δ. This gives (eq:50) or a slightly sharper bound.",
+      "overall_effect": "The proof of the stated bound (eq:50) is not valid as written, although a corrected derivation likely gives a bound of the same form.",
+      "primary_affected_tag": "teo1",
+      "target_type": "formal_result",
+      "title": "Theorem 1 applies Prop. 2 to an inexact iteration outside its hypotheses",
+      "why_classification": "The repair is a short local re-derivation that keeps the result and its form."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\perturbation \\;\\ge\\; \\max_{j\\in\\switchingSet} \\frac{\\sigma_1(\\fA_j)}{\\sigma_\\stateDim(\\fA_j)}",
+          "tag": "teo4"
+        }
+      ],
+      "failure_explanation": "From A+A^T≺0 one only gets -w^T A w ≥ λ_min(-(A+A^T)/2)||w||², and this quantity is at most σ_min(A). The proof needs -w^T A w ≥ σ_n(A)||w||², which fails in general. Counterexample: the normal matrix A=[[-ε,1],[-1,-ε]] has σ_n(A)=sqrt(1+ε²) but -w^T A w=ε||w||². The chosen μ=κ(A_j)·tol can then be too small, so the claim that X̂ satisfies the LMI is not established and is false in general.",
+      "failure_location": {
+        "quote": "where we used the fact that $\\fw^{\\T}\\fA_j^{\\T}\\fw<0$ for all",
+        "tag": "teo4"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace κ(A_j) by σ_1(A_j)/λ_min(-(A_j+A_j^T)/2) in (eqn:ass:teo4) and (eqn:cond:LMI). The same short proof then works, and the experiments are recomputed.",
+      "overall_effect": "The perturbation constant (eqn:cond:LMI) and Table 1 are not justified in general. The discussion of normal/port-Hamiltonian matrices is not covered by the proof.",
+      "primary_affected_tag": "teo4",
+      "target_type": "formal_result",
+      "title": "Theorem 4 proof uses a false lower bound w^T A^T w ≤ -σ_n(A)||w||²",
+      "why_classification": "The fix is short but changes the theorem's constant, which may become much larger. The quantitative claims and the sharpness discussion are affected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [],
+      "failure_explanation": "Stability preservation in square-root balanced truncation needs the Lyapunov inequalities for the Gramians used. It also needs a nonempty retained block whose singular values are disjoint from the truncated ones (or an equivalent condition), together with positivity/minimality. The proposition assumes none of this. The proof only appeals to 'generalized Gramian' interpretation. Equal singular values across the truncation cut, which the paper itself discusses, can yield non-asymptotically-stable reduced matrices.",
+      "failure_location": {
+        "quote": "Therefore, each $\\tilde \\fA_j$ is, by construction, stable due to the stability properties of classical square root balance truncation.",
+        "tag": "prop:stab"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Add the hypothesis Σ_1 and Σ_2 have disjoint spectra with Σ_1≻0. Verify the mode-j Lyapunov inequalities, and note that the guarantee holds only for exact solves.",
+      "overall_effect": "The claimed advantage of PBR (stable subsystems guaranteed) is unsupported for arbitrary r. Approximate Gramians are not covered either, since the proposition assumes exact solves.",
+      "primary_affected_tag": "prop:stab",
+      "target_type": "formal_result",
+      "title": "Per-mode stability of PBR ROMs claimed without the separation hypothesis",
+      "why_classification": "Adding a standard classical condition repairs the statement without changing the method."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "teo6"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\;\\tilde \\gleG_{o}(\\switch(t_k^{+}))+\\lambda_{1}(\\fM_o(\\switch(t_k^{+})))\\int_{t_k}^{t_{k+1}}\\|\\bfX_o(s)\\|_2^2\\,\\ds\\;",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The statement defines H_o using λ_1(M_c(·)), but the proof produces the term λ_1(M_o(·))∫||X_o||². M_c and M_o have different spectra, so the stated bound (eq:err:est:2) does not follow from the proof. M_o is also defined with Σ_jĀ_j^T and C̄C̄^T instead of the Lyapunov form used in the proof, and the proof inequality is written with ||X||.",
+      "failure_location": {
+        "quote": "\\gleH_{o,\\switch}(\\stateDim,\\stateDimRed)\\;\\vcentcolon=&\\;\\sum_{k=0}^{K}\\lambda_{1}(",
+        "tag": "teo5"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Define H_o with λ_1(M_o), where M_o = Ā^TΣ+ΣĀ+C̄^TC̄. Correct the transposes in the M_c/M_o definitions and propagate to Thm. 6.",
+      "overall_effect": "The inequality as stated is not what is proved. The definitions entering Thm. 6 and the experimental quantities χ must be corrected.",
+      "primary_affected_tag": "teo5",
+      "target_type": "formal_result",
+      "title": "Lemma 5: H_o defined with λ_1(M_c) although the proof yields λ_1(M_o); M_o,M_c definitions inconsistent",
+      "why_classification": "The correct definitions are visible from the proof, and the repair is a local relabelling."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Big(\\gleH_{c,\\switch}(\\stateDim,\\stateDimRed)+\\gleH_{o,\\switch}(\\stateDim,\\stateDimRed)-\\left(\\gleG_{o,\\switch}(\\stateDim,\\stateDimRed)+\\gleG_{c,\\switch}(\\stateDim,\\stateDimRed)\\right)",
+          "tag": "teo5"
+        }
+      ],
+      "failure_explanation": "Lemma 5 gives error² ≤ H − G + 4σ²||u||². Taking square roots, the G-contribution is sqrt(−G) with a plus sign, active when G<0. The theorem instead writes −G^{1/2} H(−G). On the support of H(−G) we have G<0, so G^{1/2} is non-real. The leading minus sign would also lower the bound exactly where the LMI violation should increase it.",
+      "failure_location": {
+        "quote": "\\gleG_{c,o,\\switch}(s_{k+1},s_{k})^{\\frac{1}{2}}H(-",
+        "tag": "teo6"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the term by +Σ (−G)^{1/2} H(−G), and likewise in ι.",
+      "overall_effect": "The stated bound (eq:err:est:3), and the experimental quantity ι (eqn:iota) copied from it, is ill-defined as a real bound and has the wrong sign.",
+      "primary_affected_tag": "teo6",
+      "target_type": "formal_result",
+      "title": "Theorem 6: G-term has wrong sign and takes square root of a negative quantity",
+      "why_classification": "The correction is forced by Lemma 5 and is a single-term fix."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\stateRed(t^{+}_{k})&=\\fW^{\\T}_{\\switch_k}\\fV_{\\switch_{k-1}}\\stateRed(t^-_k)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The classical telescoping argument truncates one block of Hankel singular values at a time through a chain of intermediate reduced models. Here each mode has its own balanced coordinates and different projectors V_j, W_j. The jump maps W_{q_k}^T V_{q_{k-1}} and the Lemma 5 hypotheses are not shown to be compatible across the intermediate orders s_k, s_{k+1} and across all modes. No argument is given for the intermediate systems or the jump terms G, and the claim that the multiplicities m_k(j) are equal across modes is only assumed. The step is nontrivial and missing.",
+      "failure_location": {
+        "quote": "The proof follows directly by applying the sub-additivity of the square root function to \\Cref{teo5} and standard balance truncation error arguments; see, for instance, \\cite[Sec.~7]{PetWL13}.",
+        "tag": "teo6"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Supply the iteration argument: define the nested intermediate PBR models, verify that Lemma 5 applies to each consecutive pair with the transition maps, and sum with sub-additivity.",
+      "overall_effect": "The central error bound of the paper (Thm. 6) is not proved as stated.",
+      "primary_affected_tag": "teo6",
+      "target_type": "formal_result",
+      "title": "Theorem 6 proof is a one-line appeal to 'standard' BT arguments, with no argument for switched/jump setting",
+      "why_classification": "The argument is missing but plausibly supplied by a contained lemma/induction using Lemma 5, with no change of result."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{1}{2}, & \\mbox{if }i-1=j",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "A_1 = -I + (1/2)S with S the shift is not normal, since SS^T≠S^TS. A_2 is tridiagonal Toeplitz with sub/super entries 4/5 and -1/5, and A_2A_2^T-A_2^TA_2=(a²-b²)(SS^T-S^TS)≠0. The stated justification for Thm. 4's hypothesis therefore fails. A_j+A_j^T≺0 does hold, so the hypothesis is true but for an unstated reason. The reported κ(A_j) values and the 'normal' framing are also unsupported.",
+      "failure_location": {
+        "quote": "Moreover, both $\\fA_1$ and $\\fA_2$ are normal matrices, so the hypothesis of \\Cref{teo4} holds.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Verify (eqn:ass:ndeAj) directly, e.g. by noting the eigenvalues of A_j+A_j^T are negative, and drop the normality claim.",
+      "overall_effect": "Only the justification for applying Thm. 4 in the example is wrong; the dissipativity itself holds.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "False claim that the synthetic example's A_1, A_2 are normal",
+      "why_classification": "The hypothesis can be verified directly in a line, and the example's conclusions survive."
+    }
+  ],
+  "issues_found": 8,
+  "paper_id": "2601.13039",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "bd667d07baf9874b99b339d8a0a6b0aa8d1d403f5cfe7b718aa7b9a572affb14",
+  "status": "ok"
+}

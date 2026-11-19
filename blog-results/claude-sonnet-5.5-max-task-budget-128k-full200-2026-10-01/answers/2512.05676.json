@@ -1,0 +1,118 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:infsup0_lambda",
+        "lem:infsup_lambda",
+        "thm:infsup",
+        "lem:nondegen",
+        "cor:added-1",
+        "lem:reliability",
+        "thm:optimal_timestepping",
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lambda^{-1}\\norm{\\partial_t u_{\\rm F}}{L^2(\\II_i)}^2\\simeq\\sum_{T\\in\\II_i}|T|\\lambda^{-1}|\\partial_t {u_F}(t_{T+1})|^2 =",
+          "tag": "lem:infsup0_lambda"
+        },
+        {
+          "quote": "q_{T}(t_{T+1}) = 2\\,\\frac{3-|T|\\lambda}{|T|^2\\lambda^2 + 4|T|\\lambda + 6}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "On an element, u_F = c*q_T with q_T(t_T)=1. By eq:qeval, for gamma=|T|*lambda large, q_T(t_{T+1}) ~ -2/gamma, but q_T is bounded below on T: the dimensionless coefficients tend to (a',b')=(3,-4), so q_T ~ (3s-1)(s-1) and ||q_T||_{L2(T)}^2 ~ |T|. Hence lambda||u_F||^2_{L2(T)} ~ gamma*|c|^2, not lambda|T||u_F(t_{T+1})|^2, which is smaller by a factor ~gamma^{-2}. Likewise lambda^{-1}||q_T'||^2 ~ 1/gamma while lambda||q_T||^2 ~ gamma, so the claimed equivalence of derivative and function norms fails. Counterexample: concatenating invisible pieces u(t_{k+1})=Q_k u(t_k) gives a continuous u in S^2 that pairs to zero with every test function except through <u(0),w>. Then the inf-sup quotient is at most |u(0)|/||u||_X ~ gamma^{-1/2}, which tends to 0 as lambda*|T| grows. So (high_esti1) and the F-estimates in lem:infsup0_lambda fail, and the claimed lambda-independent c_0 is false.",
+      "failure_location": {
+        "quote": "\\lambda \\norm{u_{\\rm F}}{L^2(\\II_i)}^2&\\simeq \\lambda \\sum_{k=1}^{\\#\\II_i-1} |T_k| |f_{T_{k}}(t_{k+1})|^2",
+        "tag": "lem:infsup1_lambda"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "No complete source-supported repair identified. At minimum one must either control the F-part of u over large steps with correct norm equivalences, or change the norm, test space or scheme so that uniform inf-sup holds for all lambda*|T|, and then redo the region-wise argument and constants.",
+      "overall_effect": "The uniform (in T, lambda) inf-sup stability of the Radau IIA Petrov-Galerkin scheme is unsupported and contradicted for large lambda*|T|. Quasi-orthogonality via [infsup], the Cea lemma, discrete reliability, the optimality theorem and all reduced-basis results built on them lose their foundation. This includes the headline claim of provable rate optimality without a step-size restriction.",
+      "primary_affected_tag": "lem:infsup1_lambda",
+      "target_type": "formal_result",
+      "title": "Norm of the 'invisible' part u_F wrongly controlled by endpoint values; uniform inf-sup fails for large steps",
+      "why_classification": "The core stability theorem on which the paper's novelty rests fails as stated, and the counterexample shows the gap is not a constant slip. Any repair needs new proof architecture or a modified scheme or norm."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "eq:convergence_time_approx_V_rb_R",
+        "thm:exp_conv",
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Assume that $f\\in \\SS^2(\\TT;V^\\star)$.",
+          "tag": "lem:reliability"
+        },
+        {
+          "quote": "It turns out that, if $f$ is element wise quadratic in time, this scheme is equivalent to a third order Radau IIA method",
+          "tag": null
+        },
+        {
+          "quote": "In the following, we assume that the right-hand side $f \\in L^2(0,\\tend;V_h^\\star)$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The Petrov-Galerkin form needs int<f,v Phi_T> = |T|<f(t_{T+1}),v>, which holds only if f is quadratic on each T. Reliability, efficiency and discrete reliability are likewise proved only for f in S^2(T;V*). Theorem thm:optimal_timestepping does not assume this and is used for arbitrary f in L^2(0,tend;V*). For all meshes in the sequence to carry f in S^2, f would have to be a global quadratic. For general f, the point-evaluation scheme (cnscheme) is not the nested Galerkin method. The estimator also lacks a data-oscillation term, so reliability and efficiency, and thus the optimality framework, are not established.",
+      "failure_location": {
+        "quote": "Let $V$ be finite dimensional and let the initial mesh $\\TT_0$ be uniform.",
+        "tag": "thm:optimal_timestepping"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Define the scheme through the Galerkin right-hand side (replace f(t_{T+1}) by int f Phi_T) and add an oscillation term to the estimator with the corresponding reliability and efficiency statements. Alternatively, state the theorem only for f in S^2 on all meshes and restrict the MOR results accordingly.",
+      "overall_effect": "Optimality is proved only for a very restricted class of data (essentially f quadratic in time). The reduced-basis theorems with Laplace-decaying general f are not covered by what is proved.",
+      "primary_affected_tag": "thm:optimal_timestepping",
+      "target_type": "formal_result",
+      "title": "Missing hypothesis that f is piecewise quadratic (on all meshes); main theorem and RB results applied to general f",
+      "why_classification": "The framework itself survives, but the scheme or estimator must be modified and the dependent theorems restated with an oscillation term or a restricted data class. This is more than a one-line fix but not a new architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:fully_discrete_error"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "denotes the $V_h$-orthogonal projection onto $V_R$.",
+          "tag": "lmm:quadrature_error"
+        },
+        {
+          "quote": "where we have used that, under the assumption of real-valued data for the parabolic problem,",
+          "tag": "lmm:quadrature_error"
+        },
+        {
+          "quote": "Observe that in Theorem \\ref{thm:fully_discrete_error} the constant $C_1>0$ possibly depends on the discretization parameter $h>0$, usually in an algebraic fashion.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "F(tau) contains ||(I-P)d_t u^(s)||_{V*}^2 with P the V_h-orthogonal projection. In the eigenbasis, V* weights are lambda_i^{-1} and V weights are lambda_i, so P is not an orthogonal projection, nor a contraction, in V*. The bound ||(I-P)w||_{V*} <= ||w||_{V*} used in (Fbound) is therefore unjustified. The displayed (Fbound) also mixes V_h and V* norms for d_t u^. Controlling the term by the V-norm requires Lemma add_reg_derivative, whose constants depend on h, as the paper itself admits later. Hence the claim that the implicit constant is independent of the discretization parameter h, and C_2 independent in thm:fully_discrete_error, is unsupported.",
+      "failure_location": {
+        "quote": "where the implicit constant is independent of $R$",
+        "tag": "lmm:quadrature_error"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Bound the V*-norm of (I-P)d_t u^ by its V-norm, or otherwise handle the non-contractivity. Then state the quadrature lemma and C_2 with the h-dependent constants from Lemma add_reg_derivative, and adjust the M-selection discussion.",
+      "overall_effect": "The quadrature-error bound and the 'C_2 independent of h-dependent quantities' claim of the fully discrete theorem are not established. The cost analysis choosing M = O(log(eps)^2) independent of h is affected.",
+      "primary_affected_tag": "lmm:quadrature_error",
+      "target_type": "formal_result",
+      "title": "h-independence of the quadrature error bound unsupported: V_h-orthogonal projection is not a contraction in the V* norm",
+      "why_classification": "The exponential rate in M survives, but the constant must become h-dependent. This is a contained weakening of the stated h-independence plus an adjustment of the cost discussion."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2512.05676",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "70525655112dd5e6a4b9e036ce5bd3048782cdaa98dd74861d388a6c2188eeea",
+  "status": "ok"
+}

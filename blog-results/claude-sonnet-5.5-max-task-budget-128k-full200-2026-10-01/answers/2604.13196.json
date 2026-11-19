@@ -1,0 +1,184 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{z = z_{\\min}}^{z_{\\max}} \\frac{(-1)^z [z+1]_q!}{\\prod_{i=1}^4 [z - a_i]_q! \\prod_{y=1}^3 [b_y - z]_q!}",
+          "tag": "eq:racah_6j"
+        }
+      ],
+      "failure_explanation": "From the summand in Eq. (racah_6j), t_{z+1}/t_z = -[z+2] * prod_y [b_y - z] / prod_i [z+1-a_i]. The paper puts the a_i factors [z+1-a_i] in the numerator and the b_y factors in the denominator, and shifts them to [b_y-(z+1)]. The formula is therefore the wrong rational function. As written it also divides by [0]_q at the last step z+1 = min b_y = z_max.",
+      "failure_location": {
+        "quote": "- \\frac{[z+2]_q \\prod_{i=1}^4 [z+1-a_i]_q}",
+        "tag": "eq:ratio_Rz"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the formula by R_z = - [z+2]_q prod_{y=1}^3 [b_y - z]_q / prod_{i=1}^4 [z+1-a_i]_q. The support counts are unchanged (8 quantum integers per ratio).",
+      "overall_effect": "The ratio sequence stored in the DCR definition and used in the compilation algorithm (and so in the projection algorithm) does not reproduce the 6j summands as written. The structural results are not affected, and the factor count K is unchanged.",
+      "primary_affected_tag": "eq:ratio_Rz",
+      "target_type": "other",
+      "title": "Hypergeometric update ratio R_z for the 6j summand is inverted and mis-shifted",
+      "why_classification": "The correct ratio follows directly from Eq. (racah_6j). The fix is a local formula replacement with no change to method, complexity, or claims."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sqrt{\\Pi_{\\mathbb{T}}(\\mathcal{M}_{\\rm rad})}",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "Evaluated amplitude $S \\in \\mathbb{T}$",
+          "tag": "alg:projection"
+        }
+      ],
+      "failure_explanation": "The decomposition only splits M_geom into a perfect-square part and a square-free radical. The radical part M_rad is not eliminated: Algorithm 2 still applies a square root to Pi(M_rad). For the exact target T = Q(zeta_{2h}) the value Pi(M_rad) is generally not a square in T, so the output need not lie in T. Evaluating the full 6j symbol exactly therefore needs a quadratic extension or a symbolic radical. The description of M_root as the 'even-exponent factors (a perfect square)' is also inconsistent with M_geom = M_root * sqrt(M_rad); M_root must hold half-exponents.",
+      "failure_location": {
+        "quote": "The entire square root is resolved at the exponent level, without field extension and without any polynomial computation.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State that only the square-free radical remains. Return it separately or work in T(sqrt(Pi(M_rad))). Fix the description of M_root as half of the even part of the exponents.",
+      "overall_effect": "The advertised exact capability, 'no field extension', and the contract 'S in T' for exact projection are overstated. Only compilation avoids the extension.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that the square root is resolved exactly without field extension contradicts the algorithm that still takes sqrt(Pi(M_rad))",
+      "why_classification": "A local restatement and a small change to the algorithm contract suffice. The compilation framework and its claims survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "which is independent of representation",
+          "tag": null
+        },
+        {
+          "quote": "$\\hphantom{-}1.5083 \\times 10^{-3}$",
+          "tag": "tab:phase_flip"
+        }
+      ],
+      "failure_explanation": "The condition number kappa = sum|T_z|/|S| measures cancellation between different summands of the alternating sum. Exponent-level cancellation inside a single summand cannot remove it. Section 6 itself says kappa is independent of representation. Table 2 shows the DCR output at j=110 is off by a factor of about 5 (1.5083e-3 against the 2.8290e-4 reference), so large-kappa cancellation is still realized numerically.",
+      "failure_location": {
+        "quote": "are no longer realized numerically, but are instead resolved exactly at the algebraic level",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restrict the claim to representation-induced (numerator/denominator) dynamic range and state that inter-term cancellation governed by kappa is untouched.",
+      "overall_effect": "The 'algebraic preconditioner' narrative, and the abstract's 'reducing cancellation-induced error amplification', overstate what is shown. The DCR removes only intra-term dynamic range (gamma_rep), not the intrinsic kappa cancellation.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Claim that DCR resolves the alternating-sum condition number algebraically contradicts the paper's own statements and data",
+      "why_classification": "Rewording the claim removes the contradiction and preserves the supported results (Tables 2 and 3, gamma-reduction)."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Comment{early termination at vanishing factor}",
+          "tag": "alg:projection"
+        },
+        {
+          "quote": "while a negative exponent produces a pole",
+          "tag": null
+        },
+        {
+          "quote": "\\mathbf{e}_{z+1} = \\mathbf{e}_z + \\mathbf{e}_{\\mathcal{R}_z}",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "At q = e^{i pi/h} a ratio R_z is a monomial that may contain Phi_h with positive exponent (value 0) or negative exponent (pole). The algorithm projects each ratio separately and accumulates R <- R*v in T. If v = 0 it breaks, discarding all later terms. But a later ratio can carry Phi_h^{-1}, and the Phi_h exponent of the cumulative monomial e_z is not monotone in z. Later summands can therefore be nonzero, and the product of a 0 and a pole is exactly the case that exponent-vector tracking resolves. A ratio with negative Phi_h exponent makes Pi(R_z) undefined, and the algorithm has no handling for this. The correct vanishing test applies to the cumulative exponent vector e_z, not to one ratio.",
+      "failure_location": {
+        "quote": "\\State $v \\gets \\Pi_{\\mathbb{T}}(\\mathcal{R}_z)$",
+        "tag": "alg:projection"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Accumulate the exponent vectors e_z and P_z exactly via the update e_{z+1} = e_z + e_{R_z}. Test e_{z,h} > 0 on the cumulative vector, skip only that term, and project each cumulative monomial (or handle the Phi_h exponent separately). Remove the unconditional break.",
+      "overall_effect": "The root-of-unity projection, the main advertised exact use case with early termination, can drop non-zero terms or divide by zero. The claim that vanishing is detectable early is unsupported.",
+      "primary_affected_tag": "alg:projection",
+      "target_type": "algorithm",
+      "title": "Projection algorithm multiplies projected ratios and breaks on the first zero, invalid when Phi_h appears in ratios (zeros and poles)",
+      "why_classification": "The repair is a contained change to the algorithm using data already in the DCR. The framework and its guarantees survive, but the early-termination claim is lost."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{[a+b-c]_q! [a-b+c]_q! [-a+b+c]_q!}{[a+b+c+1]_q!}",
+          "tag": "eq:tri_coeff"
+        },
+        {
+          "quote": "admissibility imposing a hard cutoff",
+          "tag": null
+        },
+        {
+          "quote": "while a negative exponent produces a pole",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof shows only that a monomial vanishes iff the exponent of Phi_h is positive; the statement does not mention admissibility. The accompanying claims, that admissibility is 'a vanishing condition internal to the representation' and that violating terms are annihilated, are not derived. A level-k cutoff violation (a+b+c+1 >= h) puts [a+b+c+1]! in the denominator of Delta_abc. This gives a negative Phi_h exponent (a pole), the opposite of vanishing. The classical bounds z_min, z_max come from non-negativity of factorial arguments and have nothing to do with h. No correspondence between admissibility and e_h > 0 is established, and the proposition also ignores e_h < 0, where the projection is undefined.",
+      "failure_location": {
+        "quote": "Terms violating admissibility are annihilated under projection",
+        "tag": "prop:admissibility"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Restate the proposition as the vanishing/pole criterion in terms of the sign of e_h. Either prove a precise correspondence between the 6j admissibility conditions and the Phi_h exponents (zero exponent for factorial arguments below h), or withdraw the admissibility claim.",
+      "overall_effect": "Contribution (5) and the abstract's claim that admissibility at roots of unity 'emerges as an intrinsic property' of the DCR are unsupported. Only the trivial zero criterion is proved.",
+      "primary_affected_tag": "prop:admissibility",
+      "target_type": "formal_result",
+      "title": "Proposition on 'admissibility via cyclotomic support' proves only a vanishing criterion; admissibility violations give poles, not zeros",
+      "why_classification": "A contained weakening or a new short lemma on Phi_h exponents of the factorials resolves it, leaving a comparable but weaker structural statement."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathcal{O}\\!\\left(D_{\\max} + Z \\cdot K \\cdot S_{\\max} \\right)",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "$0.0209$",
+          "tag": "tab:latency"
+        },
+        {
+          "quote": "$1.7698$",
+          "tag": "tab:latency"
+        }
+      ],
+      "failure_explanation": "For the symmetric 6j symbol Z = j, K is constant and S_max grows slowly, so Theorem 1 predicts near-linear construction cost. The paper's own Table 5 gives DCR build times 0.0209 ms (j=50), 0.0824 (j=100), 0.3188 (j=200), 1.7698 (j=500). Each doubling of j multiplies the time by about 3.9, so the time scales as about j^1.9. Only the memory data (Table 4) are linear. The claim that the experiments validate the complexity bounds and the contribution (3) claim of near-linear construction are contradicted for time by the paper's own measurements. The discrepancy is neither acknowledged nor explained.",
+      "failure_location": {
+        "quote": "validate the theoretical complexity bounds established in Section~\\ref{sec:complexity_error}",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Restrict the validation claim to memory. Report the measured near-quadratic build time and either explain which operation (e.g. dense per-step vector work) causes it, or reconcile Theorem 1 with the implementation.",
+      "overall_effect": "The empirical support for near-linear compilation time is missing. Either Theorem 1's operation count does not describe the implementation, or the implementation does more work than the analysis counts.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Reported DCR build times scale roughly quadratically, contradicting the claimed near-linear construction and the claim of validated complexity bounds",
+      "why_classification": "The repair needs a contained analysis or reoptimization to reconcile theory and data, or an honest weakening of the time-scaling claim. The memory result and the framework survive."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2604.13196",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "f27f4d9edd84cc6caa93d0bb9705e7cb9c415e35fb2a71b7e9470c22f26222de",
+  "status": "ok"
+}

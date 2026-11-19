@@ -1,0 +1,247 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:errorWave",
+        "thm:errorHeatb",
+        "thm:errorWaveb"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "any parameters \\((\\theta^i)_{i=1}^{9},(\\bar{\\theta}^i)_{i=1}^{d}, (\\tilde{\\theta}^i)_{i=1}^{d}\\)",
+          "tag": null
+        },
+        {
+          "quote": "\\phi_{\\theta^6}(0,\\cdot)u_{\\theta}(0,\\cdot)-\\phi_{\\theta^7}(0,\\cdot)u_0",
+          "tag": "eq:barRG1"
+        }
+      ],
+      "failure_explanation": "The bound on the weighted PDE residual of (u_eps, f_eps) is P/sqrt|Q_T| times the norms of the differences u-u_eps and f-f_eps. That presumes the weighted residual of the exact pair (u,f) vanishes. With independent weights it does not: if phi_{theta^1} is identically 2 and all other weights are identically 1, the residual of (u,f) is d_t u, which is nonzero. The same happens in the initial and terminal terms, where (phi_6-phi_7)u_0 is nonzero when phi_6 differs from phi_7. The theorem quantifies over arbitrary bounded weights, so it is false as stated. Moreover, the adversarial maximum over the weights, which is what the method actually trains, is not small for the exact solution: raising one weight by s gives roughly s^2||d_t u||^2 - rho s^2. The same argument is reused for the wave and bilinear versions.",
+      "failure_location": {
+        "quote": "We estimate the residual as follows:",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Restrict the theorems to phi identically 1 (standard PINN) or to compatible weights (equal across all terms of the PDE residual, and equal across each pair in the data terms). Alternatively, state a different bound for the inner maximum over weights that accounts for the nonzero weighted residual of the exact solution.",
+      "overall_effect": "The advertised guarantee that the WeightedPINN loss can be made small by increasing width and depth holds only for the unweighted case, or for weights tied together so that the exact residual vanishes. It is unsupported for general adaptive weights, and for the min-max objective.",
+      "primary_affected_tag": "thm:errorHeat",
+      "target_type": "formal_result",
+      "title": "Approximation theorems treat the weighted residual of the exact solution as zero for arbitrary bounded weights",
+      "why_classification": "Every supported repair removes the generality of adaptive, independent weights, which is the paper's central theoretical claim for WeightedPINN, or requires a new bound for the adversarial maximum."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:errorWave",
+        "thm:errorHeatb",
+        "thm:errorWaveb"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\eta_\\varepsilon(t,x) := \\varepsilon^{-(d+1)}\\, \\eta(\\varepsilon^{-1}t,\\varepsilon^{-1}x),",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "u_eps and f_eps are functions of (t,x) in R^{d+1}, and the networks u_theta and phi_theta are defined on R^{d+1}. The invoked approximation result (stated in the commented-out lemma with exponent -2(n-m)/d, where d is the input dimension) therefore applies with d+1 in place of d. The rates W^{-2/d}L^{-2/d}, W^{-4/d}L^{-4/d}, the threshold W^{1/d}L^{1/d} >= eps^{-(d+7)/2}, and the final rate W^{-1/d}L^{-1/d} are all misstated.",
+      "failure_location": {
+        "quote": "C_{Q_T}(d)\\|u_\\varepsilon\\|_{W^{3,\\infty}(Q_T)}\\mathcal{W}^{-2/d}\\mathcal{L}^{-2/d}",
+        "tag": "eq:udiff"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace d by d+1 in the exponents and in the threshold relating W, L and eps, and restate the rate as (WL)^{-1/(d+1)}.",
+      "overall_effect": "The stated convergence rate in width and depth is too optimistic. The correct exponent is 1/(d+1), and the regime condition on W and L changes accordingly.",
+      "primary_affected_tag": "thm:errorHeat",
+      "target_type": "formal_result",
+      "title": "Approximation rates use the spatial dimension d although the approximated functions live in d+1 variables",
+      "why_classification": "The repair is local and the argument structure survives, but the headline rate is weakened, so it is more than a routine fix."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:error_estWave"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "denote the weak solution and the control associated with \\eqref{Heat1}.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The theorem concludes that ||f-f_theta||_{L^2(q_T)} and ||u-u_theta|| are O(delta) for the given control f. The exact control is not unique. Take any w in C_c^infty(q_T). Then u'=u+w satisfies the equation with control f'=f+(d_t w-Delta w+v(u+w)-v(u)) supported in omega, and has the same u(0) and u(T). The pair (u',f') has zero loss, yet ||f'-f|| and ||u'-u|| are fixed positive numbers. The proof applies the cost estimate of the cited controllability theorem to the specific difference f-f_theta, but that estimate bounds the minimal-norm control, not an arbitrary control steering the difference equation to zero. The same applies to the wave version.",
+      "failure_location": {
+        "quote": "is the exact control with corresponding weak solution \\(\\tilde u\\) of the equation",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete repair with the same statement exists. At minimum the statement must be changed to a quantity that is well defined despite non-uniqueness (for example, convergence of the state to the target and of the residuals), or the problem must be augmented with a selection criterion (minimal-norm control plus a modified loss) and a new stability proof.",
+      "overall_effect": "The converse results claiming that a small loss implies closeness to the true state and control are unsupported. Small loss only certifies near-satisfaction of the constraints.",
+      "primary_affected_tag": "thm:error_estHeat",
+      "target_type": "formal_result",
+      "title": "Stability theorem is false because controls are not unique; the controllability estimate is applied to an arbitrary difference of controls",
+      "why_classification": "The central guarantee, convergence of the learned control, is false as formulated, and the repair changes the type of the guarantee."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "e^{C_{0}(T-t)}\\Bigl(",
+          "tag": null
+        },
+        {
+          "quote": "\\partial_t\\|\\hat u\\|_{L^{2}(\\Omega)}^{2}",
+          "tag": "eq:energy"
+        }
+      ],
+      "failure_explanation": "ū is defined by the forward heat equation with terminal data ū(T)=z_0 in L^2, i.e. a backward heat problem. Such a problem has no solution for general L^2 data, so ū is not well defined. The estimate eq:energy has the form y' + a <= C y + g, which yields forward Gronwall bounds in terms of y(0). The proof instead derives y(t) <= e^{C(T-t)}(y(T)+...), which would require the opposite inequality. Counterexample: with R=0, V=0, û(T)=eps sin(k pi x), the solution is û(t)=eps e^{k^2 pi^2 (T-t)} sin(k pi x), so the bound on û(0) in terms of û(T) fails. The bound on û(0) is then used in eq:f_est1.",
+      "failure_location": {
+        "quote": "that the above semilinear heat equation admits a unique solution",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "No complete source-supported repair identified. At minimum the argument must be rebuilt using forward-in-time stability from the initial data, with a different treatment of the terminal condition and of the control difference, since backward stability fails for the heat equation.",
+      "overall_effect": "The heat-equation stability estimates (eq:hat_u_est1, eq:f_est1, eq:tilde_u_est1) and the conclusion of the theorem are unproved.",
+      "primary_affected_tag": "thm:error_estHeat",
+      "target_type": "formal_result",
+      "title": "Heat stability proof uses an ill-posed terminal-value problem and a backward-in-time Gronwall estimate in the wrong direction",
+      "why_classification": "The proof architecture rests on backward well-posedness of the heat equation, which is false, so a new proof strategy would be needed."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:error_estWave"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\hat u &= u_{\\theta} \\quad\\text{on }\\Sigma_{T},",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Integration by parts against û gives the boundary term ∫_{∂Ω} û (∇û·ν). Here û=u_theta−ū with ū=0 on Σ_T, so the trace of û is u_theta but ∇û·ν=∇u_theta·ν−∇ū·ν. The proof drops the ∇ū·ν contribution. This term is not controlled by the loss, and ū is only a weak solution with no normal-derivative trace. The wave proof has the same flaw with ∂_t û (∇û·ν). The residual-based bound on the boundary term is therefore unsupported.",
+      "failure_location": {
+        "quote": "-\\int_{\\partial\\Omega}u_{\\theta}\\,(\\nabla u_{\\theta}\\cdot\\nu)\\, d x",
+        "tag": null
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Handle the boundary data via a lifting or by testing with a zero-trace function (for example, working with u_theta−ū−extension), and prove a stability lemma that does not need the normal derivative of ū.",
+      "overall_effect": "The estimates eq:energy, eq:hat_u_est1 and eq:hat_u_est2, and the final constants, are unjustified. This holds even if the other issues were repaired.",
+      "primary_affected_tag": "thm:error_estHeat",
+      "target_type": "formal_result",
+      "title": "Energy estimates replace the normal derivative of û on the boundary by that of u_theta",
+      "why_classification": "A contained new lemma (a lifting argument) should restore the energy estimate without changing the theorem."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\phi_{\\theta^2}(t_i,x_i)\\,\\bar{\\Delta}_x u_\\theta(t_i,x_i)",
+          "tag": "eq:lossheat"
+        },
+        {
+          "quote": "we restrict the outputs of the weight networks to lie in the interval $[0.2, 5]$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The text says the training losses discretize ||R_Q||^2+||R_Gamma||^2-||R_NN||^2. The implemented losses eq:lossheat and eq:losswave contain no penalty term −||R_NN||^2 and use a single weight on the whole Laplacian (not d weights on d_{x_i x_i}). The boundary terms have a single weight on u (no separate weights on the tilde-theta terms or on normal derivatives). The weights are simply box-constrained to [0.2,5].",
+      "failure_location": {
+        "quote": "which correspond to discrete approximations of",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Either implement and report the stated formulation, or correct the description and state that the experiments test a simplified, box-constrained variant.",
+      "overall_effect": "The experiments do not test the formulation covered by the theory, and the claimed role of the penalty (keeping the weights near 1) is not implemented.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Reported numerical loss omits the weight penalty and uses a different weight structure than the analysed formulation",
+      "why_classification": "A local correction of the description, or a rerun with the penalty added, leaves the paper's claims intact."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "is the closed ball centered at $(1/d,\\dots,1/d)$ with radius $3/4$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The center has norm 1/sqrt(d)≈0.316 for d=10, and the radius is 0.75. The point of the unit sphere in the direction of the center lies at distance 1−0.316=0.684<0.75 from it. That boundary point lies in the closed ball and hence in Ω∖ω, so ω does not contain ∂Ω or a neighbourhood of it. Assumption (A3), the hypothesis of the wave stability theorem, is therefore not satisfied, although the text says it is.",
+      "failure_location": {
+        "quote": "For simplicity, we further assume that $\\omega$ contains the entire boundary $\\partial\\Omega$.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Choose the radius below 1−1/sqrt(d)≈0.684, or a different center, and rerun or re-report the experiment.",
+      "overall_effect": "Situations 3 and 7 do not satisfy the stated controllability hypothesis. The claim that the experiments fit the geometric assumptions is incorrect.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Situation 3 control region does not contain a neighbourhood of the boundary, contrary to the claim",
+      "why_classification": "A parameter change and rerun fixes the example without altering any theory."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "We consider the initial condition $u_0 = 0$ and the terminal condition",
+          "tag": null
+        },
+        {
+          "quote": "v(u) := -u + u^2.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For the bilinear equations d_t u - Δu + v(u) = f u (and the wave analogue) with v(0)=0 and f in L^∞, zero initial data (also u_1=0 for the wave case) gives u≡0 by uniqueness. The nonzero targets z_0 (and z_1) in Situations 5 and 7 are therefore unreachable. No bilinear control exists, contrary to the standing assumption that a control exists for the prescribed data.",
+      "failure_location": {
+        "quote": "We test the same four situations with the same domain and initial/terminal conditions.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-008",
+      "least_adequate_overall_repair": "Use initial data not identically zero, with a target known to be reachable, and rerun Situations 5 and 7.",
+      "overall_effect": "The reported errors for Situations 5 and 7 measure approximation of a non-existent control, so they cannot support the claim that the method reconstructs bilinear controls.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Bilinear experiments with zero initial data and nonzero targets are uncontrollable",
+      "why_classification": "Two of the eight experiments must be redesigned and rerun, and the concluding claim about all situations must be reassessed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\(2.566\\times10^{-3}\\)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "In every other table, Total equals Eqn. plus Bnd. In the WeightedPINN row for Situation 8, 2.051e-4 + 3.968e-2 ≈ 3.99e-2, which is not the reported total 4.225e-2. All other entries of that table, including the standard-PINN row, coincide digit for digit with the internal-control Situation 4 table, where Eqn. is 2.566e-3. The Situation 8 figures therefore look copied or misreported, and the bilinear wave result is unreliable.",
+      "failure_location": {
+        "quote": "\\(2.051\\times10^{-4}\\)",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-009",
+      "least_adequate_overall_repair": "Recompute and report the Situation 8 results with consistent entries, or correct the misreported value.",
+      "overall_effect": "The empirical evidence for Situation 8, and the 'consistently' better claim, is not trustworthy for that case.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Situation 8 table entry is inconsistent with its total and duplicates Situation 4 data",
+      "why_classification": "A local correction of one table or a rerun of a single experiment suffices and the theory is unaffected."
+    }
+  ],
+  "issues_found": 9,
+  "paper_id": "2604.22414",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "150c96ec1dc8bb115e9e398e2472b8004f83f2f7e2d892e50db58dd5cb9e08b1",
+  "status": "ok"
+}

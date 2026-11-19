@@ -1,0 +1,132 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "our experiments suggest that for any sufficiently large $k$ and $\\kappa$, we can find a problem instance for which the backward error of \\algne\\ after $k$ iterations is at least $\\min\\{1, \\log_{10}(\\kappa)/k\\}$",
+          "tag": null
+        },
+        {
+          "quote": "The above example suggests that a universal rate is not attainable for any algorithm that relies on the Krylov subspace defined by the normal equations",
+          "tag": null
+        },
+        {
+          "quote": "suggesting that no deterministic Krylov method can attain truly universal convergence for general systems",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The introduction says a family of hard instances has been constructed on which MINBERR-NE has backward error at least log(kappa)/k, and extends this to all deterministic Krylov methods. The paper contains no construction and no proof. The only support is numerical observation on one synthetic family (Small-Outlier, n=2000, limited by numerical conditioning), and Section 5 itself says only that experiments 'suggest' it. No argument covers other Krylov subspaces or methods. The GMRES-style counterexample concerns a different subspace.",
+      "failure_location": {
+        "quote": "we are able to construct a family of hard problem instances for which the \\algne\\ backward error is at least $\\log(\\kappa(\\A))/k$ after $k$ iterations",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Reword the introduction to say the lower bound is an empirical observation for MINBERR-NE (and normal-equations Krylov subspaces) on a synthetic family. Drop the generalization to all deterministic Krylov methods, or prove the lower bound.",
+      "overall_effect": "The advertised negative result (impossibility of universal rates for deterministic Krylov methods on general systems, and the log(kappa)/k lower bound) is an empirical conjecture, not an established result. The motivation for the random-perturbation variant rests on it.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Lower bound on MINBERR-NE / any deterministic Krylov method stated as constructed fact but supported only by experiments",
+      "why_classification": "Rewording to an empirical, scope-limited statement fixes it without new proofs. No proved theorem is affected, although the advertised lower-bound claim is withdrawn."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\berr_{\\A,\\b}(\\x)=\\frac{\\|\\A\\x-\\b\\|_2}{\\|\\A\\|_2\\|\\x\\|_2}$",
+          "tag": null
+        },
+        {
+          "quote": "\\argmin_{\\y \\in \\R^k} \\frac{\\|\\A\\Q_k\\y-\\b\\|_2}{\\|\\Q_k\\y\\|_2}",
+          "tag": null
+        },
+        {
+          "quote": "$\\sigma_{\\min}(\\tilde\\T)=\\berr_{\\A,\\b}(\\x_k)<\\epsilon$",
+          "tag": "alg:MINBERR"
+        }
+      ],
+      "failure_explanation": "The generalized Rayleigh quotient (eq:GRQ) drops the factor 1/||A||_2, which is harmless for the argmin. The derivation then identifies the minimum value, and the value of ||M[-1;y]||/||y|| for any y, with the backward error. The derivation actually shows ||A||_2 * berr = sigma_min(tilde T), and likewise ||A||_2 * berr(x_hat) = ||tilde T v||/||v||. The lemma, the text 'lambda_min = berr^2', Proposition prop:minberrNE and the algorithms' tests drop ||A||_2. They are correct only when ||A||_2=1, an assumption made in the proof of Theorem t:minberr but never stated here. For ||A||_2<1 the check sigma_min<epsilon does not certify berr<epsilon.",
+      "failure_location": {
+        "quote": "\\x_k = \\frac1\\alpha\\Q_k\\v_{\\min},\\qquad \\berr_{\\A,\\b}(\\x_k) = \\sigma_{\\min}.",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State the lemma and proposition with berr = sigma_min/||A||_2 (or assume ||A||_2=1 / rescale A and b). In the algorithms compare sigma_min with epsilon times a lower bound on ||A||_2, for example ||T_k||_2, or normalize the input.",
+      "overall_effect": "The stopping rule and stated backward-error values of MINBERR and MINBERR-NE are off by the factor ||A||_2 unless A is pre-normalized. The tolerance guarantee 'berr < epsilon' fails when ||A||_2<1.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "MINBERR value formula omits the 1/||A||_2 factor in the backward error",
+      "why_classification": "A local rescaling or normalization fixes the statements and tests. The method, rates and complexity are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "prop:minberrNE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "is such that the first element of",
+          "tag": "l:quotient"
+        },
+        {
+          "quote": "$\\widehat\\x_k = \\frac{1}{\\alpha}\\Q \\v$",
+          "tag": "alg:MINBERR"
+        }
+      ],
+      "failure_explanation": "The constraint is that the first entry of [-1; y] equals -1. The proof shows W[0; v] = [alpha; v] with alpha = w_1[0; v]. Rescaling to first entry -1 requires multiplying by -1/alpha, so y = -v/alpha. The lemma, the proof ('the first element of (1/alpha) W[0; v] is -1', which actually equals +1), Algorithm 1, and Proposition prop:minberrNE all use +1/alpha. Check with k=1: the true minimizer over span{b} is x = b/alpha_1, whereas the formula gives -b/alpha_1, which has larger backward error.",
+      "failure_location": {
+        "quote": "$\\y = \\frac{1}{\\alpha}\\v_{\\min}$",
+        "tag": "l:quotient"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace 1/alpha by -1/alpha throughout (or define alpha without the minus sign), and fix the first-entry claim in the proof and in Appendix B.",
+      "overall_effect": "The stated formula x_k = (1/alpha) Q_k v_min, and the final output step of Algorithms 1 and 2, return -x_k instead of the minimizer, so the output vector is not the stated MINBERR solution. The singular-value characterization and the convergence theory are unaffected.",
+      "primary_affected_tag": "l:quotient",
+      "target_type": "formal_result",
+      "title": "Sign error in recovering y (and x_k) from the singular vector",
+      "why_classification": "A forced sign correction in a few formulas repairs it, with no change to method or guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\frac{\\ln\\left( \\frac{32n \\ln(2/\\delta)}{\\pi \\delta^2 \\Delta} \\right)}{\\ln(1 + \\Delta/2)}",
+          "tag": "lemma:invit"
+        },
+        {
+          "quote": "we require $\\ell \\geq 2.23 \\ln(n/\\delta^2)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "For Delta=1/2 the lemma requires ell >= (1/2)[1 + ln(64 n ln(2/delta)/(pi delta^2))/ln(1.25)]. The leading coefficient is 1/(2 ln 1.25) ≈ 2.2407, which exceeds 2.23. In addition there is a dropped additive term of roughly 2.24*ln(20 ln(2/delta)) + 1/2. So 2.23 ln(k/delta^2) iterations do not satisfy the lemma's hypothesis, and for large k/delta^2 the stated count is strictly below the required one. Algorithm 1 uses this count in its while-loop.",
+      "failure_location": {
+        "quote": "shows that $\\ell \\geq 2.23 \\ln(k / \\delta^2)$",
+        "tag": "thm:minberrcost"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Replace the loop bound by the lemma's explicit expression, for example ell >= 2.25 ln(k/delta^2) + c with suitable constants, or state it as O(log(k/delta)).",
+      "overall_effect": "The iteration count in Algorithm 1 and the stated constant in the probability-(1-delta) factor-1.5 guarantee are not justified. The asymptotic cost O(k(T_A+n+log(1/delta))) is unaffected.",
+      "primary_affected_tag": "thm:minberrcost",
+      "target_type": "formal_result",
+      "title": "Claimed inverse-iteration count 2.23 ln(k/delta^2) is not implied by Lemma lemma:invit",
+      "why_classification": "Only a numerical constant needs adjusting, with no change to the method, the guarantee or the complexity order."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2604.16075",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5.5-max-task-budget-128k-2026-10-01-v4added4-20261006",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e8809ffebe5951ca04910fb6d942792c2e647636a18f4a3772a38aab1b066ff9",
+  "status": "ok"
+}

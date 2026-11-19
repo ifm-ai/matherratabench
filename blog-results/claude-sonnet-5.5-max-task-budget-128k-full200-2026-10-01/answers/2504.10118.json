@@ -1,0 +1,146 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_iterative_surrogate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that this computation does not work when",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof of the third item squeezes Phi between itself and the smooth majorizer and concludes that the gradients are equal. This presupposes that Phi has a gradient at z^(j). When some entry of F(Q P_k z^(j)) is 0 and the corresponding d_k entry is positive, the term (|w|-sqrt d)^2 has a cone singularity and Phi is not differentiable there. A smooth majorizer can touch such a concave kink, so the proposition is meaningless at exactly the points that the specification and the appendix remark claim to handle. The appendix remark that the gradient can be 'found using the third statement' is therefore circular.",
+      "failure_location": {
+        "quote": "The complex gradients of",
+        "tag": "prop:mm_cond"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add the hypothesis that F(Q P_k z^(j))_r is nonzero wherever d_k,r > 0. Alternatively, define nabla Phi at the remaining points by convention as nabla of the surrogate at (z; z), or use a generalized gradient.",
+      "overall_effect": "The gradient equality, and the optimality part of the descent theorem that invokes it, are unsupported at iterates with vanishing Fourier coefficients. The motivation for the zero-entry specification is also unsupported.",
+      "primary_affected_tag": "prop:mm_cond",
+      "target_type": "formal_result",
+      "title": "Gradient-agreement claim assumes Phi is differentiable where it is not",
+      "why_classification": "A local hypothesis or convention fixes the statement. The method, rates and conclusions are unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "achieves equality only when",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof shows only that equality Phi(z^(j+1)) = Phi(z^(j)) forces stationarity of z^(j+1). The converse is neither proved nor true. One surrogate step can land exactly on a stationary point with strictly smaller Phi. For example, if R_k(z_k^(0)) = Q z*_k for all k (noise-free data), then z^(1) = z* is stationary while Phi(z^(0)) > 0. The proof also writes the per-region expression nabla Phi~ = conj(Q)(Q z_k - R_k) = 0, dropping the sum over k with P_k^T; only the summed gradient vanishes at the joint minimizer. The theorem also assumes only a 'numerical solution', but the optimality part needs an exact minimizer.",
+      "failure_location": {
+        "quote": "\\iff \\nabla_{\\bm{z}}\\Phi\\left(\\bm{z}^{(j+1)}\\right) = 0",
+        "tag": "thm:convergence_iterative_surrogate"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State the optimality part as the one-directional implication that Phi(z^(j+1)) = Phi(z^(j)) implies nabla Phi(z^(j+1)) = 0. Require an exact minimizer and write the summed gradient with P_k^T.",
+      "overall_effect": "The 'iff' in the optimality statement is false as written. Only the implication 'no decrease implies stationarity' is established.",
+      "primary_affected_tag": "thm:convergence_iterative_surrogate",
+      "target_type": "formal_result",
+      "title": "Claimed equivalence 'Phi equal iff gradient zero' only proved in one direction (and converse is false)",
+      "why_classification": "Weakening 'iff' to '=>' and fixing the summation is a routine local change. The useful content of the theorem is retained."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [],
+      "failure_explanation": "Expanding the surrogate difference gives (1/2)sum_k||Q P_k a||^2 + Re(conj(a)·nabla Phi), with a = z - z^(j), since sum_k P_k^T nabla Phi_k = nabla Phi. The proof's last line instead carries conj(a)·nabla Phi + a·conj(nabla Phi) = 2Re(...), with the factor 1/2 silently dropped. The correct bound is Delta <= L||a||^2 + Re<nabla Phi, a>. Its optimizer a = -nabla Phi/(2L) gives a decrease of at least ||nabla Phi||^2/(4L), not ||nabla Phi||^2/L. The telescoped bound is therefore 2||sum_k P_k^T|Q|^2||_inf Phi(z^(0))/(n+1), four times the stated constant. The stated bound is not supported by the proof.",
+      "failure_location": {
+        "quote": "Then, the choice $\\bm{z}=\\bm{z}^{(j)}-\\frac{1}{L}",
+        "tag": "thm:convergence_rate"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Redo the expansion with the correct cross-term coefficient and state the rate with constant 2||sum_k P_k^T|Q|^2||_inf/(n+1), or replace the stated bound by an equivalent O(1/(n+1)) statement.",
+      "overall_effect": "The explicit constant in the O(1/n) rate is wrong by a factor 4. The sublinear order is unaffected.",
+      "primary_affected_tag": "thm:convergence_rate",
+      "target_type": "formal_result",
+      "title": "Factor-of-two error in cross term gives wrong constant in the sublinear rate",
+      "why_classification": "Only the numerical constant changes. The proof architecture and the sublinear rate survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "gives a descending direction of the surrogate model on the fine grid",
+          "tag": "thm:coarse_grid_update"
+        },
+        {
+          "quote": "However, despite these advantages, a notable drawback of \\texttt{rPIE} is that it currently lacks a rigorous theoretical foundation in terms of convergence analysis.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The only multigrid result is Theorem thm:coarse_grid_update. It says that a single coarse proximal step gives a direction d with <grad, d> <= 0 at a fixed point z_k'. The algorithm applies the full coarse correction with no line search or step-size control, so no decrease of the surrogate or of Phi follows. The direction is only weakly non-ascent. The analysis does not cover the recursive multi-level MGPS (the coarse solve is itself a two-level cycle with post-smoothing, so e_H is no longer a single proximal step). It does not cover the shuffled sequential region-by-region updates that are actually run (theorems 3.2 and 3.3 concern the full minimization of the joint surrogate). No convergence of MGrPIE is established, and the paper itself concedes that rPIE lacks convergence analysis.",
+      "failure_location": {
+        "quote": "These choices ensure the convergence of \\texttt{MGrPIE}.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Restrict the claim to what is proved: the surrogate full-batch iteration has monotone descent and an O(1/n) rate, and a two-level, single-proximal-step coarse correction is a weak descent direction for the fine surrogate. Alternatively, add a step-size or line-search safeguard and prove decrease for the sequential and recursive algorithm.",
+      "overall_effect": "The advertised convergence and justification of MGrPIE, including the conclusion's statement of convergence guarantees for the method, is not supported. The numerical performance rests on empirical evidence only.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Convergence of MGrPIE claimed but only a weak one-step descent-direction property is shown",
+      "why_classification": "The supported repair is to withdraw or weaken the convergence claim for the actual algorithm. This loses an advertised guarantee but leaves the surrogate theory and the algorithm intact."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bm{u}_H + |\\bm{Q}_H|^2&= \\frac{|\\bm{Q}_H|^2}{\\bm{I}_h^H|\\bm{Q}|^2}\\bm{I}_h^H\\left(\\bm{u}+|\\bm{Q}|^2\\right)",
+          "tag": "prop:automatic_regularization_selection"
+        }
+      ],
+      "failure_explanation": "The proof reduces both sides to I_h^H(1/(u+|Q|^2)) and (|Q_H|^2/I_h^H|Q|^2)/(u_H+|Q_H|^2). By the displayed identity for u_H+|Q_H|^2, the latter equals 1/I_h^H(u+|Q|^2). The proof then asserts I_h^H(1/(u+|Q|^2)) = 1/I_h^H(u+|Q|^2), the average of reciprocals equal to the reciprocal of the average. By Jensen this holds only when u+|Q|^2 is constant on each bin, and in general avg(1/x) > 1/avg(x). For rPIE, u+|Q|^2 = alpha|Q|^2_max + (1-alpha)|Q|^2 is not constant on bins; for bin values (1,3,3,3) the two sides are 0.5 and 0.4. The stated equality of maximal update magnitudes is therefore false in general. Only the inequality 'coarse maximal update <= restricted fine maximal update' holds.",
+      "failure_location": {
+        "quote": "\\bm{I}_h^H\\left(\\frac{1}{\\bm{u}+|\\bm{Q}|^2}\\right)&= \\frac{1}{\\bm{u}_H + |\\bm{Q}_H|^2}",
+        "tag": "prop:automatic_regularization_selection"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Replace the equality by the inequality max|e_{H,k}(I g1)| <= max|I e_k(g2)| (via Jensen) and reword the 'automatic selection' claim accordingly. Alternatively, redefine u_H so that equality holds and recheck the dependent weight statements.",
+      "overall_effect": "The claim that W_u^H makes the coarse regularization 'automatically' consistent (exact matching of update magnitudes) is not valid. The paper's advertised automatic hyperparameter derivation is supported only as a one-sided bound.",
+      "primary_affected_tag": "prop:automatic_regularization_selection",
+      "target_type": "formal_result",
+      "title": "Automatic regularization selection relies on false identity (average of reciprocals = reciprocal of average)",
+      "why_classification": "The repair is a contained re-statement (an inequality) or a modified definition of u_H. The central 'exact match' guarantee is lost, so it is more than a local fix, but no new global architecture is needed."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [],
+      "failure_explanation": "The proof reduces the inner product to -4 (I_h^H g)^* diag(A) (I_h^H g), where g is the fine gradient. This vanishes iff I_h^H g = 0, i.e. the bin averages of g are zero, not iff g = 0. For example, g = (1,-1,0,0) on a bin gives zero coarse direction while g is nonzero. So the 'equality implies gradient zero' claim is false, and the proof does not address it. The coarse correction can stall without strict descent even at non-stationary points. The hypothesis 'A positive' also fails in the application, where A can vanish if Q_H = 0.",
+      "failure_location": {
+        "quote": "equality implies $\\nabla_{\\bm{z}_k} \\widetilde{\\Phi}_k",
+        "tag": "prop:multigrid_convergence"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Replace the claim by 'equality implies I_h^H nabla Phi~_k = 0' (or equality implies e_{H,k} = 0), and allow A >= 0.",
+      "overall_effect": "Only the weak inequality <= 0 is valid, and Theorem thm:coarse_grid_update uses only that part. Any reading of the coarse step as a strict descent direction is unsupported.",
+      "primary_affected_tag": "prop:multigrid_convergence",
+      "target_type": "formal_result",
+      "title": "Descent-direction proposition falsely claims equality forces zero fine gradient",
+      "why_classification": "A one-line correction of the equality statement suffices, and the main inequality and downstream theorem are unaffected."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2504.10118",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "e9a1fb619c786f644b01b96a3fc12b8566c68fb3b203771e6f1978a95647dfae",
+  "status": "ok"
+}

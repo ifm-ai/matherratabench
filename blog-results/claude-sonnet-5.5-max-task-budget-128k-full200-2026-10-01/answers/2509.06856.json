@@ -1,0 +1,217 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "finalerror",
+        "M-IHS converging rate",
+        "Thf"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Therefore, for any $\\tau > 0$ satisfying \\(\\rho(L^{(i)}) + \\tau < \\frac{1}{3}\\), there exists a constant $M_i > 0$ such that if $a_i > M_i$,",
+          "tag": "thm:convergence_theorem1"
+        },
+        {
+          "quote": "Let the eigenvalue decomposition of \\(W_i\\) be \\(W_i = \\tilde{U}_i \\Lambda_i \\tilde{U}_i^{\\top}\\)",
+          "tag": "thm:convergence_theorem1"
+        }
+      ],
+      "failure_explanation": "Gelfand's formula only gives, for one fixed matrix L^{(i)}, a threshold after which ||L^a||^{1/a} is below rho+tau. L^{(i)} depends on the random sketches S_i and \\hat S, and the paper only shows rho(L^{(i)}) < 1/3 on the good event. No threshold M_i uniform over that event is proved, so 'there exists a constant M_i ... with probability at least 1-2delta' mixes quantifiers. W_i = I - mu (U^T \\hat S^T \\hat S U)^{-1} U^T S_i^T S_i U is a product of two SPD matrices and is generally non-symmetric, so the claimed orthogonal eigendecomposition W_i = \\tilde U \\Lambda \\tilde U^T is false. W_i is only similar to a symmetric matrix, so P is non-orthogonal and ||L^a|| carries a conditioning factor that is never controlled.",
+      "failure_location": {
+        "quote": "There exists a constant \\(M_i >0\\), such that if \\(a_i > M_i\\), with probability at least \\(1-2\\delta\\), we have",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace Gelfand's formula by a uniform bound over the compact set {W : ||W|| <= 19/36}, for example a Cauchy-integral/resolvent bound ||L^a|| <= C(rho+tau)^a with C independent of the realization. Also drop the false symmetry claim and use the similarity to a symmetric matrix.",
+      "overall_effect": "The 'sufficiently many iterations' threshold in Theorems 4.1 and 4.2, and in the stage-2 lemma, is not established as a constant independent of the random sketches. The (1/3)^a contraction is therefore not rigorously proved on the stated probability event.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "Gelfand-formula threshold M_i is not uniform over the random sketches; W_i wrongly treated as orthogonally diagonalizable",
+      "why_classification": "The repair is a contained but nontrivial uniformity argument, and the structure and rate of the results survive."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "finalerror",
+        "M-IHS converging rate",
+        "Thf"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\STATE $\\beta_{t+1} \\leftarrow \\beta_t - \\mu \\hat{H}^{-1} \\nabla f(\\beta_t; S_i X, S_i Y) + \\eta (\\beta_t - \\beta_{t-1})$",
+          "tag": "Alg-SRHT"
+        }
+      ],
+      "failure_explanation": "The proof uses the factor sqrt(2), which requires the two blocks of the initial vector to be equal (beta_{-1}^i = beta_0^i). In Algorithm 2 the counter t runs across all subproblems, so at the start of subproblem i the previous iterate is beta_{a_{i-1}-1}^{i-1}, not beta_{a_{i-1}}^{i-1}. The same holds at the start of stage 2. The initial momentum term is then nonzero, the vector [X(beta_0-tilde beta); X(beta_{-1}-tilde beta)] has unequal blocks, and the sqrt(2) constant is unjustified.",
+      "failure_location": {
+        "quote": "Together with \\({\\beta_{-1}^{i}} = {\\beta_{0}^{i}} = {\\beta_{a_{i-1}}^{i-1}}\\), we obtain",
+        "tag": "thm:convergence_theorem1"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Set beta_{t-1} <- beta_t at the start of each subproblem and of stage 2 in Algorithm 2, or bound the extra initial-momentum term using the previous stage's contraction.",
+      "overall_effect": "The theorems are proved for a restarted-momentum variant, not for Algorithm 2 as written.",
+      "primary_affected_tag": "thm:convergence_theorem1",
+      "target_type": "formal_result",
+      "title": "Analysis assumes momentum is reset at each subproblem, but Algorithm 2 carries beta_{t-1} across subproblems and stages",
+      "why_classification": "A one-line change to the algorithm, or a short extra bound, repairs the mismatch without changing any conclusion."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "a1",
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "there exists a constant $M_i > 0$ such that if $a_i > M_i$,",
+          "tag": "thm:convergence_theorem1"
+        },
+        {
+          "quote": "Among all tested values of $\\omega$, the maximum value of $a_i$ is approximately 3.",
+          "tag": null
+        },
+        {
+          "quote": "Based on these observations, we recommend using $a_i = 2$ or 3 for all $i$ in subsequent experiments.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Inequality (convergetolssolution) is only proved for a_i > M_i, where M_i is an unquantified Gelfand threshold. Theorems lowerBoundai, a1 and cmpxtyAlgSLSE apply it at a_i equal to the explicit formula, which is of order 1 to 3 (a_i < alpha, about 3). Nothing shows M_i is below these values. The margin is small: rho = sqrt(eta_min) is about 0.313 against 1/3, and at the extremal eigenvalue the discriminant is exactly zero, giving a defective Jordan block with ||L^a|| of order a rho^{a-1}. So the (1/3)^a rate cannot be assumed for a_i of 2 or 3. The 'lower bound' is also only a sufficient condition, derived under this invalid rate.",
+      "failure_location": {
+        "quote": "According to (\\ref{convergetolssolution}) in the proof of Theorem \\ref{thm:convergence_theorem1}, it follows that",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Prove an explicit non-asymptotic bound such as ||L^a|| <= C(a+1) rho^a with computable C. Redo the a_i formula and the cost constants with C. Alternatively, state the guarantees only for a_i > M_i with M_i quantified.",
+      "overall_effect": "The iteration-count formulas, the monotonicity claim, the cost bounds, and the recommended a_i = 2 or 3 are not backed by the convergence theorem in the regime where they are used.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "Contraction (1/3)^{a_i} used for a_i far below the unquantified threshold M_i",
+      "why_classification": "A contained reworking with an explicit transient bound changes constants and formulas but not the overall architecture."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "cmpxtyAlgSLSE"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathbb{E}\\|X\\tilde{\\beta}^i - X\\beta\\|^2 \\leq \\frac{N - d}{m_i - d}{\\mathbb{E}\\|X\\hat{\\beta} - X\\beta\\|^2}",
+          "tag": "remarkA7"
+        }
+      ],
+      "failure_explanation": "Remark A7 only gives an upper bound on each E||X(tilde beta^i - beta)|| relative to the OLS error, obtained by choosing xi > m_i/N > d/N > gamma. The proof claims E||X(tilde beta^{i-1}-beta)|| / E||X(tilde beta^i-beta)|| <= sqrt((m_i-d)/(m_{i-1}-d)). A bound on a ratio needs an upper bound on the numerator and a lower bound on the denominator. A lower bound on E||X(tilde beta^i-beta)|| is never established, and it would need the opposite ordering assumptions and the unverified variance condition. The ratio of two quantities each bounded above is not bounded by the ratio of the bounds.",
+      "failure_location": {
+        "quote": "In a similar fashion of Lemma \\ref{lemma:lemma3} and Remark \\ref{remarkA7}",
+        "tag": "lowerBoundai"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use the exact limit PE(i)=(1-gamma)/(xi_i-gamma) for both indices, so the ratio is (xi_i-gamma)/(xi_{i-1}-gamma) in the limit. State the result asymptotically and state the variance and ordering assumptions explicitly. Alternatively, assume a two-sided PE estimate.",
+      "overall_effect": "Inequality (26), hence (last), hence the stated lower bound on a_i and the bounds on a_i in the complexity theorem, are unsupported.",
+      "primary_affected_tag": "lowerBoundai",
+      "target_type": "formal_result",
+      "title": "Ratio bound (26) between consecutive sketched-LS errors does not follow from the one-sided PE bounds",
+      "why_classification": "Using the asymptotic two-sided PE limit with explicit hypotheses is a contained repair, but it weakens the result to an asymptotic one."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "r(i-1,i) = \\sqrt{\\frac{m_{i} - d}{m_{i -1} - d}}",
+          "tag": "lowerBoundai"
+        },
+        {
+          "quote": "where \\( r(i-1,i) = \\sqrt{m_{i-1} - d / m_{i} - d} \\) .",
+          "tag": "lowerBoundai"
+        },
+        {
+          "quote": "i.e., $a_2<\\ldots<a_K$.",
+          "tag": "cmpxtyAlgSLSE"
+        }
+      ],
+      "failure_explanation": "The proof of lowerBoundai needs r(i-1,i) = sqrt((m_i-d)/(m_{i-1}-d)), which is at least sqrt(2) when m_i = 2m_{i-1}, since errors decrease with i. The statement of lowerBoundai and the complexity proof instead use sqrt((m_{i-1}-d)/(m_i-d)), which is below 1. With the correct r = sqrt((2-x)/(1-x)) and x = 2^{K+2-i}gamma, r is at least sqrt(2), is largest for i=2, and is unbounded as gamma approaches 2^{-K}. Hence a_i is decreasing in i, not increasing. The bound a_i < alpha = log_3{[1+(1+omega)/sqrt 2]/omega} fails, and the claim that the a_i are increasing and the stated 1st-stage cost 4 alpha N d are wrong.",
+      "failure_location": {
+        "quote": "it follows that $r(i-1,i)=\\sqrt{(1-2^{K+2-i}\\gamma)/(2-2^{K+2-i}\\gamma)}$ ($i=2,\\ldots,K$)",
+        "tag": "cmpxtyAlgSLSE"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "Use the correct orientation of r. Replace alpha by a gamma-dependent constant such as log_3{[1+(1+omega)sqrt((2-2^K gamma)/(1-2^K gamma))]/omega}. State that a_i decreases in i, and recompute the cost bound.",
+      "overall_effect": "The claimed monotonicity, the uniform bound alpha, the 1st-stage cost bound, and the experimental discussion built on 'a_i increasing' are unreliable. The 2nd-stage bound uses only a_i > log_3(1/omega), which still holds.",
+      "primary_affected_tag": "cmpxtyAlgSLSE",
+      "target_type": "formal_result",
+      "title": "r(i-1,i) used with inverted orientation in the complexity theorem, giving wrong monotonicity and wrong upper bound alpha",
+      "why_classification": "The fix is a recomputation with a corrected constant and reversed monotonicity; the O(N d log N) conclusion is preserved."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:convergence_theorem1",
+        "finalerror",
+        "M-IHS converging rate",
+        "Thf"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "In this way, we construct \\(K = \\log_2(N/m_1)\\) sketched LS subproblems.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Applying Theorem 3.2 with failure probability delta/K requires m_i >= c eps^{-2}(d + log(NK/delta)) log(eKd/delta). The hypotheses only assume r >= c eps^{-2}[d + log(N/delta)] log(ed/delta) and m_1 > r, with no K. Since K = log_2(N/m_1) grows with N, the extra log K factor in the second logarithm cannot be absorbed by an absolute constant c for fixed d and delta.",
+      "failure_location": {
+        "quote": "For a sufficiently large constant \\(c\\), Theorem \\ref{thm:bigtheorem} ensures the following condition",
+        "tag": "lemma1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Add log K (at most log log N) to the logarithmic terms in the sketch-size condition, or assume K = O(1).",
+      "overall_effect": "The 1-2delta probability claims in Theorems 4.1 and 4.2 are justified only when K is bounded (as in the complexity theorem), or with the sketch-size condition modified.",
+      "primary_affected_tag": "lemma1",
+      "target_type": "formal_result",
+      "title": "Union bound over K sketches: constant c cannot absorb the K-dependence",
+      "why_classification": "Adding the K-dependence to the size condition is a local fix that leaves the argument and conclusions unchanged."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "Thf"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Then as \\( N \\) tends to infinity, while \\( d/N \\rightarrow \\gamma \\in (0,1) \\)",
+          "tag": "lemma:lemma3"
+        },
+        {
+          "quote": "Therefore, the subsequent discussions are based on the following conditions:",
+          "tag": "remarkA7"
+        }
+      ],
+      "failure_explanation": "Lemma lemma3 is a limit statement as N tends to infinity with d/N -> gamma and m_i/N -> xi, for deterministic X with converging spectral distribution. Remark A7 turns it into a finite-N inequality on the unsquared error by assuming xi > m_i/N > d/N > gamma and Var(||X tilde beta^i - X beta||) >= Var(sqrt((N-d)/(m_i-d)) ||X hat beta - X beta||). Neither condition is verifiable or implied. Lemma finalerror and Theorem Thf state none of these hypotheses and assert a finite-N bound with sqrt((N-d)/(m_K-d)). The expectation-over-noise-only setting is also not matched to the cited sketch-and-noise PE.",
+      "failure_location": {
+        "quote": "According to Theorem \\ref{thm:convergence_theorem1} and Lemma \\ref{lemma:lemma3}, there exists a constant \\({M_1} >0\\)",
+        "tag": "finalerror"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-007",
+      "least_adequate_overall_repair": "Add the asymptotic regime, the spectral-distribution assumption, the ordering condition, and the variance condition to Lemma finalerror and Theorem Thf, and present the bound as asymptotic. Alternatively, replace Lemma lemma3 by a non-asymptotic bound on E||X(tilde beta^i-beta)||.",
+      "overall_effect": "Theorem Thf's final-precision guarantee holds only under unstated asymptotic and variance assumptions, not for general X, N, d, m_i as stated.",
+      "primary_affected_tag": "finalerror",
+      "target_type": "formal_result",
+      "title": "Asymptotic PE limit (with extra unverifiable hypotheses) used as a finite-N inequality in Lemma finalerror and Theorem Thf",
+      "why_classification": "Making the hypotheses explicit gives a recognizably comparable but conditional and asymptotic result; a fully non-asymptotic version would need a new argument."
+    }
+  ],
+  "issues_found": 7,
+  "paper_id": "2509.06856",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "981b8984cdca82ea93a1c8e2f7a3a3ff16d853374c7f5e11ece8d6b29bfd4d2f",
+  "status": "ok"
+}

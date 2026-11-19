@@ -1,0 +1,74 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\alpha_k = 0$     & $\\Iup$ only          & $\\tau_k \\le -\\rho$ \\\\",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "$\\alpha_k^* = 0$     & $\\Idown$ only        & $\\tau_{N+k} \\ge -\\rho$ \\\\",
+          "tag": "tab:kkt"
+        },
+        {
+          "quote": "\\Iup   &= \\bigl\\{k \\le N : \\alpha_k < C_k\\bigr\\}\n            \\cup \\bigl\\{N\\!+\\!k : \\alpha_k^* > 0\\bigr\\},",
+          "tag": "def:IupIdown"
+        }
+      ],
+      "failure_explanation": "When S_free is empty every variable in Iup sits at a bound that the KKT table forces to satisfy tau_i <= -rho (alpha_k=0 gives tau_k <= -rho; alpha_k^*=C_k gives tau_{N+k} <= -rho), and every variable in Idown satisfies tau_j >= -rho. Hence the correct chain is max_{Iup} tau_i <= -rho <= min_{Idown} tau_j, i.e. tau_{i*} <= -rho <= tau_{j*}. The source reverses both inequalities, stating tau_{i*} >= -rho >= tau_{j*}, which contradicts the table in the same paper.",
+      "failure_location": {
+        "quote": "max_{i \\in \\Iup} \\tau_i = \\tau_{i^*}\n  \\;\\geq\\; -\\rho \\;\\geq\\;\n  \\min_{j \\in \\Idown} \\tau_j = \\tau_{j^*},",
+        "tag": "eq:bias-bounds"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace both \\geq in eq:bias-bounds with \\leq so the chain reads max_{Iup} tau_i = tau_{i*} <= -rho <= min_{Idown} tau_j = tau_{j*}.",
+      "overall_effect": "The displayed bound on -rho in the no-free-support-vector degenerate case is stated with the wrong direction. The midpoint bias formula (eq:bias-midpoint) and the algorithm's fallback step are unaffected because they do not rely on the inequality direction, but a reader using the stated bounds to reason about the location of the true bias relative to tau_{i*} and tau_{j*} would draw the wrong conclusion.",
+      "primary_affected_tag": "eq:bias-bounds",
+      "target_type": "other",
+      "title": "Reversed inequality direction in degenerate bias bounds",
+      "why_classification": "The fix is a local two-symbol correction (flip both inequality signs) fully determined by the KKT table already in the source. No downstream theorem, algorithm step, or guarantee changes; the midpoint heuristic and the SMO loop are unaffected."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\eta = \\Omega_{pp} - 2\\Omega_{pq} + \\Omega_{qq},",
+          "tag": "prop:curvature"
+        },
+        {
+          "quote": "\\Iup   &= \\bigl\\{k \\le N : \\alpha_k < C_k\\bigr\\}\n            \\cup \\bigl\\{N\\!+\\!k : \\alpha_k^* > 0\\bigr\\},",
+          "tag": "def:IupIdown"
+        },
+        {
+          "quote": "\\Idown &= \\bigl\\{k \\le N : \\alpha_k > 0\\bigr\\}\n            \\cup \\bigl\\{N\\!+\\!k : \\alpha_k^* < C_k\\bigr\\},",
+          "tag": "def:IupIdown"
+        }
+      ],
+      "failure_explanation": "The remark asserts that the degenerate case eta <= 0 is impossible for the RBF kernel when all training points are distinct. However, the working-set selection (eq:mvp) does not forbid i* = k and j* = N+k for the same training point k, which requires only alpha_k < C_k (so k in Iup) and alpha_k^* < C_k (so N+k in Idown) — two independent conditions. When p = q = k, the curvature formula gives eta = Omega_{kk} - 2 Omega_{kk} + Omega_{kk} = 0 for any positive kernel, including RBF. Thus eta = 0 is achievable with all x_k pairwise distinct, contradicting the remark's claim.",
+      "failure_location": {
+        "quote": "This case cannot arise for the RBF kernel (m1) with distinct\ntraining points but may occur for m2 with $a = -1$.",
+        "tag": "rem:degenerate"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Replace the sentence with a correct statement: for the RBF kernel with distinct training points eta >= 0 always, and eta = 0 can occur when the selected pair corresponds to the same training point (p = q); the fallback in this remark handles that case as well as the eta < 0 case possible for m2 with a = -1.",
+      "overall_effect": "The remark provides an incorrect guarantee about the RBF case, potentially leading a reader to omit the eta <= 0 fallback check for m1. The algorithm itself (line 12 of Algorithm alg:smo) does include the check, so the implementation is safe, but the stated theoretical exclusion is false.",
+      "primary_affected_tag": "rem:degenerate",
+      "target_type": "prose_claim",
+      "title": "False claim that eta <= 0 cannot arise for RBF with distinct training points",
+      "why_classification": "The correction is a local rewrite of one sentence in a remark. The algorithm already includes the eta <= 0 branch, so no procedure, guarantee, or downstream result changes. The mathematical error is a false exclusion claim, not a broken inference or construction."
+    }
+  ],
+  "issues_found": 2,
+  "paper_id": "2605.01446",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "316a2f779e198f93354502b60269bbdeb34914466e25231d045dd86adab9a210",
+  "status": "ok"
+}

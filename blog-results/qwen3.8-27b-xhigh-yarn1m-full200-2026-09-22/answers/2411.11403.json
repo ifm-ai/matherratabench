@@ -1,0 +1,102 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm_bndd_G",
+        "erg2",
+        "num_erg",
+        "thm:num_conv"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\pi(u,v)=\\frac{1}{Z_\\pi} \\prod_{i=1}^d  u_i\\, \\exp\\pp{-\\beta\\, \\pp{\\frac12\\lambda \\|(u,v)\\|^2+G(u\\odot v)} }",
+          "tag": "pi"
+        },
+        {
+          "quote": "\\tilde \\pi(x,\\eta) \\propto \\frac{1}{\\prod_{i=1}^d \\sqrt{\\eta_i}} \\exp\\Biggl( - \\sum_{i=1}^d\\pa{\\frac{x_i^2}{2\\eta_i} + \\frac{\\beta^2 \\lambda^2 \\eta_i }{2 }} - \\beta \\,G(x)\\Biggr),",
+          "tag": "eq:gibbs"
+        },
+        {
+          "quote": "By applying   a change of variables of $x = u \\odot v$ and $\\eta = u \\odot u/2$ to \\cref{eq:gibbs}, we obtain  the following probability distribution",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Substituting η_i=u_i²/2 and x_i=u_i v_i into the Gibbs density and applying the Jacobian |∂(x,η)/∂(u,v)|=∏u_i² yields the correct overparameterised density ∝ ∏u_i exp(−‖v‖² − β²λ²‖u‖²/4 − βG(u⊙v)). The claimed π in eq (pi) instead has exponents −βλ‖u‖²/2 − βλ‖v‖²/2, i.e. the quadratic coefficients are βλ/2 for both ‖u‖² and ‖v‖² rather than β²λ²/4 and 1 respectively. Under the claimed π the marginal of x_i=u_i v_i is proportional to K_0(βλ|x_i|) (a modified Bessel function), not exp(−βλ|x_i|), so the theorem's conclusion x⊙v∼ρ is false for general β,λ.",
+      "failure_location": {
+        "quote": "If $(u,v)\\sim \\pi$ as defined in~\\cref{pi}, then $x=u \\odot v\\sim\\rho$ as defined in~\\cref{target}.",
+        "tag": "thm:overparam"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace π with the correct density ∏u_i exp(−‖v‖² − β²λ²‖u‖²/4 − βG(u⊙v)), update the Hamiltonian H, the Langevin SDE coefficients, the CIR-parameter identifications, the Lyapunov/LSI constants, the implicit-explicit scheme, and all rate estimates accordingly. The overall proof architecture (Hadamard overparameterisation, cylindrical transformation, Girsanov/Novikov argument, stopping-time discretisation analysis) is preserved but every quantitative result must be recomputed.",
+      "overall_effect": "The SDE in eq (main) is the Langevin dynamics for the wrong potential and possesses the wrong invariant measure. The geometric-ergodicity theorems (thm_bndd_G, erg2), the discrete-chain ergodicity theorem (num_erg), and the finite-time convergence theorem (thm:num_conv) all establish convergence to a distribution that does not marginalise to the target ρ. The paper's central claim of exact (non-smoothed) Laplace-prior sampling via the Hadamard parameterisation is not achieved by the constructed dynamics.",
+      "primary_affected_tag": "thm:overparam",
+      "target_type": "formal_result",
+      "title": "Overparameterized distribution π has incorrect quadratic coefficients so the marginal is not the target Laplace posterior",
+      "why_classification": "The principal theorem is false as stated; the SDE has the wrong stationary distribution so the advertised guarantee (exact recovery of ρ) fails. Repairing the root requires changing the SDE coefficients and redoing the entire ergodicity, discretisation, and convergence analysis with new constants and rates. No comparable version of the primary claim survives without this global rework."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "By applying   a change of variables of $x = u \\odot v$ and $\\eta = u \\odot u/2$ to \\cref{eq:gibbs}, we obtain  the following probability distribution",
+          "tag": null
+        },
+        {
+          "quote": "H(\\eta,x) \\eqdef G(x) + \\lambda \\sum_{i=1}^d \\frac{x_i^2}{8\\eta_i} + 2\\lambda \\eta_i + \\frac12 \\log(\\eta_i).",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The change of variables established earlier in the paper (and used to define π) is η_i=u_i²/2, not u_i²/4 as stated in the proposition. With the correct η=u²/2 the potential in (η,x) coordinates is H=G(x)+λ∑x_i²/(4η_i)+λ∑η_i−½∑log η_i (up to an additive constant), not the stated G(x)+λ∑x_i²/(8η_i)+2λ∑η_i+½∑log η_i. Both the quadratic coefficients and the sign of the log term are wrong, making the claimed metric M, the claimed Fokker–Planck equation, and the claimed Riemannian-Langevin correspondence incorrect.",
+      "failure_location": {
+        "quote": "letting $\\vec z_t=(\\eta, x)_t$ with $\\eta = \\frac14 u^2 $ and $x =  u\\odot v$",
+        "tag": "prop:added-2"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Correct the relationship to η=u²/2, recompute H(η,x) and the Jacobian-based metric M in the corrected coordinates, and re-verify the Fokker–Planck identity. This is a contained rederivation within the Riemannian subsection.",
+      "overall_effect": "The Riemannian-Langevin interpretation of the dynamics is wrong: the metric, potential, and Fokker–Planck equation stated in the proposition do not correspond to the actual (u,v) process. No downstream labelled result in the paper invokes prop:added-2, so the main theorems are unaffected by this particular error.",
+      "primary_affected_tag": "prop:added-2",
+      "target_type": "formal_result",
+      "title": "Riemannian proposition uses η=u²/4 instead of η=u²/2 and has the wrong sign in the log-potential",
+      "why_classification": "The proposition's statement is concretely wrong (factor-of-2 error in η and wrong sign in the log-potential), requiring a nontrivial recomputation of the Riemannian link. However, the proposition is a supplementary interpretation result not used in any main theorem, so the repair is local and does not alter the paper's core guarantees."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\norm{x}_{1,2}\\eqdef \\sum_{j=1}^K \\norm{x_{\\mathbf b_j}}^2",
+          "tag": null
+        },
+        {
+          "quote": "exp\\pa{-a\\abs{z}} = \\frac{a}{ \\sqrt{2\\pi}}\\int_0^\\infty \\frac{1}{\\sqrt{\\eta}} \\exp\\pa{ -\\frac{z^2}{2 \\eta} - \\frac{a^2 \\eta}{2}} d\\eta",
+          "tag": "eq:laplace"
+        }
+      ],
+      "failure_explanation": "By the scalar Laplace identity (eq laplace) applied with z=‖x‖₂, the right-hand side equals exp(−a‖x‖₂). The paper's definition gives ‖x‖_{1,2}=∑_j‖x_{b_j}‖₂²=‖x‖₂² (the groups partition the coordinates), so the left-hand side is exp(−a‖x‖₂²). These are equal only when ‖x‖₂∈{0,1}. The correct group-ℓ₁ representation requires a product of K separate one-dimensional Laplace–Gamma integrals, one per group, not a single integral over ‖x‖².",
+      "failure_location": {
+        "quote": "\\exp(-a\\norm{x}_{1,2}) = \\frac{a}{\\sqrt{2\\pi}} \\int_0^\\infty \\frac{1}{\\sqrt{\\eta}} \\exp\\pa{-\\frac{\\norm{x}^2}{2\\eta} - \\frac{a^2 \\eta}{2}} d\\eta",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Replace the single-integral formula with the correct product-of-K-integrals representation exp(−a∑_j‖x_{b_j}‖₂)=∏_j[(a/√(2π))∫_0^∞ η_j^{-1/2}exp(−‖x_{b_j}‖²/(2η_j)−a²η_j/2)dη_j], correct the norm definition to ‖x‖_{1,2}=∑_j‖x_{b_j}‖₂ (removing the square), and update the joint distribution and change-of-variables formula accordingly.",
+      "overall_effect": "The proposed extension to group ℓ₁ priors rests on a false identity. The stated joint distribution for the group case would not have the claimed marginal. This appears in the 'future work' paragraph and does not affect any proved theorem or algorithm in the paper.",
+      "primary_affected_tag": null,
+      "target_type": "other",
+      "title": "Group ℓ₁ Gaussian-mixture identity is false",
+      "why_classification": "The error is a single false displayed equation in a 'future work' paragraph. The repair is a straightforward local correction of the formula with no impact on any proved result, algorithm, or main guarantee."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2411.11403",
+  "question_id": "Q1",
+  "run_name": "qwen3.8-27b-full200-t1",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "6784ba6dc605cc8eefc0c8ea7f8b1fcff2d4adc0502277ef42f1334736e81db5",
+  "status": "ok"
+}

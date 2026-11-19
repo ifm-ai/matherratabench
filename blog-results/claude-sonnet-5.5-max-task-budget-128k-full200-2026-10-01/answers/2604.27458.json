@@ -1,0 +1,107 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:loss_cpwl_approx",
+        "lem:Lu_shock",
+        "lem:Lu_rarefaction",
+        "lem:Lu_shock_3d",
+        "thm:shock",
+        "thm:shock_interaction",
+        "thm:rarefaction",
+        "thm:compound_wave",
+        "thm:shock_smooth_initial",
+        "thm:main_1d",
+        "thm:more_general_case"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "-\\frac{r-s}{2}\\tanh\\bigl(\\tau(r-s)\\bigr)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "S_{min,tau}(r,s) contains the product (r-s)*tanh(tau(r-s)). This is a multiplication of an affine function by a tanh, not a composition of affine maps and tanh. A finite feedforward tanh network of the form (def:NN) cannot reproduce it exactly, because tanh networks have no multiplication gate and d*tanh(tau d) is not a finite tanh ridge sum. The proof therefore asserts that each smoothed hat function phi_{j,tau} is a tanh network with the same depth and width bounds, which is unsupported. The depth O(log N_patch) and width O(N_patch N) claims depend on this step. The convergence lemmas (lem:psi through lem:minmax-stability) only treat the algebraic expressions, not networks.",
+      "failure_location": {
+        "quote": "Since $S_{\\min,\\tau}$ and $S_{\\max,\\tau}$ are compositions of affine maps and $\\tanh$",
+        "tag": "prop:represent"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the product x*tanh(tau x), or the whole smoothed min/max, by a genuine tanh-network approximation, for example product/square gadgets built from tanh difference quotients on the bounded range. Then prove L^infty and W^{1,1} convergence for these network surrogates, and recount depth and width. The CPwL-to-network lemma and the downstream bounds then go through unchanged.",
+      "overall_effect": "The existence of tanh competitors u_theta-hat with small loss is not established as written. Every network-level loss bound, and hence every minimizer error estimate, relies on this representability step.",
+      "primary_affected_tag": "prop:represent",
+      "target_type": "formal_result",
+      "title": "Smoothed min/max with a product term is claimed to be an exact tanh network",
+      "why_classification": "A contained additional approximation argument and a recount of depth and width are needed. The architecture, rates, and all claimed results survive."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "The proof follows the same strategy as a single shock (Theorem~\\ref{thm:shock}) and a single rarefaction (Theorem~\\ref{thm:rarefaction}), so we omit the details.",
+          "tag": null
+        },
+        {
+          "quote": "we obtain the worst-case estimate",
+          "tag": null
+        },
+        {
+          "quote": "\\lesssim Mh\\,|\\ln h|",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof is omitted, and the stated rate is stronger than what the paper's technique gives. A compound wave has a shock adjacent to a rarefaction fan, where |grad u| ~ 1/(t - tau). The shifted-interface argument then produces a shift error of order M h |ln h|, as in the shock-formation proof, plus a strip-selection term of order |ln h|/M, since the competitor loss is h|ln h|. Balancing gives h^{1/2}|ln h|, not (h|ln h|)^{1/2}. The appendix proof of thm:main_1d itself says compound waves give the worst case O(h^{1/2}|ln h|), which contradicts the theorem as stated. The 'same strategy as shock/rarefaction' remark cannot yield the log^{1/2} rate, because the shock side has no uniform W^{2,infty} bound near the fan.",
+      "failure_location": {
+        "quote": "\\le C(h|\\ln h|)^{1/2}",
+        "tag": "thm:compound_wave"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State the compound-wave result with rate h^{1/2}|ln h|, consistent with thm:main_1d. Supply the proof, using strip selection with log-weighted shift and trace errors adjacent to the fan.",
+      "overall_effect": "The compound-wave estimate is unsupported with the stated exponent of the logarithm. The 1D main theorem's h^{1/2}|ln h| bound is consistent with the weaker rate, so it is not affected.",
+      "primary_affected_tag": "thm:compound_wave",
+      "target_type": "formal_result",
+      "title": "Compound-wave rate (h|ln h|)^{1/2} is unproved and contradicts the paper's own analysis",
+      "why_classification": "The statement can be weakened by a log factor and a contained proof written out, leaving a comparable result and an unchanged main theorem."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:more_general_case"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\Lambda_\\Sigma:=\\{K\\in\\Lambda_h:K\\cap\\Sigma^\\varepsilon\\neq\\emptyset\\}",
+          "tag": null
+        },
+        {
+          "quote": "choose two planes parallel to the tangent plane of $\\Gamma_K$ and at distance $\\simeq\\varepsilon$ from it.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "Lambda_Sigma contains only cells meeting the h^2-neighbourhood of Sigma. Cells at distance between h^2 and about C h from Sigma may still intersect two different shock surfaces, which are only about c_sep*dist apart by transversality. For these cells in Lambda_Gamma, the construction assumes a single shock surface with one tangent plane and smooth one-sided traces. Neither holds, and the cell contributions are not estimated. Assumption shock_3d also gives only C^2 regularity on components, with no uniform W^{2,infty} bounds, yet O(h) interpolation estimates are used.",
+      "failure_location": {
+        "quote": "\\Lambda_\\Gamma:=\\{K\\in\\Lambda_h\\setminus\\Lambda_\\Sigma:K\\cap\\Gamma\\neq\\emptyset\\}",
+        "tag": "lem:Lu_shock_3d"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Define Lambda_Sigma as all cells within distance C h of Sigma, with C from the separation constant. Estimate them with the crude bound of order h^d per cell, summing to O(h) over the O(h^{-(d-1)}) cells. Add uniform one-sided W^{2,infty} bounds to the assumption.",
+      "overall_effect": "The loss bound L(hat u) ≲ h near Sigma is not justified for the intermediate cells. The multi-D theorem and the 1D interaction case that cites it inherit the gap.",
+      "primary_affected_tag": "lem:Lu_shock_3d",
+      "target_type": "formal_result",
+      "title": "Cells near the intersection set containing two shocks are not handled by the single-shock layer construction",
+      "why_classification": "Enlarging the excised cell set and adding a standard regularity hypothesis is a short local repair. The same crude per-cell bound still gives O(h), so all claims and rates survive."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2604.27458",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "fa599861b356dd36e3308395e26809b1b1a6ac97dfcedb1c1c3afa8cb15e2896",
+  "status": "ok"
+}

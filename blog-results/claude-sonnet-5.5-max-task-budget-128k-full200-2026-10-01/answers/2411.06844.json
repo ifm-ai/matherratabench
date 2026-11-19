@@ -1,0 +1,139 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lemma:fullydiscreteCFL",
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "Note that from now on we assume periodic boundary conditions. For this reason we set",
+          "tag": null
+        },
+        {
+          "quote": "D_{1,2}^{x}= D_{1,N_x}^{x} &= 0\\;,\\qquad D_{N_x,N_x-1}^{x} = D_{N_x,1}^{x} = 0",
+          "tag": null
+        },
+        {
+          "quote": "with equidistant spacing $\\Delta x = \\frac{1}{N_x}$",
+          "tag": null
+        },
+        {
+          "quote": "It is orthonormal, i.e. $\\mathbf E\\mathbf E^H = \\mathbf E^H\\mathbf E = \\mathbf I$",
+          "tag": "lemma:fullydiscreteCFL"
+        }
+      ],
+      "failure_explanation": "For \"periodic\" boundary conditions the stencils must be circulant with wrap-around entries. The text instead zeroes the first and last rows of D^x and the neighbouring entries of D^{xx}, which gives homogeneous Dirichlet-type matrices. For these matrices the antisymmetry of D^x fails. Take y=e_{N_x-1} and z=e_{N_x}: y^T D^x z = 1/(2Δx) but z^T D^x y = 0. The identity with D^+ also needs a periodic D^+_{N_x,1}, which is not defined. The Fourier matrix E diagonalises only circulant matrices, and with Δx=1/N_x the functions exp(iαπx_j) are not orthonormal. So the lemma's hypotheses do not match the stated definitions.",
+      "failure_location": {
+        "quote": "\\sum_{i,j=1}^{N_x} y_j D_{ji}^x z_i = - \\sum_{i,j=1}^{N_x} z_j D_{ji}^{x} y_i",
+        "tag": "lemma:stencilmatrices"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Define D^x, D^{xx}, D^+ as circulant matrices with the wrap-around entries (D^x_{1,N_x}=-1/(2Δx), D^x_{N_x,1}=+1/(2Δx), etc.). Take Δx = L/N_x with a consistent Fourier phase, e.g. exp(2πiαx_j/L).",
+      "overall_effect": "As written, the matrices used in the schemes do not satisfy the properties that the CFL lemma and both stability proofs rely on.",
+      "primary_affected_tag": "lemma:stencilmatrices",
+      "target_type": "formal_result",
+      "title": "Stencil matrices as defined are not periodic, so the summation-by-parts lemma (and Fourier diagonalisation) fails as stated",
+      "why_classification": "The intended periodic circulant structure is clear and the fix is a local redefinition; all conclusions and the CFL constant survive unchanged."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "theorem:stabilityMg",
+        "thm:added-1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "for $g_{jk}^n = 1$ the condition $ \\frac{1}{\\sqrt{2\\pi}} \\sum_{k=1}^{N_v} g_{jk}^n \\omega_k e^{v_k^2/2} = 1$ holds",
+          "tag": null
+        },
+        {
+          "quote": "which are equal to $1$ up to order $\\mathcal{O}\\left(10^{-3}\\right)$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof needs (1/√(2π)) Σ_k ω_k e^{v_k²/2} = 1 exactly. This is not a hypothesis of the lemma, and it is not an identity of Gauss-Hermite quadrature. The integrand e^{v²/2} is not a polynomial, so the rule is not exact for it. The paper itself reports deviations of order 1e-3 in the 2D example. Without the identity, Σ_k f_{jk} ω_k e^{v_k²} = ρ_j is not preserved. The cancellation of the σ-term in the stability proof, Σ_k M(M−f)ω_k e^{3v_k²/2}=0, relies on the same identity.",
+      "failure_location": {
+        "quote": "We insert the induction assumption as well as $\\frac{1}{\\sqrt{2\\pi}} \\sum_{k=1}^{N_v} \\omega_k e^{v_k^2/2} = 1$.",
+        "tag": "lemma:fullydiscrete-rho"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State the normalisation as a hypothesis, or renormalise the weights (e.g. rescale ω_k so that (1/√(2π))Σω_k e^{v_k²/2}=1), and note that the scheme then uses the modified quadrature.",
+      "overall_effect": "The moment property and the σ-term cancellation in both stability theorems hold only if the quadrature normalisation is assumed or enforced. This is not established for the Gauss-Hermite weights actually used.",
+      "primary_affected_tag": "lemma:fullydiscrete-rho",
+      "target_type": "formal_result",
+      "title": "Moment-preservation lemma uses an unstated, generally false Gauss-Hermite normalisation identity",
+      "why_classification": "Adding or enforcing a scalar quadrature normalisation is a short local fix that leaves the method, proofs, and CFL result intact."
+    },
+    {
+      "classification": "serious_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\sum_{\\alpha=1}^{N_x} P_{\\alpha j}^{X} g_{\\alpha \\beta}^{n+1} (\\rho_\\alpha^{n+1})^2 = g_{j \\beta}^{n+1} (\\rho_j^{n+1})^2",
+          "tag": "thm:added-1"
+        },
+        {
+          "quote": "[\\widehat{\\mathbf{X}}^{n+1}, \\left(\\boldsymbol{\\rho}^{n+1}\\right)^2 \\widehat{\\mathbf{X}}^{n+1}]",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof needs (ρ^{n+1})² g^{n+1}_{·β} to lie in span(X̿), and ω e^{v²/2} ⊙ g^{n+1}_{j·} to lie in span(V̿). The augmentation only adds (ρ^{n+1})² X̂ and ω e^{v²/2} V̂ to the span. The S-step output g^{n+1}=X̿ S̿ V̿ᵀ is the Galerkin projection onto the full 4r-dimensional span. Its columns in general have components along both X̂ and (ρ^{n+1})² X̂. Multiplication by (ρ^{n+1})² then produces components along (ρ^{n+1})⁴ X̂, which is not in the span. The same holds in velocity. So the displayed identities, and the step that removes the projections P^X, P^V, do not follow from the augmentation.",
+      "failure_location": {
+        "quote": "We now use the fact that we have augmented the bases in \\eqref{alg:KbasisAug} and \\eqref{alg:LbasisAug}",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "No complete source-supported repair identified. At minimum, a repair must give a Galerkin construction in which the test function (ρ^{n+1})² g^{n+1} (and its velocity analogue) provably lies in the projection space. One option is a projection that is orthogonal in the 𝓗-weighted inner product, with correspondingly redefined bases and a redone proof.",
+      "overall_effect": "The central claim of an analytical stability proof with a CFL condition for the low-rank scheme is unsupported. The practical rank-2r scheme used in all 2D experiments has no stability argument at all.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "DLRA stability proof: basis augmentation does not give the claimed range identities",
+      "why_classification": "The stability guarantee for the DLRA scheme is the paper's main theoretical claim, and the only argument for it rests on a false inference. Any fix needs a new construction or proof architecture, not a local patch."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "For a prescribed tolerance parameter $\\vartheta$ the new rank $r_1 \\leq 2r$ is chosen such that",
+          "tag": null
+        },
+        {
+          "quote": "We then want to have",
+          "tag": null
+        },
+        {
+          "quote": "For $\\mathbf{H}_2$, it holds that $\\mathbf{H}_2 \\mathbf{Z} =0$.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The estimate is derived for the pre-truncation S-step output X̿ S̿ V̿ᵀ. The scheme's output f^{n+1} is the truncated factorisation. Truncation discards singular values of size up to ϑ and changes g^{n+1}. The truncation is a Frobenius-norm projection of g, whereas the stability norm weights f = ρ g e^{-v²/2} by ρ_j² and ω_k e^{3v_k²/2}. Nothing shows that the truncated 𝓗-norm does not exceed the untruncated one. The claim that truncation \"does not alter these expressions\" is therefore unsupported. In addition, the moment-preserving construction assumes X̿ S̿ V̿ᵀ Z = 1 before truncation. The Galerkin S-step, which solves only the projected equation, is never shown to preserve this moment. That moment is needed for the σ-term cancellation inherited from the full-order proof.",
+      "failure_location": {
+        "quote": "as the truncation step is designed not to alter these expressions",
+        "tag": "thm:added-1"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Prove that the (moment-preserving) truncation is non-expansive in the 𝓗-norm, e.g. by truncating in the weighted inner product. Alternatively, state the weaker result ‖f^{n+1}‖_𝓗² ≤ ‖f^n‖_𝓗² + O(ϑ). Also prove that the S-step preserves the moment constraint.",
+      "overall_effect": "Monotonic decay ‖f^{n+1}‖_𝓗 ≤ ‖f^n‖_𝓗 is not established for the actual (truncated) low-rank scheme. At most it holds up to a truncation perturbation, which is not quantified.",
+      "primary_affected_tag": "thm:added-1",
+      "target_type": "formal_result",
+      "title": "DLRA stability proof ignores the truncation step and the unproven moment constraint",
+      "why_classification": "The gap is contained in the truncation step: a weighted truncation or a perturbed statement gives a comparable result without redoing the Galerkin/CFL argument, but it is more than a routine fix."
+    }
+  ],
+  "issues_found": 4,
+  "paper_id": "2411.06844",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "780b2cf3024e12cfc6d72a0fde531262cd22e612e80f614014249f83b60d5be5",
+  "status": "ok"
+}

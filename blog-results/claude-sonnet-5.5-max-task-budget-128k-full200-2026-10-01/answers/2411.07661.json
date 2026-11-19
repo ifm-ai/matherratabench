@@ -1,0 +1,186 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "which is one time classical preconditioned iteration for solving \\eqref{eq:bdf2:adam:orig}, i.e., $Ty^n = b^n$ with initial value $\\hat u^n$",
+          "tag": "prop:proximal_to_pre"
+        },
+        {
+          "quote": "which only uses 50 parallel preconditioned Jacobi iterations",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "All theorems treat $y^n$ as the exact solution of the proximal subproblem with a fixed positive semidefinite $M$. By Proposition 1 this corresponds to exactly one preconditioned step. Nothing is proved for several inner iterations, which correspond to a different effective preconditioner $\\mathbb M_k$. The paper does not show that the associated $M_k=\\mathbb M_k-T$ is positive semidefinite, nor that it is a symmetric proximal weight at all. Yet the abstract, the introduction and the experiments (50 Jacobi sweeps) rely on this claim. The word 'feasible' is also undefined.",
+      "failure_location": {
+        "quote": "It is important to note that we will prove that any finite and feasible preconditioned iterations can ensure the global convergence of the whole nonlinear second-order convex splitting method.",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Add a short lemma showing that $k$ steps of a stationary iteration with $\\mathbb M\\succeq T$ (SGS, Jacobi, Richardson) equal one step with an effective symmetric $M_k\\succeq 0$. Restrict the claim to these preconditioners, or restate it as a single-step result.",
+      "overall_effect": "The advertised guarantee of global convergence 'without error control' after finitely many inner iterations is not established. The experiments that use 50 Jacobi sweeps are not covered by the theory.",
+      "primary_affected_tag": null,
+      "target_type": "prose_claim",
+      "title": "Unproved claim that any finite number of preconditioned iterations preserves global convergence",
+      "why_classification": "A contained new lemma and a narrower statement suffice, with no new global architecture. It is more than a wording fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "lem:square:summable",
+        "thm:globalconverg",
+        "them:local:rate",
+        "coro:til1"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\alpha>0$, $0<\\beta<1$, $\\lambda_{\\max}>0$",
+          "tag": "alg:cap"
+        },
+        {
+          "quote": "$\\alpha = 0.2$, $\\beta = 0.8$",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The proof needs $\\|\\nabla E^n(z)-\\nabla E^n(y^n)\\|\\le(\\beta-\\alpha)\\|d^n\\|$ with $\\beta=\\frac{2}{3\\delta t}-L$. This requires the unstated hypothesis $\\alpha<\\frac{2}{3\\delta t}-L$ (more generally $\\alpha<\\frac{2}{3\\delta t}-L+\\lambda_{\\min}(M)$). The symbol $\\beta$ is also reused for the backtracking factor. The algorithm lets $\\alpha>0$ be arbitrary, so the WHILE loop in Step 6 is not guaranteed to terminate. In the experiments $\\delta t=6-10^{-15}$ and $L=1/9$ give $\\frac{2}{3\\delta t}-L\\approx 0$, while $\\alpha=0.2$.",
+      "failure_location": {
+        "quote": "there is some small $\\delta > 0$ and $\\beta = \\frac{2}{3\\delta t} - L$, such that",
+        "tag": "lem:LSbase"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "State the hypothesis $\\alpha<\\frac{2}{3\\delta t}-L+\\lambda_{\\min}(M)$ in the lemma and the algorithm. Rename the clashing $\\beta$. Choose experimental parameters accordingly.",
+      "overall_effect": "Well-definedness of the line search, and the energy-decrease inequality used in all convergence results, is not guaranteed for the algorithm as stated. It also fails for the parameters used in the experiments.",
+      "primary_affected_tag": "lem:LSbase",
+      "target_type": "formal_result",
+      "title": "Line-search feasibility needs alpha below 2/(3 dt) - L (plus lambda_min(M)); the algorithm and experiments allow arbitrary alpha",
+      "why_classification": "Adding a standard parameter condition repairs the proof and keeps the method and conclusions."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [
+        "thm:globalconverg",
+        "them:local:rate"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "$0\\le\\lambda_n< \\lambda_{\\max}:=\\sqrt{\\frac{4}{3\\delta tL} - \\frac12}-1$",
+          "tag": "lem:square:summable"
+        }
+      ],
+      "failure_explanation": "By definition $(1+\\lambda_{\\max})^2=\\frac{4}{3\\delta tL}-\\frac12$, so $c(\\lambda_{\\max},\\delta t,L)=0$ exactly. The constant $\\frac{\\alpha\\lambda_{\\min}+c(\\lambda_{\\max},\\delta t,L)}{(1+\\lambda_{\\max})^2}$ then equals $\\frac{\\alpha\\lambda_{\\min}}{(1+\\lambda_{\\max})^2}$. This is zero when $\\lambda_{\\min}=0$, which is allowed since $\\lambda_n\\ge0$ and backtracking can give arbitrarily small or zero steps. The hypothesis $\\lambda_n<\\lambda_{\\max}$ is only pointwise, so $\\sup_n\\lambda_n$ may equal $\\lambda_{\\max}$. The displayed bound $\\sum\\|u^{n+1}-u^n\\|^2\\le\\frac{(1+\\lambda_{\\max})^2}{\\alpha\\lambda_{\\min}+c(\\lambda_{\\max},\\delta t,L)}(\\cdots)$ then has a zero denominator. The constant $\\tilde C$ in Theorem 1 and the appendix inherits this.",
+      "failure_location": {
+        "quote": "where $0 \\leq \\lambda_{\\min} : =\\min\\{ \\lambda_n, \\ n \\geq 1\\}$",
+        "tag": "lem:square:summable"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Assume $\\lambda_n\\le\\bar\\lambda<\\lambda_{\\max}$ uniformly and use $c(\\bar\\lambda,\\delta t,L)>0$ in the constant. The $\\alpha\\lambda_{\\min}$ term can be dropped.",
+      "overall_effect": "Square-summability, the finite-length argument and the rates are not proved in the stated regime. The threshold $\\lambda_{\\max}$ is attained or exceeded in the limit.",
+      "primary_affected_tag": "lem:square:summable",
+      "target_type": "formal_result",
+      "title": "Summability constant vanishes at lambda_max, and lambda_min may be 0",
+      "why_classification": "A uniform strict bound on the step sizes, enforced through the algorithm parameter, fixes the constant with a local change."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\lambda^*_n = \\frac{e_n'(0)\\bar{\\lambda}^2}{2(e_n(\\bar{\\lambda}) - e_n(0) - e_n'(0)\\bar{\\lambda})}",
+          "tag": null
+        },
+        {
+          "quote": "rather than a maximum searching step ($\\lambda_n:= \\bar \\lambda_{\\max}$)",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The quadratic $a\\lambda^2+b\\lambda+c$ has its minimiser at $-b/(2a)$, so the formula for $\\lambda_n^*$ is missing a minus sign. With $e_n'(0)<0$ and positive curvature as written it is negative. Moreover, $\\max\\{\\bar\\lambda_{\\max},\\lambda_n^*\\}\\ge\\bar\\lambda_{\\max}$, so the initial step is never reduced. This contradicts the stated aim of starting from a more precise point instead of the maximal step. It can also push $\\lambda_n$ beyond the thresholds required by the convergence theorems.",
+      "failure_location": {
+        "quote": "$\\lambda_n:=\\max\\{\\bar \\lambda_{\\max},\\lambda^*_n\\}$",
+        "tag": null
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-004",
+      "least_adequate_overall_repair": "Use $\\lambda_n^*=-e_n'(0)\\bar\\lambda^2/(2(e_n(\\bar\\lambda)-e_n(0)-\\bar\\lambda e_n'(0)))$ and start backtracking from $\\min\\{\\bar\\lambda_{\\max},\\lambda_n^*\\}$.",
+      "overall_effect": "The proposed accelerated initial step is not a valid, well-defined safeguard and can violate the step-size bounds on which the convergence theory relies.",
+      "primary_affected_tag": null,
+      "target_type": "algorithm",
+      "title": "Quadratic-interpolation initial step: wrong sign of minimiser and max used instead of min",
+      "why_classification": "A local two-symbol correction restores the intended procedure and keeps the guarantees."
+    },
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Additionally, we make the assumption that the energy $E(x)$ is level-bounded",
+          "tag": null
+        },
+        {
+          "quote": "problem sizes represented by $(m,k,s) = (720i,2560i,80i)$",
+          "tag": null
+        },
+        {
+          "quote": "$\\mathbb{W}(u) = \\frac14\\sum_{i=1}^{n}(u(i)^2 - 1)^2$",
+          "tag": null
+        },
+        {
+          "quote": "Assuming $h(u)$ and $f(u)$ are Lipschitz continuous",
+          "tag": "thm:globalconverg"
+        }
+      ],
+      "failure_explanation": "The remark only verifies the KL property. The theorems also need level-boundedness of $E$ and a globally Lipschitz $\\nabla F$. For the SCAD model $m<k$, so $\\ker A\\neq\\{0\\}$. Along $u=tv$ with $v\\in\\ker A$, the penalty $P_M$ is constant for large $t$, so $E$ stays bounded and some sublevel sets are unbounded. Level-boundedness therefore fails and boundedness of the iterates is not available. For the Ginzburg-Landau model $F=\\frac1\\epsilon\\mathbb W$ has gradient $\\frac1\\epsilon(u^3-u)$, which is not globally Lipschitz. The step-size condition $\\delta t<\\frac{2}{3L}$ and the estimates in all proofs therefore have no valid constant $L$.",
+      "failure_location": {
+        "quote": "the global convergence of these two models thus follows",
+        "tag": "rem:KL:conver:two:models"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-005",
+      "least_adequate_overall_repair": "For SCAD, add a coercive term or assume bounded iterates, or restrict to $\\ker A=\\{0\\}$. For Ginzburg-Landau, prove an a priori bound and use a Lipschitz constant on the resulting bounded set, or modify the double-well function. Then restate the claim accordingly.",
+      "overall_effect": "The asserted convergence guarantees for the two experimental models are unsupported. The theory does not cover the SCAD experiment as posed, and covers the Ginzburg-Landau experiment only after an additional a priori bound.",
+      "primary_affected_tag": "rem:KL:conver:two:models",
+      "target_type": "prose_claim",
+      "title": "Global convergence claimed for SCAD and Ginzburg-Landau models without verifying level-boundedness and Lipschitz hypotheses",
+      "why_classification": "The general theorems survive, but each model needs a separate contained argument or a modified model. For SCAD, boundedness of the iterates is lost without a change to the model."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "$\\deltat < 2/3/L$ (e.g., $\\delta t= 6-10^{-15}$)",
+          "tag": null
+        },
+        {
+          "quote": "$0\\le\\lambda_n< \\lambda_{\\max}:=\\sqrt{\\frac{4}{3\\delta tL} - \\frac12}-1$",
+          "tag": "lem:square:summable"
+        }
+      ],
+      "failure_explanation": "With $L=1/9$ and $\\delta t\\approx 6$, the thresholds are $\\lambda_{\\max}=\\sqrt{3/2}-1\\approx0.22$ for $\\hat u^n=u^n$. For $\\hat u^n=\\tilde u^n$ the bound is $\\min\\{\\sqrt{3/2}-1,\\sqrt5-1\\}\\approx0.22$. The experiments start the line search at $\\bar\\lambda_{\\max}=5$, with $\\alpha=0.2$ as well. Nothing in the algorithm forces $\\lambda_n$ below the thresholds. The theorems' hypotheses are therefore violated by the tested configurations, yet the paper presents these runs as covered by the global convergence results.",
+      "failure_location": {
+        "quote": "$\\bar \\lambda_{\\text{max}} = 5$",
+        "tag": "rem:KL:conver:two:models"
+      },
+      "failure_mechanism": "not_applicable",
+      "issue_id": "ISSUE-006",
+      "least_adequate_overall_repair": "Either run with $\\bar\\lambda_{\\max}$, $\\delta t$ and $\\alpha$ satisfying the theorems' conditions, or state explicitly that the large-step experiments are heuristic and not covered by the proofs.",
+      "overall_effect": "The reported BapDCA$_{\\text{ls}}$ results come from parameter choices outside the proven regime, so the guarantee of global convergence does not apply to them.",
+      "primary_affected_tag": "rem:KL:conver:two:models",
+      "target_type": "prose_claim",
+      "title": "Experimental parameters violate the step-size thresholds required by the convergence theorems",
+      "why_classification": "Qualifying the claim or re-choosing parameters repairs the mismatch without changing any theorem or method."
+    }
+  ],
+  "issues_found": 6,
+  "paper_id": "2411.07661",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "82023cb4a713f803031fb66ea375960c872e0ef9830eb307112b4b7b18610917",
+  "status": "ok"
+}

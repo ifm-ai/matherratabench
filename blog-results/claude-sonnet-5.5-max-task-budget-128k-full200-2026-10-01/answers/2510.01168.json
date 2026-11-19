@@ -1,0 +1,101 @@
+{
+  "error": null,
+  "issues": [
+    {
+      "classification": "moderate_issue",
+      "dependent_affected_formal_result_tags": [
+        "lambda-bound",
+        "lem:added-1",
+        "thm:sub_iters",
+        "lambda-uniform-bound",
+        "lem:subsolver_output",
+        "thm:outer_bound",
+        "thm:operations"
+      ],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\bc_{j}(y, z^k) > -\\zeta_k",
+          "tag": "thm:UniSlater"
+        },
+        {
+          "quote": "one can find a point $y \\in \\cY$ (possibly depending on $z$) satisfying $\\bc(y, z) \\leq -\\zeta$",
+          "tag": "thm:UniSlater"
+        }
+      ],
+      "failure_explanation": "The statement requires a single y with all components bc_j(y,z) <= -zeta. Its negation only says that for each y SOME component satisfies bc_j(y,z^k) > -zeta_k, so the index j may depend on y. The proof instead fixes one j that works for every y in Y and for all k. That is a quantifier error, and the later steps (bc_j(.,z) >= 0 on all of Y, then a contradiction with one active constraint's MFCQ direction) depend on it. With vector-valued bc, the argument needs a different device. Examples are a minimax/convex-combination argument, or a pointwise construction of y_z with all components negative followed by a compactness (finite cover) argument.",
+      "failure_location": {
+        "quote": "and some $j \\in \\{1,...,m\\}$ such that",
+        "tag": "thm:UniSlater"
+      },
+      "failure_mechanism": "invalid_or_incomplete_reasoning",
+      "issue_id": "ISSUE-001",
+      "least_adequate_overall_repair": "Replace the contradiction proof by a correct one. For each z in S, use MFCQ and continuity to build y_z in Y with bc(y_z,z)<0 in every component, treating inactive constraints by continuity. Then use continuity of bc in z and compactness of S to get a uniform zeta. Alternatively, use a minimax argument with multipliers mu in the simplex. The statement and downstream results stay unchanged.",
+      "overall_effect": "The uniform Slater constant zeta, and hence the multiplier bounds A and A_f, are not established by the given proof. The omega and alpha constants, the finite termination and rate of the SCP subsolver, the inner-solver guarantee in the outer method, and both complexity theorems rest on this bound.",
+      "primary_affected_tag": "thm:UniSlater",
+      "target_type": "formal_result",
+      "title": "Uniform Slater property proved with an unjustified single constraint index in the contradiction argument",
+      "why_classification": "The theorem is true under the stated assumptions, and a contained, standard compactness or minimax argument repairs it. No downstream statement or constant changes, but the repair is more than a one-line fix."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "Suppose that $G_f < \\infty$. Then it holds that",
+          "tag": "lambda-uniform-bound"
+        },
+        {
+          "quote": "$A_f$ be given in \\eqref{Af}",
+          "tag": "thm:operations"
+        }
+      ],
+      "failure_explanation": "The constants omega_f, alpha_f and the bound on the inner iteration count K_{f,theta} depend on A_f, which is only established under the extra hypothesis G_f < infinity (Lemma lambda-uniform-bound). Assumption 1 does not give this: X = dom p may be unbounded, and ∇_y f(x,y) can be unbounded over X x Y, as for f(x,y)=xy with Y compact. Then A_f = infinity and the stated bound N_epsilon is meaningless. Theorem thm:operations lists only Assumptions 1 and 2 as hypotheses, so the hypothesis the proof needs is omitted.",
+      "failure_location": {
+        "quote": "the total number of evaluations of the proximal operators of $p$ and $q$, and the gradient $\\nabla f$ performed by Algorithm~\\ref{algo_implement:whole} is at most",
+        "tag": "thm:operations"
+      },
+      "failure_mechanism": "invalid_input_or_dependency",
+      "issue_id": "ISSUE-002",
+      "least_adequate_overall_repair": "Add G_f < infinity (for example, X bounded) to the hypotheses of Theorem thm:operations and to the corresponding statements in the introduction and remark. Alternatively, state the bound with the explicit dependence on A_f.",
+      "overall_effect": "The first-order oracle complexity bound, the paper's headline result, is not guaranteed under the stated assumptions. It is vacuous when G_f is infinite.",
+      "primary_affected_tag": "thm:operations",
+      "target_type": "formal_result",
+      "title": "Oracle-complexity theorem uses A_f without the needed hypothesis G_f < infinity",
+      "why_classification": "Adding a standard local hypothesis that the lemma already uses repairs it. The method, rates and scope are unchanged, and the numerical example has bounded domains."
+    },
+    {
+      "classification": "minor_issue",
+      "dependent_affected_formal_result_tags": [],
+      "diagnostic_evidence": [
+        {
+          "quote": "\\mathop{\\arg\\min}_{x \\in \\cB(x^k, r)} \\Big\\{ \\langle \\nabla_x f(x^{k}, y^{k}), x \\rangle",
+          "tag": "algo_implement:whole"
+        },
+        {
+          "quote": "Thus, the constraint of~\\eqref{surro_argmin} corresponds to the intersection of Euclidean balls.",
+          "tag": null
+        }
+      ],
+      "failure_explanation": "The x-update minimizes a quadratic plus p over the ball B(x^k,r), and each SCP step minimizes a quadratic plus q over an intersection of m balls. These are prox-like problems for p + indicator(ball) and for q + indicator(ball intersection). Assumption 1(ii) only provides exact prox oracles for p and q themselves. The theorem counts each such subproblem as one proximal-operator evaluation of p or q, which is unsupported. Solving them in general needs extra inner work (for example, dual or multiplier iterations) not accounted for.",
+      "failure_location": {
+        "quote": "the total number of evaluations of the proximal operators of $p$ and $q$, and the gradient",
+        "tag": "thm:operations"
+      },
+      "failure_mechanism": "statement_support_mismatch",
+      "issue_id": "ISSUE-003",
+      "least_adequate_overall_repair": "Restate the counts as the number of solves of the ball-constrained subproblems (or assume a unit-cost oracle for them). Alternatively, bound the extra cost of solving them from p and q prox oracles.",
+      "overall_effect": "The stated bounds K_epsilon and N_epsilon on prox-oracle calls to p and q are not justified as proximal-operator counts. The count of gradient evaluations of f, which is the headline measure, is unaffected.",
+      "primary_affected_tag": "thm:operations",
+      "target_type": "formal_result",
+      "title": "Counts of 'proximal operator' evaluations ignore that the subproblems are constrained, not plain prox steps",
+      "why_classification": "Only the accounting of auxiliary oracle calls is affected. A reformulation of the claim or an added oracle assumption preserves all gradient-complexity guarantees and rates."
+    }
+  ],
+  "issues_found": 3,
+  "paper_id": "2510.01168",
+  "question_id": "Q1",
+  "run_name": "claude-sonnet-5-5-max-tb128k-full200",
+  "schema_version": "benchmark-q1-issue-inventory-prediction-v1",
+  "source_sha256": "d17b6d2db9f9f8947adf6598ba23ac99b5546b1c478249f69c37b19e3c5cf5a5",
+  "status": "ok"
+}
